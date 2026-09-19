@@ -213,6 +213,16 @@
   line-height: 1.7;
 }
 
+@media (min-width: 901px) {
+  .release-index {
+    max-height: calc(100vh - 128px);
+    max-height: calc(100dvh - 128px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+}
+
 .release-feed {
   position: relative;
   min-width: 0;

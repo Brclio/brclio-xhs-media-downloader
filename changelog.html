@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="小红书图片、实况与视频下载工具的项目更新记录，包含每次改进、功能增加、修复内容与提交时间。"
+      content="小红书图片、实况与视频下载工具的更新记录，包含访问统计、液态玻璃浮层、手机端避让优化，以及历次功能与修复的真实提交时间。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。历史内容来自 GitHub 仓库的真实提交；本次仍在工作区中的变化会单独标明，不与已提交版本混在一起。
+              这里记录功能增加、体验优化与问题修复。内容依据 GitHub 仓库的真实提交整理，最新记录包括网站访问统计、液态玻璃浮层与手机端交互优化。
             </p>
 
             <div class="release-hero-actions">
@@ -70,13 +70,13 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>REPOSITORY SNAPSHOT</span>
-              <strong>807a2cc</strong>
-              <small>origin/main · 2026.08.25 14:28</small>
+              <strong>e93e02a</strong>
+              <small>origin/main · 2026.09.05 23:17</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
-                <strong>13</strong>
+                <strong>18</strong>
                 <span>历史提交</span>
               </div>
               <div class="summary-stat">
@@ -93,7 +93,7 @@
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 远端 main 已实时核对；46 项测试已在当前工作区重新运行，仓库目前没有 Git 标签。</p>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 2026.09.06 核对远端 main；27 项 Node.js 与 19 项 Python 测试通过。当前包版本仍为 v1.4.0。</p>
           </aside>
         </section>
 
@@ -103,9 +103,15 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#mobile-counter-update"><span>MOBILE</span><strong>手机统计优化</strong></a>
+              <a href="#glass-counter-update"><span>GLASS</span><strong>液态玻璃浮层</strong></a>
+              <a href="#visit-counter-update"><span>PV</span><strong>网站访问统计</strong></a>
+              <a href="#vercel-dev-update"><span>DEV</span><strong>本地启动修复</strong></a>
+              <a href="#changelog-follow-update"><span>DOCS</span><strong>关注记录同步</strong></a>
               <a href="#follow-tip-update"><span>FOLLOW</span><strong>关注 Tips</strong></a>
+              <a href="#creator-support-update"><span>HELP</span><strong>支持与联系</strong></a>
               <a href="#live-photo-update"><span>v1.4</span><strong>实况图片下载</strong></a>
-              <a href="#clipboard-compat-update"><span>NOW</span><strong>剪贴板兼容</strong></a>
+              <a href="#clipboard-compat-update"><span>FIX</span><strong>剪贴板兼容</strong></a>
               <a href="#mobile-share-update"><span>LINK</span><strong>手机分享短链</strong></a>
               <a href="#brand-update"><span>BRAND</span><strong>Bornforthis 品牌</strong></a>
               <a href="#clipboard-update"><span>FEATURE</span><strong>文案与多图</strong></a>
@@ -123,7 +129,212 @@
           </aside>
 
           <div class="release-feed">
-            <article id="follow-tip-update" class="release-entry release-entry-featured">
+            <article id="mobile-counter-update" class="release-entry release-entry-featured">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-09-05T23:17:52+08:00">
+                  <span>09.05</span>
+                  <small>2026 · 23:17</small>
+                </time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges">
+                      <span class="release-badge release-badge-yellow">MOBILE</span>
+                      <span class="release-status">已提交</span>
+                    </div>
+                    <h3>手机统计更轻巧，操作更顺手</h3>
+                  </div>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/e93e02a8559f20ce20a2178cd40fdf7a0940e24f" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 e93e02a">e93e02a <span aria-hidden="true">↗</span></a>
+                </header>
+                <p class="release-lead">手机端默认显示紧凑的访问数胶囊，想看完整数据时再展开；统计经过操作区时会主动避让。</p>
+                <div class="change-list">
+                  <div class="change-item">
+                    <span aria-hidden="true">01</span>
+                    <p><strong>小胶囊默认收起</strong>在右下角显示访问数，整个胶囊都可点按，减少常驻卡片占用的屏幕空间。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">02</span>
+                    <p><strong>自动避让操作</strong>与输入框、引擎选项、下载按钮或链接重叠时暂时隐藏，滚动和布局变化后重新检查。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">03</span>
+                    <p><strong>按需查看详情</strong>点击展开完整统计，滚动、点击外部或按 Escape 自动收起；详情内的点击不会穿透到下方按钮。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">04</span>
+                    <p><strong>大数字保持易读</strong>胶囊使用“万 / 亿”等单位，展开后显示完整计数；适配手机竖屏、横屏与安全区。</p>
+                  </div>
+                </div>
+                <div class="release-card-footer">
+                  <span>SCOPE · MOBILE / COUNTER / INTERACTION</span>
+                  <span>记录时间 · 2026.09.05</span>
+                </div>
+              </div>
+            </article>
+
+            <article id="glass-counter-update" class="release-entry">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-09-05T23:02:16+08:00">
+                  <span>09.05</span>
+                  <small>2026 · 23:02</small>
+                </time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges">
+                      <span class="release-badge release-badge-blue">GLASS</span>
+                      <span class="release-status">已提交</span>
+                    </div>
+                    <h3>访问统计，以液态玻璃轻轻浮起</h3>
+                  </div>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/afa44d34a5bef87c03992e4d1583959806ea1e93" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 afa44d3">afa44d3 <span aria-hidden="true">↗</span></a>
+                </header>
+                <p class="release-lead">访问统计从页脚移动到浮层，结合暖白玻璃质感、蓝色数字和黄色点缀，延续页面原有配色。</p>
+                <div class="change-list">
+                  <div class="change-item">
+                    <span aria-hidden="true">01</span>
+                    <p><strong>桌面浮动显示</strong>固定在左下角，支持收起与展开，不占用下载内容的排版空间。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">02</span>
+                    <p><strong>为主要操作让位</strong>桌面展示区域允许点击穿透，输入或选择框聚焦、提示消息出现时暂时隐藏统计。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">03</span>
+                    <p><strong>适配不同显示偏好</strong>保留减少透明度、增强对比与减少动态效果的适配；不支持背景模糊时使用暖白底色。</p>
+                  </div>
+                </div>
+                <div class="release-card-footer">
+                  <span>SCOPE · GLASS / COUNTER / ACCESSIBILITY</span>
+                  <span>记录时间 · 2026.09.05</span>
+                </div>
+              </div>
+            </article>
+
+            <article id="visit-counter-update" class="release-entry">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-09-05T22:41:58+08:00">
+                  <span>09.05</span>
+                  <small>2026 · 22:41</small>
+                </time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges">
+                      <span class="release-badge release-badge-yellow">PV</span>
+                      <span class="release-status">已提交</span>
+                    </div>
+                    <h3>每一次访问，都有真实记录</h3>
+                  </div>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/8f14ae1c1957270805092b5a41d3738b0934e48b" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 8f14ae1">8f14ae1 <span aria-hidden="true">↗</span></a>
+                </header>
+                <p class="release-lead">首页和更新记录页接入 BornForThis 访问统计服务，展示当前域名累计页面浏览次数。</p>
+                <div class="change-list">
+                  <div class="change-item">
+                    <span aria-hidden="true">01</span>
+                    <p><strong>统一统计口径</strong>同一域名的两个页面共用累计 PV；每次页面加载上报一次，数据不代表独立访客人数或下载次数。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">02</span>
+                    <p><strong>真实数据显示</strong>大数字添加千分位；加载时显示占位符，服务异常时显示暂时不可用，恢复后继续更新。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">03</span>
+                    <p><strong>本地预览不计数</strong>localhost、本地 IP 等开发环境不向统计服务上报；不同部署域名分别统计。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">04</span>
+                    <p><strong>独立接入</strong>统计脚本与解析、复制、ZIP 和下载流程分离，服务异常不影响工具使用。</p>
+                  </div>
+                </div>
+                <div class="release-card-footer">
+                  <span>SCOPE · PV / DOMAIN / COUNTER</span>
+                  <span>记录时间 · 2026.09.05</span>
+                </div>
+              </div>
+            </article>
+
+            <article id="vercel-dev-update" class="release-entry">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-08-25T14:47:20+08:00">
+                  <span>08.25</span>
+                  <small>2026 · 14:47</small>
+                </time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges">
+                      <span class="release-badge release-badge-red">DEV</span>
+                      <span class="release-status">已提交</span>
+                    </div>
+                    <h3>本地启动，告别重复调用自己</h3>
+                  </div>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/d9884a103d115dc59224336b393bb6415a05f604" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 d9884a1">d9884a1 <span aria-hidden="true">↗</span></a>
+                </header>
+                <p class="release-lead">修复 Vercel 本地开发命令的递归问题，本地运行使用固定命令，不再需要在运行与发布之间来回修改配置。</p>
+                <div class="change-list">
+                  <div class="change-item">
+                    <span aria-hidden="true">01</span>
+                    <p><strong>固定启动命令</strong>使用 npm run dev:vercel，避免 vercel dev 再次调用同名 dev 脚本而产生递归。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">02</span>
+                    <p><strong>部署流程延续</strong>沿用现有 Vercel 项目与 Git 推送流程，README 同步说明本地命令和配置原因。</p>
+                  </div>
+                </div>
+                <div class="release-card-footer">
+                  <span>SCOPE · DEVELOPMENT / VERCEL / DOCS</span>
+                  <span>记录时间 · 2026.08.25</span>
+                </div>
+              </div>
+            </article>
+
+            <article id="changelog-follow-update" class="release-entry">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-08-25T14:40:32+08:00">
+                  <span>08.25</span>
+                  <small>2026 · 14:40</small>
+                </time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges">
+                      <span class="release-badge release-badge-blue">DOCS</span>
+                      <span class="release-status">已提交</span>
+                    </div>
+                    <h3>关注 Tips，同步进入更新记录</h3>
+                  </div>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/a8ac4fa95b104c91665c09a8e974d250d32a3dd2" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 a8ac4fa">a8ac4fa <span aria-hidden="true">↗</span></a>
+                </header>
+                <p class="release-lead">将哔哩哔哩与视频号关注入口的改动加入时间线，并同步当时的仓库快照。</p>
+                <div class="change-list">
+                  <div class="change-item">
+                    <span aria-hidden="true">01</span>
+                    <p><strong>记录可定位</strong>新增关注 Tips 条目、快速索引和对应提交链接。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">02</span>
+                    <p><strong>概览同步</strong>同步当时的提交数量、测试数量和页脚记录依据，支持从更新页返回首页支持区。</p>
+                  </div>
+                </div>
+                <div class="release-card-footer">
+                  <span>SCOPE · CHANGELOG / NAVIGATION</span>
+                  <span>记录时间 · 2026.08.25</span>
+                </div>
+              </div>
+            </article>
+
+            <article id="follow-tip-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-25T14:28:35+08:00">
@@ -180,12 +391,53 @@
               </div>
             </article>
 
+            <article id="creator-support-update" class="release-entry">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-08-24T22:00:07+08:00">
+                  <span>08.24</span>
+                  <small>2026 · 22:00</small>
+                </time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges">
+                      <span class="release-badge release-badge-yellow">SUPPORT</span>
+                      <span class="release-status">已提交</span>
+                    </div>
+                    <h3>支持与联系，集中在一个入口</h3>
+                  </div>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/6b1d96a0a2f818eed57950d95896215ba6bfceb6" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 6b1d96a">6b1d96a <span aria-hidden="true">↗</span></a>
+                </header>
+                <p class="release-lead">首页新增创作者支持区，可自愿支持工具、联系私人定制或关注微信公众号。</p>
+                <div class="change-list">
+                  <div class="change-item">
+                    <span aria-hidden="true">01</span>
+                    <p><strong>支持与联系分区</strong>集中展示微信、支付宝支持方式，以及私人微信、粉丝群咨询和公众号入口。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">02</span>
+                    <p><strong>二维码可查看原图</strong>保持完整展示，通过独立链接打开二维码大图，方便扫描和保存。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">03</span>
+                    <p><strong>独立页面模块</strong>采用独立样式与品牌插画，沿用现有解析、图片、实况和视频下载流程。</p>
+                  </div>
+                </div>
+                <div class="release-card-footer">
+                  <span>SCOPE · SUPPORT / CONTACT / QR</span>
+                  <span>记录时间 · 2026.08.24</span>
+                </div>
+              </div>
+            </article>
+
             <article id="live-photo-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
-                <time datetime="2026-08-24">
+                <time datetime="2026-08-24T20:26:55+08:00">
                   <span>08.24</span>
-                  <small>2026 · NOW</small>
+                  <small>2026 · 20:26</small>
                 </time>
               </div>
 
@@ -194,11 +446,11 @@
                   <div>
                     <div class="release-badges">
                       <span class="release-badge release-badge-red">v1.4</span>
-                      <span class="release-status">功能增加 · 待发布</span>
+                      <span class="release-status">功能增加 · 已提交</span>
                     </div>
                     <h3>实况图片，静态与动态一起带走</h3>
                   </div>
-                  <span class="workspace-label">WORKSPACE</span>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/2906b4e010086d582bccb45d9b6d6d9dd1382546" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 2906b4e">2906b4e <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -238,9 +490,9 @@
             <article id="clipboard-compat-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
-                <time datetime="2026-08-23T16:23:53+08:00">
+                <time datetime="2026-08-23T16:35:03+08:00">
                   <span>08.23</span>
-                  <small>2026 · 16:23</small>
+                  <small>2026 · 16:35</small>
                 </time>
               </div>
 
@@ -249,11 +501,11 @@
                   <div>
                     <div class="release-badges">
                       <span class="release-badge release-badge-red">FIX</span>
-                      <span class="release-status">兼容修复 · 待发布</span>
+                      <span class="release-status">兼容修复 · 已提交</span>
                     </div>
                     <h3>权限没问题，真正的限制说清楚</h3>
                   </div>
-                  <span class="workspace-label">WORKSPACE</span>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/7a2c2505734380cfb4942107451bde7503778d3e" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 7a2c250">7a2c250 <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -293,9 +545,9 @@
             <article id="mobile-share-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
-                <time datetime="2026-08-23T15:40:03+08:00">
+                <time datetime="2026-08-23T15:54:56+08:00">
                   <span>08.23</span>
-                  <small>2026 · 15:40</small>
+                  <small>2026 · 15:54</small>
                 </time>
               </div>
 
@@ -304,11 +556,11 @@
                   <div>
                     <div class="release-badges">
                       <span class="release-badge release-badge-yellow">FEATURE</span>
-                      <span class="release-status">功能增加 · 待发布</span>
+                      <span class="release-status">功能增加 · 已提交</span>
                     </div>
                     <h3>电脑长链与手机短链，自动识别</h3>
                   </div>
-                  <span class="workspace-label">WORKSPACE</span>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/9950b13c8e01044b2a91640ff58d72fda854ea98" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 9950b13">9950b13 <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -344,9 +596,9 @@
             <article id="brand-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
-                <time datetime="2026-08-23T15:27:32+08:00">
+                <time datetime="2026-08-23T15:34:02+08:00">
                   <span>08.23</span>
-                  <small>2026 · 15:27</small>
+                  <small>2026 · 15:34</small>
                 </time>
               </div>
 
@@ -355,11 +607,11 @@
                   <div>
                     <div class="release-badges">
                       <span class="release-badge release-badge-yellow">BRAND</span>
-                      <span class="release-status">视觉识别 · 待发布</span>
+                      <span class="release-status">视觉识别 · 已提交</span>
                     </div>
                     <h3>Bornforthis 品牌标识正式接入</h3>
                   </div>
-                  <span class="workspace-label">WORKSPACE</span>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/c0d88011020cb45a1248929e91f34dce05930bd5" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 c0d8801">c0d8801 <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -387,9 +639,9 @@
             <article id="clipboard-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
-                <time datetime="2026-08-23T14:48:57+08:00">
+                <time datetime="2026-08-23T15:27:07+08:00">
                   <span>08.23</span>
-                  <small>2026 · 14:48</small>
+                  <small>2026 · 15:27</small>
                 </time>
               </div>
 
@@ -397,12 +649,12 @@
                 <header class="release-card-heading">
                   <div>
                     <div class="release-badges">
-                      <span class="release-badge release-badge-yellow">NEXT</span>
-                      <span class="release-status">功能增加 · 待发布</span>
+                      <span class="release-badge release-badge-yellow">FEATURE</span>
+                      <span class="release-status">功能增加 · 已提交</span>
                     </div>
                     <h3>文案与多图，一次带走</h3>
                   </div>
-                  <span class="workspace-label">WORKSPACE</span>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/af7f63b1bc0351ddf9c00986dae8e6af532c13aa" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 af7f63b">af7f63b <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -438,9 +690,9 @@
             <article id="workspace-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
-                <time datetime="2026-08-23">
+                <time datetime="2026-08-23T14:45:43+08:00">
                   <span>08.23</span>
-                  <small>2026 · NOW</small>
+                  <small>2026 · 14:45</small>
                 </time>
               </div>
 
@@ -448,12 +700,12 @@
                 <header class="release-card-heading">
                   <div>
                     <div class="release-badges">
-                      <span class="release-badge release-badge-yellow">NEXT</span>
-                      <span class="release-status">待发布</span>
+                      <span class="release-badge release-badge-yellow">FEATURE</span>
+                      <span class="release-status">已提交</span>
                     </div>
                     <h3>多尺寸适配 + 独立更新记录</h3>
                   </div>
-                  <span class="workspace-label">WORKSPACE</span>
+                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/c0a17a084a6aaef653023ab4b17c4822190c8c1c" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 c0a17a0">c0a17a0 <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -471,13 +723,13 @@
                   </div>
                   <div class="change-item">
                     <span aria-hidden="true">03</span>
-                    <p><strong>守住功能边界</strong>解析、图片下载、视频下载、ZIP 与 Node/Python 双引擎逻辑均未改动。</p>
+                    <p><strong>守住功能边界</strong>建立更新记录入口的同时补充笔记文案解析与测试，媒体下载继续沿用原有操作入口。</p>
                   </div>
                 </div>
 
                 <div class="release-card-footer">
-                  <span>SCOPE · HTML / CSS</span>
-                  <span>业务脚本 · 0 改动</span>
+                  <span>SCOPE · CHANGELOG / LAYOUT / PARSER</span>
+                  <span>新增独立更新记录页</span>
                 </div>
               </div>
             </article>
@@ -784,7 +1036,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本页基于 origin/main 的 Git 提交记录整理，截至 807a2cc。</p>
+        <p>本页基于 origin/main 的 Git 提交记录整理，截至 e93e02a；核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"
