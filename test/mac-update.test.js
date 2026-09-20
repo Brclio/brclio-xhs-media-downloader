@@ -216,7 +216,16 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     }
     const launching = prepared.launch();
     await assert.rejects(prepared.launch(), { code: 'MAC_UPDATE_LAUNCHED' });
-    await launching;
+    try { await launching; }
+    catch (error) {
+      // Print only this synthetic fixture's diagnostics, before cleanup removes
+      // them. Node 22's TAP reporter omits Error.cause by default.
+      t.diagnostic(JSON.stringify({ outcome, node: process.version, arch: process.arch,
+        cause: error.cause && { name: error.cause.name, code: error.cause.code, message: error.cause.message, stack: error.cause.stack } }));
+      t.diagnostic(`helper log: ${(await readFile(path.join(path.dirname(prepared.resultPath), 'helper.log'), 'utf8').catch(() => '')).slice(-6000)}`);
+      t.diagnostic(`helper result: ${await readFile(prepared.resultPath, 'utf8').catch(() => 'unavailable')}`);
+      throw error;
+    }
     assert.ok(['ready', 'waiting'].includes(JSON.parse(await readFile(prepared.resultPath, 'utf8')).status));
     assert.equal(await readFile(path.join(path.dirname(prepared.resultPath), 'commit'), 'utf8'), 'approved\n');
     assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1', 'helper cannot replace while old PID remains');
