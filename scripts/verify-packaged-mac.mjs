@@ -42,18 +42,37 @@ export async function verifyPackagedMacLaunch(appPath, { version, productName })
       socket.addEventListener('open', () => { clearTimeout(timer); resolve(); }, { once: true });
       socket.addEventListener('error', () => { clearTimeout(timer); reject(new Error('Packaged renderer connection failed')); }, { once: true });
     });
-    const result = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`Packaged renderer smoke timed out: ${output}`)), 20000);
-      socket.addEventListener('message', event => {
-        const response = JSON.parse(event.data);
-        if (response.id !== 1) return;
+    let requestId = 0;
+    const evaluate = (expression, awaitPromise = false) => new Promise((resolve, reject) => {
+      const id = ++requestId;
+      const finish = (error, value) => {
         clearTimeout(timer);
-        if (response.error || response.result?.exceptionDetails) reject(new Error(JSON.stringify(response)));
-        else resolve(response.result?.result?.value);
-      });
-      socket.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { awaitPromise: true, returnByValue: true,
-        expression: `(async () => {
-          for (let i = 0; i < 100 && !window.xhsDesktop; i++) await new Promise(r => setTimeout(r, 50));
+        socket.removeEventListener('message', onMessage);
+        socket.removeEventListener('close', onClose);
+        if (error) reject(error); else resolve(value);
+      };
+      const timer = setTimeout(() => finish(new Error(`Packaged renderer smoke timed out: ${output}`)), 20000);
+      const onClose = () => finish(new Error(`Packaged renderer disconnected: ${output}`));
+      const onMessage = event => {
+        const response = JSON.parse(event.data);
+        if (response.id !== id) return;
+        if (response.error) {
+          const error = new Error(response.error.message);
+          error.cdpCode = response.error.code;
+          finish(error);
+        } else if (response.result?.exceptionDetails) {
+          finish(new Error(`Packaged renderer evaluation failed: ${JSON.stringify(response.result.exceptionDetails)}`));
+        } else finish(null, response.result?.result?.value);
+      };
+      socket.addEventListener('message', onMessage);
+      socket.addEventListener('close', onClose, { once: true });
+      socket.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: { expression, awaitPromise, returnByValue: true } }));
+    });
+    // A page target can advertise its final URL before its first navigation
+    // replaces the initial JS context. Wait outside that context, not within it.
+    const readyExpression = `location.href.startsWith('xhs-app://local/') && document.readyState === 'complete'
+      && typeof window.xhsDesktop?.getInfo === 'function'`;
+    const smokeExpression = `(async () => {
           const info = await window.xhsDesktop.getInfo();
           const payloads = [];
           for (const route of ['/api/parse', '/api/python_parse']) {
@@ -63,8 +82,24 @@ export async function verifyPackagedMacLaunch(appPath, { version, productName })
             payloads.push({ status: response.status, success: body.success, images: body.images?.length });
           }
           return { info, payloads, secureContext: window.isSecureContext, nodeAvailable: typeof require === 'function' };
-        })()` } }));
-    });
+        })()`;
+    let result, contextRetries = 0;
+    const readyDeadline = Date.now() + 30000;
+    while (Date.now() < readyDeadline) {
+      try {
+        if (await evaluate(readyExpression)) {
+          result = await evaluate(smokeExpression, true);
+          break;
+        }
+      } catch (error) {
+        // Only retry known CDP startup-navigation races. Renderer exceptions,
+        // broken IPC, failed parsing, disconnects and timeouts remain failures.
+        const contextChanged = error.cdpCode === -32000 && /^(?:Execution context was destroyed\.?|Cannot find context with specified id\.?|Cannot find default execution context\.?)$/i.test(error.message);
+        if (!contextChanged || ++contextRetries > 5) throw error;
+      }
+      await delay(200);
+    }
+    assert.ok(result, `Packaged renderer did not become ready: ${output}`);
     assert.equal(result.info.version, version);
     assert.equal(result.info.name, productName);
     assert.equal(result.info.pythonAvailable, true);
@@ -72,7 +107,7 @@ export async function verifyPackagedMacLaunch(appPath, { version, productName })
     assert.equal(result.nodeAvailable, false);
     assert.deepEqual(result.payloads, [{ status: 200, success: true, images: 1 }, { status: 200, success: true, images: 1 }]);
     console.log(JSON.stringify({ packagedMacLaunchVerified: true, version, renderer: true, nodeAndPythonParse: true,
-      profile: 'temporary', keychain: 'mock', gatekeeperApprovalTested: false }));
+      profile: 'temporary', keychain: 'mock', startupContextRetries: contextRetries, gatekeeperApprovalTested: false }));
   } finally {
     socket?.close();
     if (child.exitCode === null) child.kill('SIGTERM');
