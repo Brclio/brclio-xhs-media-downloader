@@ -1,6 +1,6 @@
 # v1.7.0 账号系统验证记录
 
-日期：2026-09-20。当前交付来自本机工作树，不能把基础 Git HEAD 当成本次已发布提交。安装包的应用源码和授权地址已与工作树逐字节比较；本次没有发布 GitHub Release。
+日期：2026-09-20。代码位于 `codex/account-membership-system` 分支和 [PR #1](https://github.com/Brclio/brclio-xhs-media-downloader/pull/1)。应用实现提交 `c5e712d`；`98a3a29` 仅修正 Windows 测试路径分隔符。安装包的应用源码和授权地址均与对应源码逐字节比较。本次没有发布 GitHub Release。
 
 ## 本地自动测试：已通过
 
@@ -29,6 +29,14 @@
 
 Windows 检查是 Mac 上的静态校验，不能替代 Windows 原生启动、安装或 DPAPI 验证。安装包不含后端、管理员页面、Nodemailer、环境文件；源码和包内容的已知密钥格式扫描没有发现部署凭据。生产敏感值保存在 Vercel 平台，未通过拉取环境文件写回本地。
 
+## GitHub Actions 原生验证：已通过
+
+[首次原生构建](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/35515061254) 的 macOS arm64 和 Intel x64 均通过全部步骤。Windows 在网站白名单测试中暴露了一处测试路径分隔符差异，修正后由 [第二次原生构建](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/35515331702) 验证 Windows x64 成功；应用代码未因该测试修正而改变。
+
+三个平台均实际执行安装包构建、包内容和源码比较、包内原生 Python 启动/解析、真实 Electron 主进程及下载入口检查、界面控件验证。新增的账号脚本在 Mac Keychain / Windows DPAPI 下运行两个独立 Electron 进程，确认加密凭据及设备身份保持，服务端传输为模拟服务。Windows 第二次构建明确记录 Node `tests 209 / pass 209 / skipped 0`，随后独立构建内置 Python 并通过 2 项必需的打包后端测试。
+
+这证明原生运行与两次进程重开，不等于操作系统重启、实际执行安装向导或覆盖升级。Intel Mac 的 DMG/ZIP 已由原生 CI 生成；各 CI artifact 包含对应 `release-proof-*.json`、SHA-256 和来源提交。
+
 ## 真实远端服务：已验证
 
 沿用既有 Vercel 项目，Node.js 22；绑定 `xhs.download.brclio.com`，TXT 验证通过，CNAME 配置正确。业务仓库 `Brclio/brclio-xhs-media-downloader-data` 经 API 确认为私有；`state/accounts.json` 已由实际后端首次写入。初始化开关随后关闭，防止文件丢失时自动生成空数据。
@@ -44,9 +52,8 @@ Windows 检查是 Mac 上的静态校验，不能替代 Windows 原生启动、�
 
 ## 尚未验收的项目
 
-- Windows 原生安装、启动、真实 DPAPI、系统重启和覆盖升级；Mac 操作系统重启及正式签名安装包覆盖升级。
+- Windows 安装向导实际安装、系统重启和覆盖升级；Mac 操作系统重启及正式签名安装包覆盖升级。Windows 原生启动、包内 Python、DPAPI 已由上述 CI 验证。
 - Apple Developer ID 签名/公证和 Windows 发布者代码签名。本次包不能宣称已经签名或免系统安全提示。
-- Intel Mac 本轮安装包；仓库保留原生 CI 矩阵，本次本机生成的是 Apple Silicon arm64 和 Windows x64 包。
 - 桌面安装包与真实服务的完整邮箱登录、真实激活码兑换/设备撤销整条人工交互验收；当前这些业务并发及组合场景通过模拟测试，实际远端只验收了上述管理员与存储/邮件路径。
 - 真实 GitHub 高并发压力、实际限流与灾难恢复演练；自动测试已注入相应故障，不能代替生产演练。
 - 新一轮真实小红书账号的完整主页下载；既有本地任务和原下载实现保留，相关回归通过。
