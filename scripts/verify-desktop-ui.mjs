@@ -199,9 +199,17 @@ app.whenReady().then(async () => {
   assert.equal(calls.filter(call => call.method === 'checkForUpdates').length, 2);
   publishUpdate({ ...available(), status: 'downloaded', installationHint: '当前为 Windows 便携版；本次更新会运行安装程序，安装正式版。' });
   await check(`document.querySelector('#desktop-update-installation-hint').textContent.includes('便携版')`, 'Windows portable installation explanation');
+  if (process.argv.includes('--classic-scrollbars')) {
+    // Reproduce a CI desktop with scrollbars that consume layout width, even on
+    // a development Mac configured to use overlay scrollbars.
+    await win.webContents.insertCSS('html { overflow-y: scroll; } html::-webkit-scrollbar { width: 16px; }');
+  }
   win.setContentSize(390, 844);
-  await check(`document.documentElement.clientWidth === 390`, 'narrow viewport');
+  // clientWidth excludes a classic vertical scrollbar; innerWidth describes
+  // the requested viewport consistently on macOS and Windows.
+  await check(`window.innerWidth === 390`, 'narrow viewport');
   assert.equal(await evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true, 'no horizontal overflow');
+  const narrowViewport = await evaluate(`({ innerWidth: window.innerWidth, clientWidth: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth })`);
   await paint();
   const narrowScreenshot = path.join(temporary, 'desktop-ui-narrow.png');
   writeFileSync(narrowScreenshot, await captureFrame());
@@ -210,7 +218,7 @@ app.whenReady().then(async () => {
   assert.equal(await web.webContents.executeJavaScript(`document.querySelector('#desktop-navigation').hidden && document.querySelector('#desktop-update-panel').hidden && !document.querySelector('#single-note-panel').hidden`), true, 'web interface remains unchanged without bridge');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and cancellation', 'phase-aware retries', 'manual install only', 'safe text rendering', 'Mac and Windows installation hints', '390px layout', 'web-only regression'], screenshot, narrowScreenshot }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and cancellation', 'phase-aware retries', 'manual install only', 'safe text rendering', 'Mac and Windows installation hints', '390px layout', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {
