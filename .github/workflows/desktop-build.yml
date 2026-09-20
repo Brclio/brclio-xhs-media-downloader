@@ -1,0 +1,61 @@
+name: Desktop installers
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*', 'desktop-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+            label: mac-arm64
+          - os: macos-15-intel
+            arch: x64
+            label: mac-intel
+          - os: windows-latest
+            arch: x64
+            label: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.arch }}
+      - run: npm ci
+      - run: npm run test:node
+      - run: python -m unittest discover -s test -p 'test_python_*.py'
+      - if: runner.os != 'Windows'
+        run: python scripts/build-mac-python.py
+      - if: runner.os == 'Windows'
+        run: python scripts/build-windows-python.py
+      - name: Verify bundled Python handlers
+        run: node --test test/desktop-python.test.js
+        env:
+          XHS_REQUIRE_BUNDLED_PYTHON: '1'
+      - name: Build complete installers with bundled Python
+        run: npx electron-builder --${{ runner.os == 'Windows' && 'win' || 'mac' }} --${{ matrix.arch }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XHS-Downloader-${{ matrix.label }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            dist-desktop/*.dmg
+            dist-desktop/*.zip
+            dist-desktop/*.exe

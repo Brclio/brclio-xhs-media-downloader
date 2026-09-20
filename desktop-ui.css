@@ -1,0 +1,554 @@
+/* Desktop extension of ESTHER不二 / esthersjw's app template and tabs.
+ * Design foundation: https://github.com/esthersjw/esther-design-system
+ * CC BY-NC-SA 4.0. Existing project brand variables are deliberately reused. */
+
+.desktop-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 25px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.desktop-tabs {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.desktop-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 10px 17px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  color: var(--ink-light);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.desktop-tab[aria-selected="true"] {
+  border-bottom-color: var(--blue);
+  color: var(--blue-deep);
+  font-weight: 700;
+}
+
+.desktop-tab:hover,
+.profile-show-more:hover {
+  background: var(--cream-deep);
+}
+
+.desktop-tab-badge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--yellow);
+  font-size: 0.65rem;
+  line-height: 1.8;
+}
+
+.desktop-version {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+}
+
+.profile-panel {
+  padding: clamp(30px, 4vw, 48px) 0 28px;
+}
+
+.profile-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.profile-heading h1 {
+  margin-top: 8px;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+.profile-heading p {
+  margin-top: 7px;
+  color: var(--ink-light);
+  font-size: 0.83rem;
+}
+
+.profile-heading > .button {
+  flex-shrink: 0;
+}
+
+#profile-login {
+  min-width: 0;
+  max-width: min(100%, 360px);
+}
+
+.profile-login-label {
+  display: block;
+  min-width: 0;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-login-icon {
+  flex-shrink: 0;
+}
+
+#profile-login[data-login-status="logged-in"] {
+  color: var(--blue-deep);
+  border-color: var(--blue-deep);
+  background: rgba(43, 127, 216, 0.05);
+}
+
+.profile-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(28px, 4vw, 54px);
+  align-items: start;
+}
+
+.profile-form {
+  display: grid;
+  gap: 23px;
+  min-width: 0;
+  padding: clamp(22px, 2.8vw, 34px);
+  border: 1px solid var(--line-strong);
+  border-radius: 16px 16px 20px 16px;
+  background: var(--paper);
+}
+
+.profile-field {
+  min-width: 0;
+}
+
+.profile-field > label,
+.profile-timing legend {
+  display: block;
+  margin: 0 0 8px;
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.profile-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 11px 12px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--cream);
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.profile-field input::placeholder {
+  color: var(--ink-faint);
+  opacity: 1;
+}
+
+.profile-field input:focus-visible {
+  outline: 3px solid var(--blue-deep);
+  outline-offset: 3px;
+}
+
+.profile-field input:disabled {
+  color: var(--ink-faint);
+  background: var(--cream-deep);
+  cursor: not-allowed;
+}
+
+.profile-hint {
+  margin-top: 8px;
+  color: var(--ink-faint);
+  font-size: 0.73rem;
+  line-height: 1.85;
+}
+
+.profile-directory-row {
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+}
+
+.profile-directory-row > .button {
+  flex-shrink: 0;
+  min-height: 46px;
+  padding-right: 13px;
+  padding-left: 13px;
+}
+
+.profile-timing {
+  min-width: 0;
+  margin: 0;
+  padding: 18px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.profile-timing legend {
+  padding-right: 12px;
+  margin-bottom: 0;
+}
+
+.profile-timing-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.profile-timing-fields label {
+  color: var(--ink-light);
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+.profile-number-input {
+  position: relative;
+}
+
+.profile-number-input input {
+  padding-right: 60px;
+}
+
+.profile-number-input span {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.profile-start {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.profile-scope-note {
+  margin-top: -9px;
+  color: var(--ink-light);
+  font-size: 0.72rem;
+  line-height: 1.9;
+}
+
+.profile-error {
+  padding: 12px 14px;
+  border: 1px solid var(--red-deep);
+  border-radius: 8px;
+  color: var(--red-deep);
+  background: rgba(232, 74, 95, 0.04);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-job {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.profile-job-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-job-heading h2 {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+}
+
+.profile-status {
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--blue-deep);
+  background: rgba(43, 127, 216, 0.09);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.profile-status[data-status="paused"],
+.profile-status[data-status="cancelled"] {
+  color: var(--ink);
+  background: rgba(244, 215, 88, 0.4);
+}
+
+.profile-status[data-status="error"],
+.profile-status[data-status="partial"] {
+  color: var(--red-deep);
+  background: rgba(232, 74, 95, 0.08);
+}
+
+.profile-counts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 28px 0 22px;
+}
+
+.profile-counts div {
+  min-width: 0;
+}
+
+.profile-counts dt {
+  color: var(--ink-light);
+  font-size: 0.72rem;
+}
+
+.profile-counts dd {
+  margin: 2px 0 0;
+  color: var(--blue-deep);
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 2.7vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+#profile-failed[data-has-failures="true"] {
+  color: var(--red-deep);
+}
+
+.profile-progress-wrap progress {
+  display: block;
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+  background: var(--cream-deep);
+  color: var(--blue);
+  accent-color: var(--blue);
+}
+
+.profile-progress-wrap progress::-webkit-progress-bar {
+  border-radius: 4px;
+  background: rgba(43, 127, 216, 0.1);
+}
+
+.profile-progress-wrap progress::-webkit-progress-value {
+  border-radius: 4px;
+  background: var(--blue);
+}
+
+.profile-progress-wrap progress::-moz-progress-bar {
+  border-radius: 4px;
+  background: var(--blue);
+}
+
+.profile-job-message {
+  margin-top: 23px;
+  overflow-wrap: anywhere;
+}
+
+.profile-job-message strong {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.9;
+}
+
+.profile-job-message p,
+.profile-countdown {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.75rem;
+  line-height: 1.8;
+}
+
+.profile-countdown {
+  color: var(--blue-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.profile-controls .button {
+  min-height: 42px;
+  padding: 9px 13px;
+  font-size: 0.74rem;
+}
+
+.profile-items-details {
+  margin-top: 26px;
+  padding-top: 17px;
+  border-top: 1px solid var(--line-strong);
+}
+
+.profile-items-details summary {
+  padding: 5px 0;
+  color: var(--ink-light);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.profile-items-details summary:focus-visible {
+  outline: 3px solid var(--blue-deep);
+  outline-offset: 3px;
+}
+
+.profile-items-details summary::marker {
+  color: var(--blue-deep);
+}
+
+.profile-items-details summary span {
+  margin-left: 7px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-items {
+  display: grid;
+  gap: 0;
+  max-height: 370px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 6px 12px;
+  padding: 12px 3px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+.profile-item-title {
+  overflow-wrap: anywhere;
+}
+
+.profile-item-status {
+  color: var(--blue-deep);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.profile-item-error {
+  grid-column: 1 / -1;
+  color: var(--red-deep);
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-item[data-status="failed"] .profile-item-status {
+  color: var(--red-deep);
+}
+
+.profile-show-more {
+  min-height: 38px;
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--blue-deep);
+  background: var(--paper);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.74rem;
+}
+
+body.is-desktop .hero {
+  min-height: 0;
+  padding-top: 50px;
+  padding-bottom: 55px;
+}
+
+body.is-desktop .hero-copy h1 {
+  font-size: clamp(2rem, 3.4vw, 3rem);
+}
+
+body.is-desktop .site-visits {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .profile-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .profile-heading {
+    align-items: flex-start;
+  }
+
+  .profile-job {
+    padding: 0 3px;
+  }
+}
+
+@media (max-width: 600px) {
+  .desktop-navigation {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 12px;
+  }
+
+  .desktop-tabs {
+    order: 2;
+    width: 100%;
+  }
+
+  .desktop-tab {
+    flex: 1;
+    padding-right: 9px;
+    padding-left: 9px;
+    font-size: 0.8rem;
+  }
+
+  .desktop-version {
+    width: 100%;
+    text-align: right;
+  }
+
+  .profile-heading {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .profile-heading > .button {
+    width: 100%;
+  }
+
+  .profile-directory-row {
+    flex-wrap: wrap;
+  }
+
+  .profile-directory-row > .button {
+    width: 100%;
+  }
+
+  .profile-timing-fields {
+    gap: 10px;
+  }
+}

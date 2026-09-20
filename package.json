@@ -1,16 +1,105 @@
 {
-  "name": "xhs-vercel-downloader",
-  "version": "1.4.0",
+  "name": "brclio-xhs-media-downloader",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
-  "description": "支持 Node.js/Python 双后台切换的小红书无水印图片、实况与视频下载网站",
+  "description": "小红书媒体下载器：网页版与 Mac / Windows 本地版，支持主页批量下载和自定义间隔",
   "scripts": {
     "dev:vercel": "vercel dev",
     "test": "npm run test:node && npm run test:python",
     "test:node": "node --test",
-    "test:python": "python3 -m unittest discover -s test -p 'test_python_*.py'"
+    "test:python": "python3 -m unittest discover -s test -p 'test_python_*.py'",
+    "desktop:dev": "electron .",
+    "desktop:prepare": "python3 scripts/build-python.py",
+    "desktop:prepare:windows": "python scripts/build-windows-python.py",
+    "desktop:pack": "electron-builder --dir --publish never",
+    "desktop:build": "electron-builder --publish never",
+    "desktop:build:mac": "electron-builder --mac --publish never",
+    "desktop:build:win": "electron-builder --win --x64 --publish never",
+    "desktop:prepare:windows:cross": "python3 scripts/build-windows-python.py",
+    "desktop:prepare:mac": "python3 scripts/build-mac-python.py"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "electron": "44.4.3",
+    "electron-builder": "26.15.3"
+  },
+  "main": "desktop/main.js",
+  "productName": "小红书媒体下载器",
+  "author": "Bornforthis",
+  "build": {
+    "appId": "cn.bornforthis.xhs-downloader",
+    "productName": "小红书媒体下载器",
+    "directories": {
+      "output": "dist-desktop",
+      "buildResources": "desktop/resources"
+    },
+    "beforePack": "scripts/check-desktop-runtime.cjs",
+    "files": [
+      "package.json",
+      "*.html",
+      "*.css",
+      "*.svg",
+      "app.js",
+      "visit-counter.js",
+      "desktop-ui.js",
+      "assets/**/*",
+      "lib/**/*.js",
+      "api/*.js",
+      "desktop/**/*.js",
+      "desktop/**/*.cjs",
+      "!desktop/**/*.test.js"
+    ],
+    "extraResources": [
+      {
+        "from": "desktop-runtime/${os}-${arch}/python",
+        "to": "python",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "artifactName": "XHS-Downloader-${version}-mac-${arch}.${ext}",
+      "extendInfo": {
+        "NSDownloadsFolderUsageDescription": "保存您选择下载的小红书图片和视频。",
+        "NSDocumentsFolderUsageDescription": "将图片和视频保存到您选择的文件夹。"
+      },
+      "minimumSystemVersion": "13.0"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "artifactName": "XHS-Downloader-${version}-windows-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "XHS-Downloader-${version}-windows-${arch}-portable.${ext}"
+    },
+    "toolsets": {
+      "nsis": "1.2.1"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Brclio/brclio-xhs-media-downloader.git"
+  },
+  "homepage": "https://github.com/Brclio/brclio-xhs-media-downloader",
+  "bugs": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/issues"
   }
 }

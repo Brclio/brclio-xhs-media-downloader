@@ -8,6 +8,7 @@ import {
   clipboardWriteFailureMessageForKind,
   refineClipboardWriteFailureKind
 } from "./lib/clipboard.js";
+import { initializeDesktopUI } from "./desktop-ui.js";
 
 const state = {
   title: "小红书图片",
@@ -109,7 +110,7 @@ function setParsing(isParsing) {
   elements.textarea.disabled = isParsing;
   elements.videoQuality.disabled = isParsing;
   elements.downloadVideoButton.disabled = isParsing;
-  for (const input of elements.engineInputs) input.disabled = isParsing;
+  setEngineInputsDisabled(isParsing);
   updateSelectionUI();
 }
 
@@ -339,7 +340,7 @@ async function copyTextAction({ text, trigger, label, successMessage }) {
   elements.parseButton.disabled = true;
   elements.videoQuality.disabled = true;
   elements.downloadVideoButton.disabled = true;
-  for (const input of elements.engineInputs) input.disabled = true;
+  setEngineInputsDisabled(true);
   updateSelectionUI();
 
   try {
@@ -353,7 +354,7 @@ async function copyTextAction({ text, trigger, label, successMessage }) {
     elements.parseButton.disabled = false;
     elements.videoQuality.disabled = false;
     elements.downloadVideoButton.disabled = false;
-    for (const input of elements.engineInputs) input.disabled = false;
+    setEngineInputsDisabled(false);
     updateSelectionUI();
     trigger?.focus({ preventScroll: true });
   }
@@ -363,12 +364,20 @@ function engineLabel(engine = state.engine) {
   return engine === "python" ? "Python" : "Node.js";
 }
 
+function setEngineInputsDisabled(disabled) {
+  for (const input of elements.engineInputs) {
+    input.disabled = disabled || input.dataset.unavailable === "true";
+  }
+}
+
 function updateEngineUI() {
   for (const input of elements.engineInputs) {
     input.checked = input.value === state.engine;
   }
 
-  elements.engineHint.textContent = state.engine === "python"
+  elements.engineHint.textContent = window.xhsDesktop
+    ? `当前使用内置 ${engineLabel()} 引擎，无需另行安装运行环境。`
+    : state.engine === "python"
     ? "当前使用 Python 完成页面抓取、图片代理和媒体分段下载。"
     : "当前使用 Node.js 完成页面抓取、图片代理和媒体分段下载。";
 }
@@ -981,7 +990,7 @@ async function copyImages(images, trigger) {
   elements.parseButton.disabled = true;
   elements.videoQuality.disabled = true;
   elements.downloadVideoButton.disabled = true;
-  for (const input of elements.engineInputs) input.disabled = true;
+  setEngineInputsDisabled(true);
   updateSelectionUI();
 
   try {
@@ -1016,7 +1025,7 @@ async function copyImages(images, trigger) {
     elements.parseButton.disabled = false;
     elements.videoQuality.disabled = false;
     elements.downloadVideoButton.disabled = false;
-    for (const input of elements.engineInputs) input.disabled = false;
+    setEngineInputsDisabled(false);
     hideProgress();
     updateSelectionUI();
     trigger?.focus({ preventScroll: true });
@@ -1334,7 +1343,7 @@ function setLiveDownloadBusy(isBusy, trigger) {
   elements.parseButton.disabled = isBusy;
   elements.videoQuality.disabled = isBusy;
   elements.downloadVideoButton.disabled = isBusy;
-  for (const input of elements.engineInputs) input.disabled = isBusy;
+  setEngineInputsDisabled(isBusy);
   updateSelectionUI();
 }
 
@@ -1468,7 +1477,7 @@ async function downloadCurrentVideo() {
   elements.copyLinksButton.disabled = true;
   elements.copyCaptionButton.disabled = true;
   elements.downloadZipButton.disabled = true;
-  for (const input of elements.engineInputs) input.disabled = true;
+  setEngineInputsDisabled(true);
 
   const candidates = [
     ...new Set([video.url, ...(video.backupUrls || [])].filter(Boolean))
@@ -1529,7 +1538,7 @@ async function downloadCurrentVideo() {
     elements.copySelectedImagesButton.disabled = false;
     elements.copyLinksButton.disabled = false;
     elements.copyCaptionButton.disabled = false;
-    for (const input of elements.engineInputs) input.disabled = false;
+    setEngineInputsDisabled(false);
     hideProgress();
     updateSelectionUI();
   }
@@ -1729,7 +1738,7 @@ async function downloadSelectedZip() {
   elements.parseButton.disabled = true;
   elements.videoQuality.disabled = true;
   elements.downloadVideoButton.disabled = true;
-  for (const input of elements.engineInputs) input.disabled = true;
+  setEngineInputsDisabled(true);
   updateSelectionUI();
   const files = [];
   const failures = [];
@@ -1875,7 +1884,7 @@ async function downloadSelectedZip() {
     elements.parseButton.disabled = false;
     elements.videoQuality.disabled = false;
     elements.downloadVideoButton.disabled = false;
-    for (const input of elements.engineInputs) input.disabled = false;
+    setEngineInputsDisabled(false);
     hideProgress();
     updateSelectionUI();
   }
@@ -2016,3 +2025,19 @@ elements.videoQuality.addEventListener("change", updateVideoSelection);
 elements.downloadVideoButton.addEventListener("click", downloadCurrentVideo);
 
 elements.downloadZipButton.addEventListener("click", downloadSelectedZip);
+
+void initializeDesktopUI({
+  onInfo(info) {
+    if (info.pythonAvailable !== false) return;
+    const pythonInput = elements.engineInputs.find((input) => input.value === "python");
+    if (!pythonInput) return;
+    pythonInput.dataset.unavailable = "true";
+    pythonInput.closest("label").querySelector("small").textContent = "此开发环境暂不可用";
+    if (state.engine === "python") {
+      state.engine = "node";
+      localStorage.setItem("xhs-engine", state.engine);
+    }
+    setEngineInputsDisabled(state.busy);
+    updateEngineUI();
+  }
+});

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="小红书图片、实况与视频下载工具的更新记录，包含访问统计、液态玻璃浮层、手机端避让优化，以及历次功能与修复的真实提交时间。"
+      content="小红书图片、实况与视频下载工具的更新记录。v1.5.0 新增 Mac、Windows 本地版、主页批量下载、自定义抓取间隔、任务恢复与登录昵称显示，并保留历次功能与修复记录。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="记录状态：Git 历史已核对">
+          <div class="header-status" aria-label="当前记录：v1.5.0 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>Git 历史已核对</span>
+            <span>v1.5.0 本地版</span>
           </div>
         </div>
       </div>
@@ -53,14 +53,14 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。内容依据 GitHub 仓库的真实提交整理，最新记录包括网站访问统计、液态玻璃浮层与手机端交互优化。
+              这里记录功能增加、体验优化与问题修复。最新的 v1.5.0 带来 Mac、Windows 本地版，支持按自定义间隔保存整个主页，并显示当前登录账号的昵称。
             </p>
 
             <div class="release-hero-actions">
               <a class="button button-primary" href="/">开始使用下载工具 <span aria-hidden="true">↗</span></a>
               <a
                 class="button button-secondary"
-                href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commits/main/"
+                href="https://github.com/Brclio/brclio-xhs-media-downloader/commits/main/"
                 target="_blank"
                 rel="noopener noreferrer"
               >查看 GitHub 原始记录 <span aria-hidden="true">↗</span></a>
@@ -69,31 +69,31 @@
 
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
-              <span>REPOSITORY SNAPSHOT</span>
-              <strong>e93e02a</strong>
-              <small>origin/main · 2026.09.05 23:17</small>
+              <span>DESKTOP EDITION</span>
+              <strong>v1.5.0</strong>
+              <small>本地版 · 2026.09.20</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
-                <strong>18</strong>
-                <span>历史提交</span>
+                <strong>Mac</strong>
+                <span>macOS 本地版</span>
               </div>
               <div class="summary-stat">
-                <strong>v1.4</strong>
-                <span>当前包版本</span>
+                <strong>Win</strong>
+                <span>Windows 本地版</span>
               </div>
               <div class="summary-stat">
                 <strong>2</strong>
-                <span>后台引擎</span>
+                <span>内置下载引擎</span>
               </div>
               <div class="summary-stat">
-                <strong>46</strong>
-                <span>自动测试</span>
+                <strong>10s</strong>
+                <span>另加 0–3 秒随机等待</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 2026.09.06 核对远端 main；27 项 Node.js 与 19 项 Python 测试通过。当前包版本仍为 v1.4.0。</p>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 本地安装包单独交付，内置运行环境，无需另装 Python 或 Node.js。主页批量下载在本地版中使用。</p>
           </aside>
         </section>
 
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#desktop-1-5-update"><span>v1.5</span><strong>本地版与主页下载</strong></a>
               <a href="#mobile-counter-update"><span>MOBILE</span><strong>手机统计优化</strong></a>
               <a href="#glass-counter-update"><span>GLASS</span><strong>液态玻璃浮层</strong></a>
               <a href="#visit-counter-update"><span>PV</span><strong>网站访问统计</strong></a>
@@ -124,12 +125,64 @@
             </nav>
 
             <p class="release-index-note">
-              日期使用 Git 作者时间，统一按 Asia/Shanghai（UTC+08:00）展示。
+              本地版使用功能记录日期；历史提交使用 Git 作者时间，统一按 Asia/Shanghai（UTC+08:00）展示。
             </p>
           </aside>
 
           <div class="release-feed">
-            <article id="mobile-counter-update" class="release-entry release-entry-featured">
+            <article id="desktop-1-5-update" class="release-entry release-entry-featured">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-09-20">
+                  <span>09.20</span>
+                  <small>2026 · 本地版</small>
+                </time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges">
+                      <span class="release-badge release-badge-yellow">v1.5.0</span>
+                      <span class="release-status">Mac / Windows</span>
+                    </div>
+                    <h3>把整个主页，按自己的节奏存进电脑</h3>
+                  </div>
+                </header>
+                <p class="release-lead">本地版保留网页版的单篇笔记功能，新增主页批量下载。粘贴主页链接、选好文件夹与间隔，就能逐篇归档当前账号可访问的内容。</p>
+                <div class="change-list">
+                  <div class="change-item">
+                    <span aria-hidden="true">01</span>
+                    <p><strong>安装后直接使用</strong>提供 Mac、Windows 本地安装包，内置 Node.js 与 Python 引擎；原图、实况素材 ZIP、多清晰度视频、文案与复制功能继续保留。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">02</span>
+                    <p><strong>主页按笔记归档</strong>自动发现主页帖子，将图片、实况片段、视频和文案保存到所选文件夹；每篇笔记独立整理，便于后续查找。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">03</span>
+                    <p><strong>自定义间隔与随机等待</strong>默认等待 10 秒，再增加 0–3 秒随机时间。主页翻页、笔记解析和媒体请求均按设定节奏进行，间隔可自行调整。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">04</span>
+                    <p><strong>随时暂停，稍后接着下载</strong>支持暂停、继续、停止和重试失败项；任务进度保存在电脑，恢复时检查已有文件并跳过完整内容。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">05</span>
+                    <p><strong>登录后显示自己的昵称</strong>登录按钮实时显示当前账号昵称，点击可打开账号与验证窗口。登录状态由本地版独立保存，遇到登录或安全验证要求时暂停任务。</p>
+                  </div>
+                  <div class="change-item">
+                    <span aria-hidden="true">06</span>
+                    <p><strong>完成状态清楚可查</strong>分别显示已发现、已下载、已存在和失败数量。未确认主页加载到底，或仍有下载失败时，不会显示全部成功。</p>
+                  </div>
+                </div>
+                <div class="release-card-footer">
+                  <span>SCOPE · DESKTOP / PROFILE / ACCOUNT</span>
+                  <span>功能记录 · 2026.09.20</span>
+                </div>
+              </div>
+            </article>
+
+            <article id="mobile-counter-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-05T23:17:52+08:00">
@@ -146,7 +199,7 @@
                     </div>
                     <h3>手机统计更轻巧，操作更顺手</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/e93e02a8559f20ce20a2178cd40fdf7a0940e24f" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 e93e02a">e93e02a <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/e93e02a8559f20ce20a2178cd40fdf7a0940e24f" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 e93e02a">e93e02a <span aria-hidden="true">↗</span></a>
                 </header>
                 <p class="release-lead">手机端默认显示紧凑的访问数胶囊，想看完整数据时再展开；统计经过操作区时会主动避让。</p>
                 <div class="change-list">
@@ -191,7 +244,7 @@
                     </div>
                     <h3>访问统计，以液态玻璃轻轻浮起</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/afa44d34a5bef87c03992e4d1583959806ea1e93" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 afa44d3">afa44d3 <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/afa44d34a5bef87c03992e4d1583959806ea1e93" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 afa44d3">afa44d3 <span aria-hidden="true">↗</span></a>
                 </header>
                 <p class="release-lead">访问统计从页脚移动到浮层，结合暖白玻璃质感、蓝色数字和黄色点缀，延续页面原有配色。</p>
                 <div class="change-list">
@@ -232,7 +285,7 @@
                     </div>
                     <h3>每一次访问，都有真实记录</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/8f14ae1c1957270805092b5a41d3738b0934e48b" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 8f14ae1">8f14ae1 <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/8f14ae1c1957270805092b5a41d3738b0934e48b" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 8f14ae1">8f14ae1 <span aria-hidden="true">↗</span></a>
                 </header>
                 <p class="release-lead">首页和更新记录页接入 BornForThis 访问统计服务，展示当前域名累计页面浏览次数。</p>
                 <div class="change-list">
@@ -277,7 +330,7 @@
                     </div>
                     <h3>本地启动，告别重复调用自己</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/d9884a103d115dc59224336b393bb6415a05f604" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 d9884a1">d9884a1 <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/d9884a103d115dc59224336b393bb6415a05f604" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 d9884a1">d9884a1 <span aria-hidden="true">↗</span></a>
                 </header>
                 <p class="release-lead">修复 Vercel 本地开发命令的递归问题，本地运行使用固定命令，不再需要在运行与发布之间来回修改配置。</p>
                 <div class="change-list">
@@ -314,7 +367,7 @@
                     </div>
                     <h3>关注 Tips，同步进入更新记录</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/a8ac4fa95b104c91665c09a8e974d250d32a3dd2" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 a8ac4fa">a8ac4fa <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/a8ac4fa95b104c91665c09a8e974d250d32a3dd2" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 a8ac4fa">a8ac4fa <span aria-hidden="true">↗</span></a>
                 </header>
                 <p class="release-lead">将哔哩哔哩与视频号关注入口的改动加入时间线，并同步当时的仓库快照。</p>
                 <div class="change-list">
@@ -354,7 +407,7 @@
                   </div>
                   <a
                     class="commit-link"
-                    href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/807a2cc9c71f9cb256b47a14734e105c2fdb3a95"
+                    href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/807a2cc9c71f9cb256b47a14734e105c2fdb3a95"
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="在 GitHub 查看提交 807a2cc"
@@ -408,7 +461,7 @@
                     </div>
                     <h3>支持与联系，集中在一个入口</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/6b1d96a0a2f818eed57950d95896215ba6bfceb6" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 6b1d96a">6b1d96a <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/6b1d96a0a2f818eed57950d95896215ba6bfceb6" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 6b1d96a">6b1d96a <span aria-hidden="true">↗</span></a>
                 </header>
                 <p class="release-lead">首页新增创作者支持区，可自愿支持工具、联系私人定制或关注微信公众号。</p>
                 <div class="change-list">
@@ -450,7 +503,7 @@
                     </div>
                     <h3>实况图片，静态与动态一起带走</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/2906b4e010086d582bccb45d9b6d6d9dd1382546" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 2906b4e">2906b4e <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/2906b4e010086d582bccb45d9b6d6d9dd1382546" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 2906b4e">2906b4e <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -505,7 +558,7 @@
                     </div>
                     <h3>权限没问题，真正的限制说清楚</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/7a2c2505734380cfb4942107451bde7503778d3e" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 7a2c250">7a2c250 <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/7a2c2505734380cfb4942107451bde7503778d3e" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 7a2c250">7a2c250 <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -560,7 +613,7 @@
                     </div>
                     <h3>电脑长链与手机短链，自动识别</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/9950b13c8e01044b2a91640ff58d72fda854ea98" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 9950b13">9950b13 <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/9950b13c8e01044b2a91640ff58d72fda854ea98" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 9950b13">9950b13 <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -611,7 +664,7 @@
                     </div>
                     <h3>Bornforthis 品牌标识正式接入</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/c0d88011020cb45a1248929e91f34dce05930bd5" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 c0d8801">c0d8801 <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/c0d88011020cb45a1248929e91f34dce05930bd5" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 c0d8801">c0d8801 <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -654,7 +707,7 @@
                     </div>
                     <h3>文案与多图，一次带走</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/af7f63b1bc0351ddf9c00986dae8e6af532c13aa" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 af7f63b">af7f63b <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/af7f63b1bc0351ddf9c00986dae8e6af532c13aa" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 af7f63b">af7f63b <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -705,7 +758,7 @@
                     </div>
                     <h3>多尺寸适配 + 独立更新记录</h3>
                   </div>
-                  <a class="commit-link" href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/c0a17a084a6aaef653023ab4b17c4822190c8c1c" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 c0a17a0">c0a17a0 <span aria-hidden="true">↗</span></a>
+                  <a class="commit-link" href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/c0a17a084a6aaef653023ab4b17c4822190c8c1c" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看提交 c0a17a0">c0a17a0 <span aria-hidden="true">↗</span></a>
                 </header>
 
                 <p class="release-lead">
@@ -754,7 +807,7 @@
                   </div>
                   <a
                     class="commit-link"
-                    href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/01d31b1a5495d2ed743ad22192522bc2cac7db99"
+                    href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/01d31b1a5495d2ed743ad22192522bc2cac7db99"
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="在 GitHub 查看提交 01d31b1"
@@ -807,7 +860,7 @@
                   </div>
                   <a
                     class="commit-link"
-                    href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/538f96cabd6ed4af12bc60d1e5eae997eb9ef23c"
+                    href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/538f96cabd6ed4af12bc60d1e5eae997eb9ef23c"
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="在 GitHub 查看提交 538f96c"
@@ -860,7 +913,7 @@
                   </div>
                   <a
                     class="commit-link"
-                    href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/294fcf2613b0205b39741d5e458630ff783f08cc"
+                    href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/294fcf2613b0205b39741d5e458630ff783f08cc"
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="在 GitHub 查看提交 294fcf2"
@@ -913,7 +966,7 @@
                   </div>
                   <a
                     class="commit-link"
-                    href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/3bf93b94b9cbd4215e4cc5dc560f0e1aaeb95fb5"
+                    href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/3bf93b94b9cbd4215e4cc5dc560f0e1aaeb95fb5"
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="在 GitHub 查看提交 3bf93b9"
@@ -966,7 +1019,7 @@
                   </div>
                   <a
                     class="commit-link"
-                    href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader/commit/adbd009ed70f5b39559958d720e4210c3f562a06"
+                    href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/adbd009ed70f5b39559958d720e4210c3f562a06"
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="在 GitHub 查看提交 adbd009"
@@ -1010,11 +1063,11 @@
           <div class="source-facts">
             <div class="source-fact">
               <span>01</span>
-              <p><strong>时间</strong>来自 Git author date，并统一换算为北京时间。</p>
+              <p><strong>时间</strong>本地版新增内容使用功能记录日期；历史提交来自 Git author date，并统一换算为北京时间。</p>
             </div>
             <div class="source-fact">
               <span>02</span>
-              <p><strong>版本</strong>来自相应提交中的 package 与 README；仓库当前没有 Git 标签。</p>
+              <p><strong>版本</strong>本地版对应当前 package 版本；历史版本来自相应提交中的 package 与 README。</p>
             </div>
             <div class="source-fact">
               <span>03</span>
@@ -1024,7 +1077,7 @@
 
           <a
             class="source-link"
-            href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader"
+            href="https://github.com/Brclio/brclio-xhs-media-downloader"
             target="_blank"
             rel="noopener noreferrer"
           >打开 GitHub 仓库 <span aria-hidden="true">↗</span></a>
@@ -1036,11 +1089,11 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本页基于 origin/main 的 Git 提交记录整理，截至 e93e02a；核对日期为 2026.09.06。</p>
+        <p>v1.5.0 为 2026.09.20 的本地版功能记录；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"
-            href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader"
+            href="https://github.com/Brclio/brclio-xhs-media-downloader"
             target="_blank"
             rel="noopener noreferrer"
           >Built by Brclio · Project GitHub</a>

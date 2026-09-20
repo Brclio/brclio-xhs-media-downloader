@@ -1,0 +1,8 @@
+# Native applications and build tooling are not part of the web deployment.
+desktop/
+desktop-runtime/
+dist-desktop/
+.venv-desktop/
+scripts/
+.github/
+test/

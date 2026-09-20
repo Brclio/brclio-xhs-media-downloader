@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/visit-counter.css" />
     <link rel="stylesheet" href="/support.css" />
+    <link rel="stylesheet" href="/desktop-ui.css" />
     <title>小红书图片、实况与视频下载</title>
   </head>
   <body>
@@ -45,6 +46,109 @@
 
     <div class="page-shell">
       <main>
+        <div id="desktop-navigation" class="desktop-navigation" hidden>
+          <div class="desktop-tabs" role="tablist" aria-label="下载方式">
+            <button id="single-note-tab" class="desktop-tab" type="button" role="tab" aria-controls="single-note-panel" aria-selected="true">单篇笔记</button>
+            <button id="profile-tab" class="desktop-tab" type="button" role="tab" aria-controls="profile-panel" aria-selected="false" tabindex="-1">主页全部下载 <span class="desktop-tab-badge">本地版</span></button>
+          </div>
+          <span id="desktop-version" class="desktop-version">本地下载工作台</span>
+        </div>
+
+        <section id="profile-panel" class="profile-panel" role="tabpanel" aria-labelledby="profile-tab" tabindex="0" hidden>
+          <!-- Desktop extension adapted from ESTHER不二's app template and tabs. CC BY-NC-SA 4.0. -->
+          <header class="profile-heading">
+            <div>
+              <span class="section-label">PROFILE / 主页归档</span>
+              <h1>整页收藏，慢慢保存。</h1>
+              <p>自动发现主页笔记，将图片、实况、视频与文案逐篇保存到电脑。</p>
+            </div>
+            <button id="profile-login" class="button button-secondary" type="button" title="在本地版应用内登录，登录状态会保存在这台电脑。">
+              <span id="profile-login-label" class="profile-login-label" aria-live="polite">登录小红书 / 完成验证</span>
+              <span class="profile-login-icon" aria-hidden="true">↗</span>
+            </button>
+          </header>
+
+          <div class="profile-workspace">
+            <form id="profile-form" class="profile-form">
+              <div class="profile-field">
+                <label class="field-label" for="profile-url">小红书主页链接</label>
+                <input id="profile-url" name="profileUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" maxlength="3000" placeholder="https://www.xiaohongshu.com/user/profile/5e413a430000000001000f4c" aria-describedby="profile-url-hint" required />
+                <p id="profile-url-hint" class="profile-hint">复制用户主页的完整链接；首次使用可先在上方登录。</p>
+              </div>
+
+              <div class="profile-field">
+                <label class="field-label" for="profile-directory">保存位置</label>
+                <div class="profile-directory-row">
+                  <input id="profile-directory" name="directory" type="text" placeholder="选择电脑上的文件夹" readonly aria-describedby="profile-directory-hint" />
+                  <button id="profile-choose-directory" class="button button-secondary" type="button">选择文件夹</button>
+                </div>
+                <p id="profile-directory-hint" class="profile-hint">按笔记整理文件，保留下载进度，支持暂停后继续。</p>
+              </div>
+
+              <fieldset class="profile-timing">
+                <legend>抓取节奏</legend>
+                <div class="profile-timing-fields">
+                  <div class="profile-field">
+                    <label for="profile-interval">基础间隔</label>
+                    <div class="profile-number-input"><input id="profile-interval" name="intervalSeconds" type="number" min="3" max="3600" step="1" value="10" required aria-describedby="profile-timing-hint" /><span>秒</span></div>
+                  </div>
+                  <div class="profile-field">
+                    <label for="profile-jitter">随机额外等待</label>
+                    <div class="profile-number-input"><input id="profile-jitter" name="jitterSeconds" type="number" min="0" max="300" step="1" value="3" required aria-describedby="profile-timing-hint" /><span>秒内</span></div>
+                  </div>
+                </div>
+                <p id="profile-timing-hint" class="profile-hint">每次抓取前等待 10–13 秒。间隔适用于主页翻页、逐篇解析和媒体下载；延长间隔可减少请求频率，仍可能需要验证。</p>
+              </fieldset>
+
+              <div id="profile-error" class="profile-error" role="alert" hidden></div>
+              <button id="profile-start" class="button button-primary profile-start" type="submit">开始主页下载 <span aria-hidden="true">↓</span></button>
+              <p class="profile-scope-note">保存当前账号可访问的主页内容。登录、验证或访问受限时会暂停；尚未读到主页末尾时，不会标记为全部完成。</p>
+            </form>
+
+            <section class="profile-job" aria-labelledby="profile-job-title">
+              <div class="profile-job-heading">
+                <h2 id="profile-job-title">下载任务</h2>
+                <span id="profile-status" class="profile-status" data-status="idle">准备就绪</span>
+              </div>
+
+              <dl class="profile-counts">
+                <div><dt>已发现</dt><dd id="profile-discovered">0</dd></div>
+                <div><dt>已下载</dt><dd id="profile-completed">0</dd></div>
+                <div><dt>已存在</dt><dd id="profile-skipped">0</dd></div>
+                <div><dt>失败</dt><dd id="profile-failed">0</dd></div>
+              </dl>
+
+              <div class="profile-progress-wrap">
+                <progress id="profile-progress" max="1" value="0" aria-label="已发现笔记的处理进度"></progress>
+                <p id="profile-discovery-hint" class="profile-hint">主页尚未开始扫描。</p>
+              </div>
+
+              <div class="profile-job-message" role="status" aria-live="polite" aria-atomic="true">
+                <strong id="profile-message">选好主页和文件夹，就可以开始了。</strong>
+                <p id="profile-current" hidden></p>
+              </div>
+              <p id="profile-countdown" class="profile-countdown" hidden></p>
+
+              <div class="profile-controls">
+                <button id="profile-pause" class="button button-secondary" type="button" hidden>暂停</button>
+                <button id="profile-resume" class="button button-primary" type="button" hidden>继续任务</button>
+                <button id="profile-cancel" class="button button-secondary" type="button" hidden>停止任务</button>
+                <button id="profile-retry" class="button button-secondary" type="button" hidden>重试失败项</button>
+                <button id="profile-open-directory" class="button button-secondary" type="button" disabled>打开下载文件夹</button>
+              </div>
+              <p id="profile-resume-hint" class="profile-hint" hidden>需要验证时，请打开上方小红书窗口完成验证，再继续任务。</p>
+
+              <details id="profile-items-details" class="profile-items-details">
+                <summary>笔记记录 <span id="profile-items-count">0</span></summary>
+                <ol id="profile-items" class="profile-items" aria-label="笔记下载记录"></ol>
+                <p id="profile-items-empty" class="profile-hint">发现笔记后会在这里显示下载状态。</p>
+                <button id="profile-show-more" class="profile-show-more" type="button" hidden>显示更多记录</button>
+              </details>
+            </section>
+          </div>
+        </section>
+
+        <div id="single-note-panel">
         <section class="hero" aria-labelledby="hero-title">
           <div class="hero-copy">
             <span class="eyebrow">PRIVATE MEDIA WORKBENCH</span>
@@ -259,6 +363,8 @@
             <div id="image-grid" class="image-grid"></div>
           </section>
         </section>
+
+        </div>
 
         <section id="support" class="creator-hub" aria-labelledby="creator-hub-title">
           <div class="creator-hub-intro">
@@ -504,7 +610,7 @@
         <div class="footer-credits">
           <a
             class="design-credit"
-            href="https://github.com/AndersonHJB/xhs-images-video-vercel-downloader"
+            href="https://github.com/Brclio/brclio-xhs-media-downloader"
             target="_blank"
             rel="noopener noreferrer"
           >Built by Brclio · Project GitHub</a>
