@@ -28,3 +28,25 @@
 .software-account [hidden] { display: none !important; }
 @media (max-width: 1050px) { .account-login-form { grid-template-columns: 1fr 1fr; } .account-login-form > .button { grid-column: 1 / -1; justify-self: start; } }
 @media (max-width: 720px) { .account-heading { align-items: flex-start; flex-direction: column; } .account-login-form, .account-redeem-form, .account-facts { grid-template-columns: 1fr; } .account-redeem-form .button { justify-self: start; } .account-facts { gap: 16px; } }
+/* Independent desktop account page; never shown on the website. */
+body.is-desktop #desktop-account-mount { max-width: 1080px; margin: 0 auto; }
+body.is-desktop .software-account { margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+body.is-desktop .account-heading { padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+body.is-desktop .account-heading h2 { font-size: 1.2rem; }
+body.is-desktop .account-intro { max-width: 720px; margin-top: 20px; font-size: .85rem; }
+body.is-desktop .account-login-form { grid-template-columns: minmax(0, 1fr); max-width: 520px; padding: 25px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; gap: 20px; }
+body.is-desktop .account-login-form > .button { grid-column: auto; justify-self: stretch; }
+body.is-desktop .account-login-form .account-form-note { margin: 0; }
+body.is-desktop .account-facts { margin: 28px 0; gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+body.is-desktop .account-facts > div { padding: 24px 20px; border-right: 1px solid var(--line); }
+body.is-desktop .account-facts > div:first-child { padding-left: 0; }
+body.is-desktop .account-facts > div:last-child { border-right: 0; }
+body.is-desktop .account-redeem-form { padding: 23px; background: var(--cream-deep); border-radius: 8px; }
+body.is-desktop .account-scope { margin-top: 32px; padding-top: 20px; }
+@media (max-width: 900px) {
+  body.is-desktop .account-heading { align-items: flex-start; flex-direction: column; gap: 14px; }
+  body.is-desktop .account-facts { grid-template-columns: 1fr; }
+  body.is-desktop .account-facts > div { padding: 18px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  body.is-desktop .account-facts > div:last-child { border-bottom: 0; }
+  body.is-desktop .account-redeem-form { grid-template-columns: 1fr; }
+}

@@ -363,7 +363,7 @@ test('install confirms, pauses, rehashes and opens only the private verified pat
   let openFailure = true;
   const f = await fixture(t, { confirmInstall: async () => { calls.push('confirm'); return true; },
     pauseDownloads: async () => calls.push('pause'),
-    openInstaller: async file => { calls.push('open'); assert.equal(file, path.join(f.directory, release().assets[0].name)); return openFailure ? 'OS error' : ''; },
+    openInstaller: async (file, candidate) => { calls.push('open'); assert.equal(file, path.join(f.directory, release().assets[0].name)); assert.equal(candidate.version, '1.7.0'); assert.equal(candidate.sha256, sha256(content)); return openFailure ? 'OS error' : ''; },
     onInstalled: () => calls.push('quit') });
   await f.manager.checkForUpdates(); await f.manager.downloadUpdate();
   const failed = await f.manager.installUpdate();
@@ -383,6 +383,17 @@ test('post-download tampering is detected before installation and requires a new
   assert.equal(state.error.code, 'HASH_MISMATCH');
   assert.equal(state.error.phase, 'download');
   assert.equal(opened, false);
+});
+
+test('Mac preparation refusal preserves the verified download and explains recovery without exiting', async t => {
+  let exited = false;
+  const f = await fixture(t, { confirmInstall: async () => true,
+    openInstaller: async () => { throw Object.assign(new Error('请先将应用移到可写文件夹。'), { code: 'MAC_UPDATE_PERMISSION' }); },
+    onInstalled: () => { exited = true; } });
+  await f.manager.checkForUpdates(); await f.manager.downloadUpdate();
+  const result = await f.manager.installUpdate();
+  assert.equal(result.error.code, 'MAC_UPDATE_PERMISSION'); assert.equal(result.error.message, '请先将应用移到可写文件夹。');
+  assert.equal(result.error.phase, 'install'); assert.ok(f.manager.verifiedFile); assert.equal(exited, false);
 });
 
 test('task-save failure prevents installer launch and application exit', async t => {

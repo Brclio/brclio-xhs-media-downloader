@@ -153,6 +153,39 @@ test("fetchNotePage 在第二次请求前拦截 HTTP 降级跳转", async () => 
   }
 });
 
+test('fetchNotePage sends no credentials and preserves explicit auth/rate-limit failures', async () => {
+  for (const [status, code] of [[401, 'AUTH_REQUIRED'], [403, 'RATE_LIMITED'], [429, 'RATE_LIMITED'], [461, 'RATE_LIMITED'], [471, 'RATE_LIMITED']]) {
+    let requests = 0;
+    await assert.rejects(fetchNotePage('https://www.xiaohongshu.com/explore/668d2967000000002500100a', {
+      fetchImpl: async (_url, options) => {
+        requests++;
+        const headers = new Headers(options.headers);
+        assert.equal(headers.has('cookie'), false);
+        assert.equal(headers.has('authorization'), false);
+        assert.equal(options.redirect, 'manual');
+        return new Response('blocked', { status });
+      }
+    }), { code });
+    assert.equal(requests, 1);
+  }
+});
+
+test('fetchNotePage aborts before another redirect request and never follows an unrelated host', async () => {
+  for (const abort of [false, true]) {
+    const controller = new AbortController();
+    let requests = 0;
+    const work = fetchNotePage('https://xhslink.cn/o/safe', { signal: controller.signal,
+      fetchImpl: async () => {
+        requests++;
+        if (abort) controller.abort();
+        return new Response(null, { status: 302, headers: { location: 'https://unrelated.example/private' } });
+      }
+    });
+    await assert.rejects(work, abort ? { name: 'AbortError' } : /不受支持的地址/);
+    assert.equal(requests, 1);
+  }
+});
+
 test("只解析 noteDetailMap 中当前帖子的图片，不混入推荐帖子", () => {
   const targetId = "6a68c6d3000000001303f099";
   const otherId = "aaaaaaaaaaaaaaaaaaaaaaaa";
@@ -279,6 +312,24 @@ test("局部降级忽略目标对象内部嵌套的推荐媒体", () => {
 function videoUrl(id) {
   return `https://sns-video-bd.xhscdn.com/stream/${id}.mp4`;
 }
+
+test('audio-bearing streams outrank silent higher-resolution streams and keep the original fallback', () => {
+  const target = 'dddddddddddddddddddddddd';
+  const note = { noteId: target, type: 'video', video: {
+    consumer: { originVideoKey: 'original-with-unknown-audio.mp4' },
+    media: { stream: {
+      h264: [{ masterUrl: videoUrl('silent'), width: 3840, height: 2160, audioCodec: '', audioChannels: 0 }],
+      h265: [{ masterUrl: videoUrl('audible'), width: 720, height: 1280, audioCodec: 'aac', audioChannels: 2 }]
+    } }
+  } };
+  const parsed = parseNoteHtml(`<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: note } })}</script>`, { noteId: target });
+  assert.equal(parsed.videos[0].url, videoUrl('audible'));
+  assert.equal(parsed.videos[0].hasAudio, true);
+  assert.equal(parsed.videos[0].audioCodec, 'aac');
+  assert.equal(parsed.videos[0].audioChannels, 2);
+  assert.ok(parsed.videos.some(v => v.source === 'origin-video-key'));
+  assert.equal(parsed.videos.at(-1).hasAudio, false);
+});
 
 function makeVideo(codec, id, width, height, bitrate, size) {
   return {

@@ -447,13 +447,24 @@ def codec_priority(codec: Any) -> int:
 
 def video_quality_score(video: dict[str, Any]) -> int:
     return (
-        codec_priority(video.get("codec")) * 10**15
+        (2 if video.get("hasAudio") is True else 0 if video.get("hasAudio") is False else 1) * 10**18
+        + codec_priority(video.get("codec")) * 10**15
         + normalize_number(video.get("width"))
         * normalize_number(video.get("height"))
         * 10**6
         + normalize_number(video.get("bitrate")) * 10
         + normalize_number(video.get("size"))
     )
+
+
+def stream_audio_metadata(item: dict[str, Any]) -> dict[str, Any]:
+    codec = str(item.get("audioCodec") or item.get("audio_codec") or "").lower()
+    channels = normalize_number(item.get("audioChannels") or item.get("audio_channels"))
+    bitrate = normalize_number(item.get("audioBitrate") or item.get("audio_bitrate"))
+    explicit = item.get("hasAudio", item.get("has_audio"))
+    keys = ("audioCodec", "audio_codec", "audioChannels", "audio_channels", "audioBitrate", "audio_bitrate")
+    has_audio = explicit if isinstance(explicit, bool) else True if channels or bitrate or codec not in ("", "none", "null", "unknown", "0") else False if any(key in item for key in keys) else None
+    return {"hasAudio": has_audio, "audioCodec": codec, "audioChannels": channels, "audioBitrate": bitrate}
 
 
 def extract_streams_from_root(
@@ -512,6 +523,7 @@ def extract_streams_from_root(
                         or ""
                     ),
                     "source": source,
+                    **stream_audio_metadata(item),
                 }
             )
 
@@ -535,7 +547,7 @@ def extract_video_streams_from_note(note: Any) -> list[dict[str, Any]]:
     stream_root = media.get("stream") if isinstance(media, dict) else None
     streams = extract_streams_from_root(stream_root, "media-stream")
 
-    if not streams and isinstance(video, dict):
+    if isinstance(video, dict):
         consumer = video.get("consumer")
         key = None
         if isinstance(consumer, dict):
@@ -546,7 +558,7 @@ def extract_video_streams_from_note(note: Any) -> list[dict[str, Any]]:
             url = normalize_image_url(
                 f"https://sns-video-bd.xhscdn.com/{clean_key}"
             )
-            if is_xhs_video_url(url):
+            if is_xhs_video_url(url) and not any(stream["url"] == url for stream in streams):
                 streams.append(
                     {
                         "url": url,
@@ -558,6 +570,7 @@ def extract_video_streams_from_note(note: Any) -> list[dict[str, Any]]:
                         "size": 0,
                         "qualityType": "origin",
                         "source": "origin-video-key",
+                        "hasAudio": None,
                     }
                 )
 
@@ -1437,6 +1450,10 @@ class handler(BaseHTTPRequestHandler):
                     "height": video.get("height", 0),
                     "bitrate": video.get("bitrate", 0),
                     "size": video.get("size", 0),
+                    "hasAudio": video.get("hasAudio"),
+                    "audioCodec": video.get("audioCodec", ""),
+                    "audioChannels": video.get("audioChannels", 0),
+                    "audioBitrate": video.get("audioBitrate", 0),
                     "qualityType": video.get("qualityType", ""),
                     "label": video.get("label", ""),
                     "isDefault": bool(video.get("isDefault")),

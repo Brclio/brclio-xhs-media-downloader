@@ -76,7 +76,12 @@ function mediaAssets(note) {
     if (image.liveVideo?.url) assets.push({ key: `live-${number}`, kind: "video", url: image.liveVideo.url, backupUrls: image.liveVideo.backupUrls });
   }
   const video = (note.videos || []).find((item) => item.isDefault) || (note.videos || [])[0];
-  if (video?.url) assets.push({ key: "video", kind: "video", url: video.url, backupUrls: video.backupUrls });
+  if (video?.url) {
+    const other = (note.videos || []).filter(candidate => candidate !== video && candidate.hasAudio !== false);
+    assets.push({ key: "video", kind: "video", url: video.url, requireAudio: true,
+      backupUrls: [...other.map(candidate => candidate.url), ...(video.backupUrls || []),
+        ...other.flatMap(candidate => candidate.backupUrls || [])] });
+  }
   return assets;
 }
 
@@ -86,12 +91,13 @@ function fileRecord(name, bytes) {
 
 /** One persistent, sequential queue. No network request is made by initialize(). */
 export class ProfileManager {
-  constructor({ stateDirectory, browser, fetchImpl = globalThis.fetch, onUpdate = () => {}, now = Date.now, sleep = defaultSleep, random = Math.random, mediaOptions = {}, authorize, authorizationIntervalMs = 30_000 }) {
+  constructor({ stateDirectory, browser, fetchImpl = globalThis.fetch, onUpdate = () => {}, onDiagnostic = () => {}, now = Date.now, sleep = defaultSleep, random = Math.random, mediaOptions = {}, authorize, authorizationIntervalMs = 30_000 }) {
     if (!stateDirectory || !browser) throw new Error("ProfileManager requires stateDirectory and browser.");
     this.stateDirectory = path.resolve(stateDirectory);
     this.browser = browser;
     this.fetchImpl = fetchImpl;
     this.onUpdate = onUpdate;
+    this.onDiagnostic = onDiagnostic;
     this.now = now;
     this.sleep = sleep;
     this.random = random;
@@ -318,6 +324,7 @@ export class ProfileManager {
       this.state.currentTitle = item.title || item.id;
       item.status = "downloading";
       item.error = "";
+      this._diagnostic('note.start', { noteId: item.id, sequence: item.sequence });
       await this._save();
       this._emit();
       try { await this._downloadNote(item, signal); }
@@ -326,7 +333,9 @@ export class ProfileManager {
         if (PAUSE_CODES.has(error.code)) { item.status = "pending"; throw error; }
         item.status = "failed";
         item.error = error.message || "下载失败";
+        this._diagnostic('note.error', { noteId: item.id, sequence: item.sequence, code: error.code || 'NOTE_DOWNLOAD_FAILED' });
       }
+      if (FINISHED.has(item.status)) this._diagnostic('note.completed', { noteId: item.id, sequence: item.sequence, files: item.files.length, skipped: item.status === 'skipped' });
       await this._save();
       this._emit();
     }
@@ -367,14 +376,16 @@ export class ProfileManager {
     this._emit();
   }
 
-  async _retry(operation, signal) {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+  async _retry(operation, signal, { maxAttempts = 3, context = {} } = {}) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       try { return await operation(attempt); }
       catch (error) {
-        if (signal.aborted || error.name === "AbortError" || PAUSE_CODES.has(error.code) || attempt === 2) throw error;
+        this._diagnostic('request.error', { ...context, attempt: attempt + 1, code: error.code || error.name || 'REQUEST_FAILED' });
+        if (signal.aborted || error.name === "AbortError" || PAUSE_CODES.has(error.code) || attempt === maxAttempts - 1) throw error;
         // Every retry goes through _pace too, so failures cannot increase request frequency.
         this.state.message = `请求失败，准备第 ${attempt + 1} 次重试：${error.message}`;
         this._emit();
+        this._diagnostic('request.retry', { ...context, attempt: attempt + 2 });
       }
     }
   }
@@ -489,8 +500,8 @@ export class ProfileManager {
     }
     const note = await this._retry(async () => {
       await this._pace(signal);
-      return this.browser.resolveNote(item, { signal });
-    }, signal);
+      return this.browser.resolveNote(item, { signal, beforeRequest: requestSignal => this._pace(requestSignal) });
+    }, signal, { context: { stage: 'note.resolve', noteId: item.id, sequence: item.sequence } });
     throwIfAborted(signal);
     if (!note || !["exact-initial-state", "note-id-local-media", "note-id-local-image-list", "note-id-local-video"].includes(note.strategy)) {
       throw new Error("未取得完整且属于当前帖子的媒体信息，未将此帖标为完成；请登录后重试。");
@@ -514,10 +525,12 @@ export class ProfileManager {
         const urls = [...new Set([asset.url, ...(Array.isArray(asset.backupUrls) ? asset.backupUrls : [])])];
         const result = await downloadMedia({
           ...this.mediaOptions, root, directory, asset: { ...asset, url: urls[attempt % urls.length] }, signal,
-          fetchImpl: this.fetchImpl, beforeRequest: (requestSignal) => this._pace(requestSignal)
+          fetchImpl: this.fetchImpl, beforeRequest: (requestSignal) => this._pace(requestSignal),
+          onDiagnostic: (event, fields) => this._diagnostic(event, { ...fields, noteId: item.id, sequence: item.sequence })
         });
         return { ...result, url: asset.url, downloadedUrl: result.url };
-      }, signal));
+      }, signal, { maxAttempts: Math.max(3, Math.min(6, 1 + (asset.backupUrls?.length || 0))),
+        context: { stage: 'media.download', noteId: item.id, sequence: item.sequence, kind: asset.kind, assetKey: asset.key } }));
       await this._writeManifest(directory, item);
       await this._save();
     }
@@ -555,5 +568,9 @@ export class ProfileManager {
   _emit() {
     this.state.updatedAt = this.now();
     try { this.onUpdate(this.snapshot()); } catch { /* Renderer lifecycle must not interrupt disk work. */ }
+  }
+
+  _diagnostic(event, fields) {
+    try { this.onDiagnostic(event, fields); } catch { /* Logging must not break task persistence. */ }
   }
 }

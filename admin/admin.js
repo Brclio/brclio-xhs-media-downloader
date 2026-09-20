@@ -2,11 +2,13 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { admin: null, users: [], codes: [], audit: [], selectedId: null, user: null, history: [], pendingDevices: [], generated: [], generatedSaved: false, tab: 'users', serverTime: null, loaded: new Set(), requestIds: new Map(), pendingMutation: null, mutating: false, pages: { users: 0, codes: 0, audit: 0 }, total: {} };
+  const state = { admin: null, users: [], codes: [], audit: [], feedback: [], selectedFeedback: null, feedbackDetail: null, feedbackHistory: [], feedbackLog: null, selectedId: null, user: null, history: [], pendingDevices: [], generated: [], generatedSaved: false, tab: 'users', serverTime: null, loaded: new Set(), requestIds: new Map(), pendingMutation: null, mutating: false, pages: { users: 0, codes: 0, audit: 0, feedback: 0 }, total: {} };
   const PAGE_SIZE = 20;
   let dialogResolve = null;
   let sendTimer = null;
   let userRequest = 0;
+  let feedbackRequest = 0;
+  let feedbackSessionEpoch = 0;
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -151,6 +153,7 @@
           if (pending.action === 'admin-generate-codes') displayGenerated(result);
           else tell('原操作已确认完成，未重复增加权益或重复生成记录。', 'success');
           if (pending.input.userId) await refreshUserAfterChange(pending.input.userId);
+          else if (pending.action === 'admin-feedback-status') { await loadFeedback(); await selectFeedback(pending.input.feedbackId); }
           else await loadCodes();
         });
         const actions = el('div', 'button-row notice-actions'); actions.append(retry); $('notice').append(actions);
@@ -186,8 +189,10 @@
   function resetSession() {
     state.admin = null; state.users = []; state.codes = []; state.audit = []; state.user = null; state.history = []; state.pendingDevices = []; state.selectedId = null; state.loaded.clear(); state.requestIds.clear(); state.pendingMutation = null;
     clearGenerated();
+    feedbackSessionEpoch += 1; feedbackRequest += 1;
+    state.feedback = []; state.selectedFeedback = null; state.feedbackDetail = null; state.feedbackHistory = []; state.feedbackLog = null;
     $('workspace').hidden = true; $('login-panel').hidden = false; $('logout').hidden = true; $('admin-email').textContent = '';
-    ['users-list', 'user-detail', 'codes-list', 'audit-list', 'status-content'].forEach((id) => $(id).replaceChildren());
+    ['users-list', 'user-detail', 'codes-list', 'audit-list', 'status-content', 'feedback-list', 'feedback-detail'].forEach((id) => $(id).replaceChildren());
   }
   async function loadSession() {
     const result = await api('me');
@@ -229,7 +234,7 @@
   async function switchTab(name) {
     state.tab = name;
     tabs.forEach((tab) => { const active = tab.dataset.tab === name; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; $(`panel-${tab.dataset.tab}`).hidden = !active; });
-    if (!state.loaded.has(name)) await ({ users: loadUsers, codes: loadCodes, audit: loadAudit, status: loadStatus })[name]();
+    if (!state.loaded.has(name)) await ({ users: loadUsers, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback })[name]();
   }
   tabs.forEach((tab, index) => {
     tab.addEventListener('click', () => run(tab, () => switchTab(tab.dataset.tab)));
@@ -432,7 +437,106 @@
     if (!await confirmAction('清除激活码原文', '清除后无法再次查看原码。请确认本次生成结果已经安全保存。', { reasonRequired: false, confirm: '已保存，清除' })) return;
     clearGenerated(); tell('已清除页面中的原码，激活码记录仍可查询。', 'success');
   }));
-  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码' })[action] || action || '操作记录'; }
+  const feedbackStatus = (value) => ({ uploading: '日志未上传完成', new: '待处理', in_progress: '处理中', resolved: '已解决', closed: '已关闭' })[value] || value;
+  const feedbackCategory = value => ({ download: '下载问题', audio: '视频声音', update: '安装更新', account: '账号会员', other: '其他问题' })[value] || '其他问题';
+  const bytesLabel = (value) => Number(value || 0) >= 1024 * 1024 ? `${(value / (1024 * 1024)).toFixed(2)} MiB` : `${Math.ceil(Number(value || 0) / 1024)} KiB`;
+  async function loadFeedback() {
+    const epoch = feedbackSessionEpoch;
+    const result = await api('admin-feedback', { query: $('feedback-query').value.trim(), status: $('feedback-status-filter').value });
+    if (epoch !== feedbackSessionEpoch || !state.admin) return;
+    state.feedback = result.feedbacks || []; state.total.feedback = result.total || state.feedback.length;
+    state.pages.feedback = 0; state.loaded.add('feedback'); renderFeedbackList();
+  }
+  function renderFeedbackList() {
+    $('feedback-count').textContent = `${state.total.feedback || 0} 条`;
+    const visible = pageItems('feedback', state.feedback, renderFeedbackList), list = $('feedback-list');
+    list.replaceChildren();
+    if (!visible.length) return empty(list, '没有符合条件的反馈。');
+    for (const feedback of visible) {
+      const item = button('', 'feedback-list-item', () => selectFeedback(feedback.id));
+      item.className = 'user-item feedback-list-item';
+      item.setAttribute('aria-current', String(state.selectedFeedback === feedback.id));
+      item.append(el('strong', '', feedback.title), badge(feedbackStatus(feedback.status), feedback.status === 'uploading' ? 'badge-danger' : feedback.status === 'resolved' ? 'badge-gold' : ''), el('span', 'small-text', `${feedback.email} · ${fmt(feedback.createdAt)}`));
+      list.append(item);
+    }
+  }
+  async function selectFeedback(id) {
+    const request = ++feedbackRequest, epoch = feedbackSessionEpoch;
+    const result = await api('admin-feedback-detail', { feedbackId: id });
+    if (request !== feedbackRequest || epoch !== feedbackSessionEpoch || !state.admin) return;
+    if (state.selectedFeedback !== id) state.feedbackLog = null;
+    state.selectedFeedback = id; state.feedbackDetail = result.feedback; state.feedbackHistory = result.history || [];
+    renderFeedbackList(); renderFeedbackDetail();
+  }
+  async function sha256(content) {
+    const value = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
+    return Array.from(new Uint8Array(value), byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+  async function readFeedbackLogs(feedback, progress) {
+    if (!feedback.submittedAt || feedback.status === 'uploading') throw new Error('日志尚未完整提交，请等待客户端完成上传。');
+    if (state.feedbackLog?.id === feedback.id) return state.feedbackLog.content;
+    const epoch = feedbackSessionEpoch, parts = [];
+    for (let index = 0; index < feedback.log.partCount; index += 1) {
+      if (!state.admin || epoch !== feedbackSessionEpoch) throw new Error('管理会话已结束。');
+      if (progress) progress.textContent = `正在读取完整日志 ${index + 1} / ${feedback.log.partCount}…`;
+      const result = await api('admin-feedback-part', { feedbackId: feedback.id, index });
+      if (!state.admin || epoch !== feedbackSessionEpoch) throw new Error('管理会话已结束。');
+      const expected = feedback.log.parts[index], content = result.content;
+      if (typeof content !== 'string' || new TextEncoder().encode(content).byteLength !== expected.bytes || await sha256(content) !== expected.sha256) throw new Error('日志分块完整性校验失败，未复制或下载。');
+      parts.push(content);
+    }
+    const content = parts.join('');
+    if (new TextEncoder().encode(content).byteLength !== feedback.log.totalBytes || await sha256(content) !== feedback.log.sha256) throw new Error('完整日志校验失败，未复制或下载。');
+    if (!state.admin || epoch !== feedbackSessionEpoch) throw new Error('管理会话已结束。');
+    if (state.selectedFeedback === feedback.id && epoch === feedbackSessionEpoch) state.feedbackLog = { id: feedback.id, content };
+    if (progress) progress.textContent = `完整日志已校验 · ${bytesLabel(feedback.log.totalBytes)} · ${feedback.log.partCount} 个分块`;
+    return content;
+  }
+  function feedbackReport(feedback, content) {
+    return [`Brclio 小红书下载器 · 问题反馈`, `反馈编号：${feedback.id}`, `用户：${feedback.email} / ${feedback.userId}`, `标题：${feedback.title}`, `状态：${feedbackStatus(feedback.status)}`, `分类：${feedbackCategory(feedback.category)}`, `版本与系统：${feedback.appVersion} / ${platformName(feedback.platform)} ${feedback.arch || ''}`, `提交时间：${fmt(feedback.submittedAt)}`, `日志范围：${fmt(feedback.log.firstTimestamp)} 至 ${fmt(feedback.log.lastTimestamp)}`, `日志大小：${feedback.log.totalBytes} 字节`, `日志 SHA-256：${feedback.log.sha256}`, `较早日志已轮换：${feedback.log.truncated ? '是' : '否'}`, '', '问题说明', feedback.description, '', '完整脱敏日志（NDJSON）', content].join('\n');
+  }
+  function downloadFeedbackLog(feedback, content, extension) {
+    const text = extension === 'txt' ? content.trimEnd().split('\n').map(line => { const item = JSON.parse(line); return `${item.at} [${item.level}] ${item.event}${item.message ? ` — ${item.message}` : ''}${item.details === undefined ? '' : `\n${JSON.stringify(item.details)}`}`; }).join('\n') + '\n' : content;
+    const url = URL.createObjectURL(new Blob([text], { type: extension === 'txt' ? 'text/plain;charset=utf-8' : 'application/x-ndjson;charset=utf-8' }));
+    const link = el('a'); link.href = url; link.download = `brclio-feedback-${feedback.id}.${extension}`; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function renderFeedbackDetail() {
+    const feedback = state.feedbackDetail, container = $('feedback-detail');
+    container.replaceChildren(); if (!feedback) return;
+    const heading = el('div', 'panel-heading'); heading.append(el('h2', '', feedback.title), badge(feedbackStatus(feedback.status), feedback.status === 'uploading' ? 'badge-danger' : ''));
+    container.append(heading, facts([['提交账号', feedback.email], ['用户 ID', feedback.userId], ['反馈编号', feedback.id], ['问题分类', feedbackCategory(feedback.category)], ['版本 / 系统', `${feedback.appVersion} / ${platformName(feedback.platform)} ${feedback.arch || ''}`], ['创建时间', fmt(feedback.createdAt)], ['提交时间', fmt(feedback.submittedAt)]]));
+    const description = el('section', 'detail-section'); description.append(el('h3', '', '问题说明'), el('p', 'feedback-description', feedback.description)); container.append(description);
+    const logs = el('section', 'detail-section feedback-log-section'), progress = el('p', 'field-help');
+    logs.append(el('h3', '', '完整使用日志'), facts([['保留范围', `${fmt(feedback.log.firstTimestamp)} 至 ${fmt(feedback.log.lastTimestamp)}`], ['日志大小', `${bytesLabel(feedback.log.totalBytes)} / ${feedback.log.partCount} 个分块`], ['较早日志', feedback.log.truncated ? '已按客户端保留上限轮换' : '本次保留范围未截断']]));
+    const actions = el('div', 'button-row'), preview = el('pre', 'feedback-log-preview'); preview.hidden = true; preview.tabIndex = 0; preview.setAttribute('aria-label', '完整脱敏使用日志');
+    const show = button('查看完整日志', 'button-secondary', async () => { const content = await readFeedbackLogs(feedback, progress); preview.textContent = content; preview.hidden = false; });
+    const copy = button('复制反馈与完整日志', '', async () => {
+      const content = await readFeedbackLogs(feedback, progress), report = feedbackReport(feedback, content);
+      try { await navigator.clipboard.writeText(report); tell('已复制问题说明、账号、处理状态与完整脱敏日志。', 'success'); }
+      catch { const fallback = el('textarea', 'feedback-copy-fallback'); fallback.readOnly = true; fallback.value = report; fallback.setAttribute('aria-label', '完整反馈报告，请手动复制'); logs.append(fallback); fallback.focus(); fallback.select(); throw new Error('浏览器未允许自动复制，已选中完整报告，请手动复制。'); }
+    });
+    const ndjson = button('下载日志 NDJSON', 'button-secondary', async () => downloadFeedbackLog(feedback, await readFeedbackLogs(feedback, progress), 'ndjson'));
+    const txt = button('下载日志 TXT', 'button-quiet', async () => downloadFeedbackLog(feedback, await readFeedbackLogs(feedback, progress), 'txt'));
+    for (const control of [show, copy, ndjson, txt]) { control.disabled = !feedback.submittedAt; actions.append(control); }
+    progress.textContent = feedback.submittedAt ? '日志只通过管理员授权接口读取，读取后验证完整校验值。' : '客户端还没有上传完全部日志。这条反馈尚未提交成功。';
+    logs.append(actions, progress, preview); container.append(logs);
+    const management = el('section', 'detail-section'), form = el('form', 'feedback-status-form'), select = el('select'), label = el('label', '', '处理状态');
+    for (const status of ['new', 'in_progress', 'resolved', 'closed']) { const option = el('option', '', feedbackStatus(status)); option.value = status; select.append(option); }
+    select.value = feedback.status === 'uploading' ? 'new' : feedback.status; label.append(select);
+    const save = el('button', 'button button-secondary', '更新处理状态'); save.type = 'submit'; save.disabled = !feedback.submittedAt; select.disabled = !feedback.submittedAt;
+    form.append(label, save); form.addEventListener('submit', event => { event.preventDefault(); run(save, async () => {
+      const reason = await confirmAction('更新反馈处理状态', `将“${feedback.title}”标记为“${feedbackStatus(select.value)}”，请输入处理说明。`);
+      if (!reason) return;
+      await mutate('admin-feedback-status', { feedbackId: feedback.id, status: select.value, reason });
+      state.loaded.delete('audit'); await loadFeedback(); await selectFeedback(feedback.id); tell('反馈处理状态已保存，并记录操作说明。', 'success');
+    }); });
+    management.append(el('h3', '', '处理进度'), form);
+    if (state.feedbackHistory.length) management.append(table(['时间', '管理员', '处理说明'], state.feedbackHistory.map(entry => [fmt(entry.at), entry.actorEmail, `${feedbackStatus(entry.before?.status)} → ${feedbackStatus(entry.after?.status)}\n${entry.reason}`])));
+    container.append(management);
+  }
+  $('feedback-filter-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, loadFeedback); });
+  $('refresh-feedback').addEventListener('click', () => run($('refresh-feedback'), async () => { await loadFeedback(); if (state.selectedFeedback) await selectFeedback(state.selectedFeedback); }));
+  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态' })[action] || action || '操作记录'; }
   async function loadAudit() { const data = await api('admin-audit'); state.audit = data.audit || []; state.total.audit = data.total || state.audit.length; state.pages.audit = 0; state.loaded.add('audit'); renderAudit(); }
   function renderAudit() {
     const visible = pageItems('audit', state.audit, renderAudit);

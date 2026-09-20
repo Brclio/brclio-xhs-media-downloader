@@ -37,13 +37,30 @@ test('HTTP desktop proof and bearer pass only to service while browser cookies r
 });
 
 test('every admin-prefixed endpoint requires trusted origin before service access', async () => {
-  for (const action of ['admin-users', 'admin-user', 'admin-membership', 'admin-unbind', 'admin-codes', 'admin-generate-codes', 'admin-void-code', 'admin-audit', 'admin-status']) {
+  for (const action of ['admin-users', 'admin-user', 'admin-membership', 'admin-unbind', 'admin-codes', 'admin-generate-codes', 'admin-void-code', 'admin-audit', 'admin-status', 'admin-feedback', 'admin-feedback-detail', 'admin-feedback-part', 'admin-feedback-status']) {
     const rejected = await request({ body: { action, input: {} } });
     assert.equal(rejected.code, 403, action);
     assert.equal(rejected.calls.length, 0);
   }
   const cross = await request({ body: { action: 'admin-unbind', input: {} }, headers: { origin, 'sec-fetch-site': 'cross-site' } });
   assert.equal(cross.code, 403);
+});
+
+test('HTTP admits bounded feedback manifests and full log chunks without widening ordinary action limits', async () => {
+  const manifest = { action: 'feedback-begin', input: { description: '中'.repeat(8000), parts: Array.from({ length: 64 }, () => ({ bytes: 100, sha256: 'a'.repeat(64) })) } };
+  const accepted = await request({ body: JSON.stringify(manifest), headers: { authorization: `Bearer ${token}` } });
+  assert.equal(accepted.code, 200); assert.equal(accepted.calls.length, 1);
+  const content = '"'.repeat(262144);
+  const uploaded = await request({ body: { action: 'feedback-upload-part', input: { content } } });
+  assert.equal(uploaded.code, 200); assert.equal(uploaded.calls[0].input.content, content);
+  for (const action of ['me', 'feedback-finalize', 'admin-feedback-detail']) {
+    const rejected = await request({ body: { action, input: { content } }, headers: { origin } });
+    assert.equal(rejected.code, 413); assert.equal(rejected.calls.length, 0);
+  }
+  const tooLarge = await request({ body: { action: 'feedback-upload-part', input: { content: 'a'.repeat(1_600_000) } } });
+  assert.equal(tooLarge.code, 413); assert.equal(tooLarge.calls.length, 0);
+  const claimedSize = await request({ body: manifest, headers: { 'content-length': '50000' } });
+  assert.equal(claimedSize.code, 413); assert.equal(claimedSize.calls.length, 0);
 });
 
 test('HTTP rejects malformed, oversized, mixed credentials and non-JSON requests', async () => {

@@ -111,6 +111,10 @@ export default async function handler(req, res) {
       height: video.height,
       bitrate: video.bitrate,
       size: video.size,
+      hasAudio: video.hasAudio,
+      audioCodec: video.audioCodec,
+      audioChannels: video.audioChannels,
+      audioBitrate: video.audioBitrate,
       qualityType: video.qualityType,
       label: video.label,
       isDefault: Boolean(video.isDefault)

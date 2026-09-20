@@ -1,6 +1,6 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { createRequire } from 'node:module';
-import { parseNoteHtml, extractNoteId } from '../lib/xhs.js';
+import { parseNoteHtml, extractNoteId, fetchNotePage } from '../lib/xhs.js';
 import { parseProfileUrl, normalizeProfileNote, parsePostedResponse, profileError, readProfileSnapshot } from './profile-source.js';
 import { readLoginSnapshot } from './login-state.js';
 import { readNoteSnapshot } from './note-state.js';
@@ -18,13 +18,15 @@ function allowedNavigation(value) {
 }
 
 export class XhsBrowser {
-  constructor({ onStatus = () => {}, onLoginState = () => {}, BrowserWindow, session, wait = delay } = {}) {
+  constructor({ onStatus = () => {}, onLoginState = () => {}, onDiagnostic = () => {}, BrowserWindow, session, wait = delay, fetchPage = fetchNotePage } = {}) {
     this.onStatus = onStatus;
     this.electron = BrowserWindow ? { BrowserWindow, session } : null;
     this.profileWindow = null;
     this.detailWindow = null;
     this.wait = wait;
     this.onLoginState = onLoginState;
+    this.onDiagnostic = onDiagnostic;
+    this.fetchPage = fetchPage;
     this.loginState = { status: 'unknown', loggedIn: false, nickname: '', userId: '' };
     this.accountWindow = null;
   }
@@ -121,6 +123,8 @@ export class XhsBrowser {
   async navigate(win, url, signal) {
     signal?.throwIfAborted();
     if (!allowedNavigation(url)) throw profileError('INVALID_URL', '不支持的页面地址。');
+    const started = Date.now();
+    this.diagnostic('navigation.start', { noteId: extractNoteId(url) || undefined });
     let timer;
     let domReady;
     const abort = () => win.webContents.stop();
@@ -135,6 +139,10 @@ export class XhsBrowser {
         new Promise((_, reject) => { timer = setTimeout(() => { win.webContents.stop(); reject(new Error('小红书页面加载超时，请稍后继续。')); }, 45000); })
       ]);
       signal?.throwIfAborted();
+      this.diagnostic('navigation.ready', { noteId: extractNoteId(url) || undefined, durationMs: Date.now() - started });
+    } catch (error) {
+      this.diagnostic('navigation.error', { noteId: extractNoteId(url) || undefined, code: error.code || error.name, durationMs: Date.now() - started });
+      throw error;
     } finally {
       clearTimeout(timer);
       win.webContents.removeListener('dom-ready', domReady);
@@ -143,6 +151,7 @@ export class XhsBrowser {
   }
 
   block(win, code, message) {
+    this.diagnostic('access.blocked', { code });
     this.blockedWindow = win;
     win.show();
     this.onStatus(message);
@@ -264,10 +273,14 @@ export class XhsBrowser {
     }
   }
 
-  async resolveNote(note, { signal } = {}) {
+  async resolveNote(note, { signal, beforeRequest = async () => {} } = {}) {
     if (!note?.id || extractNoteId(note.url) !== note.id || !allowedNavigation(note.url)) throw profileError('INVALID_NOTE', '笔记地址无效。');
     const win = await this.window('detail');
     await this.navigate(win, note.url, signal);
+    let noteType;
+    const complete = parsed => parsed.strategy === 'exact-initial-state' && (parsed.images.length || parsed.videos.length)
+      && !parsed.images.some(image => image.livePhoto && !image.liveVideo?.url)
+      && ((parsed.noteType || noteType) !== 'video' || parsed.videos.length);
     for (let attempt = 0; attempt < 20; attempt++) {
       signal?.throwIfAborted();
       const result = await this.execute(win, `(${readNoteSnapshot.toString()})(${JSON.stringify(note.id)})`, signal);
@@ -276,15 +289,47 @@ export class XhsBrowser {
       if (result.error) throw profileError(result.error.code, result.error.message);
       const html = `<script>window.__INITIAL_STATE__=${result.serialized.replace(/</g, '\\u003c')}</script>`;
       const parsed = parseNoteHtml(html, { noteId: note.id });
-      const type = JSON.parse(result.serialized || '{}').note?.noteDetailMap?.[note.id]?.note?.type;
+      noteType = JSON.parse(result.serialized || '{}').note?.noteDetailMap?.[note.id]?.note?.type;
       // Images can hydrate before their live-photo streams, and video covers can
       // precede the video payload. Wait for complete media instead of saving early.
       const pendingLiveVideo = parsed.images.some(image => image.livePhoto && !image.liveVideo?.url);
-      if (parsed.strategy === 'exact-initial-state' && (parsed.images.length || parsed.videos.length)
-        && !pendingLiveVideo && (type !== 'video' || parsed.videos.length)) return parsed;
+      this.diagnostic('note.extraction', { noteId: note.id, attempt: attempt + 1, source: 'browser',
+        images: parsed.images.length, videos: parsed.videos.length, pendingLiveVideo });
+      if (complete(parsed)) return parsed;
       await this.wait(500, undefined, { signal });
     }
-    throw profileError('NOTE_UNAVAILABLE', '未能读取该笔记的完整媒体，可能已删除、不可见或页面结构已变化。');
+    // Reactive desktop stores sometimes omit streams until player hydration.
+    // Reuse the exact-note mobile-page parser as a bounded, paced alternative.
+    // Login/challenge gates above are never bypassed by this fallback.
+    if (this.fetchPage) {
+      await beforeRequest(signal);
+      signal?.throwIfAborted();
+      // Pacing may take several seconds. Recheck gates after that wait so a
+      // newly presented verification or login page cannot trigger another route.
+      const latest = await this.execute(win, `(${readNoteSnapshot.toString()})(${JSON.stringify(note.id)})`, signal);
+      if (latest.challenge) this.block(win, 'RATE_LIMITED', '笔记需要安全验证，完成验证后可继续。');
+      if (latest.login) this.block(win, 'AUTH_REQUIRED', '笔记需要登录，登录后可继续任务。');
+      if (latest.error) throw profileError(latest.error.code, latest.error.message);
+      this.diagnostic('note.fallback', { noteId: note.id, source: 'mobile-page' });
+      try {
+        const page = await this.fetchPage(note.url, { signal });
+        signal?.throwIfAborted();
+        if (page && extractNoteId(page.finalUrl) === note.id) {
+          const parsed = parseNoteHtml(page.html, { noteId: note.id });
+          this.diagnostic('note.extraction', { noteId: note.id, source: 'mobile-page', images: parsed.images.length, videos: parsed.videos.length });
+          if (complete(parsed)) return parsed;
+        }
+      } catch (error) {
+        if (signal?.aborted || error.name === 'AbortError') throw error;
+        this.diagnostic('note.fallback-error', { noteId: note.id, code: error.code || error.name });
+        if (['AUTH_REQUIRED', 'RATE_LIMITED'].includes(error.code)) this.block(win, error.code, '小红书限制了详情访问，请完成登录或验证后继续。');
+      }
+    }
+    throw profileError('NOTE_INCOMPLETE', '详情媒体尚未完整加载，已保留任务和文件。请稍后重试，或打开小红书登录与验证页面检查。');
+  }
+
+  diagnostic(event, fields) {
+    try { this.onDiagnostic(event, fields); } catch { /* Logging must never affect the browser. */ }
   }
 
   close() {

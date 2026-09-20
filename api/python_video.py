@@ -213,10 +213,19 @@ class handler(BaseHTTPRequestHandler):
                 content_range = parse_content_range(
                     response.headers.get("Content-Range")
                 )
+                if status == 206 and (
+                    not content_range
+                    or content_range["start"] != start
+                    or content_range["end"] != end
+                    or content_range["total"] <= end
+                ):
+                    raise XhsError("视频服务器返回了不匹配的分段范围，已停止合并。", 502)
                 content_type = (
                     response.headers.get_content_type() or "application/octet-stream"
                 )
                 body = read_limited(response, MAX_CHUNK_BYTES)
+                if len(body) != end - start + 1:
+                    raise XhsError("视频分段不完整，已停止合并。", 502)
 
             self.send_response(200)
             self.send_header("Content-Type", content_type)

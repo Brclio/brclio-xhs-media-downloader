@@ -3,6 +3,17 @@ import { constants } from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { isXhsImageUrl, isXhsVideoUrl, normalizeImageUrl } from "../lib/xhs.js";
+import { inspectMp4Tracks, requireVideoAudio } from "../lib/media-tracks.js";
+
+async function inspectVideoHandle(handle, bytes, requireAudio) {
+  const tracks = await inspectMp4Tracks(async (start, length) => {
+    const buffer = Buffer.alloc(length);
+    const result = await handle.read(buffer, 0, length, start);
+    return buffer.subarray(0, result.bytesRead);
+  }, bytes);
+  requireVideoAudio(tracks, requireAudio);
+  return tracks;
+}
 
 export function safeFilename(value, maxLength = 80, maxBytes = 240) {
   let name = String(value ?? "").normalize("NFKC")
@@ -124,7 +135,12 @@ export async function verifyFile(root, directory, file, signal) {
       throwIfAborted(signal);
       hash.update(chunk);
     }
-    return hash.digest("hex") === file.sha256;
+    if (hash.digest("hex") !== file.sha256) return false;
+    if (file.kind === 'video') {
+      try { await inspectVideoHandle(handle, stat.size, file.key === 'video'); }
+      catch (error) { if (['VIDEO_INVALID', 'VIDEO_AUDIO_MISSING'].includes(error.code)) return false; throw error; }
+    }
+    return true;
   } catch (error) {
     if (error.code === "ENOENT") return false;
     throw error;
@@ -141,7 +157,8 @@ function detectImageType(bytes) {
   return null;
 }
 
-export async function downloadMedia({ root, directory, asset, fetchImpl, signal, beforeRequest, maxBytes = 2 * 1024 ** 3, timeoutMs = 10 * 60 * 1000 }) {
+export async function downloadMedia({ root, directory, asset, fetchImpl, signal, beforeRequest, onDiagnostic = () => {}, maxBytes = 2 * 1024 ** 3, timeoutMs = 10 * 60 * 1000 }) {
+  const diagnostic = (event, fields) => { try { onDiagnostic(event, { kind: asset.kind, assetKey: asset.key, ...fields }); } catch { /* Diagnostics never interrupt saving. */ } };
   const validate = asset.kind === "image" ? isXhsImageUrl : isXhsVideoUrl;
   let url = normalizeImageUrl(asset.url);
   let timer;
@@ -161,6 +178,7 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
         redirect: "manual", signal: requestSignal,
         headers: { referer: "https://www.xiaohongshu.com/", "user-agent": "Mozilla/5.0", accept: asset.kind === "image" ? "image/*" : "video/mp4,application/octet-stream" }
       });
+      diagnostic('media.response', { status: response.status, redirect });
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers.get("location");
         await response.body?.cancel();
@@ -185,7 +203,7 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
     if (!response.body) throw new Error("媒体响应为空。");
     await assertSafeDirectory(root, directory);
     temporary = path.join(directory, `.${asset.key}.${randomUUID()}.part`);
-    handle = await fs.open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW || 0), 0o600);
+    handle = await fs.open(temporary, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW || 0), 0o600);
     reader = response.body.getReader();
     const hash = createHash("sha256");
     let bytes = 0;
@@ -203,6 +221,7 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
     if (!bytes || (declared !== null && bytes !== declared)) throw new Error("媒体文件未完整下载，请重试。");
     const extension = asset.kind === "image" ? detectImageType(prefix) : prefix.toString("ascii", 4, 8) === "ftyp" ? "mp4" : null;
     if (!extension) throw new Error("媒体文件内容不符合图片或 MP4 格式，未保存。");
+    const mediaTracks = asset.kind === 'video' ? await inspectVideoHandle(handle, bytes, asset.requireAudio === true) : undefined;
     const name = `${asset.key}.${extension}`;
     await handle.sync();
     await handle.close();
@@ -210,8 +229,10 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
     throwIfAborted(requestSignal);
     await assertSafeTarget(root, directory, name);
     await fs.rename(temporary, path.join(directory, name));
-    return { key: asset.key, kind: asset.kind, name, bytes, sha256: hash.digest("hex"), url: asset.url };
+    diagnostic('media.saved', { bytes, hasAudio: mediaTracks?.hasAudio, hasVideo: mediaTracks?.hasVideo });
+    return { key: asset.key, kind: asset.kind, name, bytes, sha256: hash.digest("hex"), url: asset.url, ...(mediaTracks ? { mediaTracks } : {}) };
   } catch (error) {
+    diagnostic('media.error', { code: error.code || error.name || 'MEDIA_DOWNLOAD_FAILED' });
     if (signal?.aborted) throw abortError();
     if (timer?.aborted) throw new Error("媒体下载超时，请重试。");
     throw error;

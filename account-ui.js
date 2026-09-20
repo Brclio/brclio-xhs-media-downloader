@@ -40,8 +40,10 @@ export async function initializeAccountUI() {
       <p class="account-form-note">退出账号不会释放设备名额。更换设备请联系管理员；兑换会员不会绕过设备限制。</p>
     </div>
     <p class="account-scope">单篇下载免费；主页批量下载需要有效会员与已授权设备。会员状态变化不会删除已有文件或任务记录。</p>`;
+  const mount = document.getElementById('desktop-account-mount');
   const navigation = document.getElementById('desktop-navigation');
-  if (navigation) navigation.insertAdjacentElement('afterend', panel);
+  if (mount) mount.replaceChildren(panel);
+  else if (navigation) navigation.insertAdjacentElement('afterend', panel);
   else (document.querySelector('main') || document.body).prepend(panel);
   const element = id => document.getElementById(id);
   let busy = false, state = null, cooldownUntil = 0, cooldownTimer = null;
@@ -118,7 +120,11 @@ export async function initializeAccountUI() {
     if (result) element('account-activation').value = '';
   });
   element('account-logout').addEventListener('click', () => run(() => bridge.logoutAccount()));
-  bridge.onAccountUpdate(render);
+  const unsubscribe = bridge.onAccountUpdate(render);
+  window.addEventListener('pagehide', () => {
+    if (cooldownTimer) clearInterval(cooldownTimer);
+    if (typeof unsubscribe === 'function') unsubscribe();
+  }, { once: true });
   try { render(await bridge.getAccountState()); }
   catch { notice('无法读取软件账号，请重新打开应用。', true); }
 }

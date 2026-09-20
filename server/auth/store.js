@@ -1,12 +1,17 @@
 import { AccountError, fail } from './errors.js';
 
 export function emptyState() {
-  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null };
+  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {} };
 }
 function validateState(state) {
   if (!state || state.schemaVersion !== 1 || !Array.isArray(state.audit)) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);
   for (const key of ['users', 'sessions', 'devices', 'otps', 'codes', 'operations', 'rateLimits']) {
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);
+  }
+  // Additive schema migration: deployed schemaVersion 1 accounts remain valid.
+  for (const key of ['feedback', 'feedbackRateLimits']) {
+    if (state[key] === undefined) state[key] = {};
+    if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '反馈数据格式异常，请联系管理员。', 503);
   }
   return state;
 }
@@ -85,6 +90,54 @@ export class GithubStateStore {
       return result?.value;
     }
     fail('STORAGE_CONFLICT', '同时操作较多，本次操作未确认，请使用相同请求重试。', 503);
+  }
+
+  feedbackPartUrl(feedbackId, index) {
+    if (!/^[a-f0-9-]{36}$/.test(feedbackId) || !Number.isInteger(index) || index < 0 || index >= 64) fail('INVALID_FEEDBACK_PART', '反馈日志分块标识无效。');
+    return `${this.base}/contents/feedback/${feedbackId}/part-${String(index).padStart(3, '0')}.ndjson`;
+  }
+
+  async readFeedbackPart(feedbackId, index, { allowMissing = false } = {}) {
+    await this.assertPrivate();
+    const response = await this.request(`${this.feedbackPartUrl(feedbackId, index)}?ref=${encodeURIComponent(this.branch)}`);
+    if (response.status === 404 && allowMissing) return null;
+    if (response.status === 404) fail('FEEDBACK_LOG_INCOMPLETE', '日志尚未全部上传，请使用原反馈重试。', 409);
+    this.checkFailure(response);
+    try {
+      const file = await response.json();
+      if (!file.sha || file.encoding !== 'base64' || typeof file.content !== 'string') fail('STORAGE_INVALID', '反馈日志文件格式异常。', 503);
+      const bytes = Buffer.from(file.content, 'base64');
+      if (bytes.length > 262_144) fail('STORAGE_INVALID', '反馈日志文件超过分块大小限制。', 503);
+      return { content: bytes.toString('utf8'), bytes: bytes.length, blobSha: file.sha };
+    } catch (error) {
+      if (error instanceof AccountError) throw error;
+      fail('STORAGE_INVALID', '反馈日志读取失败。', 503);
+    }
+  }
+
+  async writeFeedbackPart(feedbackId, index, content) {
+    if (typeof content !== 'string' || !content || Buffer.byteLength(content) > 262_144) fail('INVALID_FEEDBACK_PART', '反馈日志分块内容无效。');
+    const url = this.feedbackPartUrl(feedbackId, index);
+    for (let attempt = 0; attempt < this.maxAttempts; attempt += 1) {
+      const prior = await this.readFeedbackPart(feedbackId, index, { allowMissing: true });
+      if (prior) {
+        if (prior.content !== content) fail('FEEDBACK_PART_CONFLICT', '日志分块已存在且内容不同，请保留原快照重试。', 409);
+        return { received: true, replayed: true };
+      }
+      const response = await this.request(url, 'PUT', { message: 'Store private feedback log [skip ci]', branch: this.branch, content: Buffer.from(content).toString('base64') });
+      if ([409, 422].includes(response.status)) { await this.delay(Math.min(40 * 2 ** attempt, 500)); continue; }
+      this.checkFailure(response);
+      if (![200, 201].includes(response.status)) fail('STORAGE_WRITE_UNCERTAIN', '日志写入尚未确认，请重试原分块。', 503);
+      try {
+        const confirmation = await response.json();
+        if (!confirmation.content?.sha) fail('STORAGE_WRITE_UNCERTAIN', '日志写入确认不完整，请重试原分块。', 503);
+      } catch (error) {
+        if (error instanceof AccountError) throw error;
+        fail('STORAGE_WRITE_UNCERTAIN', '日志写入确认中断，请重试原分块。', 503);
+      }
+      return { received: true, replayed: false };
+    }
+    fail('STORAGE_CONFLICT', '日志写入发生并发冲突，请重试原分块。', 503);
   }
 }
 export function createGithubStore(env = process.env, options = {}) {

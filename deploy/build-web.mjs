@@ -8,7 +8,7 @@ export const PUBLIC_FILES = [
   'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css',
-  'lib/archive.js', 'lib/clipboard.js', 'assets', 'admin'
+  'lib/archive.js', 'lib/clipboard.js', 'lib/media-tracks.js', 'assets', 'admin'
 ];
 
 export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.url))) {

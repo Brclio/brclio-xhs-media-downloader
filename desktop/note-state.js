@@ -26,13 +26,27 @@ export function readNoteSnapshot(noteId) {
     const data = unwrap(state.data) || {};
     const maps = [store.noteDetailMap, store.noteDetailMapV2, state.noteDetailMap, data.noteDetailMap];
     let note;
+    const select = (raw, trustedMapEntry = false, depth = 0) => {
+      if (depth > 6) return;
+      const candidate = unwrap(raw);
+      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return;
+      const ids = ['noteId', 'note_id', 'id'].map(key => unwrap(candidate[key])).filter(id => id != null && id !== '');
+      const hasMedia = ['imageList', 'image_list', 'images', 'video'].some(key => Object.prototype.hasOwnProperty.call(candidate, key));
+      if (hasMedia && (trustedMapEntry || ids.some(id => String(id) === noteId))) return candidate;
+      // Mobile/newer pages put the exact note under noteData.data. Traverse only
+      // known detail wrappers, never comments, recommendations or arbitrary IDs.
+      for (const key of ['note', 'noteData', 'note_data', 'data', 'detail', 'details']) {
+        const found = select(candidate[key], trustedMapEntry, depth + 1);
+        if (found) return found;
+      }
+    };
     for (const raw of maps) {
       const map = unwrap(raw);
       if (!map || typeof map !== 'object' || !Object.prototype.hasOwnProperty.call(map, noteId)) continue;
-      const entry = unwrap(map[noteId]);
-      const candidate = unwrap(entry?.note);
-      if (candidate && typeof candidate === 'object') { note = candidate; break; }
+      note = select(map[noteId], true);
+      if (note) break;
     }
+    note ||= select(state.noteData) || select(state.note_data) || select(store) || select(data);
     if (!note) return result;
     for (const key of ['noteId', 'note_id', 'id']) {
       const id = unwrap(note[key]);
@@ -57,6 +71,8 @@ export function readNoteSnapshot(noteId) {
       'backupUrls', 'backup_urls', 'videoCodec', 'video_codec', 'codec', 'width', 'height',
       'videoBitrate', 'video_bitrate', 'bitrate', 'size', 'fileSize', 'file_size',
       'videoDuration', 'video_duration', 'duration', 'qualityType', 'quality_type',
+      'audioCodec', 'audio_codec', 'audioBitrate', 'audio_bitrate', 'audioChannels', 'audio_channels',
+      'audioDuration', 'audio_duration', 'hasAudio', 'has_audio', 'format', 'streamType', 'stream_type',
       'originVideoKey', 'origin_video_key'
     ]);
     const MAX_BYTES = 8 * 1024 * 1024;

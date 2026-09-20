@@ -17,12 +17,13 @@ export function validateAccountEndpoint(value, allowInsecureDevelopment = false)
 }
 
 export class AccountClient {
-  constructor({ store, endpoint, fetchImpl = globalThis.fetch, now = Date.now, onUpdate = () => {}, allowInsecureDevelopment = false }) {
+  constructor({ store, endpoint, fetchImpl = globalThis.fetch, now = Date.now, onUpdate = () => {}, onDiagnostic = () => {}, allowInsecureDevelopment = false }) {
     this.store = store; this.endpoint = validateAccountEndpoint(endpoint, allowInsecureDevelopment);
     this.fetchImpl = fetchImpl; this.now = now; this.onUpdate = onUpdate;
     this.credentials = null; this.account = null; this.error = null;
     this.status = this.endpoint ? 'signed_out' : 'configuration_required';
     this.serverOffset = 0; this._commands = Promise.resolve();
+    this.onDiagnostic = onDiagnostic;
   }
   snapshot() {
     return structuredClone({ status: this.status, account: this.account, error: this.error,
@@ -49,6 +50,7 @@ export class AccountClient {
     if (!this.credentials) throw accountError(this.error?.code || 'SECURE_STORAGE_UNAVAILABLE', this.error?.message || '系统安全存储不可用。');
   }
   async _request(action, input = {}, { token = this.credentials?.token || '', unsigned = false, allowClockRetry = true } = {}) {
+    const started = this.now();
     if (!this.endpoint) throw accountError('CONFIGURATION_REQUIRED', '授权服务尚未配置，会员功能暂不可用。');
     const body = { action, input };
     if (!unsigned) {
@@ -61,9 +63,13 @@ export class AccountClient {
     try {
       response = await this.fetchImpl(this.endpoint, { method: 'POST', redirect: 'error',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(body), signal: AbortSignal.timeout(15_000) });
+        body: JSON.stringify(body), signal: AbortSignal.timeout(action === 'feedback-finalize' ? 60_000 : 15_000) });
       result = await response.json();
-    } catch { throw accountError('SERVICE_UNAVAILABLE', '软件账号服务暂时不可用，请检查网络后重试；已下载文件会保留。'); }
+    } catch {
+      this.onDiagnostic('account.request_failed', { action, durationMs: this.now() - started, code: 'NETWORK_ERROR' }, 'warn');
+      throw accountError('SERVICE_UNAVAILABLE', '软件账号服务暂时不可用，请检查网络后重试；已下载文件会保留。');
+    }
+    this.onDiagnostic('account.response', { action, status: response.status, code: result?.error?.code, durationMs: this.now() - started });
     const serverTime = Date.parse(result?.serverTime || result?.account?.serverTime);
     if (Number.isFinite(serverTime)) this.serverOffset = serverTime - this.now();
     if (!response.ok || result?.ok !== true) {
@@ -139,6 +145,14 @@ export class AccountClient {
       if (result.account) this.account = result.account;
       this.status = 'ready'; this.error = null; this._emit(); return { authorized: true };
     } catch (error) { this.status = 'authorization_denied'; this._recordError(error); throw error; }
+  }
+  async feedbackRequest(action, input, expectedUserId) {
+    if (!['feedback-begin', 'feedback-upload-part', 'feedback-finalize'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效反馈操作。', 400);
+    const token = this.credentials?.token;
+    if (!token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请切回原账号再提交反馈。', 401);
+    const result = await this._request(action, input, { token });
+    if (this.credentials?.token !== token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '反馈上传期间账号发生变化，请切回原账号重试。', 401);
+    return result;
   }
   redeem(code) {
     return this._command(async () => {

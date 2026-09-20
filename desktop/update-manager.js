@@ -196,7 +196,7 @@ export function allowedAssetRedirect(value, initialUrl) {
 }
 
 function installationHint(platform, portable) {
-  if (platform === 'darwin') return '安装时会暂停并保存下载任务、退出应用，再打开 DMG。请将新版拖入“应用程序”文件夹，确认替换后重新打开。系统可能提示未签名，请按系统提示处理。';
+  if (platform === 'darwin') return '安装时会暂停并保存下载任务，校验新版应用后退出并在原位置替换，再重新打开。旧版本保留为备份。请从可写文件夹中的应用启动；从 DMG 或只读位置运行时需手动安装。此版本没有 Apple Developer ID 签名或公证，系统可能仍需确认。';
   if (portable) return '当前为 Windows 便携版；更新包是安装版。安装时会暂停并保存任务、退出应用并打开安装向导，完成后请从新版快捷方式启动。系统可能提示未签名。';
   return '安装时会暂停并保存下载任务、退出应用并打开 Windows 安装向导。完成后重新打开应用；系统可能提示未签名。';
 }
@@ -246,7 +246,7 @@ export class UpdateManager {
             download: { receivedBytes: 0, totalBytes: this.candidate?.size || 0, percent: 0 } });
         } else {
           const reason = controller.signal.aborted ? controller.signal.reason : error;
-          const failure = reason instanceof UpdateError ? reason : new UpdateError(
+          const failure = reason instanceof UpdateError ? reason : /^MAC_UPDATE_[A-Z_]+$/.test(error?.code || '') ? new UpdateError(error.code, error.message) : new UpdateError(
             error?.code === 'ENOSPC' ? 'DISK_FULL' : phase === 'install' ? 'INSTALL_FAILED' : 'NETWORK_ERROR',
             error?.code === 'ENOSPC' ? '磁盘空间不足，请清理后重试。' : phase === 'install'
               ? '无法完成安装前准备或打开安装程序，请重试。' : '更新请求失败，请检查网络连接后重试。');
@@ -449,7 +449,7 @@ export class UpdateManager {
         if (error instanceof UpdateError) throw error;
         fail('INSTALLER_MISSING', '安装包不存在或无法读取，请重新下载。');
       }
-      const error = await this.openInstaller(this.verifiedFile);
+      const error = await this.openInstaller(this.verifiedFile, this.candidate);
       if (error) fail('INSTALL_FAILED', '系统无法打开安装程序，请重试。');
       await this.onInstalled();
     });

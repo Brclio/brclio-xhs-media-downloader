@@ -42,6 +42,11 @@ jobs:
           architecture: ${{ matrix.arch }}
       - run: npm ci
       - run: npm run test:node
+      - name: Verify native Mac replacement and rollback in temporary signed apps
+        if: runner.os != 'Windows'
+        run: node --test test/mac-update.test.js
+        env:
+          XHS_MAC_UPDATE_NATIVE: '1'
       - run: python -m unittest discover -s test -p 'test_python_*.py'
       - if: runner.os != 'Windows'
         run: python scripts/build-mac-python.py
