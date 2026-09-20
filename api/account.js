@@ -6,19 +6,21 @@ import { createAccountService } from '../server/auth/service.js';
 
 export const ADMIN_COOKIE = '__Host-xhs-admin';
 const MAX_BODY_BYTES = 16_384;
+const FEEDBACK_BODY_BYTES = 1_600_000;
 const header = (req, name) => String(req.headers?.[name] || '');
 
 function bodyValue(req) {
-  if (Number(header(req, 'content-length')) > MAX_BODY_BYTES) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
+  if (Number(header(req, 'content-length')) > FEEDBACK_BODY_BYTES) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
   let body = req.body;
   try {
     if (Buffer.isBuffer(body)) body = body.toString('utf8');
     if (typeof body === 'string') {
-      if (Buffer.byteLength(body) > MAX_BODY_BYTES) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
+      if (Buffer.byteLength(body) > FEEDBACK_BODY_BYTES) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
       body = JSON.parse(body);
     }
     if (!body || typeof body !== 'object' || Array.isArray(body)) fail('INVALID_REQUEST', '请求格式无效。');
-    if (Buffer.byteLength(JSON.stringify(body)) > MAX_BODY_BYTES) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
+    const limit = body.action === 'feedback-upload-part' ? FEEDBACK_BODY_BYTES : body.action === 'feedback-begin' ? 49_152 : MAX_BODY_BYTES;
+    if (Buffer.byteLength(JSON.stringify(body)) > limit || Number(header(req, 'content-length')) > limit) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
     return body;
   } catch (error) {
     if (error instanceof AccountError) throw error;

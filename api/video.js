@@ -142,6 +142,12 @@ export default async function handler(req, res) {
     const contentRange = parseContentRange(response.headers.get("content-range"));
     const declaredSize = Number(response.headers.get("content-length") ?? 0);
 
+    if (response.status === 206 && (!contentRange || contentRange.start !== start || contentRange.end !== end
+      || !Number.isSafeInteger(contentRange.total) || contentRange.total <= end)) {
+      await response.body?.cancel().catch(() => {});
+      throw new XhsError("视频服务器返回了不匹配的分段范围，已停止合并。", 502);
+    }
+
     if (response.status === 200 && start > 0) {
       await response.body?.cancel().catch(() => {});
       throw new XhsError("视频源不支持 Range 分段下载，请使用“打开视频”。", 409);
@@ -152,6 +158,7 @@ export default async function handler(req, res) {
     }
 
     const buffer = await readBufferWithLimit(response, MAX_CHUNK_BYTES);
+    if (buffer.length !== end - start + 1) throw new XhsError("视频分段不完整，已停止合并。", 502);
     const contentType = response.headers.get("content-type")?.split(";", 1)[0] || "application/octet-stream";
 
     res.setHeader("Content-Type", contentType);

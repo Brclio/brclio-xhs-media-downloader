@@ -113,3 +113,21 @@ test('visible challenge/login gates retain the existing response flags', () => {
   assert.equal(result.login, false);
   assert.equal(result.serialized, '');
 });
+
+test('new mobile noteData wrappers resolve only the exact note and preserve audio metadata', () => {
+  const video = { media: { stream: { h264: [{ masterUrl: videoUrl('with-audio'),
+    audioCodec: 'aac', audioChannels: 2, audioBitrate: 64000, videoCodec: 'h264' }] } } };
+  for (const root of [
+    { noteData: { data: note({ type: 'video', video }) } },
+    { noteData: ref({ data: ref({ noteData: ref(note({ type: 'video', video })) }) }) },
+    { note: { noteDetailMap: { [NOTE]: note({ type: 'video', video }) } } }
+  ]) {
+    const result = read(root);
+    assert.equal(parsed(result).videos[0].url, videoUrl('with-audio'));
+    assert.match(result.serialized, /"audioCodec":"aac"/);
+    assert.match(result.serialized, /"audioChannels":2/);
+  }
+  const untrusted = read({ noteData: { data: note({ noteId: OTHER }),
+    comments: [{ noteId: NOTE, video }], recommendations: [{ noteId: NOTE, video }] } });
+  assert.equal(untrusted.serialized, '');
+});

@@ -3,13 +3,14 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 
 export class PythonBackend {
-  constructor({ appDirectory, resourcesDirectory, packaged = false, command } = {}) {
+  constructor({ appDirectory, resourcesDirectory, packaged = false, command, onDiagnostic = () => {} } = {}) {
     this.appDirectory = appDirectory;
     this.resourcesDirectory = resourcesDirectory;
     this.packaged = packaged;
     this.overrideCommand = command;
     this.available = false;
     this.children = new Set();
+    this.onDiagnostic = onDiagnostic;
   }
 
   async initialize() {
@@ -46,6 +47,7 @@ export class PythonBackend {
   run(extraArgs, input, signal, timeoutMs = 90000) {
     if (signal?.aborted) return Promise.reject(signal.reason || new Error('请求已取消。'));
     return new Promise((resolve, reject) => {
+      const started = Date.now();
       const child = spawn(this.command, [...this.args, ...extraArgs], {
         windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' }
@@ -54,12 +56,14 @@ export class PythonBackend {
       const chunks = [];
       let length = 0;
       let settled = false;
+      let stderr = '';
       const complete = (error, result) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
         signal?.removeEventListener('abort', abort);
         this.children.delete(child);
+        if (error) this.onDiagnostic('python.request_failed', { error, stderr, durationMs: Date.now() - started }, 'error');
         error ? reject(error) : resolve(result);
       };
       const abort = () => { child.kill(); complete(new Error('请求已取消。')); };
@@ -74,8 +78,8 @@ export class PythonBackend {
         }
         chunks.push(chunk);
       });
-      // Drain stderr; source errors must not leak input URLs or tokens into renderer logs.
-      child.stderr.resume();
+      // The main process logger sanitizes a bounded error trace; never send it to renderer.
+      child.stderr.on('data', chunk => { stderr = (stderr + chunk.toString()).slice(-4000); });
       child.once('error', (error) => complete(error));
       child.once('close', (code) => complete(code === 0 ? null : new Error('Python 本地后台已退出。'), Buffer.concat(chunks).toString('utf8')));
       child.stdin.on('error', (error) => complete(error));

@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { createHash } from "node:crypto";
 import { ProfileManager } from "../desktop/profile-manager.js";
 import { downloadMedia, safeFilename } from "../desktop/media-download.js";
+import { mp4Fixture } from './fixtures/mp4.js';
 
 const PROFILE = "https://www.xiaohongshu.com/user/profile/5e413a430000000001000f4c";
 const A = "111111111111111111111111";
@@ -13,7 +15,7 @@ const note = (id = A) => ({ id, url: `https://www.xiaohongshu.com/explore/${id}`
 const imageUrl = (key = "image") => `https://ci.xiaohongshu.com/${key}?imageView2/format/jpg`;
 const videoUrl = (key = "video") => `https://sns-video-bd.xhscdn.com/${key}.mp4`;
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 2, 4, 5, 6, 0xff, 0xd9]);
-const MP4 = Buffer.from("\x00\x00\x00\x18ftypisom\x00\x00\x00\x00isomiso2", "binary");
+const MP4 = mp4Fixture();
 function noteFolder(fixture, id = A) {
   return path.join(fixture.directory, fixture.manager.snapshot().items.find(item => item.id === id)?.directoryName || id);
 }
@@ -216,6 +218,84 @@ test("video backup URLs are attempted with pacing when the selected stream fails
   assert.equal((await f.settle()).completed, 1);
   assert.deepEqual(urls.map(({ url }) => url), [videoUrl("broken"), videoUrl("working")]);
   assert.ok(urls[1].at - urls[0].at >= 4500);
+});
+
+test('silent ordinary video is rejected and a different audio-bearing stream is saved', async (t) => {
+  const events = [];
+  const f = await fixture(t, { onDiagnostic: (event, fields) => events.push({ event, ...fields }) });
+  f.manager.browser.resolveNote = async () => parsed({ images: [], videos: [
+    { url: videoUrl('silent'), isDefault: true }, { url: videoUrl('audible'), hasAudio: true }
+  ] });
+  const urls = [];
+  f.manager.fetchImpl = async url => {
+    urls.push(url);
+    const body = mp4Fixture({ audio: url === videoUrl('audible') });
+    return new Response(body, { headers: { 'content-type': 'video/mp4', 'content-length': String(body.length) } });
+  };
+  await f.start();
+  const result = await f.settle();
+  assert.equal(result.completed, 1);
+  assert.deepEqual(urls, [videoUrl('silent'), videoUrl('audible')]);
+  assert.equal(f.manager.state.items[0].files.find(file => file.key === 'video').mediaTracks.hasAudio, true);
+  assert.ok(events.some(e => e.code === 'VIDEO_AUDIO_MISSING'));
+  assert.doesNotMatch(JSON.stringify(events), /https:|cookie|token/i);
+});
+
+test('all-silent normal videos leave no successful media file while silent Live Photos remain valid', async (t) => {
+  for (const live of [false, true]) {
+    const f = await fixture(t);
+    f.manager.browser.resolveNote = async () => live
+      ? parsed({ images: [{ url: imageUrl(), livePhoto: true, liveVideo: { url: videoUrl() } }] })
+      : parsed({ images: [], videos: [{ url: videoUrl() }] });
+    f.manager.fetchImpl = async url => url.endsWith('.mp4')
+      ? new Response(mp4Fixture({ audio: false }), { headers: { 'content-type': 'video/mp4' } }) : mediaResponse(url);
+    await f.start();
+    const result = await f.settle();
+    assert.equal(result.completed, live ? 1 : 0);
+    assert.equal(result.failed, live ? 0 : 1);
+    if (!live) assert.deepEqual(await fs.readdir(noteFolder(f)), ['.xhs-download.json']);
+  }
+});
+
+test('resume repairs a legacy completed silent video even when its saved size and hash are valid', async (t) => {
+  for (const replacementHasAudio of [true, false]) {
+    const f = await fixture(t);
+    f.manager.browser.resolveNote = async () => parsed({ images: [], videos: [{ url: videoUrl() }] });
+    await f.start();
+    assert.equal((await f.settle()).completed, 1);
+    const item = f.manager.state.items[0];
+    const original = { sequence: item.sequence, directoryName: item.directoryName };
+    const saved = item.files.find(file => file.key === 'video');
+    const silent = mp4Fixture({ audio: false });
+    const filename = path.join(noteFolder(f), saved.name);
+    await fs.writeFile(filename, silent);
+    saved.bytes = silent.length;
+    saved.sha256 = createHash('sha256').update(silent).digest('hex');
+    delete saved.mediaTracks;
+    await f.manager._writeManifest(noteFolder(f), item);
+    await f.manager._save();
+    let requests = 0;
+    const restored = new ProfileManager({ ...f.config, fetchImpl: async () => {
+      requests++;
+      return new Response(mp4Fixture({ audio: replacementHasAudio }), { headers: { 'content-type': 'video/mp4' } });
+    } });
+    await restored.initialize();
+    await restored.resume();
+    await restored._runTask;
+    const result = restored.snapshot();
+    assert.equal(result.skipped, 0);
+    assert.equal(result.completed, replacementHasAudio ? 1 : 0);
+    assert.equal(result.failed, replacementHasAudio ? 0 : 1);
+    assert.ok(requests > 0);
+    assert.equal(result.items[0].sequence, original.sequence);
+    assert.equal(result.items[0].directoryName, original.directoryName);
+    if (replacementHasAudio) {
+      assert.equal(restored.state.items[0].files.find(file => file.key === 'video').mediaTracks.hasAudio, true);
+      assert.deepEqual(await fs.readFile(filename), MP4);
+    } else {
+      assert.deepEqual(await fs.readFile(filename), silent, 'failed repair must preserve the existing downloaded file');
+    }
+  }
 });
 
 test("primary-meta covers and live photos missing paired videos are never marked complete", async (t) => {

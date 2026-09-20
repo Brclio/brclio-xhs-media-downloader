@@ -122,3 +122,30 @@ test('an unexpected success response without a committed blob SHA is uncertain, 
     await assert.rejects(store.transaction(state => { state.users.a = {}; return { value: true }; }), { code: 'STORAGE_WRITE_UNCERTAIN' });
   }
 });
+
+test('deployed schema version one gains feedback fields without resetting accounts or writing on read', async () => {
+  const initial = emptyState(); delete initial.feedback; delete initial.feedbackRateLimits;
+  initial.users.existing = { id: 'existing', membership: { type: 'permanent' } };
+  const github = fakeGithub(initial);
+  const { state } = await github.store().read();
+  assert.deepEqual(state.feedback, {}); assert.deepEqual(state.feedbackRateLimits, {});
+  assert.deepEqual(state.users.existing, initial.users.existing);
+  assert.equal(github.calls.filter(call => call.method === 'PUT').length, 0);
+  await github.store().transaction(latest => { latest.feedback.example = { id: 'example' }; return { value: true }; });
+  assert.deepEqual(github.state.users.existing, initial.users.existing);
+  assert.equal(github.state.feedback.example.id, 'example');
+  for (const value of [null, [], false]) {
+    const invalid = { ...initial, feedback: value };
+    await assert.rejects(fakeGithub(invalid).store().read(), { code: 'STORAGE_INVALID' });
+  }
+});
+
+test('feedback log paths cannot escape their private immutable namespace', async () => {
+  const store = fakeGithub().store();
+  for (const id of ['../../state/accounts.json', '../'.repeat(12), 'a'.repeat(35), `x${'a'.repeat(35)}`]) {
+    assert.throws(() => store.feedbackPartUrl(id, 0), { code: 'INVALID_FEEDBACK_PART' });
+  }
+  const id = '12345678-1234-1234-1234-123456789012';
+  assert.match(store.feedbackPartUrl(id, 63), /\/contents\/feedback\/[a-f0-9-]+\/part-063\.ndjson$/);
+  for (const index of [-1, 64, '0', 0.5]) assert.throws(() => store.feedbackPartUrl(id, index), { code: 'INVALID_FEEDBACK_PART' });
+});

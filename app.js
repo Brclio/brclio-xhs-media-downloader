@@ -9,6 +9,7 @@ import {
   refineClipboardWriteFailureKind
 } from "./lib/clipboard.js";
 import { initializeDesktopUI } from "./desktop-ui.js";
+import { inspectVideoBlob } from "./lib/media-tracks.js";
 
 const state = {
   title: "小红书图片",
@@ -1479,9 +1480,11 @@ async function downloadCurrentVideo() {
   elements.downloadZipButton.disabled = true;
   setEngineInputsDisabled(true);
 
-  const candidates = [
-    ...new Set([video.url, ...(video.backupUrls || [])].filter(Boolean))
-  ];
+  const alternatives = state.videos.filter(item => item !== video && item.hasAudio !== false);
+  const candidates = [...new Set([
+    video.url, ...alternatives.map(item => item.url), ...(video.backupUrls || []),
+    ...alternatives.flatMap(item => item.backupUrls || [])
+  ].filter(Boolean))];
   let lastError = null;
 
   try {
@@ -1490,6 +1493,7 @@ async function downloadCurrentVideo() {
         const blob = await downloadVideoByChunks(sourceUrl, video, {
           maxBytes: MAX_VIDEO_DOWNLOAD_BYTES
         });
+        await inspectVideoBlob(blob, { requireAudio: true });
         triggerBlobDownload(blob, videoFilename());
         showToast("视频已经合并完成并开始保存", "success");
         return;
@@ -1505,6 +1509,7 @@ async function downloadCurrentVideo() {
         const blob = await tryDirectVideoDownload(sourceUrl, {
           maxBytes: MAX_VIDEO_DOWNLOAD_BYTES
         });
+        await inspectVideoBlob(blob, { requireAudio: true });
         triggerBlobDownload(blob, videoFilename());
         showToast("视频已通过浏览器直连开始保存", "success");
         return;
@@ -1514,6 +1519,7 @@ async function downloadCurrentVideo() {
       }
     }
 
+    if (['VIDEO_AUDIO_MISSING', 'VIDEO_INVALID'].includes(lastError?.code)) throw lastError;
     window.open(video.url, "_blank", "noopener,noreferrer");
     throw new Error(
       `${lastError?.message || "自动下载失败"}，已打开视频原地址，可在新页面中保存。`

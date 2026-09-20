@@ -377,3 +377,50 @@ test('denied item/retry-all commands preserve previous failure records', async t
     assert.equal(manager.snapshot().items[0].status, 'failed'); assert.equal(manager.snapshot().items[0].error, '原始下载错误');
   }
 });
+
+test('feedback requests capture the original signed identity and reject success after account switches in flight', async t => {
+  for (const action of ['feedback-begin', 'feedback-upload-part', 'feedback-finalize']) {
+    await t.test(action, async t => {
+      const f = await fixture(t); await f.login();
+      const originalToken = (await f.store.load()).token;
+      const fetchOriginal = f.client.fetchImpl;
+      let started, release;
+      const requestStarted = new Promise(resolve => { started = resolve; });
+      const responseGate = new Promise(resolve => { release = resolve; });
+      f.client.fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body);
+        const response = await fetchOriginal(url, init); // Checks the real Ed25519 proof.
+        if (body.action === action) { started(); await responseGate; return response; }
+        if (body.action === 'verify-code' && body.input.email === 'other@example.com') {
+          const value = await response.json();
+          value.account.user = { ...value.account.user, id: 'user-2', email: 'other@example.com' };
+          return Response.json(value);
+        }
+        return response;
+      };
+      const inFlight = f.client.feedbackRequest(action, { feedbackId: 'fixture-feedback' }, 'user-1');
+      await requestStarted;
+      try {
+        await f.client.logout();
+        await f.client.verifyCode('other@example.com', '123456');
+        assert.equal(f.client.snapshot().account.user.id, 'user-2');
+      } finally { release(); }
+      await assert.rejects(inFlight, { code: 'SESSION_CHANGED' });
+      const request = f.requests.find(value => value.action === action);
+      assert.equal(request.token, originalToken, 'request never uses the replacement account token');
+      assert.notEqual((await f.store.load()).token, originalToken);
+      assert.equal(f.client.snapshot().account.user.id, 'user-2', 'old response cannot overwrite current identity');
+    });
+  }
+});
+
+test('feedback identity and action guards reject before sending log content or authentication', async t => {
+  const f = await fixture(t);
+  const secretFixture = { content: 'fixture-log-content-must-not-be-sent' };
+  await assert.rejects(f.client.feedbackRequest('feedback-upload-part', secretFixture, 'user-1'), { code: 'SESSION_CHANGED' });
+  assert.equal(f.requests.length, 0);
+  await f.login(); const before = f.requests.length;
+  await assert.rejects(f.client.feedbackRequest('feedback-begin', secretFixture, 'user-2'), { code: 'SESSION_CHANGED' });
+  await assert.rejects(f.client.feedbackRequest('admin-feedback-part', secretFixture, 'user-1'), { code: 'UNKNOWN_ACTION' });
+  assert.equal(f.requests.length, before);
+});

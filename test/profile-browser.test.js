@@ -149,7 +149,7 @@ test('a stalled renderer can be aborted without blocking pause forever', async (
   assert.equal(stopped, true);
 });
 
-function detailFixture({ state, challenge = false, login = false, onWait } = {}) {
+function detailFixture({ state, challenge = false, login = false, onWait, fetchPage = null } = {}) {
   const details = { reads: 0, waits: [], navigations: [] };
   const win = {
     shown: false,
@@ -161,14 +161,15 @@ function detailFixture({ state, challenge = false, login = false, onWait } = {})
         return vm.runInNewContext(script, {
           window: { __INITIAL_STATE__: state }, TextEncoder,
           document: { querySelectorAll(selector) {
-            const isVisible = selector.includes('captcha') ? challenge : login;
+            const gate = selector.includes('captcha') ? challenge : login;
+            const isVisible = typeof gate === 'function' ? gate() : gate;
             return isVisible ? [{ getClientRects: () => [1] }] : [];
           } }
         });
       }
     }
   };
-  const browser = new XhsBrowser({ wait: async (ms, _value, { signal }) => {
+  const browser = new XhsBrowser({ fetchPage, wait: async (ms, _value, { signal }) => {
     signal?.throwIfAborted();
     details.waits.push(ms);
     onWait?.(details.waits.length);
@@ -280,8 +281,59 @@ test('resolveNote reports an error when paired-live or main-video hydration neve
     detailNote({ type: 'video', video: {} })
   ]) {
     const { browser, details } = detailFixture({ state: { note: { noteDetailMap: { [NOTE]: { note: data } } } } });
-    await assert.rejects(browser.resolveNote({ id: NOTE, url: detailUrl }), { code: 'NOTE_UNAVAILABLE' });
+    await assert.rejects(browser.resolveNote({ id: NOTE, url: detailUrl }), { code: 'NOTE_INCOMPLETE' });
     assert.equal(details.reads, 20);
     assert.equal(details.waits.length, 20);
   }
+});
+
+test('incomplete browser video uses one paced exact-note mobile fallback without selecting a cover', async () => {
+  let requests = 0, paced = 0;
+  const data = detailNote({ type: 'video', video: {} });
+  const full = detailNote({ type: 'video', video: { media: { stream: { h264: [{ masterUrl: 'https://sns-video-bd.xhscdn.com/mobile-complete.mp4' }] } } } });
+  const { browser } = detailFixture({ state: { note: { noteDetailMap: { [NOTE]: { note: data } } } },
+    fetchPage: async url => { requests++; return { finalUrl: url, html: `<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: full } })}</script>` }; }
+  });
+  const events = [];
+  browser.onDiagnostic = (event, fields) => events.push({ event, ...fields });
+  const result = await browser.resolveNote({ id: NOTE, url: detailUrl }, { beforeRequest: async () => { paced++; } });
+  assert.equal(requests, 1);
+  assert.equal(paced, 1);
+  assert.equal(result.videos.length, 1);
+  assert.equal(result.noteType, 'video');
+  assert.ok(events.some(e => e.event === 'note.fallback'));
+  assert.doesNotMatch(JSON.stringify(events), /https:|token|cookie/i);
+});
+
+test('challenge blocks the fallback and fallback rate limits pause instead of trying again', async () => {
+  let requests = 0;
+  const fetchPage = async () => { requests++; throw Object.assign(new Error('blocked'), { code: 'RATE_LIMITED' }); };
+  const blocked = detailFixture({ state: {}, challenge: true, fetchPage });
+  await assert.rejects(blocked.browser.resolveNote({ id: NOTE, url: detailUrl }), { code: 'RATE_LIMITED' });
+  assert.equal(requests, 0);
+  const limited = detailFixture({ state: {}, fetchPage });
+  await assert.rejects(limited.browser.resolveNote({ id: NOTE, url: detailUrl }), { code: 'RATE_LIMITED' });
+  assert.equal(requests, 1);
+});
+
+test('new login or challenge gates after pacing prevent fallback network requests', async () => {
+  for (const [gate, code] of [['challenge', 'RATE_LIMITED'], ['login', 'AUTH_REQUIRED']]) {
+    let gated = false, requests = 0;
+    const { browser } = detailFixture({ state: {}, [gate]: () => gated,
+      fetchPage: async () => { requests++; throw new Error('must not fetch'); }
+    });
+    await assert.rejects(browser.resolveNote({ id: NOTE, url: detailUrl }, {
+      beforeRequest: async () => { gated = true; }
+    }), { code });
+    assert.equal(requests, 0);
+  }
+});
+
+test('authorization rejection during fallback pacing is propagated without a network request', async () => {
+  let requests = 0;
+  const { browser } = detailFixture({ state: {}, fetchPage: async () => { requests++; } });
+  await assert.rejects(browser.resolveNote({ id: NOTE, url: detailUrl }, {
+    beforeRequest: async () => { throw Object.assign(new Error('membership expired'), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED' }); }
+  }), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED' });
+  assert.equal(requests, 0);
 });

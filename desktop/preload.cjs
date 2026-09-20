@@ -1,6 +1,22 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
+  getDiagnosticsInfo: () => ipcRenderer.invoke('desktop:diagnostics-info'),
+  copyDiagnostics: () => ipcRenderer.invoke('desktop:copy-diagnostics'),
+  exportDiagnostics: () => ipcRenderer.invoke('desktop:export-diagnostics'),
+  submitFeedback: (input) => ipcRenderer.invoke('desktop:submit-feedback', input),
+  getFeedbackState: () => ipcRenderer.invoke('desktop:feedback-state'),
+  recordDiagnostic: (event, fields) => ipcRenderer.invoke('desktop:record-diagnostic', event, fields),
+  onNavigate: (callback) => {
+    if (typeof callback !== 'function') throw new TypeError('callback must be a function');
+    const listener = (_event, state) => callback(state); ipcRenderer.on('desktop:navigate', listener);
+    return () => ipcRenderer.removeListener('desktop:navigate', listener);
+  },
+  onFeedbackState: (callback) => {
+    if (typeof callback !== 'function') throw new TypeError('callback must be a function');
+    const listener = (_event, state) => callback(state); ipcRenderer.on('desktop:feedback-state', listener);
+    return () => ipcRenderer.removeListener('desktop:feedback-state', listener);
+  },
   getInfo: () => ipcRenderer.invoke('desktop:get-info'),
   getAccountState: () => ipcRenderer.invoke('desktop:account-state'),
   refreshAccount: () => ipcRenderer.invoke('desktop:account-refresh'),

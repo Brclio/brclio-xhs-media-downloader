@@ -2,6 +2,7 @@ import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { AccountError, fail } from './errors.js';
 import { digest, equalDigest, normalizeDevice, verifyProof } from './crypto.js';
 import { KNOWN_FEATURES } from '../../lib/membership-policy.js';
+import { createFeedbackService } from './feedback.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -383,12 +384,14 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     });
   }
 
+  const feedbackService = createFeedbackService({ store, now, authenticate, hash, operation, audit });
   return {
     async execute({ action, input = {}, token = '', proof, ip = '', client }) {
       if (typeof action !== 'string' || action.length > 80 || !input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_REQUEST', '请求格式无效。');
       const request = { action, input, token, proof, ip, client };
       let result;
-      if (action === 'send-code') result = await sendCode(request);
+      if (action.startsWith('feedback-') || action.startsWith('admin-feedback')) result = await feedbackService.execute(request);
+      else if (action === 'send-code') result = await sendCode(request);
       else if (action === 'verify-code') result = await verifyCode(request);
       else if (['logout', 'redeem', 'admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code'].includes(action)) result = await mutateAction(request);
       else result = await readAction(request);

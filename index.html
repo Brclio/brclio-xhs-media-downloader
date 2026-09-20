@@ -47,16 +47,48 @@
 
     <div class="page-shell">
       <main>
-        <div id="desktop-navigation" class="desktop-navigation" hidden>
-          <div class="desktop-tabs" role="tablist" aria-label="下载方式">
-            <button id="single-note-tab" class="desktop-tab" type="button" role="tab" aria-controls="single-note-panel" aria-selected="true">单篇笔记</button>
-            <button id="profile-tab" class="desktop-tab" type="button" role="tab" aria-controls="profile-panel" aria-selected="false" tabindex="-1">主页全部下载 <span class="desktop-tab-badge">本地版</span></button>
+        <!-- Desktop-only app shell, adapted from Brclio's app template. -->
+        <nav id="desktop-navigation" class="desktop-navigation" aria-label="桌面工作台" hidden>
+          <div class="desktop-nav-heading"><span class="section-label">YOUR WORKSPACE</span><strong>下载工作台</strong></div>
+          <div class="desktop-tabs" role="tablist" aria-label="工作台页面" aria-orientation="vertical">
+            <button id="single-note-tab" class="desktop-tab" type="button" role="tab" aria-controls="single-note-panel" aria-selected="true"><span class="desktop-nav-icon" aria-hidden="true">↙</span><span>单篇下载</span></button>
+            <button id="profile-tab" class="desktop-tab" type="button" role="tab" aria-controls="profile-panel" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">▦</span><span>主页批量</span><span id="desktop-task-badge" class="desktop-nav-count" hidden>进行中</span></button>
+            <button id="account-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-account-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">◎</span><span>账号与会员</span></button>
+            <button id="feedback-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-feedback-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">✎</span><span>问题反馈</span></button>
+            <button id="about-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-about-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">ⓘ</span><span>关于软件</span><span id="desktop-update-badge" class="desktop-nav-count desktop-new-badge" hidden>新版本</span></button>
           </div>
-          <div class="desktop-update-tools">
-            <span id="desktop-version" class="desktop-version">本地下载工作台</span>
-            <button id="desktop-check-updates" class="desktop-check-updates" type="button">检查更新</button>
+          <aside id="desktop-update-announcement" class="desktop-update-announcement" aria-live="polite" hidden>
+            <strong id="desktop-announcement-title">有新版本可用</strong><p id="desktop-announcement-message">前往关于软件查看并下载更新。</p>
+            <div><button id="desktop-announcement-open" type="button">查看更新 ↗</button><button id="desktop-announcement-dismiss" type="button" aria-label="暂时收起更新提醒">稍后</button></div>
+          </aside>
+          <div class="desktop-sidebar-bottom"><button id="desktop-account-shortcut" class="desktop-account-shortcut" type="button"><span class="desktop-account-avatar" aria-hidden="true">B</span><span><strong id="desktop-account-summary">软件账号</strong><small id="desktop-account-summary-status">点击登录 / 查看会员</small></span></button><div class="desktop-update-tools"><span id="desktop-version" class="desktop-version">本地下载工作台</span><button id="desktop-check-updates" class="desktop-check-updates" type="button">检查更新</button></div><a class="desktop-design-credit" href="https://github.com/Brclio/brclio-design-system" target="_blank" rel="noopener noreferrer">Design by Brclio</a></div>
+        </nav>
+
+        <section id="desktop-account-page" class="desktop-page" role="tabpanel" aria-labelledby="account-tab" tabindex="0" hidden><div id="desktop-account-mount"></div></section>
+
+        <section id="desktop-feedback-page" class="desktop-page" role="tabpanel" aria-labelledby="feedback-tab" tabindex="0" hidden>
+          <header class="desktop-page-heading"><div><span class="section-label">FEEDBACK / 一起改进</span><h1>把问题告诉我们。</h1><p>描述你遇到的情况，应用会自动附带已脱敏的运行日志。</p></div><span class="desktop-pill">无需会员</span></header>
+          <div class="desktop-feedback-layout">
+            <form id="desktop-feedback-form" class="desktop-feedback-form">
+              <label>问题类型<select id="desktop-feedback-category"><option value="download">下载与任务</option><option value="audio">视频声音问题</option><option value="account">账号与会员</option><option value="update">安装与更新</option><option value="other">功能建议 / 其他问题</option></select></label>
+              <label>用一句话概括<input id="desktop-feedback-title" type="text" maxlength="120" minlength="3" placeholder="例如：主页下载到第 12 篇时暂停" required></label>
+              <label>详细描述<textarea id="desktop-feedback-description" rows="8" maxlength="8000" minlength="10" placeholder="你做了什么？原本期待怎样的结果？实际发生了什么？如果有提示，请把提示文字一起填写。" required></textarea></label>
+              <p class="desktop-field-help">请勿在描述中填写密码、验证码、小红书 Cookie 或其他敏感内容。</p>
+              <div id="desktop-feedback-account-hint" class="desktop-feedback-account-hint"><span>提交反馈需要登录软件账号，无需开通会员。</span><button id="desktop-feedback-login" type="button">前往登录 ↗</button></div>
+              <div class="desktop-feedback-submit-row"><button id="desktop-feedback-submit" class="button button-primary" type="submit">提交反馈与日志 ↗</button><span id="desktop-feedback-request-hint" class="desktop-field-help">提交后会显示反馈编号</span></div>
+              <div id="desktop-feedback-progress-wrap" class="desktop-feedback-progress-wrap" hidden><progress id="desktop-feedback-progress" max="100" aria-label="反馈上传进度"></progress><p id="desktop-feedback-progress-text" role="status" aria-live="polite"></p></div>
+              <p id="desktop-feedback-result" class="desktop-feedback-result" role="status" aria-live="polite" hidden></p>
+            </form>
+            <aside class="desktop-diagnostics-panel" aria-labelledby="desktop-diagnostics-title"><span class="section-label">DIAGNOSTICS / 诊断信息</span><h2 id="desktop-diagnostics-title">日志会自动带上。</h2><p>提交时附带当前保留的完整诊断日志（最多 8 MiB）。日志达到保留上限后会轮转，较早记录可能已被清理。</p><dl class="desktop-diagnostics-facts"><div><dt>本机日志</dt><dd id="desktop-diagnostics-files">正在读取…</dd></div><div><dt>记录范围</dt><dd id="desktop-diagnostics-range">—</dd></div><div><dt>应用环境</dt><dd id="desktop-diagnostics-environment">—</dd></div></dl><p id="desktop-diagnostics-summary" class="desktop-diagnostics-summary">日志不包含小红书 Cookie、登录凭据和下载文件内容。</p><div class="desktop-diagnostics-actions"><button id="desktop-diagnostics-copy" class="button button-secondary" type="button">复制诊断信息</button><button id="desktop-diagnostics-export" class="button button-secondary" type="button">导出日志文件</button><button id="desktop-diagnostics-refresh" class="desktop-text-button" type="button">刷新日志概况</button></div><p id="desktop-diagnostics-result" class="desktop-field-help" role="status" aria-live="polite"></p></aside>
           </div>
-        </div>
+        </section>
+
+        <section id="desktop-about-page" class="desktop-page" role="tabpanel" aria-labelledby="about-tab" tabindex="0" hidden>
+          <header class="desktop-page-heading"><div><span class="section-label">ABOUT / 关于软件</span><h1>Brclio 小红书下载器</h1><p>喜欢的内容，保存在自己的电脑。</p></div><div id="desktop-about-update-actions"></div></header>
+          <div class="desktop-about-identity"><img src="/aiyc.svg" alt="" width="76" height="76"><div><strong id="desktop-about-version">正在读取版本</strong><p id="desktop-about-system">Mac / Windows 桌面应用</p><span class="desktop-pill">运行环境完整内置</span></div></div>
+          <div id="desktop-about-update-mount"></div>
+          <div class="desktop-about-details"><section><h2>账号与数据</h2><p>软件账号用于会员与设备授权，小红书登录用于读取笔记。单篇下载免费；主页批量下载需要有效会员和已授权设备。</p><p>下载文件保存在你选择的本机文件夹。更新与会员状态变化不会主动删除已有文件和任务。</p></section><section><h2>更新与帮助</h2><p>检测到新版本会在导航中提示。你可以在线下载安装包，确认后安装更新；安装前会提示处理当前任务。</p><div class="desktop-about-links"><button id="desktop-about-feedback" class="desktop-text-button" type="button">提交问题反馈 ↗</button><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases" target="_blank" rel="noopener noreferrer">全部发布记录 ↗</a><a href="https://github.com/Brclio/brclio-design-system" target="_blank" rel="noopener noreferrer">© 2026 Brclio · CC BY-NC-SA 4.0</a></div></section></div>
+        </section>
 
         <section id="desktop-update-panel" class="desktop-update-panel" aria-labelledby="desktop-update-title" hidden>
           <div class="desktop-update-heading">

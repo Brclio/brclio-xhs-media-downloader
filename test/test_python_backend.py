@@ -6,6 +6,7 @@ import json
 import re
 import unittest
 from pathlib import Path
+from email.message import Message
 from unittest.mock import patch
 
 
@@ -91,6 +92,47 @@ def make_live_photo_image(
 
 
 class PythonBackendTests(unittest.TestCase):
+    def test_audio_stream_preference_and_original_fallback(self) -> None:
+        streams = python_parse.extract_video_streams_from_note({"video": {
+            "consumer": {"originVideoKey": "original.mp4"},
+            "media": {"stream": {
+                "h264": [{"masterUrl": "https://sns-video-bd.xhscdn.com/silent.mp4", "audioChannels": 0, "audioCodec": "", "width": 3840, "height": 2160}],
+                "h265": [{"masterUrl": "https://sns-video-bd.xhscdn.com/audio.mp4", "audioChannels": 2, "audioCodec": "aac", "width": 720, "height": 1280}],
+            }},
+        }})
+        streams = python_parse.prepare_video_results(streams)
+        self.assertTrue(streams[0]["hasAudio"])
+        self.assertEqual(streams[0]["audioCodec"], "aac")
+        self.assertTrue(streams[0]["url"].endswith("/audio.mp4"))
+        self.assertFalse(streams[-1]["hasAudio"])
+        self.assertTrue(any(s["source"] == "origin-video-key" for s in streams))
+
+    def test_video_chunk_range_and_length_are_verified(self) -> None:
+        for content_range, body, status in [
+            ("bytes 3-5/10", b"abc", 200), ("bytes 0-2/10", b"abc", 502),
+            (None, b"abc", 502), ("bytes 3-5/10", b"ab", 502),
+        ]:
+            response = io.BytesIO(body)
+            response.status = 206
+            response.getcode = lambda: 206
+            response.headers = Message()
+            response.headers["Content-Type"] = "video/mp4"
+            if content_range:
+                response.headers["Content-Range"] = content_range
+            request = object.__new__(python_video.handler)
+            request.path = "/api/python_video?url=https%3A%2F%2Fsns-video-bd.xhscdn.com%2Ffixture.mp4&action=chunk&start=3&end=5"
+            request.wfile = io.BytesIO()
+            request.send_response = lambda value: setattr(request, "status", value)
+            request.send_header = lambda *_: None
+            request.end_headers = lambda: None
+            with patch.object(python_video, "open_video", return_value=response):
+                request.do_GET()
+            self.assertEqual(request.status, status)
+            if status == 200:
+                self.assertEqual(request.wfile.getvalue(), body)
+            else:
+                self.assertFalse(json.loads(request.wfile.getvalue())["success"])
+
     def test_video_url_port_and_malformed_image_token_safety(self) -> None:
         self.assertFalse(
             python_parse.is_xhs_video_url(

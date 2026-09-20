@@ -67,6 +67,9 @@ app.on('browser-window-created', (_event, win) => {
         const info = await window.xhsDesktop.getInfo();
         const state = await window.xhsDesktop.getProfileState();
         const update = await window.xhsDesktop.getUpdateState();
+        await window.xhsDesktop.recordDiagnostic('renderer.smoke', { message: 'bridge verified' });
+        const diagnostics = await window.xhsDesktop.getDiagnosticsInfo();
+        const feedback = await window.xhsDesktop.submitFeedback({ title: '验证未登录反馈', description: '本地主进程接口验证，无远端上传。', category: 'other' });
         const updateMethods = ['checkForUpdates', 'downloadUpdate', 'cancelUpdateDownload', 'installUpdate', 'onUpdateState', 'retryItem']
           .every(name => typeof window.xhsDesktop[name] === 'function');
         const payloads = [];
@@ -78,13 +81,15 @@ app.on('browser-window-created', (_event, win) => {
         }
         // Module initialization awaits the bridge; drain promises before inspecting.
         await new Promise(resolve=>setTimeout(resolve,100));
-        return {info,status:state.status,updateStatus:update.status,updateMethods,payloads,profileVisible:!document.querySelector('#profile-panel').hidden,
+        return {info,status:state.status,updateStatus:update.status,updateMethods,payloads,
+          diagnosticsVerified: diagnostics.totalBytes > 0 && !('text' in diagnostics), feedbackGuestRejected: !feedback.ok && feedback.error?.code === 'UNAUTHENTICATED',
+          profileVisible:!document.querySelector('#profile-panel').hidden,
           tabsVisible:!document.querySelector('#desktop-navigation').hidden,
           nodeAvailable:typeof require === 'function',
           secureContext:window.isSecureContext};
       })()`);
       if (result.info.name !== 'Brclio 小红书下载器' || !result.info.pythonAvailable || result.status !== 'idle' || !result.profileVisible
-          || !result.tabsVisible || result.nodeAvailable || !result.secureContext || !result.updateMethods || result.updateStatus !== 'idle'
+          || !result.tabsVisible || result.nodeAvailable || !result.secureContext || !result.updateMethods || result.updateStatus !== 'idle' || !result.diagnosticsVerified || !result.feedbackGuestRejected
           || result.payloads.some(value => !value.success || value.images !== 1 || value.status !== 200)) {
         throw new Error(JSON.stringify(result));
       }

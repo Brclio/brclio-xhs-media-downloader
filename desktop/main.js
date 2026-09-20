@@ -1,7 +1,8 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, safeStorage, session, shell } from 'electron';
-import { access, readFile, realpath, stat } from 'node:fs/promises';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, net, protocol, safeStorage, session, shell } from 'electron';
+import { access, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { APP_URL, createProtocolHandler, isAppUrl } from './protocol.js';
 import { PythonBackend } from './python-backend.js';
 import { XhsBrowser } from './profile-browser.js';
@@ -9,6 +10,9 @@ import { ProfileManager } from './profile-manager.js';
 import { UpdateManager, createElectronUpdateFetch } from './update-manager.js';
 import { SecureAccountStore } from './account-storage.js';
 import { AccountClient } from './account-client.js';
+import { DiagnosticLog } from './diagnostic-log.js';
+import { FeedbackClient } from './feedback-client.js';
+import { prepareMacUpdate } from './mac-update.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -25,11 +29,23 @@ let manager;
 let pythonBackend;
 let updateManager;
 let updateCheckTimer;
+let updatePeriodicTimer;
 let accountClient;
+let diagnostics;
+let feedbackClient;
 let accountRefreshTimer;
 let quitting = false;
 let shutdownComplete = false;
 const selectedDirectories = new Set();
+const diagnostic = (event, details, level = 'info') => { void diagnostics?.record(event, details, level); };
+const appInfo = () => ({ name: APP_NAME, version: app.getVersion(), platform: process.platform, arch: process.arch,
+  osRelease: os.release(), portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR), pythonAvailable: pythonBackend?.available === true });
+const diagnosticContext = () => ({ application: appInfo(), task: (() => {
+  const state = manager?.snapshot();
+  return state ? { status: state.status, discovered: state.notes?.length || state.items?.length || 0, error: state.error,
+    completed: state.completed, skipped: state.skipped, failed: state.failed,
+    intervalSeconds: state.intervalSeconds, jitterSeconds: state.jitterSeconds } : null;
+})() });
 
 function sendUpdate(state) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:profile-update', state);
@@ -43,7 +59,17 @@ function trusted(event) {
 }
 
 function handle(channel, callback) {
-  ipcMain.handle(channel, async (event, ...args) => { trusted(event); return callback(...args); });
+  ipcMain.handle(channel, async (event, ...args) => {
+    trusted(event);
+    const trace = !/get-|account-state|diagnostics-info|record-diagnostic|feedback-state/.test(channel);
+    const started = Date.now();
+    if (trace) diagnostic('ipc.started', { channel });
+    try {
+      const result = await callback(...args);
+      if (trace) diagnostic('ipc.completed', { channel, durationMs: Date.now() - started, ok: result?.ok !== false });
+      return result;
+    } catch (error) { diagnostic('ipc.failed', { channel, durationMs: Date.now() - started, error }, 'error'); throw error; }
+  });
 }
 
 async function validateDirectory(directory) {
@@ -103,8 +129,30 @@ function registerIpc() {
     await manager.pause();
     return accountClient.logout();
   }));
-  handle('desktop:get-info', () => ({ name: APP_NAME, version: app.getVersion(), platform: process.platform, arch: process.arch,
-    portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR), pythonAvailable: pythonBackend.available }));
+  handle('desktop:get-info', appInfo);
+  handle('desktop:diagnostics-info', async () => {
+    const { text, ...info } = await diagnostics.snapshot(diagnosticContext()); return info;
+  });
+  handle('desktop:copy-diagnostics', async () => {
+    const log = await diagnostics.snapshot(diagnosticContext()); clipboard.writeText(log.text);
+    return { ok: true, bytes: log.totalBytes, message: '已复制当前完整诊断日志。' };
+  });
+  handle('desktop:export-diagnostics', async () => {
+    const log = await diagnostics.snapshot(diagnosticContext());
+    const result = await dialog.showSaveDialog(mainWindow, { title: '导出完整诊断日志',
+      defaultPath: path.join(app.getPath('downloads'), `Brclio-diagnostics-${new Date().toISOString().slice(0, 10)}.ndjson`),
+      filters: [{ name: '诊断日志', extensions: ['ndjson', 'txt'] }] });
+    if (result.canceled || !result.filePath) return { ok: true, cancelled: true };
+    await writeFile(result.filePath, log.text, { mode: 0o600 });
+    return { ok: true, bytes: log.totalBytes, message: '诊断日志已导出。' };
+  });
+  handle('desktop:submit-feedback', input => feedbackClient.submit(input));
+  handle('desktop:feedback-state', () => feedbackClient.snapshot());
+  handle('desktop:record-diagnostic', (event, fields) => {
+    if (typeof event !== 'string' || !/^(renderer|single|navigation)\.[a-z0-9_.-]{1,100}$/i.test(event)
+      || Buffer.byteLength(JSON.stringify(fields || {})) > 24000) return false;
+    diagnostic(event, fields); return true;
+  });
   handle('desktop:get-update-state', () => updateManager.snapshot());
   handle('desktop:check-for-updates', () => updateManager.checkForUpdates());
   handle('desktop:download-update', () => updateManager.downloadUpdate());
@@ -170,17 +218,24 @@ async function createWindow() {
     if (!isAppUrl(url)) { event.preventDefault(); external(url); }
   });
   mainWindow.webContents.on('will-attach-webview', (event) => event.preventDefault());
+  mainWindow.webContents.on('render-process-gone', (_event, details) => diagnostic('renderer.process_gone', details, 'error'));
+  mainWindow.webContents.on('unresponsive', () => diagnostic('renderer.unresponsive', {}, 'warn'));
+  mainWindow.webContents.on('did-fail-load', (_event, code, description, url, isMainFrame) => diagnostic('renderer.load_failed', { code, description, url, isMainFrame }, 'error'));
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   mainWindow.on('closed', () => { mainWindow = null; if (!quitting) app.quit(); });
   await mainWindow.loadURL(`${APP_URL}/`);
 }
 
 async function boot() {
+  diagnostics = new DiagnosticLog({ directory: path.join(app.getPath('userData'), 'diagnostics') });
+  try { await diagnostics.initialize(); } catch (error) { diagnostics.lastError = error.code || 'LOG_INITIALIZE_FAILED'; }
+  diagnostic('app.started', appInfo());
   app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: app.getVersion() });
   if (process.platform === 'darwin') {
     Menu.setApplicationMenu(Menu.buildFromTemplate([
       { label: APP_NAME, submenu: [
-        { role: 'about', label: `关于 ${APP_NAME}` },
+        { label: `关于 ${APP_NAME}`, click: () => navigateDesktop('about') },
+        { label: '检查更新…', click: () => { navigateDesktop('about'); void updateManager?.checkForUpdates(); } },
         { type: 'separator' }, { role: 'services', label: '服务' }, { type: 'separator' },
         { role: 'hide', label: `隐藏 ${APP_NAME}` },
         { role: 'hideOthers', label: '隐藏其他' }, { role: 'unhide', label: '显示全部' },
@@ -189,8 +244,9 @@ async function boot() {
       { role: 'editMenu', label: '编辑' }, { role: 'windowMenu', label: '窗口' }
     ]));
   }
-  pythonBackend = new PythonBackend({ appDirectory: app.getAppPath(), resourcesDirectory: process.resourcesPath, packaged: app.isPackaged });
+  pythonBackend = new PythonBackend({ appDirectory: app.getAppPath(), resourcesDirectory: process.resourcesPath, packaged: app.isPackaged, onDiagnostic: diagnostic });
   await pythonBackend.initialize();
+  diagnostic('python.initialized', { available: pythonBackend.available });
   if (app.isPackaged && !pythonBackend.available) {
     throw new Error('安装包内置的 Python 后台无法启动，请重新安装完整版本。');
   }
@@ -199,12 +255,14 @@ async function boot() {
     store: new SecureAccountStore({ directory: path.join(app.getPath('userData'), 'account'), safeStorage }),
     endpoint: !app.isPackaged && process.env.XHS_ACCOUNT_ENDPOINT !== undefined ? process.env.XHS_ACCOUNT_ENDPOINT : accountConfig.endpoint,
     allowInsecureDevelopment: !app.isPackaged,
+    onDiagnostic: diagnostic,
     onUpdate(state) {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:account-update', state);
     }
   });
   await accountClient.initialize();
   protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend,
+    onDiagnostic: diagnostic,
     authorize: feature => accountClient.authorize(feature) }));
   const permissions = new Set(['clipboard-read', 'clipboard-sanitized-write']);
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
@@ -212,12 +270,17 @@ async function boot() {
   });
   session.defaultSession.setPermissionCheckHandler((contents, permission, origin) =>
     contents === mainWindow?.webContents && isAppUrl(origin) && permissions.has(permission));
-  browser = new XhsBrowser({ BrowserWindow, session, onLoginState(state) {
+  browser = new XhsBrowser({ BrowserWindow, session, onDiagnostic: diagnostic, onLoginState(state) {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:login-update', state);
   } });
   manager = new ProfileManager({ stateDirectory: path.join(app.getPath('userData'), 'profile-jobs'), browser, onUpdate: sendUpdate,
+    onDiagnostic: diagnostic,
     authorize: feature => accountClient.authorize(feature) });
   await manager.initialize();
+  diagnostic('task.restored', diagnosticContext().task);
+  for (const item of manager.snapshot().items || []) {
+    if (item.status === 'failed') diagnostic('note.restored_failure', { noteId: item.id, sequence: item.sequence, error: item.error }, 'warn');
+  }
   if (manager.snapshot().directory) {
     try { selectedDirectories.add(await validateDirectory(manager.snapshot().directory)); }
     catch { /* A moved/unmounted drive must be selected again before downloading. */ }
@@ -227,30 +290,85 @@ async function boot() {
     portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR),
     fetchImpl: createElectronUpdateFetch(net),
     onUpdate(state) {
+      if (state.status !== lastUpdateStatus) { diagnostic('update.state', { status: state.status, latestVersion: state.latestVersion, error: state.error }); lastUpdateStatus = state.status; }
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:update-state', state);
     },
     async confirmInstall(state) {
       const result = await dialog.showMessageBox(mainWindow, {
         type: 'question', title: '安装更新', message: `准备安装 ${state.latestVersion}，是否继续？`,
         detail: state.installationHint,
-        buttons: ['取消', '暂停任务并打开安装包'], defaultId: 0, cancelId: 0, noLink: true
+        buttons: ['取消', process.platform === 'darwin' ? '暂停任务并覆盖更新' : '暂停任务并打开安装包'], defaultId: 0, cancelId: 0, noLink: true
       });
       return result.response === 1;
     },
     pauseDownloads: () => manager.pause(),
-    openInstaller: file => shell.openPath(file),
+    async openInstaller(file, candidate) {
+      if (process.platform !== 'darwin') return shell.openPath(file);
+      if (!app.isPackaged) throw Object.assign(new Error('开发环境不能覆盖安装，请使用完整客户端。'), { code: 'MAC_UPDATE_DEVELOPMENT' });
+      const cacheDirectory = path.join(app.getPath('userData'), 'updates');
+      const prepared = await prepareMacUpdate({ installerPath: file,
+        currentAppPath: path.resolve(process.execPath, '../../..'), expectedVersion: candidate.version,
+        expectedArch: process.arch, cacheDirectory, parentPid: process.pid });
+      try {
+        await writeFile(path.join(cacheDirectory, 'mac-last-install.json'), JSON.stringify({ resultPath: prepared.resultPath }), { mode: 0o600 });
+        await prepared.launch();
+        diagnostic('update.install_prepared', { version: candidate.version, mode: prepared.mode });
+      } catch (error) { await prepared.dispose(); throw error; }
+      return '';
+    },
     onInstalled: () => { app.quit(); }
   });
+  feedbackClient = new FeedbackClient({ accountClient, diagnostics, directory: path.join(app.getPath('userData'), 'feedback-pending'),
+    appInfo: appInfo(), context: diagnosticContext, onUpdate(state) {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:feedback-state', state);
+    } });
   registerIpc();
   await createWindow();
+  await reportPreviousMacUpdate();
   void accountClient.refresh().catch(() => {});
   accountRefreshTimer = setInterval(() => { void accountClient.refresh().catch(() => {}); }, 60_000);
   accountRefreshTimer.unref();
   if (app.isPackaged) {
-    updateCheckTimer = setTimeout(() => { void updateManager.checkForUpdates(); }, 5000);
+    updateCheckTimer = setTimeout(automaticUpdateCheck, 5000);
     updateCheckTimer.unref();
+    updatePeriodicTimer = setInterval(automaticUpdateCheck, 4 * 60 * 60 * 1000);
+    updatePeriodicTimer.unref();
+    mainWindow.on('focus', () => { if (Date.now() - lastAutomaticCheck > 60 * 60 * 1000) automaticUpdateCheck(); });
   }
 }
+
+let lastUpdateStatus;
+let lastAutomaticCheck = 0;
+async function reportPreviousMacUpdate() {
+  if (process.platform !== 'darwin') return;
+  const directory = path.join(app.getPath('userData'), 'updates');
+  const pointer = path.join(directory, 'mac-last-install.json');
+  try {
+    const { resultPath } = JSON.parse(await readFile(pointer, 'utf8'));
+    if (typeof resultPath !== 'string' || !path.resolve(resultPath).startsWith(`${directory}${path.sep}`)
+      || path.basename(resultPath) !== 'install-result.json' || (await stat(resultPath)).size > 16000) return;
+    const result = JSON.parse(await readFile(resultPath, 'utf8'));
+    diagnostic('update.install_result', result, result.status === 'installed' ? 'info' : 'warn');
+    if (!['prepared', 'waiting', 'replacing'].includes(result.status)) {
+      await rm(pointer, { force: true });
+      if (result.status !== 'installed') await dialog.showMessageBox(mainWindow, {
+        type: 'warning', title: '上次更新未完成', message: result.message || '请重新检查更新或手动安装。',
+        detail: `更新结果与备份信息保存在：${resultPath}`, buttons: ['知道了']
+      });
+    }
+  } catch (error) { if (error.code !== 'ENOENT') diagnostic('update.result_unavailable', { code: error.code }, 'warn'); }
+}
+function automaticUpdateCheck() {
+  if (!updateManager || ['checking', 'downloading', 'downloaded', 'installing'].includes(updateManager.snapshot().status)) return;
+  lastAutomaticCheck = Date.now(); void updateManager.checkForUpdates();
+}
+function navigateDesktop(page) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('desktop:navigate', { page });
+}
+process.on('uncaughtExceptionMonitor', error => diagnostic('app.uncaught_exception', { error }, 'error'));
+app.on('child-process-gone', (_event, details) => diagnostic('app.child_process_gone', details, 'error'));
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
@@ -264,19 +382,22 @@ else {
     if (quitting) return;
     quitting = true;
     clearTimeout(updateCheckTimer);
+    clearInterval(updatePeriodicTimer);
     clearInterval(accountRefreshTimer);
     void (async () => {
-      try { await updateManager?.shutdown(); await manager?.shutdown(); }
+      try { await feedbackClient?.shutdown(); await updateManager?.shutdown(); await manager?.shutdown(); }
       catch { dialog.showErrorBox('保存任务失败', '本次下载进度未能完整保存，请检查磁盘剩余空间和文件夹权限。'); }
       finally {
         browser?.close();
         pythonBackend?.close();
+        await diagnostics?.record('app.stopped', {}); await diagnostics?.flush();
         shutdownComplete = true;
         app.quit();
       }
     })();
   });
   app.whenReady().then(boot).catch((error) => {
+    diagnostic('app.start_failed', { error }, 'error');
     dialog.showErrorBox(`无法启动 ${APP_NAME}`, error.message);
     app.quit();
   });

@@ -50,6 +50,28 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   const bridge = window.xhsDesktop;
   if (!bridge) return;
 
+  // Only uncaught error details are sent to the local diagnostics service.
+  // User form contents, cookies, and downloaded media are never inspected here.
+  if (typeof bridge.recordDiagnostic === "function") {
+    let reported = 0;
+    const report = (event, error, fallback) => {
+      if (reported++ >= 20) return;
+      void bridge.recordDiagnostic(event, {
+        message: error instanceof Error ? error.message : fallback || "未知的界面错误",
+        stack: error instanceof Error ? error.stack : undefined
+      }).catch(() => {});
+    };
+    const onError = event => report("renderer.error", event.error, event.message);
+    const onRejection = event => report("renderer.unhandledrejection", event.reason,
+      typeof event.reason === "string" ? event.reason : "异步操作未捕获错误");
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("pagehide", () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    }, { once: true });
+  }
+
   const element = (id) => document.getElementById(id);
   const ui = {
     navigation: element("desktop-navigation"),
@@ -138,33 +160,207 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   const headerStatus = document.querySelector(".header-status");
   headerStatus.setAttribute("aria-label", "运行状态：本地桌面版");
   headerStatus.querySelector("span:last-child").textContent = "本地桌面版";
-  document.querySelector(".hero-copy > p").textContent = "粘贴分享文案，解析笔记原图、实况图片与视频；也可以切换到主页下载，按你设定的节奏逐篇保存。";
+  document.querySelector(".hero-copy h1").textContent = "单篇笔记，随手保存。";
+  document.querySelector(".hero-copy > p").textContent = "粘贴笔记链接或分享文案，解析图片、实况、视频与正文。单篇下载免费。";
   document.querySelector(".footer-brand strong").textContent = "喜欢的内容，保存在你的电脑。";
   document.querySelector("footer > p").textContent = "单篇笔记支持图片、实况 ZIP、视频与文案；主页内容按笔记归档到所选文件夹。";
 
+  const pages = [
+    ["single", ui.singleTab, ui.singlePanel],
+    ["profile", ui.profileTab, ui.panel],
+    ["account", element("account-tab"), element("desktop-account-page")],
+    ["feedback", element("feedback-tab"), element("desktop-feedback-page")],
+    ["about", element("about-tab"), element("desktop-about-page")]
+  ];
+  for (const [, , page] of pages) page.classList.add("desktop-page");
+  element("desktop-about-update-mount").append(ui.updatePanel);
+  element("desktop-about-update-actions").append(ui.updateCheck);
+  ui.details.open = true;
+  let currentPage = "profile";
+  let dismissedUpdate = "";
+  let announcedUpdate = "";
+  const compactNavigation = window.matchMedia("(max-width: 600px)");
+  const updateNavigationOrientation = () => ui.navigation.querySelector('[role="tablist"]')
+    .setAttribute("aria-orientation", compactNavigation.matches ? "horizontal" : "vertical");
+  updateNavigationOrientation();
+  compactNavigation.addEventListener("change", updateNavigationOrientation);
+  window.addEventListener("pagehide", () => compactNavigation.removeEventListener("change", updateNavigationOrientation), { once: true });
+
   function selectTab(tab, focus = false) {
-    for (const candidate of [ui.singleTab, ui.profileTab]) {
+    for (const [name, candidate, page] of pages) {
       const selected = candidate === tab;
       candidate.setAttribute("aria-selected", String(selected));
       candidate.tabIndex = selected ? 0 : -1;
+      page.hidden = !selected;
+      if (selected) currentPage = name;
     }
-    ui.singlePanel.hidden = tab !== ui.singleTab;
-    ui.panel.hidden = tab !== ui.profileTab;
+    document.body.dataset.desktopPage = currentPage;
+    if (currentPage === "about") element("desktop-update-announcement").hidden = true;
+    if (currentPage === "feedback") void loadDiagnostics();
     if (focus) tab.focus();
+    if (compactNavigation.matches) tab.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
-  for (const tab of [ui.singleTab, ui.profileTab]) {
+  function navigate(page) {
+    const selected = pages.find(([name]) => name === page);
+    if (selected) selectTab(selected[1], true);
+  }
+  for (const [, tab] of pages) {
     tab.addEventListener("click", () => selectTab(tab));
     tab.addEventListener("keydown", (event) => {
-      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
-      const next = event.key === "Home" ? ui.singleTab
-        : event.key === "End" ? ui.profileTab
-          : tab === ui.singleTab ? ui.profileTab : ui.singleTab;
-      selectTab(next, true);
+      const index = pages.findIndex(([, candidate]) => candidate === tab);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? pages.length - 1
+        : (index + (["ArrowLeft", "ArrowUp"].includes(event.key) ? pages.length - 1 : 1)) % pages.length;
+      selectTab(pages[next][1], true);
     });
   }
+  element("desktop-account-shortcut").addEventListener("click", () => navigate("account"));
+  element("desktop-feedback-login").addEventListener("click", () => navigate("account"));
+  element("desktop-about-feedback").addEventListener("click", () => navigate("feedback"));
+  element("desktop-announcement-open").addEventListener("click", () => navigate("about"));
+  element("desktop-announcement-dismiss").addEventListener("click", () => {
+    dismissedUpdate = String(updateState.latestVersion || "");
+    element("desktop-update-announcement").hidden = true;
+  });
+  if (typeof bridge.onNavigate === "function") {
+    const cleanup = bridge.onNavigate((request) => navigate(request?.page));
+    if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
+  }
+  const headerBrand = document.querySelector(".app-header .brand");
+  headerBrand.addEventListener("click", (event) => { event.preventDefault(); navigate("single"); });
   selectTab(ui.profileTab);
+
+  // Desktop feedback never reads log files or credentials in the renderer.
+  // The main process collects and sanitizes diagnostics before copying/exporting/uploading.
+  let softwareAccount = null;
+  let feedbackBusy = false;
+  let diagnosticsPending = false;
+  let diagnosticsOperation = false;
+  let accountRevision = 0;
+  let feedbackStatus = "idle";
+  const feedbackSupported = typeof bridge.submitFeedback === "function";
+  const dateText = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleString("zh-CN", { hour12: false }) : "—";
+  };
+  const environmentText = () => {
+    const system = { darwin: "macOS", win32: "Windows", linux: "Linux" }[desktopInfo.platform] || desktopInfo.platform || "桌面版";
+    return `${system}${desktopInfo.arch ? ` · ${desktopInfo.arch}` : ""}${desktopInfo.version ? ` · v${desktopInfo.version}` : ""}`;
+  };
+  function renderFeedbackControls() {
+    const authenticated = softwareAccount?.authenticated === true;
+    element("desktop-feedback-account-hint").hidden = authenticated;
+    element("desktop-feedback-submit").disabled = feedbackBusy || !authenticated || !feedbackSupported;
+    element("desktop-feedback-submit").textContent = feedbackBusy ? "正在提交…" : "提交反馈与日志 ↗";
+    for (const id of ["desktop-feedback-title", "desktop-feedback-description", "desktop-feedback-category"]) element(id).disabled = feedbackBusy;
+    element("desktop-diagnostics-copy").disabled = diagnosticsOperation || typeof bridge.copyDiagnostics !== "function";
+    element("desktop-diagnostics-export").disabled = diagnosticsOperation || typeof bridge.exportDiagnostics !== "function";
+    element("desktop-diagnostics-refresh").disabled = diagnosticsPending || typeof bridge.getDiagnosticsInfo !== "function";
+    if (!feedbackSupported) element("desktop-feedback-request-hint").textContent = "当前运行环境暂不支持在线反馈";
+  }
+  function renderSoftwareAccount(next) {
+    if (!next || typeof next !== "object") return;
+    softwareAccount = next;
+    const account = next.account;
+    element("desktop-account-summary").textContent = next.authenticated ? account?.user?.email || "已登录软件账号" : "登录软件账号";
+    const membership = account?.membership;
+    element("desktop-account-summary-status").textContent = !next.authenticated ? "查看会员与设备授权"
+      : !next.verified ? "授权状态待刷新" : membership?.type === "permanent" ? "永久会员"
+        : membership?.active ? "有效期会员" : membership?.type === "duration" ? "会员已到期" : "普通用户";
+    renderFeedbackControls();
+  }
+  async function loadDiagnostics() {
+    if (diagnosticsPending) return;
+    if (typeof bridge.getDiagnosticsInfo !== "function") {
+      element("desktop-diagnostics-files").textContent = "当前运行环境暂不支持";
+      renderFeedbackControls();
+      return;
+    }
+    diagnosticsPending = true;
+    renderFeedbackControls();
+    try {
+      const result = await bridge.getDiagnosticsInfo();
+      if (result?.ok === false) throw new Error(result.error?.message || result.message || "暂时无法读取日志概况。");
+      element("desktop-diagnostics-files").textContent = `${count(result.fileCount)} 个文件 · ${updateBytes(result.totalBytes)}`;
+      element("desktop-diagnostics-range").textContent = result.oldestAt ? `${dateText(result.oldestAt)} 至 ${dateText(result.newestAt)}` : "尚无可用日志";
+      element("desktop-diagnostics-summary").textContent = `${result.summary || "日志不包含小红书 Cookie、登录凭据和下载文件内容。"}${result.truncated ? " 当前记录已轮转，早于上述时间的历史不包含在本次提交中。" : " 本次附带当前保留的全部诊断记录。"}`;
+      element("desktop-diagnostics-environment").textContent = environmentText();
+      element("desktop-diagnostics-result").textContent = "";
+    } catch (error) {
+      element("desktop-diagnostics-files").textContent = "暂时无法读取";
+      element("desktop-diagnostics-result").textContent = error?.message || "读取日志失败，请稍后重试。";
+    } finally { diagnosticsPending = false; renderFeedbackControls(); }
+  }
+  async function diagnosticsAction(method) {
+    if (diagnosticsOperation || typeof bridge[method] !== "function") return;
+    diagnosticsOperation = true;
+    renderFeedbackControls();
+    element("desktop-diagnostics-result").textContent = "正在整理诊断信息…";
+    try {
+      const result = await bridge[method]();
+      if (result?.cancelled) element("desktop-diagnostics-result").textContent = "已取消导出。";
+      else if (result?.ok === false) throw new Error(result.error?.message || result.message || "操作未完成，请重试。");
+      else element("desktop-diagnostics-result").textContent = result?.message || (method === "copyDiagnostics" ? "诊断信息已复制。" : "日志文件已导出。");
+    } catch (error) { element("desktop-diagnostics-result").textContent = error?.message || "诊断操作失败，请重试。"; }
+    finally { diagnosticsOperation = false; renderFeedbackControls(); }
+  }
+  function renderFeedbackState(next) {
+    if (!next || typeof next !== "object") return;
+    feedbackStatus = next.status || "idle";
+    const active = ["collecting", "uploading"].includes(feedbackStatus);
+    element("desktop-feedback-progress-wrap").hidden = !active;
+    const progress = Math.max(0, Math.min(100, Number(next.progress) || 0));
+    element("desktop-feedback-progress").value = progress;
+    const uploading = feedbackStatus === "uploading";
+    element("desktop-feedback-progress-text").textContent = next.message || (uploading
+      ? `正在上传 ${updateBytes(next.uploadedBytes)} / ${updateBytes(next.totalBytes)} · ${Math.round(progress)}%`
+      : "正在整理当前保留的诊断日志…");
+    element("desktop-feedback-progress").setAttribute("aria-valuetext", element("desktop-feedback-progress-text").textContent);
+    if (feedbackStatus === "submitted") {
+      const result = element("desktop-feedback-result"); result.hidden = false; result.dataset.status = "success";
+      result.textContent = `反馈已提交${next.feedbackId ? `，编号 ${next.feedbackId}` : ""}。请保留编号，便于后续沟通。`;
+    } else if (feedbackStatus === "error") {
+      const result = element("desktop-feedback-result"); result.hidden = false; result.dataset.status = "error";
+      result.textContent = next.error?.message || next.message || "反馈未能确认提交，请保留描述并重试。";
+    }
+  }
+  element("desktop-diagnostics-refresh").addEventListener("click", () => void loadDiagnostics());
+  element("desktop-diagnostics-copy").addEventListener("click", () => void diagnosticsAction("copyDiagnostics"));
+  element("desktop-diagnostics-export").addEventListener("click", () => void diagnosticsAction("exportDiagnostics"));
+  element("desktop-feedback-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (feedbackBusy || !element("desktop-feedback-form").reportValidity()) return;
+    if (!softwareAccount?.authenticated) { navigate("account"); return; }
+    if (!feedbackSupported) return;
+    const input = { title: element("desktop-feedback-title").value.trim(), description: element("desktop-feedback-description").value.trim(), category: element("desktop-feedback-category").value };
+    if (input.title.length < 3 || input.description.length < 10) {
+      renderFeedbackState({ status: "error", message: "标题至少 3 个字，详细描述至少 10 个字。" }); return;
+    }
+    feedbackBusy = true; renderFeedbackControls(); element("desktop-feedback-result").hidden = true;
+    renderFeedbackState({ status: "collecting" });
+    try {
+      const result = await bridge.submitFeedback(input);
+      if (!result?.ok) throw new Error(result?.error?.message || "反馈未能确认提交，请重试。");
+      renderFeedbackState({ status: "submitted", feedbackId: result.feedbackId });
+    } catch (error) { renderFeedbackState({ status: "error", message: error?.message }); }
+    finally { feedbackBusy = false; renderFeedbackControls(); }
+  });
+  if (typeof bridge.onFeedbackState === "function") {
+    const cleanup = bridge.onFeedbackState(renderFeedbackState);
+    if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
+  }
+  if (typeof bridge.onAccountUpdate === "function") {
+    const cleanup = bridge.onAccountUpdate((next) => { accountRevision += 1; renderSoftwareAccount(next); });
+    if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
+  }
+  if (typeof bridge.getAccountState === "function") {
+    const requested = accountRevision;
+    void bridge.getAccountState().then((next) => { if (requested === accountRevision) renderSoftwareAccount(next); }).catch(() => renderFeedbackControls());
+  }
+  renderFeedbackControls();
 
   function showError(message) {
     ui.error.textContent = message || "";
@@ -197,7 +393,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     ui.updateCheck.disabled = !updatesAvailable || busy;
     ui.updateCheck.textContent = status === "checking" || updatePending === "check" ? "正在检查…" : "检查更新";
     ui.updateCheck.title = updatesAvailable ? "检查是否有新的本地版安装包" : "请手动安装带有更新功能的新版本";
-    ui.updatePanel.hidden = status === "idle" && !updatePending;
+    ui.updatePanel.hidden = false;
     ui.updatePanel.dataset.status = status;
 
     const text = {
@@ -206,7 +402,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
       "up-to-date": ["当前已是最新版本", version ? `你正在使用 v${version}。` : "暂时没有发现更新。"],
       available: [`发现新版本 ${latest}`, "可以继续使用当前版本，准备好后再下载更新。"],
       downloading: [`正在下载 ${latest}`, "下载期间可以继续使用应用，也可以随时取消更新下载。"],
-      downloaded: [`${latest} 已准备好安装`, "点击安装后会先确认暂停下载任务，再打开安装包并退出应用。"],
+      downloaded: [`${latest} 已准备好安装`, "确认后将暂停当前任务并开始安装更新，请先保存正在编辑的内容。"],
       installing: ["正在准备安装更新", "请在确认窗口中选择是否暂停任务并继续安装。"],
       error: [failedPhase === "install" ? "安装更新未完成" : failedPhase === "download" ? "更新下载失败" : "检查更新失败", "当前版本仍可继续使用。"]
     }[status] || ["应用更新", "正在读取更新状态。"];
@@ -239,7 +435,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     ui.updateError.textContent = failed ? String(next.error?.message || "操作未完成，请稍后重试。") : "";
     const showInstallHint = ["available", "downloading", "downloaded", "installing"].includes(status) || (failed && failedPhase === "install");
     const fallbackHint = desktopInfo.platform === "darwin"
-      ? "Mac：打开安装包后，将应用拖入 Applications 文件夹并替换旧版本。"
+      ? "Mac：安装方式与是否需要退出重启会在确认窗口中说明。"
       : desktopInfo.platform === "win32" && desktopInfo.portable
         ? "当前为 Windows 便携版；本次更新会运行安装程序，安装正式版。"
         : "";
@@ -249,6 +445,16 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     const notes = typeof next.releaseNotes === "string" ? next.releaseNotes.trim() : "";
     ui.updateNotesDetails.hidden = !notes || ["idle", "checking", "up-to-date"].includes(status);
     ui.updateNotes.textContent = notes;
+    const newVersion = Boolean(next.latestVersion) && ["available", "downloading", "downloaded", "installing"].includes(status);
+    element("desktop-update-badge").hidden = !newVersion;
+    element("desktop-update-badge").textContent = status === "downloaded" ? "可安装" : status === "downloading" ? "下载中" : "新版本";
+    if (status === "available" && newVersion && announcedUpdate !== next.latestVersion) {
+      announcedUpdate = next.latestVersion;
+      element("desktop-announcement-title").textContent = `新版本 ${latest}`;
+      element("desktop-announcement-message").textContent = "可以继续当前任务，准备好后再下载更新。";
+      element("desktop-update-announcement").hidden = currentPage === "about" || dismissedUpdate === next.latestVersion;
+    }
+    if (!newVersion) element("desktop-update-announcement").hidden = true;
   }
 
   async function performUpdate(action) {
@@ -389,6 +595,9 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   function render(next) {
     if (!next || typeof next !== "object") return;
     snapshot = next;
+    const taskActive = RUNNING_STATUSES.has(next.status);
+    element("desktop-task-badge").hidden = !taskActive && next.status !== "paused";
+    element("desktop-task-badge").textContent = taskActive ? "进行中" : "已暂停";
     const discovered = count(next.discovered);
     const completed = count(next.completed);
     const skipped = count(next.skipped);
@@ -567,6 +776,9 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     if (typeof cleanup === "function") unsubscribe = cleanup;
     const [info, savedState] = await Promise.all([bridge.getInfo(), bridge.getProfileState()]);
     desktopInfo = info;
+    element("desktop-about-version").textContent = `版本 ${info.version || "未知"}`;
+    element("desktop-about-system").textContent = `${environmentText()}${info.portable ? " · 便携版" : ""}`;
+    element("desktop-diagnostics-environment").textContent = environmentText();
     onInfo(info);
     renderUpdateState(updateState);
     initialized = true;

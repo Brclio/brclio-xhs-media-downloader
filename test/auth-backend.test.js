@@ -5,6 +5,8 @@ import { GithubStateStore, emptyState } from '../server/auth/store.js';
 import { createAccountService } from '../server/auth/service.js';
 import { createMailer } from '../server/auth/mailer.js';
 import { readConfig } from '../server/auth/config.js';
+import { validateFeedbackChunk } from '../server/auth/feedback.js';
+import { sanitizeDiagnostic } from '../lib/diagnostic-sanitize.js';
 
 const DAY = 86_400_000;
 const device = (label = randomUUID()) => {
@@ -15,11 +17,26 @@ const device = (label = randomUUID()) => {
 /** Shared fake GitHub Contents HTTP service, independent real GithubStateStore instances. */
 function fixture(overrides = {}) {
   let state = emptyState(), version = 1, clock = Date.parse('2026-09-20T00:00:00Z');
-  let writes = 0, conflicts = 0;
-  const faults = [], deliveries = [];
+  let writes = 0, conflicts = 0, onLogRead = null;
+  const faults = [], deliveries = [], logFiles = new Map();
   const config = { ...readConfig({ AUTH_SECRET_PEPPER: 'unit-test-pepper-only-'.repeat(3), AUTH_ADMIN_EMAILS: 'admin@example.test' }), ...overrides };
   const fetchImpl = async (url, options) => {
     if (!url.includes('/contents/')) return Response.json({ private: true });
+    if (url.includes('/contents/feedback/')) {
+      const key = new URL(url).pathname;
+      if (options.method === 'GET') {
+        if (onLogRead) await onLogRead();
+        if (!logFiles.has(key)) return Response.json({}, { status: 404 });
+        return Response.json({ sha: String(version), encoding: 'base64', content: Buffer.from(logFiles.get(key)).toString('base64') });
+      }
+      if (logFiles.has(key)) return Response.json({}, { status: 422 });
+      const fault = faults.shift();
+      if (fault?.throw) throw Error('unavailable');
+      if (fault?.status) return Response.json({}, { status: fault.status });
+      logFiles.set(key, Buffer.from(JSON.parse(options.body).content, 'base64').toString('utf8')); version += 1; writes += 1;
+      if (fault?.commitThenThrow) throw Error('committed response lost');
+      return Response.json({ content: { sha: String(version) } }, { status: 201 });
+    }
     if (options.method === 'GET') return Response.json({ sha: String(version), encoding: 'base64', content: Buffer.from(JSON.stringify(state)).toString('base64') });
     const body = JSON.parse(options.body);
     if (body.sha !== String(version)) { conflicts += 1; return Response.json({}, { status: 409 }); }
@@ -52,10 +69,10 @@ function fixture(overrides = {}) {
     return { ...result, dev, service };
   };
   const admin = () => login('admin@example.test', null, 'admin');
-  const adminCall = (session, action, input = {}, service = instance()) => execute(service, action, { ...input, ...(['admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code'].includes(action) ? { reason: input.reason || '测试操作原因', requestId: input.requestId || randomUUID() } : {}) }, session);
+  const adminCall = (session, action, input = {}, service = instance()) => execute(service, action, { ...input, ...(['admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code', 'admin-feedback-status'].includes(action) ? { reason: input.reason || '测试操作原因', requestId: input.requestId || randomUUID() } : {}) }, session);
   const grant = (adminSession, userSession, days = 10) => adminCall(adminSession, 'admin-membership', { userId: userSession.account.user.id, operation: 'days', days });
   const generate = async (adminSession, input = {}) => (await adminCall(adminSession, 'admin-generate-codes', { type: 'duration', days: 10, count: 1, ...input })).codes;
-  return { instance, execute, login, issue, admin, adminCall, grant, generate, deliveries, mailer, config, faults, advance: ms => { clock += ms; }, get clock() { return clock; }, get state() { return state; }, get writes() { return writes; }, get conflicts() { return conflicts; } };
+  return { instance, execute, login, issue, admin, adminCall, grant, generate, deliveries, mailer, config, faults, logFiles, advance: ms => { clock += ms; }, set onLogRead(callback) { onLogRead = callback; }, get clock() { return clock; }, get state() { return state; }, get writes() { return writes; }, get conflicts() { return conflicts; } };
 }
 
 test('first email verification creates user, repeated login keeps user and device identity', async () => {
@@ -540,4 +557,213 @@ test('administrator cannot restore an unrelated or logged-out pending session an
   assert.equal((await f.adminCall(admin, 'admin-restore-device', input)).replayed, true);
   assert.equal((await f.execute(f.instance(), 'me', {}, replacement, replacement.dev)).account.device.status, 'authorized');
   assert.equal(Object.values(f.state.devices).filter(d => d.userId === userId && d.status === 'active').length, 1);
+});
+
+const logHash = content => createHash('sha256').update(content).digest('hex');
+function feedbackInput(f, contents = null) {
+  const at = new Date(f.clock).toISOString();
+  const parts = contents || [`${JSON.stringify({ at, level: 'info', event: 'app.started', details: { version: '1.7.2' } })}\n`, `${JSON.stringify({ at, level: 'error', event: 'download.failed', details: { code: 'NETWORK_TIMEOUT' } })}\n`];
+  const records = parts.join('').trimEnd().split('\n').map(line => JSON.parse(line)), retained = records.filter(r => r.event !== 'diagnostics.snapshot');
+  const range = (retained.length ? retained : records).map(record => Date.parse(record.at));
+  return { parts, input: { requestId: randomUUID(), title: '下载任务没有完成', description: '选择主页后任务提示网络超时，请协助检查。', appVersion: '1.7.2', platform: 'darwin', log: { partCount: parts.length, totalBytes: Buffer.byteLength(parts.join('')), sha256: logHash(parts.join('')), firstTimestamp: new Date(Math.min(...range)).toISOString(), lastTimestamp: new Date(Math.max(...range)).toISOString(), truncated: false, parts: parts.map(content => ({ bytes: Buffer.byteLength(content), sha256: logHash(content) })) } } };
+}
+const feedbackCall = (f, user, action, input) => f.execute(f.instance(), action, input, user, user.dev);
+async function submitFeedback(f, user, fixture = feedbackInput(f)) {
+  const begun = await feedbackCall(f, user, 'feedback-begin', fixture.input), feedbackId = begun.feedback.id;
+  f.advance(fixture.parts.length * 2000);
+  for (const [index, content] of fixture.parts.entries()) await feedbackCall(f, user, 'feedback-upload-part', { feedbackId, index, content, sha256: logHash(content) });
+  const result = await feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: fixture.input.requestId });
+  return { ...result, fixture };
+}
+
+test('non-member feedback atomically finalizes complete immutable private logs; admin can inspect and update audited status', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login();
+  assert.equal(user.account.membership.type, 'none');
+  const snapshot = feedbackInput(f), begun = await feedbackCall(f, user, 'feedback-begin', snapshot.input), feedbackId = begun.feedback.id;
+  assert.equal(begun.feedback.status, 'uploading');
+  await assert.rejects(feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: snapshot.input.requestId }), { code: 'FEEDBACK_LOG_INCOMPLETE' });
+  await assert.rejects(f.adminCall(admin, 'admin-feedback-status', { feedbackId, status: 'resolved' }), { code: 'FEEDBACK_NOT_SUBMITTED' });
+  for (const [index, content] of snapshot.parts.entries()) {
+    f.advance(2000);
+    const input = { feedbackId, index, content, sha256: logHash(content) };
+    const before = f.writes;
+    assert.equal((await feedbackCall(f, user, 'feedback-upload-part', input)).received, true);
+    assert.equal(f.writes, before + 1, 'only the immutable log file is committed per part');
+    assert.equal((await feedbackCall(f, user, 'feedback-upload-part', input)).replayed, true);
+    assert.equal(f.writes, before + 1, 'retries never rewrite log files');
+  }
+  const final = await feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: snapshot.input.requestId });
+  assert.equal(final.feedback.status, 'new'); assert.ok(final.feedback.submittedAt);
+  assert.equal((await feedbackCall(f, user, 'feedback-mine', {})).feedbacks[0].id, feedbackId);
+  const detail = await f.adminCall(admin, 'admin-feedback-detail', { feedbackId });
+  assert.equal(detail.feedback.email, user.account.user.email); assert.equal(detail.feedback.description, snapshot.input.description);
+  let complete = '';
+  for (let index = 0; index < snapshot.parts.length; index++) complete += (await f.adminCall(admin, 'admin-feedback-part', { feedbackId, index })).content;
+  assert.equal(complete, snapshot.parts.join('')); assert.equal(logHash(complete), detail.feedback.log.sha256);
+  const status = await f.adminCall(admin, 'admin-feedback-status', { feedbackId, status: 'in_progress', reason: '已经开始检查问题' });
+  assert.equal(status.feedback.status, 'in_progress');
+  const history = (await f.adminCall(admin, 'admin-feedback-detail', { feedbackId })).history;
+  assert.equal(history[0].actorId, admin.account.user.id); assert.equal(history[0].before.status, 'new'); assert.equal(history[0].after.status, 'in_progress');
+  assert.equal((await f.adminCall(admin, 'admin-feedback', { query: user.account.user.email, status: 'in_progress' })).feedbacks.length, 1);
+});
+
+test('feedback is available on a revoked device, but every part and admin operation retains identity/role boundaries', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login(), other = await f.login('other@example.test');
+  await f.adminCall(admin, 'admin-unbind', { userId: user.account.user.id, deviceId: user.account.device.id });
+  const snapshot = feedbackInput(f), feedbackId = (await feedbackCall(f, user, 'feedback-begin', snapshot.input)).feedback.id;
+  const part = { feedbackId, index: 0, content: snapshot.parts[0], sha256: logHash(snapshot.parts[0]) };
+  await assert.rejects(feedbackCall(f, other, 'feedback-upload-part', part), { code: 'FEEDBACK_NOT_FOUND' });
+  await assert.rejects(feedbackCall(f, other, 'feedback-finalize', { feedbackId, requestId: randomUUID() }), { code: 'FEEDBACK_NOT_FOUND' });
+  for (const action of ['admin-feedback', 'admin-feedback-detail', 'admin-feedback-part', 'admin-feedback-status']) await assert.rejects(feedbackCall(f, user, action, { feedbackId, index: 0, status: 'resolved' }), { code: 'FORBIDDEN' });
+  assert.equal((await feedbackCall(f, other, 'feedback-mine', {})).feedbacks.length, 0);
+  assert.equal((await feedbackCall(f, user, 'feedback-upload-part', part)).received, true);
+  await f.execute(f.instance(), 'logout', {}, user, user.dev);
+  await assert.rejects(feedbackCall(f, user, 'feedback-upload-part', part), { code: 'SESSION_REVOKED' });
+});
+
+test('feedback rejects unsafe or malformed log bytes before writing any private log file', async () => {
+  const f = fixture(), user = await f.login();
+  const at = new Date(f.clock).toISOString();
+  const unsafe = `${JSON.stringify({ at, level: 'info', event: 'request.failed', details: { cookie: 'a1=private-cookie-sentinel' } })}\n`;
+  const snapshot = feedbackInput(f, [unsafe]), begun = await feedbackCall(f, user, 'feedback-begin', snapshot.input);
+  const before = f.writes;
+  await assert.rejects(feedbackCall(f, user, 'feedback-upload-part', { feedbackId: begun.feedback.id, index: 0, content: unsafe, sha256: logHash(unsafe) }), { code: 'FEEDBACK_LOG_SENSITIVE' });
+  assert.equal(f.writes, before); assert.equal(f.logFiles.size, 0);
+  assert.ok(!JSON.stringify(f.state).includes('private-cookie-sentinel'));
+  for (const details of [{ token: 'session-sentinel' }, { url: 'https://example.test/path?xsec_token=private' }, { error: 'Authorization: Bearer confidential' }, { email: 'private@example.test' }, { key: 'ghp_abcdefghijk1234567890' }]) {
+    const entry = { at, level: 'error', event: 'network.failure', details };
+    assert.throws(() => validateFeedbackChunk(`${JSON.stringify(entry)}\n`), { code: 'FEEDBACK_LOG_SENSITIVE' });
+    assert.doesNotThrow(() => validateFeedbackChunk(`${JSON.stringify(sanitizeDiagnostic(entry))}\n`));
+  }
+  for (const content of ['{broken}\n', '{}\n', '{}', '[]\n', '\n', `${JSON.stringify({ at, level: 'info', event: 'event', extra: 'unexpected' })}\n`]) assert.throws(() => validateFeedbackChunk(content), { code: 'INVALID_FEEDBACK_LOG' });
+});
+
+test('feedback validates manifest, exact bytes, per-part hashes, aggregate hash and retained range', async () => {
+  const f = fixture(), user = await f.login(), snapshot = feedbackInput(f);
+  for (const log of [{ ...snapshot.input.log, totalBytes: 8 * 1024 * 1024 + 1 }, { ...snapshot.input.log, partCount: 65 }, { ...snapshot.input.log, totalBytes: 1 }, { ...snapshot.input.log, parts: [{ bytes: 300000, sha256: 'a'.repeat(64) }] }]) await assert.rejects(feedbackCall(f, user, 'feedback-begin', { ...snapshot.input, log }), { code: 'INVALID_FEEDBACK_LOG' });
+  assert.equal(Object.keys(f.state.feedback).length, 0);
+  snapshot.input.log.sha256 = 'a'.repeat(64);
+  const begun = await feedbackCall(f, user, 'feedback-begin', snapshot.input), feedbackId = begun.feedback.id;
+  const wrong = snapshot.parts[0].replace('app.started', 'app.changed');
+  await assert.rejects(feedbackCall(f, user, 'feedback-upload-part', { feedbackId, index: 0, content: wrong, sha256: logHash(wrong) }), { code: 'FEEDBACK_LOG_MISMATCH' });
+  await assert.rejects(feedbackCall(f, user, 'feedback-upload-part', { feedbackId, index: 99, content: wrong, sha256: logHash(wrong) }), { code: 'INVALID_FEEDBACK_PART' });
+  f.advance(4000);
+  for (const [index, content] of snapshot.parts.entries()) await feedbackCall(f, user, 'feedback-upload-part', { feedbackId, index, content, sha256: logHash(content) });
+  await assert.rejects(feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: randomUUID() }), { code: 'FEEDBACK_LOG_MISMATCH' });
+  assert.equal(f.state.feedback[feedbackId].status, 'uploading'); assert.equal(f.state.feedback[feedbackId].submittedAt, null);
+});
+
+test('feedback begin and finalize races across independent instances are idempotent without duplicate records', async () => {
+  const f = fixture(), user = await f.login(), snapshot = feedbackInput(f);
+  const begin = await Promise.all([1, 2].map(() => feedbackCall(f, user, 'feedback-begin', snapshot.input)));
+  assert.equal(begin[0].feedback.id, begin[1].feedback.id); assert.equal(Object.keys(f.state.feedback).length, 1);
+  assert.equal(begin.filter(r => r.replayed).length, 1); assert.ok(f.conflicts > 0);
+  const feedbackId = begin[0].feedback.id;
+  await assert.rejects(feedbackCall(f, user, 'feedback-begin', { ...snapshot.input, title: '另外一个问题' }), { code: 'REQUEST_ID_REUSED' });
+  f.advance(4000);
+  for (const [index, content] of snapshot.parts.entries()) {
+    const before = f.writes;
+    const concurrent = await Promise.all([1, 2].map(() => feedbackCall(f, user, 'feedback-upload-part', { feedbackId, index, content, sha256: logHash(content) })));
+    assert.ok(concurrent.every(result => result.received));
+    assert.equal(concurrent.filter(result => result.replayed).length, 1);
+    assert.equal(f.writes, before + 1, 'a raced immutable log part is created only once');
+  }
+  const finals = await Promise.all([1, 2].map(() => feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: snapshot.input.requestId })));
+  assert.equal(finals.filter(r => r.replayed).length, 1); assert.ok(finals.every(r => r.feedback.status === 'new'));
+});
+
+test('feedback partial storage failures and committed-lost responses never invent success and recover with original IDs', async () => {
+  const f = fixture(), user = await f.login(), snapshot = feedbackInput(f);
+  f.faults.push({ commitThenThrow: true });
+  await assert.rejects(feedbackCall(f, user, 'feedback-begin', snapshot.input), { code: 'STORAGE_WRITE_UNCERTAIN' });
+  const begun = await feedbackCall(f, user, 'feedback-begin', snapshot.input), feedbackId = begun.feedback.id;
+  assert.equal(begun.replayed, true); f.advance(4000);
+  const first = { feedbackId, index: 0, content: snapshot.parts[0], sha256: logHash(snapshot.parts[0]) };
+  f.faults.push({ status: 429 });
+  await assert.rejects(feedbackCall(f, user, 'feedback-upload-part', first), { code: 'STORAGE_RATE_LIMITED' });
+  assert.equal(f.logFiles.size, 0);
+  f.faults.push({ commitThenThrow: true });
+  await assert.rejects(feedbackCall(f, user, 'feedback-upload-part', first), { code: 'STORAGE_WRITE_UNCERTAIN' });
+  assert.equal((await feedbackCall(f, user, 'feedback-upload-part', first)).replayed, true);
+  await assert.rejects(feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: randomUUID() }), { code: 'FEEDBACK_LOG_INCOMPLETE' });
+  await feedbackCall(f, user, 'feedback-upload-part', { feedbackId, index: 1, content: snapshot.parts[1], sha256: logHash(snapshot.parts[1]) });
+  f.faults.push({ commitThenThrow: true });
+  await assert.rejects(feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: snapshot.input.requestId }), { code: 'STORAGE_WRITE_UNCERTAIN' });
+  const recovered = await feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: snapshot.input.requestId });
+  assert.equal(recovered.replayed, true); assert.equal(recovered.feedback.status, 'new');
+});
+
+test('feedback rate limits and sequential part cadence persist; retries do not consume new feedback slots', async () => {
+  const f = fixture(), user = await f.login(), snapshot = feedbackInput(f);
+  const first = await feedbackCall(f, user, 'feedback-begin', snapshot.input);
+  await assert.rejects(feedbackCall(f, user, 'feedback-begin', { ...snapshot.input, requestId: randomUUID() }), { code: 'FEEDBACK_RATE_LIMITED' });
+  await assert.rejects(feedbackCall(f, user, 'feedback-upload-part', { feedbackId: first.feedback.id, index: 1, content: snapshot.parts[1], sha256: logHash(snapshot.parts[1]) }), { code: 'FEEDBACK_UPLOAD_TOO_FAST' });
+  for (let i = 0; i < 2; i++) { f.advance(60001); await feedbackCall(f, user, 'feedback-begin', { ...snapshot.input, requestId: randomUUID() }); }
+  f.advance(60001);
+  await assert.rejects(feedbackCall(f, user, 'feedback-begin', { ...snapshot.input, requestId: randomUUID() }), { code: 'FEEDBACK_RATE_LIMITED' });
+  assert.equal((await feedbackCall(f, user, 'feedback-begin', snapshot.input)).replayed, true);
+  assert.equal(Object.keys(f.state.feedback).length, 3);
+});
+
+test('feedback supports 64 whole-line chunks within 8 MiB and snapshot header does not distort retained timestamps', async () => {
+  const f = fixture(), user = await f.login(), at = new Date(f.clock).toISOString();
+  const rows = Array.from({ length: 64 }, (_, index) => `${JSON.stringify({ at, level: 'info', event: 'retained.event', details: { index } })}\n`);
+  rows[0] = `${JSON.stringify({ at: new Date(f.clock + 1000).toISOString(), level: 'info', event: 'diagnostics.snapshot', details: { truncated: false } })}\n` + rows[0];
+  const submitted = await submitFeedback(f, user, feedbackInput(f, rows));
+  assert.equal(submitted.feedback.status, 'new'); assert.equal(submitted.feedback.log.partCount, 64); assert.equal(f.logFiles.size, 64);
+});
+
+test('tampered stored log prevents finalization and administrative download; metadata notes are sanitized', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login(), snapshot = feedbackInput(f);
+  snapshot.input.description = '联系邮箱 private@example.test；Cookie: a1=never-store-this';
+  const submitted = await submitFeedback(f, user, snapshot), feedbackId = submitted.feedback.id;
+  assert.ok(!JSON.stringify(f.state).includes('never-store-this')); assert.ok(!submitted.feedback.description.includes('private@example.test'));
+  const file = [...f.logFiles.keys()][0];
+  f.logFiles.set(file, f.logFiles.get(file).replace('app.started', 'app.changed'));
+  await assert.rejects(f.adminCall(admin, 'admin-feedback-part', { feedbackId, index: 0 }), { code: 'FEEDBACK_LOG_MISMATCH' });
+});
+
+test('feedback retained range uses extrema when a client clock moves backward without reordering the original log', async () => {
+  const f = fixture(), user = await f.login();
+  const contents = [5000, 0, 3000].map(offset => `${JSON.stringify({ at: new Date(f.clock + offset).toISOString(), level: 'info', event: 'clock.changed', details: { offset } })}\n`);
+  const submitted = await submitFeedback(f, user, feedbackInput(f, contents));
+  assert.equal(submitted.feedback.log.firstTimestamp, JSON.parse(contents[1]).at);
+  assert.equal(submitted.feedback.log.lastTimestamp, JSON.parse(contents[0]).at);
+  assert.equal([...f.logFiles.values()].join(''), contents.join(''));
+});
+
+test('finalization rechecks a session revoked while remote log reads are in progress', async () => {
+  const f = fixture(), user = await f.login(), snapshot = feedbackInput(f);
+  const feedbackId = (await feedbackCall(f, user, 'feedback-begin', snapshot.input)).feedback.id;
+  f.advance(4000);
+  for (const [index, content] of snapshot.parts.entries()) await feedbackCall(f, user, 'feedback-upload-part', { feedbackId, index, content, sha256: logHash(content) });
+  f.onLogRead = async () => {
+    f.onLogRead = null;
+    await f.execute(f.instance(), 'logout', {}, user, user.dev);
+  };
+  await assert.rejects(feedbackCall(f, user, 'feedback-finalize', { feedbackId, requestId: snapshot.input.requestId }), { code: 'SESSION_REVOKED' });
+  assert.equal(f.state.feedback[feedbackId].status, 'uploading');
+  assert.equal(f.state.feedback[feedbackId].submittedAt, null);
+});
+
+test('distinct simultaneous feedback begins cannot bypass persisted global admission rate', async () => {
+  const f = fixture(), first = await f.login(), second = await f.login('another@example.test');
+  const results = await Promise.allSettled([first, second].map(user => feedbackCall(f, user, 'feedback-begin', feedbackInput(f).input)));
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+  assert.equal(results.find(result => result.status === 'rejected').reason.code, 'FEEDBACK_RATE_LIMITED');
+  assert.equal(Object.keys(f.state.feedback).length, 1); assert.equal(f.state.feedbackRateLimits.global.length, 1);
+});
+
+test('feedback administrator status failures and uncertain responses preserve one audited idempotent operation', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login();
+  const { feedback } = await submitFeedback(f, user);
+  const input = { feedbackId: feedback.id, status: 'resolved', reason: '已检查并解决问题', requestId: randomUUID() };
+  f.faults.push({ status: 429 });
+  await assert.rejects(f.adminCall(admin, 'admin-feedback-status', input), { code: 'STORAGE_RATE_LIMITED' });
+  assert.equal(f.state.feedback[feedback.id].status, 'new'); assert.equal(f.state.audit.filter(a => a.targetId === feedback.id).length, 0);
+  f.faults.push({ commitThenThrow: true });
+  await assert.rejects(f.adminCall(admin, 'admin-feedback-status', input), { code: 'STORAGE_WRITE_UNCERTAIN' });
+  const retry = await f.adminCall(admin, 'admin-feedback-status', input);
+  assert.equal(retry.replayed, true); assert.equal(retry.feedback.status, 'resolved');
+  assert.equal(f.state.audit.filter(a => a.targetId === feedback.id).length, 1);
 });
