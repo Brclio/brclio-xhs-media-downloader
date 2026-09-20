@@ -1,6 +1,6 @@
 import test from 'node:test';
 import { EventEmitter } from 'node:events';
-import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
@@ -149,7 +149,12 @@ for (const mode of ['timeout', 'malformed', 'early-exit']) test(`readiness ${mod
 });
 
 const nativeEnabled = process.platform === 'darwin' && process.env.XHS_MAC_UPDATE_NATIVE === '1';
-test('native temporary signed app: read-only DMG preparation, replacement, and rollback', { skip: !nativeEnabled, timeout: 120000 }, async t => {
+test('native temporary signed app: read-only DMG preparation, replacement, and rollback', { skip: !nativeEnabled, timeout: 240000 }, async t => {
+  // Electron 44 downloads its executable lazily from the package entry point.
+  // npm ci alone does not create dist/. Resolve it before starting short-lived
+  // fixture parent processes, and honor the package's platform/override paths.
+  const electronExecutable = createRequire(import.meta.url)('electron');
+  assert.equal((await lstat(electronExecutable)).isFile(), true, 'Electron executable is initialized');
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'xhs-mac-update-native-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   const arch = process.arch === 'x64' ? 'x86_64' : 'arm64';
@@ -186,7 +191,7 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     t.after(() => { try { oldPid.kill(); } catch {} });
     await new Promise((resolve, reject) => { oldPid.once('spawn', resolve); oldPid.once('error', reject); });
     const prepared = await prepareMacUpdate({ installerPath: dmg, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: process.arch,
-      cacheDirectory: path.join(root, 'cache'), parentPid: oldPid.pid }, { ...(fault ? { executable: fileURLToPath(new URL('../node_modules/electron/dist/Electron.app/Contents/MacOS/Electron', import.meta.url)) } : {}), ...(outcome === 'cancelled' ? { readinessTimeoutMs: 0 } : {}) });
+      cacheDirectory: path.join(root, 'cache'), parentPid: oldPid.pid }, { ...(fault ? { executable: electronExecutable } : {}), ...(outcome === 'cancelled' ? { readinessTimeoutMs: 0 } : {}) });
     if (fault) {
       // Test-only fault injection: the real helper still performs both atomic
       // filesystem moves and codesign checks, then experiences an open failure.
