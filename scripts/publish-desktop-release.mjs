@@ -34,6 +34,15 @@ export async function validateArtifacts(directory, { version, sourceSha }) {
     assert.equal(proof.platform, target.platform);
     assert.equal(proof.arch, target.arch);
     assert.equal(proof.bundledPythonVerified, true);
+    if (target.platform === 'darwin') {
+      // The native build verifier sets these only after checking the complete
+      // application signature, including sealed resources and nested code.
+      // A linker-generated signature on the main binary is not sufficient.
+      assert.equal(proof.macCodeSignatureVerified, true,
+        `Complete macOS code signature must be verified before release: ${target.label}`);
+      assert.ok(['adhoc', 'developer-id'].includes(proof.macCodeSigning),
+        `Verified macOS signing kind must be adhoc or developer-id: ${target.label}`);
+    }
     assert.ok(Number.isInteger(proof.comparedSources) && proof.comparedSources >= 27);
     const expected = target.suffixes.map(suffix => `XHS-Downloader-${version}-${suffix}`).sort();
     assert.deepEqual(proof.files.map(file => file.name).sort(), expected);

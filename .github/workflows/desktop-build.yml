@@ -51,10 +51,16 @@ jobs:
         run: node --test test/desktop-python.test.js
         env:
           XHS_REQUIRE_BUNDLED_PYTHON: '1'
-      - name: Build complete installers with bundled Python
-        run: npx electron-builder --${{ runner.os == 'Windows' && 'win' || 'mac' }} --${{ matrix.arch }} --publish never
+      - name: Build complete Mac installers with ad hoc code signatures
+        if: runner.os != 'Windows'
+        # Explicit identity '-' signs the full app and its nested code. Disabling
+        # certificate discovery alone skips signing; ad hoc is not notarization.
+        run: npx electron-builder --mac --${{ matrix.arch }} --publish never --config.mac.identity=-
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Build complete Windows installers with bundled Python
+        if: runner.os == 'Windows'
+        run: npx electron-builder --win --${{ matrix.arch }} --publish never
       - name: Verify packaged source, native runtime, installers, and checksums
         run: node scripts/verify-built-installers.mjs
       - name: Exercise real Electron main process, bridge, and both download engines
