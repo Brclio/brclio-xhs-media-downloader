@@ -60,6 +60,7 @@ export async function publishRelease() {
   const directory = path.resolve('release-artifacts');
   const { files, evidence } = await validateArtifacts(directory, { version: pkg.version, sourceSha });
   const notes = await readFile(`docs/releases/${tag}.md`, 'utf8');
+  const releaseName = notes.match(/^#\s+(.+)$/m)?.[1]?.trim() || tag;
   assert.ok(process.env.GH_TOKEN, 'GitHub release token is required');
   const api = async (endpoint, options = {}) => {
     const response = await fetch(`https://api.github.com/repos/${REPOSITORY}/${endpoint}`, {
@@ -74,7 +75,7 @@ export async function publishRelease() {
   let release = releases.find(item => item.tag_name === tag);
   if (release) assert.equal(release.draft, true, 'Never replace already-published release assets');
   else release = await api('releases', { method: 'POST', body: JSON.stringify({ tag_name: tag, target_commitish: sourceSha,
-    name: `${tag} · 下载命名、失败重试与应用更新`, body: notes, draft: true, prerelease: false }) });
+    name: releaseName, body: notes, draft: true, prerelease: false }) });
   const sums = files.map(file => `${file.sha256}  ${file.name}`).join('\n') + '\n';
   await writeFile(path.join(directory, 'SHA256SUMS.txt'), sums);
   await writeFile(path.join(directory, 'build-evidence.json'), JSON.stringify({ repository: REPOSITORY, tag, sourceSha, builds: evidence }, null, 2) + '\n');
@@ -90,7 +91,7 @@ export async function publishRelease() {
     assert.equal(asset.size, (await lstat(path.join(directory, name))).size);
     assert.equal(asset.digest, `sha256:${await digest(path.join(directory, name))}`, `GitHub upload digest mismatch: ${name}`);
   }
-  release = await api(`releases/${release.id}`, { method: 'PATCH', body: JSON.stringify({ draft: false, prerelease: false, make_latest: 'true', body: notes }) });
+  release = await api(`releases/${release.id}`, { method: 'PATCH', body: JSON.stringify({ draft: false, prerelease: false, make_latest: 'true', name: releaseName, body: notes }) });
   assert.equal(release.draft, false);
   console.log(`Published verified release: ${release.html_url}`);
 }

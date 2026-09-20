@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="小红书图片、实况与视频下载工具的更新记录。v1.5.0 新增 Mac、Windows 本地版、主页批量下载、自定义抓取间隔、任务恢复与登录昵称显示，并保留历次功能与修复记录。"
+      content="小红书图片、实况与视频下载工具的更新记录。v1.6.2 统一 Brclio 设计版权与设计系统链接，保留 Mac、Windows 本地版的主页下载、失败重试与应用更新功能。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.6.1 本地版">
+          <div class="header-status" aria-label="当前记录：v1.6.2 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.6.1 本地版</span>
+            <span>v1.6.2 本地版</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.6.1 用“序号-帖子名称”整理下载，支持逐条重试失败帖子，并在应用里检查和下载后续版本。
+              这里记录功能增加、体验优化与问题修复。v1.6.2 统一 Brclio 设计署名与版权链接；主页下载、失败重试和应用内更新继续可用。
             </p>
 
             <div class="release-hero-actions">
@@ -70,7 +70,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.6.1</strong>
+              <strong>v1.6.2</strong>
               <small>本地版 · 2026.09.20</small>
             </div>
 
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#design-credit-update"><span>v1.6.2</span><strong>Brclio 设计署名</strong></a>
               <a href="#desktop-1-6-update"><span>v1.6</span><strong>重试与应用更新</strong></a>
               <a href="#desktop-1-5-update"><span>v1.5</span><strong>本地版与主页下载</strong></a>
               <a href="#mobile-counter-update"><span>MOBILE</span><strong>手机统计优化</strong></a>
@@ -131,7 +132,25 @@
           </aside>
 
           <div class="release-feed">
-            <article id="desktop-1-6-update" class="release-entry release-entry-featured">
+            <article id="design-credit-update" class="release-entry release-entry-featured">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-09-20"><span>09.20</span><small>2026 · 本地版</small></time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges"><span class="release-badge release-badge-yellow">v1.6.2</span><span class="release-status">Mac / Windows</span></div>
+                    <h3>统一 Brclio 设计署名与版权链接</h3>
+                  </div>
+                </header>
+                <p class="release-lead">首页、更新记录页与桌面版的设计版权统一为“© 2026 Brclio · CC BY-NC-SA 4.0”，设计链接指向 Brclio 设计系统 GitHub 仓库。</p>
+                <p class="release-lead">v1.6.1 用户可在应用内检查并下载本次更新。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-design-system" target="_blank" rel="noopener noreferrer">查看 Brclio 设计系统 ↗</a><span>设计署名 · 2026.09.20</span></div>
+              </div>
+            </article>
+
+            <article id="desktop-1-6-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20"><span>09.20</span><small>2026 · 本地版</small></time>
@@ -1113,7 +1132,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>v1.5.0 为 2026.09.20 的本地版功能记录；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
+        <p>本地版记录更新至 v1.6.2（2026.09.20）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"
@@ -1123,10 +1142,10 @@
           >Built by Brclio · Project GitHub</a>
           <a
             class="design-license-credit"
-            href="https://github.com/esthersjw/esther-design-system"
+            href="https://github.com/Brclio/brclio-design-system"
             target="_blank"
             rel="noopener noreferrer"
-          >Design foundation: ESTHER不二 · CC BY-NC-SA 4.0</a>
+          >Design system: © 2026 Brclio · CC BY-NC-SA 4.0</a>
         </div>
       </footer>
     </div>
@@ -1154,8 +1173,8 @@
       </button>
     </div>
 
-    <!-- © ESTHER不二 esthersjw/esther-design-system · CC BY-NC-SA 4.0 -->
-    <section class="design-system-signature" aria-hidden="true">esthersjw-design-system</section>
+    <!-- © 2026 Brclio · Brclio/brclio-design-system · CC BY-NC-SA 4.0 -->
+    <section class="design-system-signature" aria-hidden="true">brclio-design-system</section>
     <script defer src="/visit-counter.js"></script>
   </body>
 </html>

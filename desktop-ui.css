@@ -1,6 +1,6 @@
-/* Desktop extension of ESTHER不二 / esthersjw's app template and tabs.
- * Design foundation: https://github.com/esthersjw/esther-design-system
- * CC BY-NC-SA 4.0. Existing project brand variables are deliberately reused. */
+/* Desktop extension of Brclio's app template and tabs.
+ * Design foundation: https://github.com/Brclio/brclio-design-system
+ * © 2026 Brclio · CC BY-NC-SA 4.0. Existing project brand variables are reused. */
 
 .desktop-navigation {
   display: flex;
