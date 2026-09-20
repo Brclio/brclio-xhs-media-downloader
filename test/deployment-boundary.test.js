@@ -23,7 +23,7 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
     await writeFile(path.join(root, name), 'private');
   }
   const out = await buildWeb(root);
-  const files = await readdir(out, { recursive: true });
+  const files = (await readdir(out, { recursive: true })).map(name => name.replaceAll('\\', '/'));
   assert.ok(files.includes('admin/index.html'));
   assert.ok(files.includes('lib/archive.js'));
   assert.ok(!files.some(name => /server|desktop\/|\.env|README|test\//.test(name)));
