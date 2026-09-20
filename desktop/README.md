@@ -2,7 +2,7 @@
 
 ## 安装与使用
 
-从 [GitHub Releases](https://github.com/Brclio/brclio-xhs-media-downloader/releases) 下载对应系统安装包。Mac Apple 芯片选择 `mac-arm64.dmg`；Windows 选择 `windows-x64-setup.exe`（安装版）或 `windows-x64-portable.exe`（便携版）。
+从 [GitHub Releases](https://github.com/Brclio/brclio-xhs-media-downloader/releases) 下载对应系统安装包。Mac Apple 芯片选择 `mac-arm64.dmg`，Intel 芯片选择 `mac-x64.dmg`；Windows 选择 `windows-x64-setup.exe`（安装版）或 `windows-x64-portable.exe`（便携版）。
 
 最终安装包自带运行环境，使用者不需要 Python、Node.js、Chrome 或 Vercel CLI。Mac 需要选择与芯片匹配的版本（Apple 芯片 arm64 / Intel x64），Windows 使用 x64 版本。
 

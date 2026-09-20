@@ -1,0 +1,121 @@
+name: Verify and upload Intel installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Desktop installers run ID for the release tag
+        type: string
+        required: true
+      tag:
+        description: Existing release tag (for example v1.5.0)
+        type: string
+        required: true
+      artifact_name:
+        description: Intel Mac artifact from that run
+        type: string
+        required: true
+        default: XHS-Downloader-mac-intel
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: promote-desktop-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    env:
+      RUN_ID: ${{ inputs.run_id }}
+      TAG: ${{ inputs.tag }}
+      ARTIFACT_NAME: ${{ inputs.artifact_name }}
+    steps:
+      - name: Validate input scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == Brclio/brclio-xhs-media-downloader ]]
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$TAG" =~ ^(desktop-)?v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]
+          [[ "$ARTIFACT_NAME" == XHS-Downloader-mac-intel ]]
+      # The released tag predates this verifier; keep its source checkout separate.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: automation
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          path: source
+          persist-credentials: false
+      - name: Verify successful build provenance and draft release
+        id: provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SOURCE_SHA="$(git -C source rev-parse "refs/tags/$TAG^{commit}")"
+          [[ "$(git -C source rev-parse HEAD)" == "$SOURCE_SHA" ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > "$RUNNER_TEMP/build-run.json"
+          jq -e --arg sha "$SOURCE_SHA" --arg repo "$GITHUB_REPOSITORY" \
+            '.status == "completed" and .conclusion == "success" and .head_sha == $sha and .name == "Desktop installers" and .head_repository.full_name == $repo' \
+            "$RUNNER_TEMP/build-run.json"
+          # GitHub's tag endpoint omits drafts even for authenticated callers.
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            | jq -s --arg tag "$TAG" '[.[][] | select(.tag_name == $tag)] | if length == 1 then .[0] else error("Expected one matching release") end' \
+            > "$RUNNER_TEMP/draft-release.json"
+          jq -e --arg tag "$TAG" '.draft == true and .tag_name == $tag' "$RUNNER_TEMP/draft-release.json"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "release_id=$(jq -r .id "$RUNNER_TEMP/draft-release.json")" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - name: Install verifier dependencies from release lockfile
+        working-directory: source
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: dist-promote
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.run_id }}
+      - name: Verify installers, embedded source, and SHA256
+        run: node automation/scripts/verify-promoted-installer.mjs
+        env:
+          SOURCE_DIRECTORY: source
+          ARTIFACT_DIRECTORY: dist-promote
+          VERIFICATION_OUTPUT: promotion-verification.json
+          SOURCE_SHA: ${{ steps.provenance.outputs.source_sha }}
+      - name: Save verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: Intel-installer-verification-${{ inputs.tag }}
+          path: promotion-verification.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload verified installers to existing draft only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ steps.provenance.outputs.release_id }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            --jq '{draft, tag_name}' > "$RUNNER_TEMP/rechecked-release.json"
+          jq -e --arg tag "$TAG" '.draft == true and .tag_name == $tag' "$RUNNER_TEMP/rechecked-release.json"
+          VERSION="$(node -p "require('./source/package.json').version")"
+          gh release upload "$TAG" \
+            "dist-promote/XHS-Downloader-$VERSION-mac-x64.dmg" \
+            "dist-promote/XHS-Downloader-$VERSION-mac-x64.zip" \
+            --repo "$GITHUB_REPOSITORY"
