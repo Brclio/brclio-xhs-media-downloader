@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, protocol, session, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron';
 import { access, realpath, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
@@ -6,6 +6,7 @@ import { APP_URL, createProtocolHandler, isAppUrl } from './protocol.js';
 import { PythonBackend } from './python-backend.js';
 import { XhsBrowser } from './profile-browser.js';
 import { ProfileManager } from './profile-manager.js';
+import { UpdateManager, createElectronUpdateFetch } from './update-manager.js';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'xhs-app', privileges: {
   standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true
@@ -15,6 +16,8 @@ let mainWindow;
 let browser;
 let manager;
 let pythonBackend;
+let updateManager;
+let updateCheckTimer;
 let quitting = false;
 let shutdownComplete = false;
 const selectedDirectories = new Set();
@@ -69,7 +72,13 @@ function openLocalPreview(url) {
 }
 
 function registerIpc() {
-  handle('desktop:get-info', () => ({ version: app.getVersion(), platform: process.platform, pythonAvailable: pythonBackend.available }));
+  handle('desktop:get-info', () => ({ version: app.getVersion(), platform: process.platform, arch: process.arch,
+    portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR), pythonAvailable: pythonBackend.available }));
+  handle('desktop:get-update-state', () => updateManager.snapshot());
+  handle('desktop:check-for-updates', () => updateManager.checkForUpdates());
+  handle('desktop:download-update', () => updateManager.downloadUpdate());
+  handle('desktop:cancel-update-download', () => updateManager.cancelUpdateDownload());
+  handle('desktop:install-update', () => updateManager.installUpdate());
   handle('desktop:choose-directory', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       title: '选择小红书主页下载文件夹', properties: ['openDirectory', 'createDirectory'],
@@ -100,6 +109,11 @@ function registerIpc() {
   handle('desktop:retry-failed', async () => {
     await approvedDirectory(manager.snapshot().directory);
     return manager.retryFailed();
+  });
+  handle('desktop:retry-item', async (noteId) => {
+    if (typeof noteId !== 'string' || !/^[a-f\d]{24}$/i.test(noteId)) throw new Error('帖子编号无效。');
+    await approvedDirectory(manager.snapshot().directory);
+    return manager.retryItem(noteId);
   });
   handle('desktop:get-profile-state', () => manager.snapshot());
   handle('desktop:open-directory', async () => {
@@ -152,8 +166,31 @@ async function boot() {
     try { selectedDirectories.add(await validateDirectory(manager.snapshot().directory)); }
     catch { /* A moved/unmounted drive must be selected again before downloading. */ }
   }
+  updateManager = new UpdateManager({ currentVersion: app.getVersion(),
+    directory: path.join(app.getPath('userData'), 'updates'),
+    portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR),
+    fetchImpl: createElectronUpdateFetch(net),
+    onUpdate(state) {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:update-state', state);
+    },
+    async confirmInstall(state) {
+      const result = await dialog.showMessageBox(mainWindow, {
+        type: 'question', title: '安装更新', message: `准备安装 ${state.latestVersion}，是否继续？`,
+        detail: state.installationHint,
+        buttons: ['取消', '暂停任务并打开安装包'], defaultId: 0, cancelId: 0, noLink: true
+      });
+      return result.response === 1;
+    },
+    pauseDownloads: () => manager.pause(),
+    openInstaller: file => shell.openPath(file),
+    onInstalled: () => { app.quit(); }
+  });
   registerIpc();
   await createWindow();
+  if (app.isPackaged) {
+    updateCheckTimer = setTimeout(() => { void updateManager.checkForUpdates(); }, 5000);
+    updateCheckTimer.unref();
+  }
 }
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -167,8 +204,9 @@ else {
     event.preventDefault();
     if (quitting) return;
     quitting = true;
+    clearTimeout(updateCheckTimer);
     void (async () => {
-      try { await manager?.shutdown(); }
+      try { await updateManager?.shutdown(); await manager?.shutdown(); }
       catch { dialog.showErrorBox('保存任务失败', '本次下载进度未能完整保存，请检查磁盘剩余空间和文件夹权限。'); }
       finally {
         browser?.close();

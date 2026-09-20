@@ -51,8 +51,36 @@
             <button id="single-note-tab" class="desktop-tab" type="button" role="tab" aria-controls="single-note-panel" aria-selected="true">单篇笔记</button>
             <button id="profile-tab" class="desktop-tab" type="button" role="tab" aria-controls="profile-panel" aria-selected="false" tabindex="-1">主页全部下载 <span class="desktop-tab-badge">本地版</span></button>
           </div>
-          <span id="desktop-version" class="desktop-version">本地下载工作台</span>
+          <div class="desktop-update-tools">
+            <span id="desktop-version" class="desktop-version">本地下载工作台</span>
+            <button id="desktop-check-updates" class="desktop-check-updates" type="button">检查更新</button>
+          </div>
         </div>
+
+        <section id="desktop-update-panel" class="desktop-update-panel" aria-labelledby="desktop-update-title" hidden>
+          <div class="desktop-update-heading">
+            <div class="desktop-update-copy">
+              <strong id="desktop-update-title">应用更新</strong>
+              <p id="desktop-update-message" role="status" aria-live="polite">正在检查新版本……</p>
+            </div>
+            <div class="desktop-update-actions">
+              <button id="desktop-update-download" class="button button-primary" type="button" hidden>下载更新</button>
+              <button id="desktop-update-cancel" class="button button-secondary" type="button" hidden>取消下载</button>
+              <button id="desktop-update-install" class="button button-primary" type="button" hidden>安装更新</button>
+              <button id="desktop-update-retry" class="button button-secondary" type="button" hidden>重新检查</button>
+            </div>
+          </div>
+          <div id="desktop-update-progress-wrap" class="desktop-update-progress-wrap" hidden>
+            <progress id="desktop-update-progress" max="100" aria-label="更新安装包下载进度"></progress>
+            <p id="desktop-update-progress-text"></p>
+          </div>
+          <p id="desktop-update-error" class="desktop-update-error" role="alert" hidden></p>
+          <p id="desktop-update-installation-hint" class="desktop-update-installation-hint" hidden></p>
+          <details id="desktop-update-notes-details" class="desktop-update-notes-details" hidden>
+            <summary>查看更新内容</summary>
+            <p id="desktop-update-notes"></p>
+          </details>
+        </section>
 
         <section id="profile-panel" class="profile-panel" role="tabpanel" aria-labelledby="profile-tab" tabindex="0" hidden>
           <!-- Desktop extension adapted from ESTHER不二's app template and tabs. CC BY-NC-SA 4.0. -->
@@ -82,7 +110,7 @@
                   <input id="profile-directory" name="directory" type="text" placeholder="选择电脑上的文件夹" readonly aria-describedby="profile-directory-hint" />
                   <button id="profile-choose-directory" class="button button-secondary" type="button">选择文件夹</button>
                 </div>
-                <p id="profile-directory-hint" class="profile-hint">按笔记整理文件，保留下载进度，支持暂停后继续。</p>
+                <p id="profile-directory-hint" class="profile-hint">每篇保存到“001-帖子名称”这样的独立文件夹，编号按发现顺序排列。保留进度，支持暂停后继续。</p>
               </div>
 
               <fieldset class="profile-timing">
@@ -133,13 +161,18 @@
                 <button id="profile-pause" class="button button-secondary" type="button" hidden>暂停</button>
                 <button id="profile-resume" class="button button-primary" type="button" hidden>继续任务</button>
                 <button id="profile-cancel" class="button button-secondary" type="button" hidden>停止任务</button>
-                <button id="profile-retry" class="button button-secondary" type="button" hidden>重试失败项</button>
+                <button id="profile-retry" class="button button-secondary" type="button" hidden>重试全部失败</button>
                 <button id="profile-open-directory" class="button button-secondary" type="button" disabled>打开下载文件夹</button>
               </div>
               <p id="profile-resume-hint" class="profile-hint" hidden>需要验证时，请打开上方小红书窗口完成验证，再继续任务。</p>
 
               <details id="profile-items-details" class="profile-items-details">
                 <summary>笔记记录 <span id="profile-items-count">0</span></summary>
+                <div class="profile-item-filters" role="group" aria-label="筛选笔记记录">
+                  <button id="profile-items-all" class="profile-item-filter" type="button" aria-pressed="true">全部</button>
+                  <button id="profile-items-failed" class="profile-item-filter" type="button" aria-pressed="false">只看失败</button>
+                </div>
+                <p id="profile-items-hint" class="profile-hint">失败笔记优先显示，编号与文件夹顺序不变。</p>
                 <ol id="profile-items" class="profile-items" aria-label="笔记下载记录"></ol>
                 <p id="profile-items-empty" class="profile-hint">发现笔记后会在这里显示下载状态。</p>
                 <button id="profile-show-more" class="profile-show-more" type="button" hidden>显示更多记录</button>

@@ -14,6 +14,9 @@ const imageUrl = (key = "image") => `https://ci.xiaohongshu.com/${key}?imageView
 const videoUrl = (key = "video") => `https://sns-video-bd.xhscdn.com/${key}.mp4`;
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 2, 4, 5, 6, 0xff, 0xd9]);
 const MP4 = Buffer.from("\x00\x00\x00\x18ftypisom\x00\x00\x00\x00isomiso2", "binary");
+function noteFolder(fixture, id = A) {
+  return path.join(fixture.directory, fixture.manager.snapshot().items.find(item => item.id === id)?.directoryName || id);
+}
 function parsed(overrides = {}) {
   return { title: "测试标题：/路径", content: "第一行\n第二行", strategy: "exact-initial-state", images: [{ url: imageUrl() }], videos: [], ...overrides };
 }
@@ -74,10 +77,10 @@ test("profile queue deduplicates notes and saves images, paired live MP4, defaul
   assert.equal(result.completed, 2);
   assert.equal(result.failed, 0);
   assert.equal(result.profileName, "作者");
-  const names = await fs.readdir(path.join(f.directory, A));
+  const names = await fs.readdir(noteFolder(f, A));
   assert.deepEqual(names.sort(), [".xhs-download.json", "image-001.jpg", "live-001.mp4", "video.mp4", "笔记.json", "笔记.txt"].sort());
-  assert.match(await fs.readFile(path.join(f.directory, A, "笔记.txt"), "utf8"), /^\uFEFF小红书笔记/);
-  assert.match(await fs.readFile(path.join(f.directory, A, "笔记.txt"), "utf8"), /第一行\n第二行/);
+  assert.match(await fs.readFile(path.join(noteFolder(f, A), "笔记.txt"), "utf8"), /^\uFEFF小红书笔记/);
+  assert.match(await fs.readFile(path.join(noteFolder(f, A), "笔记.txt"), "utf8"), /第一行\n第二行/);
   assert.equal(f.requests.some((item) => item.url === videoUrl("low")), false);
   for (let index = 1; index < f.requests.length; index++) assert.ok(f.requests[index].at - f.requests[index - 1].at >= 4500);
   assert.ok(f.requests.filter((item) => item.type === "media").every((item) => item.redirect === "manual"));
@@ -95,7 +98,7 @@ test("restart performs no network and skips only files whose size and SHA-256 bo
   await restored._runTask;
   assert.equal(restored.snapshot().skipped, 1);
   assert.equal(f.requests.length, 0);
-  const imagePath = path.join(f.directory, A, "image-001.jpg");
+  const imagePath = path.join(noteFolder(f, A), "image-001.jpg");
   await fs.writeFile(imagePath, Buffer.alloc(JPEG.length, 42));
   await restored.resume();
   await restored._runTask;
@@ -182,7 +185,7 @@ test("transient media failure retries at most three times, removes partials, and
   await f.start();
   assert.equal((await f.settle()).failed, 1);
   assert.equal(attempts, 3);
-  assert.deepEqual(await fs.readdir(path.join(f.directory, A)), []);
+  assert.deepEqual(await fs.readdir(noteFolder(f, A)), [".xhs-download.json"]);
   good = true;
   await f.manager.retryFailed();
   assert.equal((await f.settle()).completed, 1);
@@ -263,7 +266,7 @@ test("a note-directory symlink cannot redirect writes outside the chosen folder"
   const f = await fixture(t);
   const outside = path.join(f.base, "outside");
   await fs.mkdir(outside);
-  await fs.symlink(outside, path.join(f.directory, A), process.platform === "win32" ? "junction" : "dir");
+  await fs.symlink(outside, noteFolder(f, A), process.platform === "win32" ? "junction" : "dir");
   await f.start();
   assert.equal((await f.settle()).failed, 1);
   assert.deepEqual(await fs.readdir(outside), []);
@@ -311,7 +314,7 @@ test("a partially completed note keeps verified media across a failed retry and 
   await restored._runTask;
   assert.equal(restored.snapshot().completed, 1);
   assert.equal(urls.filter((url) => url === first).length, 1);
-  assert.deepEqual(await fs.readFile(path.join(f.directory, A, "image-001.jpg")), JPEG);
+  assert.deepEqual(await fs.readFile(path.join(noteFolder(f, A), "image-001.jpg")), JPEG);
 });
 
 test("media is streamed over multiple chunks and atomically published with the exact bytes", async (t) => {
@@ -342,4 +345,189 @@ test("an existing media symlink cannot overwrite a file outside the download dir
   }), /不是普通文件/);
   assert.equal(await fs.readFile(target, "utf8"), "keep this file");
   assert.deepEqual(await fs.readdir(f.directory), ["stream.jpg"]);
+});
+
+test("note directories use stable discovery order and the resolved, cross-platform safe title", async (t) => {
+  const f = await fixture(t);
+  f.manager.browser = {
+    async *discover() { yield { notes: [{ ...note(A), title: "截断标题…" }, { ...note(B), title: "" }], done: true }; },
+    async resolveNote(item) { return parsed({ title: item.id === A ? "完整/标题?" : "" }); }
+  };
+  await f.start();
+  const result = await f.settle();
+  assert.deepEqual(result.items.map(item => [item.sequence, item.directoryName]), [[1, "001-完整_标题_"], [2, "002-未命名帖子"]]);
+  assert.deepEqual((await fs.readdir(f.directory)).sort(), ["001-完整_标题_", "002-未命名帖子"]);
+  for (const item of result.items) {
+    const manifest = JSON.parse(await fs.readFile(path.join(f.directory, item.directoryName, ".xhs-download.json"), "utf8"));
+    assert.equal(manifest.id, item.id);
+    assert.equal(manifest.sequence, item.sequence);
+    assert.equal(manifest.directoryName, item.directoryName);
+    assert.equal(manifest.complete, true);
+  }
+  const restored = new ProfileManager(f.config);
+  assert.deepEqual((await restored.initialize()).items.map(item => [item.sequence, item.directoryName]), result.items.map(item => [item.sequence, item.directoryName]));
+});
+
+test("legacy v1.5 note-ID directories migrate without downloading verified files again", async (t) => {
+  const f = await fixture(t);
+  await f.start();
+  await f.settle();
+  const legacy = path.join(f.directory, A);
+  await fs.rename(noteFolder(f), legacy);
+  const manifestPath = path.join(legacy, ".xhs-download.json");
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  delete manifest.sequence; delete manifest.directoryName; delete manifest.titleResolved;
+  await fs.writeFile(manifestPath, JSON.stringify(manifest));
+  const statePath = path.join(f.stateDirectory, "profile-job.json");
+  const saved = JSON.parse(await fs.readFile(statePath, "utf8"));
+  for (const item of saved.items) { delete item.sequence; delete item.directoryName; delete item.titleResolved; }
+  await fs.writeFile(statePath, JSON.stringify(saved));
+  f.requests.length = 0;
+  const restored = new ProfileManager(f.config);
+  assert.equal((await restored.initialize()).items[0].sequence, 1);
+  await restored.resume(); await restored._runTask;
+  const result = restored.snapshot();
+  assert.equal(result.skipped, 1);
+  assert.equal(result.items[0].directoryName, "001-测试标题__路径");
+  assert.equal(f.requests.length, 0);
+  await assert.rejects(fs.access(legacy), { code: "ENOENT" });
+  assert.deepEqual(await fs.readFile(path.join(f.directory, result.items[0].directoryName, "image-001.jpg")), JPEG);
+});
+
+test("a renamed directory is recovered by manifest ID after interruption before state was saved", async (t) => {
+  const f = await fixture(t);
+  await f.start(); await f.settle();
+  await fs.rename(noteFolder(f), path.join(f.directory, "001-中断时的目录名"));
+  f.requests.length = 0;
+  const restored = new ProfileManager(f.config);
+  await restored.initialize(); await restored.resume(); await restored._runTask;
+  assert.equal(restored.snapshot().skipped, 1);
+  assert.equal(f.requests.length, 0);
+  assert.deepEqual(await fs.readdir(f.directory), ["001-测试标题__路径"]);
+});
+
+test("directory-name conflicts preserve unrelated content and use a deterministic note-ID suffix", async (t) => {
+  const f = await fixture(t);
+  const occupied = path.join(f.directory, "001-测试标题__路径");
+  await fs.mkdir(occupied);
+  await fs.writeFile(path.join(occupied, "do-not-touch.txt"), "保留其他文件");
+  await fs.writeFile(path.join(occupied, ".xhs-download.json"), JSON.stringify({ version: 1, id: B, files: [], complete: false }));
+  await f.start();
+  const result = await f.settle();
+  assert.equal(result.completed, 1);
+  assert.equal(result.items[0].directoryName, `001-测试标题__路径-${A}`);
+  assert.equal(await fs.readFile(path.join(occupied, "do-not-touch.txt"), "utf8"), "保留其他文件");
+  f.requests.length = 0;
+  await f.manager.resume(); await f.settle();
+  assert.equal(f.manager.snapshot().items[0].directoryName, result.items[0].directoryName);
+  assert.equal(f.requests.length, 0);
+});
+
+test("title-based directory collisions cannot traverse a symlink or overwrite its destination", async (t) => {
+  const f = await fixture(t);
+  const outside = path.join(f.base, "untouched");
+  await fs.mkdir(outside); await fs.writeFile(path.join(outside, "keep.txt"), "keep");
+  await fs.symlink(outside, path.join(f.directory, "001-测试标题__路径"), process.platform === "win32" ? "junction" : "dir");
+  await f.start();
+  assert.equal((await f.settle()).completed, 1);
+  assert.deepEqual(await fs.readdir(outside), ["keep.txt"]);
+  assert.equal(await fs.readFile(path.join(outside, "keep.txt"), "utf8"), "keep");
+});
+
+test("single-item and retry-all preserve sequence and never re-request successful posts", async (t) => {
+  const C = "333333333333333333333333";
+  const f = await fixture(t);
+  const failures = new Set([B, C]);
+  const resolved = [];
+  f.manager.browser = {
+    async *discover() { yield { notes: [note(A), note(B), note(C)], done: true }; },
+    async resolveNote(item) { resolved.push(item.id); if (failures.has(item.id)) throw new Error("temporary fixture failure"); return parsed({ title: `帖子-${item.id}` }); }
+  };
+  await f.start(); await f.settle();
+  assert.equal(f.manager.snapshot().failed, 2);
+  const original = f.manager.snapshot().items.map(item => ({ id: item.id, sequence: item.sequence, directoryName: item.directoryName }));
+  const firstImage = await fs.readFile(path.join(noteFolder(f, A), "image-001.jpg"));
+  resolved.length = 0; f.requests.length = 0; failures.delete(B);
+  await f.manager.retryItem(B); await f.settle();
+  assert.deepEqual(resolved, [B]);
+  assert.equal(f.manager.snapshot().items[0].status, "completed");
+  assert.equal(f.manager.snapshot().items[2].status, "failed");
+  assert.deepEqual(await fs.readFile(path.join(noteFolder(f, A), "image-001.jpg")), firstImage);
+  assert.deepEqual(f.manager.snapshot().items.map(item => item.sequence), [1, 2, 3]);
+  assert.equal(f.manager.snapshot().items[0].directoryName, original[0].directoryName);
+  resolved.length = 0; failures.delete(C);
+  await f.manager.retryFailed(); await f.settle();
+  assert.deepEqual(resolved, [C]);
+  assert.equal(f.manager.snapshot().completed, 3);
+  await assert.rejects(f.manager.retryItem(A), /只有失败/);
+  await assert.rejects(f.manager.retryItem("../outside"), /ID 无效/);
+});
+
+test("retrying one failed item leaves pending discovery and other queue items paused", async (t) => {
+  const f = await fixture(t);
+  const saved = { ...f.manager.state, profileUrl: PROFILE, directory: f.directory, status: "paused", discoveryComplete: false,
+    items: [{ ...note(A), status: "failed", error: "old error", files: [], complete: false }, { ...note(B), status: "pending", files: [], complete: false }] };
+  await fs.writeFile(path.join(f.stateDirectory, "profile-job.json"), JSON.stringify(saved));
+  const calls = [];
+  const restored = new ProfileManager({ ...f.config, browser: {
+    async *discover() { throw new Error("single retry must not discover"); },
+    async resolveNote(item) { calls.push(item.id); return parsed(); }
+  } });
+  await restored.initialize(); await restored.retryItem(A); await restored._runTask;
+  assert.deepEqual(calls, [A]);
+  const result = restored.snapshot();
+  assert.equal(result.status, "paused");
+  assert.equal(result.discoveryComplete, false);
+  assert.equal(result.items[1].status, "pending");
+  assert.deepEqual(result.items.map(item => item.sequence), [1, 2]);
+});
+
+test("active tasks clearly reject item retries without altering failed queue entries", async (t) => {
+  let started;
+  const waiting = new Promise(resolve => { started = resolve; });
+  const f = await fixture(t, { sleep: async (_ms, signal) => {
+    started();
+    await new Promise((_resolve, reject) => signal.addEventListener("abort", () => reject(Object.assign(new Error("stop"), { name: "AbortError" })), { once: true }));
+  } });
+  await f.start(); await waiting;
+  await assert.rejects(f.manager.retryItem(A), /请先暂停/);
+  await assert.rejects(f.manager.retryFailed(), /请先暂停/);
+  await f.manager.pause();
+});
+
+test("persisted path traversal is rejected and long Unicode titles remain safe filename components", async (t) => {
+  const f = await fixture(t);
+  f.manager.browser.resolveNote = async () => parsed({ title: "😀".repeat(100) + "/.." });
+  await f.start(); await f.settle();
+  const item = f.manager.snapshot().items[0];
+  assert.ok(Buffer.byteLength(item.directoryName, "utf8") <= 240);
+  assert.equal(path.basename(item.directoryName), item.directoryName);
+  const file = path.join(f.stateDirectory, "profile-job.json");
+  const saved = JSON.parse(await fs.readFile(file, "utf8"));
+  saved.items[0].directoryName = "../outside";
+  await fs.writeFile(file, JSON.stringify(saved));
+  const restored = new ProfileManager(f.config);
+  assert.equal((await restored.initialize()).status, "error");
+});
+
+test("rediscovery keeps existing sequence and resolved titles while new posts receive the next number", async (t) => {
+  const C = "333333333333333333333333";
+  const f = await fixture(t);
+  let round = 0;
+  const resolved = [];
+  f.manager.browser = {
+    async *discover() {
+      round++;
+      yield { notes: (round === 1 ? [A, B] : [C, B, A]).map(id => ({ ...note(id), title: "短标题…" })), done: true };
+    },
+    async resolveNote(item) { resolved.push(item.id); return parsed({ title: `完整标题-${item.id}` }); }
+  };
+  await f.start(); await f.settle();
+  const first = f.manager.snapshot().items.map(item => ({ id: item.id, sequence: item.sequence, directoryName: item.directoryName }));
+  resolved.length = 0;
+  await f.start(); await f.settle();
+  assert.deepEqual(resolved, [C]);
+  assert.deepEqual(f.manager.snapshot().items.slice(0, 2).map(item => ({ id: item.id, sequence: item.sequence, directoryName: item.directoryName })), first);
+  assert.equal(f.manager.snapshot().items[2].sequence, 3);
+  assert.match(f.manager.snapshot().items[2].directoryName, /^003-完整标题/);
 });

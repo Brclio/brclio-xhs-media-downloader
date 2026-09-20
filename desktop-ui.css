@@ -60,6 +60,167 @@
   font-size: 0.72rem;
 }
 
+.desktop-update-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.desktop-check-updates {
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--blue-deep);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.74rem;
+}
+
+.desktop-check-updates:hover {
+  background: var(--cream-deep);
+}
+
+.desktop-check-updates:disabled {
+  color: var(--ink-faint);
+  cursor: default;
+}
+
+.desktop-update-panel {
+  margin-top: 20px;
+  padding: clamp(16px, 2vw, 24px);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.desktop-update-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.desktop-update-copy {
+  min-width: 0;
+}
+
+.desktop-update-copy strong {
+  color: var(--blue-deep);
+  font-family: var(--font-serif);
+  font-size: 0.93rem;
+  overflow-wrap: anywhere;
+}
+
+.desktop-update-copy p {
+  margin-top: 5px;
+  color: var(--ink-light);
+  font-size: 0.76rem;
+  line-height: 1.8;
+}
+
+.desktop-update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.desktop-update-actions .button {
+  min-height: 42px;
+  padding: 9px 15px;
+  font-size: 0.75rem;
+}
+
+.desktop-update-progress-wrap {
+  margin-top: 18px;
+}
+
+.desktop-update-progress-wrap progress {
+  display: block;
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+  background: var(--cream-deep);
+  color: var(--blue);
+  accent-color: var(--blue);
+}
+
+.desktop-update-progress-wrap progress::-webkit-progress-bar {
+  border-radius: 4px;
+  background: rgba(43, 127, 216, 0.1);
+}
+
+.desktop-update-progress-wrap progress::-webkit-progress-value {
+  border-radius: 4px;
+  background: var(--blue);
+}
+
+.desktop-update-progress-wrap progress::-moz-progress-bar {
+  border-radius: 4px;
+  background: var(--blue);
+}
+
+.desktop-update-progress-wrap p,
+.desktop-update-installation-hint {
+  margin-top: 8px;
+  color: var(--ink-light);
+  font-size: 0.73rem;
+  line-height: 1.85;
+}
+
+.desktop-update-progress-wrap p {
+  color: var(--blue-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.desktop-update-error {
+  margin-top: 12px;
+  color: var(--red-deep);
+  font-size: 0.78rem;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.desktop-update-notes-details {
+  margin-top: 14px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+
+.desktop-update-notes-details summary {
+  min-height: 32px;
+  padding: 4px 0;
+  color: var(--ink-light);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.desktop-update-notes-details summary::marker {
+  color: var(--blue-deep);
+}
+
+.desktop-update-notes-details summary:focus-visible {
+  outline: 3px solid var(--blue-deep);
+  outline-offset: 3px;
+}
+
+.desktop-update-notes-details p {
+  max-height: 230px;
+  overflow-y: auto;
+  margin-top: 7px;
+  color: var(--ink-light);
+  font-size: 0.76rem;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .profile-panel {
   padding: clamp(30px, 4vw, 48px) 0 28px;
 }
@@ -422,6 +583,35 @@
   font-variant-numeric: tabular-nums;
 }
 
+.profile-item-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.profile-item-filter {
+  min-height: 35px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink-light);
+  background: var(--paper);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.73rem;
+}
+
+.profile-item-filter:hover {
+  background: var(--cream-deep);
+}
+
+.profile-item-filter[aria-pressed="true"] {
+  border-color: var(--blue-deep);
+  color: var(--blue-deep);
+  background: rgba(43, 127, 216, 0.06);
+}
+
 .profile-items {
   display: grid;
   gap: 0;
@@ -452,6 +642,43 @@
   color: var(--blue-deep);
   font-size: 0.68rem;
   white-space: nowrap;
+}
+
+.profile-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.profile-item-retry {
+  min-width: 46px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--blue-deep);
+  border-radius: 5px;
+  color: var(--blue-deep);
+  background: var(--paper);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.73rem;
+}
+
+.profile-item-retry:hover:not(:disabled) {
+  background: rgba(43, 127, 216, 0.06);
+}
+
+.profile-item-retry:disabled {
+  border-color: var(--line-strong);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.profile-item-directory {
+  grid-column: 1 / -1;
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
 }
 
 .profile-item-error {
@@ -526,9 +753,22 @@ body.is-desktop .site-visits {
     font-size: 0.8rem;
   }
 
-  .desktop-version {
+  .desktop-update-tools {
     width: 100%;
-    text-align: right;
+  }
+
+  .desktop-update-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .desktop-update-actions {
+    width: 100%;
+  }
+
+  .desktop-update-actions .button {
+    flex-grow: 1;
   }
 
   .profile-heading {

@@ -1,11 +1,13 @@
 import fs from "node:fs/promises";
+import { constants } from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { extractNoteId } from "../lib/xhs.js";
 import { makeNoteTextFileData } from "../lib/archive.js";
 import { parseProfileUrl } from "./profile-source.js";
 import {
-  atomicWrite, ensureNoteDirectory, verifyFile, downloadMedia,
+  atomicWrite, ensureNoteDirectory, verifyFile, downloadMedia, assertSafeDirectory,
+  noteDirectoryName, isSafeDirectoryName, renameNoteDirectory,
   abortError, throwIfAborted, sleep as defaultSleep
 } from "./media-download.js";
 
@@ -14,6 +16,33 @@ const FINISHED = new Set(["completed", "skipped"]);
 const PAUSE_CODES = new Set(["AUTH_REQUIRED", "RATE_LIMITED", "DISCOVERY_INCOMPLETE"]);
 const ITEM_ID = /^[a-f0-9]{24}$/i;
 const STATE_FILENAME = "profile-job.json";
+
+function restoreItems(items) {
+  const used = new Set();
+  const reserved = new Set(items.map(item => item.sequence).filter(value => Number.isSafeInteger(value) && value > 0));
+  let next = 1;
+  return items.map(item => {
+    let sequence = item.sequence;
+    if (!Number.isSafeInteger(sequence) || sequence < 1 || used.has(sequence)) {
+      while (used.has(next) || reserved.has(next)) next++;
+      sequence = next++;
+    }
+    used.add(sequence);
+    const descriptor = noteDescriptor(item);
+    const prefix = `${String(sequence).padStart(3, "0")}-`;
+    if (item.directoryName && (!isSafeDirectoryName(item.directoryName)
+      || (item.directoryName !== descriptor.id && !item.directoryName.startsWith(prefix)))) {
+      throw new Error("任务记录中的笔记文件夹名称无效。");
+    }
+    return {
+      ...descriptor, sequence, directoryName: item.directoryName || "",
+      titleResolved: item.titleResolved === true || Boolean(item.complete) || Boolean(item.files?.length),
+      status: ["pending", "completed", "skipped", "failed"].includes(item.status) ? item.status : "pending",
+      error: String(item.error || ""), files: Array.isArray(item.files) ? item.files : [],
+      complete: Boolean(item.complete), strategy: String(item.strategy || "")
+    };
+  });
+}
 
 function initialState(now) {
   return {
@@ -88,11 +117,7 @@ export class ProfileManager {
       if (saved.directory && !path.isAbsolute(saved.directory)) throw new Error("任务目录无效。");
       saved.intervalSeconds = interval(saved.intervalSeconds, 10, 3, 3600, "请求间隔");
       saved.jitterSeconds = interval(saved.jitterSeconds, 3, 0, 300, "随机延迟");
-      saved.items = saved.items.map((item) => ({
-        ...noteDescriptor(item), status: ["pending", "completed", "skipped", "failed"].includes(item.status) ? item.status : "pending",
-        error: String(item.error || ""), files: Array.isArray(item.files) ? item.files : [],
-        complete: Boolean(item.complete), strategy: String(item.strategy || "")
-      }));
+      saved.items = restoreItems(saved.items);
       this.state = { ...initialState(this.now()), ...saved, nextRequestAt: null, currentTitle: "" };
       if (ACTIVE.has(saved.status) || saved.status === "paused") {
         this.state.status = "paused";
@@ -109,7 +134,7 @@ export class ProfileManager {
   }
 
   snapshot() {
-    const items = this.state.items.map(({ id, url, title, status, error }) => ({ id, url, title, status, error }));
+    const items = this.state.items.map(({ id, url, title, status, error, sequence, directoryName }) => ({ id, url, title, status, error, sequence, directoryName }));
     return {
       ...this.state, items,
       discovered: items.length,
@@ -169,30 +194,47 @@ export class ProfileManager {
 
   resume() { return this._command(() => this._resume()); }
 
-  async _resume() {
+  async _resume(retryIds = null) {
     if (this._runTask) return this.snapshot();
     if (!this.state.profileUrl || !this.state.directory) throw new Error("没有可以继续的主页下载任务。");
     await fs.access(this.state.directory);
-    this.state.status = this.state.discoveryComplete ? "downloading" : "discovering";
-    this.state.message = this.state.discoveryComplete ? "正在验证文件并继续下载…" : "正在重新读取主页并合并已发现的帖子…";
+    this.state.status = retryIds || this.state.discoveryComplete ? "downloading" : "discovering";
+    this.state.message = retryIds ? `正在重试 ${retryIds.size} 篇失败的帖子…`
+      : this.state.discoveryComplete ? "正在验证文件并继续下载…" : "正在重新读取主页并合并已发现的帖子…";
     await this._save();
-    this._launch();
+    this._launch(retryIds);
     return this.snapshot();
   }
 
   retryFailed() {
     return this._command(async () => {
       if (this._runTask) throw new Error("请先暂停任务，再重试失败的帖子。");
-      for (const item of this.state.items) if (item.status === "failed") { item.status = "pending"; item.error = ""; }
-      return this._resume();
+      const failed = this.state.items.filter(item => item.status === "failed");
+      if (!failed.length) return this.snapshot();
+      for (const item of failed) { item.status = "pending"; item.error = ""; }
+      return this._resume(new Set(failed.map(item => item.id)));
     });
   }
 
-  _launch() {
+  retryItem(noteId) {
+    return this._command(async () => {
+      if (this._runTask) throw new Error("请先暂停任务，再重试失败的帖子。");
+      if (typeof noteId !== "string" || !ITEM_ID.test(noteId)) throw new Error("笔记 ID 无效。");
+      const item = this.state.items.find(item => item.id === noteId);
+      if (!item) throw new Error("未找到这篇帖子。");
+      if (item.status !== "failed") throw new Error("只有失败的帖子可以单项重试。");
+      item.status = "pending";
+      item.error = "";
+      return this._resume(new Set([noteId]));
+    });
+  }
+
+  _launch(retryIds = null) {
+    this._directoryIndex = null;
     this._controller = new AbortController();
     const signal = this._controller.signal;
     this._emit();
-    this._runTask = this._run(signal).catch(async (error) => {
+    this._runTask = this._run(signal, retryIds).catch(async (error) => {
       if (signal.aborted || error.name === "AbortError") return;
       this.state.status = PAUSE_CODES.has(error.code) ? "paused" : "error";
       this.state.message = error.message || "主页下载中断，请重试。";
@@ -208,8 +250,8 @@ export class ProfileManager {
     }).finally(() => { this._runTask = null; this._controller = null; });
   }
 
-  async _run(signal) {
-    if (!this.state.discoveryComplete) {
+  async _run(signal, retryIds = null) {
+    if (!retryIds && !this.state.discoveryComplete) {
       this.state.phase = "discovery";
       this.state.status = "discovering";
       this._emit();
@@ -219,12 +261,14 @@ export class ProfileManager {
         throwIfAborted(signal);
         this._lastRequestAt = this.now();
         const indexed = new Map(this.state.items.map((item) => [item.id, item]));
+        let nextSequence = this.state.items.reduce((highest, item) => Math.max(highest, item.sequence || 0), 0) + 1;
         for (const raw of page.notes || []) {
           const note = noteDescriptor(raw);
           const existing = indexed.get(note.id);
-          if (existing) { existing.url = note.url; if (note.title) existing.title = note.title; }
+          if (existing) { existing.url = note.url; if (note.title && !existing.titleResolved) existing.title = note.title; }
           else {
-            const item = { ...note, status: "pending", error: "", complete: false, files: [] };
+            const sequence = nextSequence++;
+            const item = { ...note, sequence, directoryName: "", titleResolved: false, status: "pending", error: "", complete: false, files: [] };
             this.state.items.push(item);
             indexed.set(note.id, item);
           }
@@ -241,7 +285,7 @@ export class ProfileManager {
     this.state.phase = "download";
     for (const item of this.state.items) {
       throwIfAborted(signal);
-      if (item.status === "failed") continue;
+      if (item.status === "failed" || (retryIds && !retryIds.has(item.id))) continue;
       this.state.status = "downloading";
       this.state.currentTitle = item.title || item.id;
       item.status = "downloading";
@@ -260,11 +304,13 @@ export class ProfileManager {
     }
     throwIfAborted(signal);
     const failed = this.state.items.filter((item) => item.status === "failed").length;
-    this.state.status = "completed";
-    this.state.phase = "done";
+    const unfinished = !this.state.discoveryComplete || this.state.items.some(item => item.status === "pending");
+    this.state.status = unfinished ? "paused" : "completed";
+    this.state.phase = unfinished ? "download" : "done";
     this.state.currentTitle = "";
     this.state.nextRequestAt = null;
-    this.state.message = failed ? `任务结束，${failed} 篇帖子失败，可点击重试失败项。` : `主页加载完成，已处理 ${this.state.items.length} 篇帖子。`;
+    this.state.message = unfinished ? "重试已结束，其余任务已保留。点击继续任务可处理剩余帖子。"
+      : failed ? `任务结束，${failed} 篇帖子失败，可点击重试失败项。` : `主页加载完成，已处理 ${this.state.items.length} 篇帖子。`;
     await this._save();
     this._emit();
   }
@@ -303,22 +349,109 @@ export class ProfileManager {
     }
   }
 
+  async _readManifest(directory) {
+    await assertSafeDirectory(this.state.directory, directory);
+    const filename = path.join(directory, ".xhs-download.json");
+    let stat;
+    try { stat = await fs.lstat(filename); }
+    catch (error) { if (error.code === "ENOENT") return null; throw error; }
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink > 1 || stat.size > 2 * 1024 * 1024) {
+      throw new Error("已有下载记录不是有效普通文件。");
+    }
+    let saved;
+    let handle;
+    try {
+      handle = await fs.open(filename, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
+      const current = await handle.stat();
+      if (!current.isFile() || current.nlink > 1 || current.size > 2 * 1024 * 1024) throw new Error("已有下载记录不是有效普通文件。");
+      saved = JSON.parse(await handle.readFile("utf8"));
+    } catch (error) {
+      if (error instanceof SyntaxError) throw new Error("已有下载记录损坏，未覆盖原文件。");
+      throw error;
+    } finally { await handle?.close(); }
+    if (saved.version !== 1 || !ITEM_ID.test(saved.id || "") || !Array.isArray(saved.files)) {
+      throw new Error("已有下载记录无效，未覆盖原文件。");
+    }
+    return saved;
+  }
+
+  async _indexDirectories(signal) {
+    if (this._directoryIndex) return this._directoryIndex;
+    const index = new Map();
+    const root = this.state.directory;
+    await assertSafeDirectory(root, root);
+    for (const entry of await fs.readdir(root, { withFileTypes: true })) {
+      throwIfAborted(signal);
+      if (!entry.isDirectory() || entry.isSymbolicLink() || (!ITEM_ID.test(entry.name) && !/^\d{3,}-/.test(entry.name))) continue;
+      try {
+        const manifest = await this._readManifest(path.join(root, entry.name));
+        if (!manifest) continue;
+        const candidates = index.get(manifest.id) || [];
+        candidates.push({ name: entry.name, manifest });
+        index.set(manifest.id, candidates);
+      } catch { /* Unrelated or damaged folders never authorize an overwrite. */ }
+    }
+    this._directoryIndex = index;
+    return index;
+  }
+
+  async _prepareDirectory(item, signal) {
+    throwIfAborted(signal);
+    const root = this.state.directory;
+    const index = await this._indexDirectories(signal);
+    const candidates = [...new Set([
+      item.directoryName, item.id, ...(index.get(item.id) || []).map(entry => entry.name)
+    ].filter(Boolean))];
+    let source;
+    for (const name of candidates) {
+      throwIfAborted(signal);
+      if (!isSafeDirectoryName(name)) throw new Error("任务记录中的笔记文件夹名称无效。");
+      const directory = path.join(root, name);
+      let stat;
+      try { stat = await fs.lstat(directory); }
+      catch (error) { if (error.code === "ENOENT") continue; throw error; }
+      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("笔记文件夹不能是符号链接或普通文件。");
+      const manifest = await this._readManifest(directory);
+      if (manifest && manifest.id !== item.id) throw new Error("笔记文件夹属于另一篇帖子，未覆盖原文件。");
+      if (!manifest && !item.files.length && (await fs.readdir(directory)).length) {
+        if (name === item.directoryName) throw new Error("无法确认已有文件夹属于这篇帖子，未覆盖原文件。");
+        continue;
+      }
+      source = { name, directory, manifest };
+      break;
+    }
+    if (source?.manifest) {
+      const saved = source.manifest;
+      item.files = saved.files;
+      item.complete = saved.complete === true;
+      if (!item.titleResolved && (saved.titleResolved || saved.complete || saved.files.length)) {
+        if (saved.title) item.title = String(saved.title);
+        item.titleResolved = true;
+      }
+    }
+    const preferred = noteDirectoryName(item.sequence, item.title);
+    let name;
+    for (let attempt = 0; ; attempt++) {
+      throwIfAborted(signal);
+      const candidate = attempt === 0 ? preferred : `${preferred}-${item.id}${attempt > 1 ? `-${attempt}` : ""}`;
+      if (source?.name === candidate) { name = candidate; break; }
+      try { await fs.lstat(path.join(root, candidate)); }
+      catch (error) { if (error.code === "ENOENT") { name = candidate; break; } throw error; }
+    }
+    throwIfAborted(signal);
+    let directory;
+    if (source) directory = await renameNoteDirectory(root, source.name, name);
+    else directory = await ensureNoteDirectory(root, name);
+    item.directoryName = name;
+    await this._writeManifest(directory, item);
+    index.set(item.id, [{ name }]);
+    await this._save();
+    return directory;
+  }
+
   async _downloadNote(item, signal) {
     const root = this.state.directory;
-    const directory = await ensureNoteDirectory(root, item.id);
-    if (!item.files.length) {
-      try {
-        const manifestPath = path.join(directory, ".xhs-download.json");
-        const stat = await fs.lstat(manifestPath);
-        if (stat.isSymbolicLink() || !stat.isFile() || stat.size > 2 * 1024 * 1024) throw new Error("已有下载记录不是有效普通文件。");
-        const saved = JSON.parse(await fs.readFile(manifestPath, "utf8"));
-        if (saved.id === item.id && saved.version === 1 && Array.isArray(saved.files)) {
-          item.files = saved.files;
-          item.complete = saved.complete === true;
-          if (saved.title) item.title = String(saved.title);
-        }
-      } catch (error) { if (error.code !== "ENOENT" && !(error instanceof SyntaxError)) throw error; }
-    }
+    let directory = await this._prepareDirectory(item, signal);
     if (item.complete && item.files.length && item.files.some((file) => file.kind !== "metadata")) {
       let verified = true;
       for (const file of item.files) if (!await verifyFile(root, directory, file, signal)) { verified = false; break; }
@@ -335,7 +468,9 @@ export class ProfileManager {
     const assets = mediaAssets(note);
     if (!assets.length) throw new Error("此帖未解析到可下载的媒体，请登录后重试。");
     if ((note.images || []).some((image) => image.livePhoto && !image.liveVideo?.url)) throw new Error("实况照片缺少配对视频，未将此帖标为完整下载。请稍后重试。");
-    item.title = String(note.title || item.title || item.id);
+    item.title = String(note.title || item.title || "未命名帖子");
+    item.titleResolved = true;
+    directory = await this._prepareDirectory(item, signal);
     item.strategy = String(note.strategy || "");
     item.complete = false;
     this.state.currentTitle = item.title;
@@ -374,7 +509,8 @@ export class ProfileManager {
 
   async _writeManifest(directory, item) {
     await atomicWrite(this.state.directory, directory, ".xhs-download.json", JSON.stringify({
-      version: 1, id: item.id, title: item.title, complete: item.complete, files: item.files
+      version: 1, id: item.id, sequence: item.sequence, directoryName: item.directoryName,
+      title: item.title, titleResolved: item.titleResolved, complete: item.complete, files: item.files
     }, null, 2));
   }
 

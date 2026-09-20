@@ -4,11 +4,13 @@ import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { isXhsImageUrl, isXhsVideoUrl, normalizeImageUrl } from "../lib/xhs.js";
 
-export function safeFilename(value, maxLength = 80) {
+export function safeFilename(value, maxLength = 80, maxBytes = 240) {
   let name = String(value ?? "").normalize("NFKC")
     .replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, "_")
     .replace(/[. ]+$/g, "").trim();
   name = Array.from(name).slice(0, maxLength).join("").replace(/[. ]+$/g, "");
+  while (Buffer.byteLength(name, "utf8") > maxBytes) name = Array.from(name).slice(0, -1).join("");
+  name = name.replace(/[. ]+$/g, "");
   if (!name || name === "." || name === "..") name = "untitled";
   if (/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)) name = `_${name}`;
   return name;
@@ -46,11 +48,37 @@ export async function assertSafeDirectory(root, directory) {
 }
 
 export async function ensureNoteDirectory(root, noteId) {
-  const directory = path.join(root, safeFilename(noteId));
+  const directory = path.join(root, isSafeDirectoryName(noteId) ? noteId : safeFilename(noteId));
   await assertSafeDirectory(root, root);
   try { await fs.mkdir(directory); } catch (error) { if (error.code !== "EEXIST") throw error; }
   await assertSafeDirectory(root, directory);
   return directory;
+}
+
+export function noteDirectoryName(sequence, title) {
+  if (!Number.isSafeInteger(sequence) || sequence < 1) throw new Error("笔记序号无效。");
+  return `${String(sequence).padStart(3, "0")}-${safeFilename(String(title || "").trim() || "未命名帖子", 60, 180)}`;
+}
+
+export function isSafeDirectoryName(name) {
+  return typeof name === "string" && Boolean(name) && name !== "." && name !== ".."
+    && path.basename(name) === name && !/[<>:"/\\|?*\u0000-\u001f\u007f]/.test(name)
+    && !/[. ]$/.test(name) && Buffer.byteLength(name, "utf8") <= 240;
+}
+
+export async function renameNoteDirectory(root, fromName, toName) {
+  if (!isSafeDirectoryName(fromName) || !isSafeDirectoryName(toName)) throw new Error("笔记文件夹名称无效。");
+  const source = path.join(root, fromName);
+  const target = path.join(root, toName);
+  await assertSafeDirectory(root, source);
+  if (source === target) return target;
+  try {
+    await fs.lstat(target);
+    throw new Error("目标文件夹已经存在，已保留原文件夹，未覆盖文件。");
+  } catch (error) { if (error.code !== "ENOENT") throw error; }
+  await fs.rename(source, target);
+  await assertSafeDirectory(root, target);
+  return target;
 }
 
 export async function assertSafeTarget(root, directory, name) {

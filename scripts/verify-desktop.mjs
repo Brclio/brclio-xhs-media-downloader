@@ -1,25 +1,63 @@
 // Developer smoke: run with node_modules/.bin/electron scripts/verify-desktop.mjs.
 // Uses a disposable application profile and the real main/preload/protocol code.
-import { app } from 'electron';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { app, net } from 'electron';
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createElectronUpdateFetch } from '../desktop/update-manager.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const temporary = mkdtempSync(path.join(tmpdir(), 'xhs-desktop-smoke-'));
 app.setPath('userData', temporary);
 app.getAppPath = () => root;
+app.getVersion = () => JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version;
 let done = false;
 const timer = setTimeout(() => { console.error('DESKTOP_SMOKE_TIMEOUT'); app.exit(1); }, 40000);
+
+async function verifyUpdateTransport() {
+  let payloadRequests = 0;
+  const server = createServer((request, response) => {
+    if (request.url === '/redirect') { response.writeHead(302, { Location: '/payload' }); response.end(); }
+    else if (request.url === '/slow') { response.writeHead(200, { 'content-type': 'application/octet-stream', 'x-content-type-options': 'nosniff' }); response.write('begin'); }
+    else { payloadRequests++; response.writeHead(200, { 'content-type': 'application/octet-stream' }); response.end('verified installer fixture'); }
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const fetch = createElectronUpdateFetch(net);
+    const redirect = await fetch(`${base}/redirect`, { method: 'GET', redirect: 'manual', headers: {} });
+    assert.equal(redirect.status, 302);
+    assert.equal(new URL(redirect.headers.get('location'), base).href, `${base}/payload`);
+    assert.equal(payloadRequests, 0, 'The transport must not follow an unchecked redirect');
+    const payload = await fetch(`${base}/payload`, { method: 'GET', redirect: 'manual', headers: {} });
+    assert.equal(await payload.text(), 'verified installer fixture');
+    const controller = new AbortController();
+    const slow = await fetch(`${base}/slow`, { method: 'GET', redirect: 'manual', headers: {}, signal: controller.signal });
+    const body = slow.text();
+    controller.abort();
+    await assert.rejects(body);
+    return true;
+  } finally {
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+  }
+}
+
 app.on('browser-window-created', (_event, win) => {
   win.webContents.on('did-finish-load', async () => {
     if (done || !win.webContents.getURL().startsWith('xhs-app://local/')) return;
     done = true;
     try {
+      const updateTransportVerified = await verifyUpdateTransport();
       const result = await win.webContents.executeJavaScript(`(async () => {
         const info = await window.xhsDesktop.getInfo();
         const state = await window.xhsDesktop.getProfileState();
+        const update = await window.xhsDesktop.getUpdateState();
+        const updateMethods = ['checkForUpdates', 'downloadUpdate', 'cancelUpdateDownload', 'installUpdate', 'onUpdateState', 'retryItem']
+          .every(name => typeof window.xhsDesktop[name] === 'function');
         const payloads = [];
         for (const route of ['/api/parse', '/api/python_parse']) {
           const response = await fetch(route, {method:'POST',headers:{'content-type':'application/json'},
@@ -29,19 +67,19 @@ app.on('browser-window-created', (_event, win) => {
         }
         // Module initialization awaits the bridge; drain promises before inspecting.
         await new Promise(resolve=>setTimeout(resolve,100));
-        return {info,status:state.status,payloads,profileVisible:!document.querySelector('#profile-panel').hidden,
+        return {info,status:state.status,updateStatus:update.status,updateMethods,payloads,profileVisible:!document.querySelector('#profile-panel').hidden,
           tabsVisible:!document.querySelector('#desktop-navigation').hidden,
           nodeAvailable:typeof require === 'function',
           secureContext:window.isSecureContext};
       })()`);
       if (!result.info.pythonAvailable || result.status !== 'idle' || !result.profileVisible
-          || !result.tabsVisible || result.nodeAvailable || !result.secureContext
+          || !result.tabsVisible || result.nodeAvailable || !result.secureContext || !result.updateMethods || result.updateStatus !== 'idle'
           || result.payloads.some(value => !value.success || value.images !== 1 || value.status !== 200)) {
         throw new Error(JSON.stringify(result));
       }
       const screenshot = path.join(temporary, 'desktop.png');
       writeFileSync(screenshot, (await win.webContents.capturePage()).toPNG());
-      console.log(JSON.stringify({ smoke: 'passed', ...result, screenshot }));
+      console.log(JSON.stringify({ smoke: 'passed', ...result, updateTransportVerified, screenshot }));
       clearTimeout(timer);
       app.quit();
     } catch (error) {

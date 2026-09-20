@@ -30,19 +30,24 @@ export function expectedInstallerNames(version, tag) {
 export async function verifyAsar(archive, sourceDirectory, version) {
   const require = createRequire(path.join(sourceDirectory, 'package.json'));
   const asar = require('@electron/asar');
+  const expectedSources = [...SOURCE_FILES];
+  // Historical v1.5 artifacts predate the update manager.
+  try { await stat(path.join(sourceDirectory, 'desktop/update-manager.js')); expectedSources.push('desktop/update-manager.js'); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  expectedSources.sort();
   const actualSources = asar.listPackage(archive)
-    .map(name => name.replace(/^\//, ''))
+    .map(name => name.replaceAll('\\', '/').replace(/^\//, ''))
     .filter(name => /\.(?:js|cjs|html|css)$/.test(name)).sort();
-  assert.deepEqual(actualSources, SOURCE_FILES, 'Packaged source must contain exactly the 26 reviewed files');
+  assert.deepEqual(actualSources, expectedSources, 'Packaged source must contain exactly the reviewed application files');
   const packaged = JSON.parse(asar.extractFile(archive, 'package.json').toString('utf8'));
   assert.equal(packaged.version, version, 'ASAR package version mismatch');
   assert.equal(packaged.name, 'brclio-xhs-media-downloader');
   assert.equal(packaged.repository?.url, `git+https://github.com/${REPOSITORY}.git`);
-  for (const name of SOURCE_FILES) {
+  for (const name of expectedSources) {
     assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))),
       `Packaged source differs from release tag: ${name}`);
   }
-  return SOURCE_FILES.length;
+  return expectedSources.length;
 }
 
 export function verifyArchitecture(executable) {
@@ -68,7 +73,9 @@ export async function verifyPromotion(env = process.env) {
   const pkg = JSON.parse(await readFile(path.join(sourceDirectory, 'package.json'), 'utf8'));
   const names = expectedInstallerNames(pkg.version, env.TAG);
   const entries = await readdir(artifactDirectory, { withFileTypes: true });
-  assert.deepEqual(entries.map(entry => entry.name).sort(), [...names].sort(), 'Artifact must contain only the two Intel installers');
+  const proofName = 'release-proof-mac-x64.json';
+  const hasProof = entries.some(entry => entry.name === proofName);
+  assert.deepEqual(entries.map(entry => entry.name).sort(), [...names, ...(hasProof ? [proofName] : [])].sort(), 'Artifact must contain the two Intel installers and optional build evidence');
   assert.ok(entries.every(entry => entry.isFile()), 'Installer entries must be regular files');
   const [dmg, zip] = names.map(name => path.join(artifactDirectory, name));
   command('unzip', ['-tqq', zip]);
@@ -99,6 +106,14 @@ export async function verifyPromotion(env = process.env) {
   for (const name of names) {
     const file = path.join(artifactDirectory, name);
     files.push({ name, bytes: (await stat(file)).size, sha256: await digest(file) });
+  }
+  if (hasProof) {
+    const proof = JSON.parse(await readFile(path.join(artifactDirectory, proofName), 'utf8'));
+    assert.equal(proof.version, pkg.version);
+    assert.equal(proof.sourceSha, env.SOURCE_SHA);
+    assert.equal(proof.platform, 'darwin');
+    assert.equal(proof.arch, 'x64');
+    assert.deepEqual(proof.files, files);
   }
   const evidence = {
     repository: REPOSITORY, tag: env.TAG, version: pkg.version,

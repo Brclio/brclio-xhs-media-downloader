@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.5.0 本地版">
+          <div class="header-status" aria-label="当前记录：v1.6.0 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.5.0 本地版</span>
+            <span>v1.6.0 本地版</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。最新的 v1.5.0 带来 Mac、Windows 本地版，支持按自定义间隔保存整个主页，并显示当前登录账号的昵称。
+              这里记录功能增加、体验优化与问题修复。v1.6.0 用“序号-帖子名称”整理下载，支持逐条重试失败帖子，并在应用里检查和下载后续版本。
             </p>
 
             <div class="release-hero-actions">
@@ -70,7 +70,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.5.0</strong>
+              <strong>v1.6.0</strong>
               <small>本地版 · 2026.09.20</small>
             </div>
 
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#desktop-1-6-update"><span>v1.6</span><strong>重试与应用更新</strong></a>
               <a href="#desktop-1-5-update"><span>v1.5</span><strong>本地版与主页下载</strong></a>
               <a href="#mobile-counter-update"><span>MOBILE</span><strong>手机统计优化</strong></a>
               <a href="#glass-counter-update"><span>GLASS</span><strong>液态玻璃浮层</strong></a>
@@ -130,7 +131,30 @@
           </aside>
 
           <div class="release-feed">
-            <article id="desktop-1-5-update" class="release-entry release-entry-featured">
+            <article id="desktop-1-6-update" class="release-entry release-entry-featured">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-09-20"><span>09.20</span><small>2026 · 本地版</small></time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges"><span class="release-badge release-badge-yellow">v1.6.0</span><span class="release-status">Mac / Windows</span></div>
+                    <h3>文件更好找，失败可重试，新版随时查</h3>
+                  </div>
+                </header>
+                <p class="release-lead">主页内容以固定序号和帖子名称归档，下载失败的帖子可逐条处理。新版加入更新入口，后续可以直接在应用内下载最新安装包。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>序号与标题一起保存</strong>文件夹使用“001-帖子名称”格式，继续或重试时序号不变，并兼容旧版下载记录。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>失败帖子逐条重试</strong>查看失败原因后点击“重试”，或一次重试全部失败项；成功内容保留，请求仍遵循自定义间隔。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>检查、下载并启动更新</strong>显示新版本与下载进度，校验通过后打开安装包。Windows 按安装向导完成；Mac 拖入“应用程序”覆盖旧版。</p></div>
+                </div>
+                <p class="release-lead">v1.5.0 没有更新入口，需要先手动安装本版一次。正常覆盖安装保留本机登录和任务记录。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/latest" target="_blank" rel="noopener noreferrer">下载最新版安装包 ↗</a><span>功能记录 · 2026.09.20</span></div>
+              </div>
+            </article>
+
+            <article id="desktop-1-5-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20">
