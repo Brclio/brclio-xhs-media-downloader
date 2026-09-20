@@ -1,6 +1,6 @@
 # v1.7.0 账号系统验证记录
 
-日期：2026-09-20。代码位于 `codex/account-membership-system` 分支和 [PR #1](https://github.com/Brclio/brclio-xhs-media-downloader/pull/1)。应用实现提交 `c5e712d`；`98a3a29` 仅修正 Windows 测试路径分隔符。安装包的应用源码和授权地址均与对应源码逐字节比较。本次没有发布 GitHub Release。
+日期：2026-09-20。本文记录发布前验收，代码审查入口为 [PR #1](https://github.com/Brclio/brclio-xhs-media-downloader/pull/1)。应用实现提交 `c5e712d`；`98a3a29` 修正 Windows 测试路径分隔符。安装包的应用源码和授权地址均与对应源码逐字节比较。[v1.7.0 正式版](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.7.0) 使用发布标签重新执行三平台构建；正式安装包的来源提交与校验和以 Release 附件 `build-evidence.json`、`SHA256SUMS.txt` 为准，不能将下方发布前的本机包视为同一二进制。
 
 ## 本地自动测试：已通过
 
@@ -47,7 +47,7 @@ Windows 检查是 Mac 上的静态校验，不能替代 Windows 原生启动、�
 - 已消费验证码在正式域名重放返回 `CODE_USED`；未登录调用管理员 API 返回 401；畸形邮件收件人返回 `INVALID_EMAIL`。
 - 正式域名 Node 与 Python 单篇解析 API 均对可控媒体 URL 返回一项解析结果。这不是新一轮真实小红书登录后全量主页抓取验收。
 - 正式网站对 `/desktop/main.js`、`/server/auth/service.js`、`/.env`、`/.env.example`、`/package.json`、`/test/auth-backend.test.js`、`/dist-desktop/`、`/lib/membership-policy.js` 均返回 404。
-- 公网验收发现并修正了管理员路径末尾斜线的响应头匹配问题。`/admin`、`/admin/`、`/admin/index.html` 和管理员脚本均确认返回 CSP、`no-store`、`X-Frame-Options: DENY`；跨来源管理员请求返回 403。最终 Vercel 部署 `dpl_6vfad8TdBKpCfqFvgrq7f9tEe4gB` 为 READY，正式域名已指向该部署。
+- 公网验收发现并修正了管理员路径末尾斜线的响应头匹配问题。`/admin`、`/admin/`、`/admin/index.html` 和管理员脚本均确认返回 CSP、`no-store`、`X-Frame-Options: DENY`；跨来源管理员请求返回 403。发布前 Vercel 部署 `dpl_6vfad8TdBKpCfqFvgrq7f9tEe4gB` 为 READY，并曾通过正式域名验收；后续 `main` 推送会替换生产部署。
 - 直接检查真实权威状态：1 个管理员自有账号、会员类型 `none`、活跃会话 0、测试码状态 `void`、7 条管理操作审计；会话键均为摘要。
 
 ## 尚未验收的项目
@@ -57,11 +57,12 @@ Windows 检查是 Mac 上的静态校验，不能替代 Windows 原生启动、�
 - 桌面安装包与真实服务的完整邮箱登录、真实激活码兑换/设备撤销整条人工交互验收；当前这些业务并发及组合场景通过模拟测试，实际远端只验收了上述管理员与存储/邮件路径。
 - 真实 GitHub 高并发压力、实际限流与灾难恢复演练；自动测试已注入相应故障，不能代替生产演练。
 - 新一轮真实小红书账号的完整主页下载；既有本地任务和原下载实现保留，相关回归通过。
-- GitHub 自动部署的生产分支推送验收：用户完成 GitHub 登录连接后，现有 Vercel 项目已成功关联代码仓库，确认生产分支为 `main`。开发分支提交 `129497c` 已实际自动触发 `source: git` 的预览部署 `dpl_9BjrtFh4GKwL9u1Z1VAk2fiqY99f`，状态 READY。本次生产部署先通过 Vercel API 完成；功能分支尚未合并 `main`，已验证分支自动触发，不把它等同于主分支生产推送已验收。
+
+生产分支为 `main`，现有 Vercel 项目已关联代码仓库。发布前开发分支提交 `129497c` 已实际自动触发 `source: git` 的预览部署 `dpl_9BjrtFh4GKwL9u1Z1VAk2fiqY99f`，状态 READY。正式发布时还需检查合并提交对应的生产部署与域名，不把预览构建当作生产推送验收。
 
 ## 交付文件与复验
 
-安装包位于 `dist-desktop/`：
+正式安装包从 [v1.7.0 Release](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.7.0) 获取。本机发布前校验包位于 `dist-desktop/`：
 
 - `XHS-Downloader-1.7.0-mac-arm64.dmg` / `.zip`
 - `XHS-Downloader-1.7.0-windows-x64-setup.exe`
