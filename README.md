@@ -1,5 +1,7 @@
 # Brclio 小红书下载器
 
+v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。后端沿用 Vercel，业务状态存入独立 GitHub 私有仓库，详见 [账号系统部署与配置](docs/account-system.md)。软件账号与小红书登录独立；上线需先配置平台 Secrets 与授权地址，再打包正式客户端。默认会员范围为主页批量下载，原单篇功能保留。
+
 [项目仓库](https://github.com/Brclio/brclio-xhs-media-downloader) · [下载最新版安装包](https://github.com/Brclio/brclio-xhs-media-downloader/releases/latest)
 
 ## Mac / Windows 本地版与主页批量下载
@@ -106,14 +108,16 @@ git push
 
 已经关联 GitHub 的 Vercel 项目会自动重新部署，原域名和项目设置不需要修改。
 
-建议继续保持：
+部署配置由仓库 `vercel.json` 管理，Vercel 项目中不要保留冲突的手工覆盖值：
 
 ```text
 Framework Preset：Other
-Build Command：留空
-Output Directory：留空
-Install Command：留空或默认
+Build Command：node deploy/build-web.mjs
+Output Directory：dist-web
+Install Command：npm ci --omit=dev --ignore-scripts
 ```
+
+网站仅发布白名单中的静态资源和 `api/` 函数。Mac / Windows 代码、内置运行环境、安装包、测试、文档和环境文件由 `.vercelignore` 排除。业务数据存入独立私有仓库，因此更新业务数据不会触发代码仓库部署。配置与管理员初始化见 [账号系统部署](docs/account-system.md)，数据字段见 [数据结构](docs/account-data.md)，本轮验证范围见 [测试结果](docs/account-validation.md)。
 
 ## 本地运行
 

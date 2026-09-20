@@ -1,5 +1,6 @@
 import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
+import { PROTECTED_FEATURES } from '../lib/membership-policy.js';
 import parseHandler from '../api/parse.js';
 import imageHandler from '../api/image.js';
 import videoHandler from '../api/video.js';
@@ -8,7 +9,7 @@ export const APP_URL = 'xhs-app://local';
 const STATIC_FILES = new Set([
   'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
-  'desktop-ui.js', 'desktop-ui.css', 'lib/archive.js', 'lib/clipboard.js'
+  'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'lib/archive.js', 'lib/clipboard.js'
 ]);
 const MIME_TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
@@ -64,15 +65,23 @@ export async function invokeNodeHandler(handler, request, url) {
   return new Response(payload, { status, headers });
 }
 
-export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandlers = NODE_HANDLERS }) {
+async function defaultAuthorization(feature) {
+  if (PROTECTED_FEATURES.includes(feature)) throw Object.assign(new Error('软件账号授权服务不可用。'), { status: 503 });
+}
+
+export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandlers = NODE_HANDLERS, authorize = defaultAuthorization }) {
   return async (request) => {
     try {
       if ((request.referrer && request.referrer !== 'about:client' && !isAppUrl(request.referrer)) || (request.initiatorOrigin && !isAppUrl(request.initiatorOrigin))) return jsonError('不受信任的请求来源。', 403);
       if (!isAppUrl(request.url)) return jsonError('不受支持的应用地址。', 403);
       const url = new URL(request.url);
       const route = url.pathname.replace(/\.(?:js|py)$/, '');
-      if (nodeHandlers[route]) return await invokeNodeHandler(nodeHandlers[route], request, url);
+      if (nodeHandlers[route]) {
+        await authorize('single-download');
+        return await invokeNodeHandler(nodeHandlers[route], request, url);
+      }
       if (PYTHON_ROUTES.has(route)) {
+        await authorize('single-download');
         if (!pythonBackend?.available) return jsonError('Python 后台不可用，请使用完整安装包。', 503);
         return await pythonBackend.request({ path: `${route}${url.search}`, method: request.method,
           headers: Object.fromEntries(request.headers), body: await readBody(request) }, request.signal);

@@ -13,7 +13,7 @@ import {
 
 const ACTIVE = new Set(["discovering", "downloading", "waiting"]);
 const FINISHED = new Set(["completed", "skipped"]);
-const PAUSE_CODES = new Set(["AUTH_REQUIRED", "RATE_LIMITED", "DISCOVERY_INCOMPLETE"]);
+const PAUSE_CODES = new Set(["AUTH_REQUIRED", "RATE_LIMITED", "DISCOVERY_INCOMPLETE", "ACCOUNT_AUTHORIZATION_REQUIRED"]);
 const ITEM_ID = /^[a-f0-9]{24}$/i;
 const STATE_FILENAME = "profile-job.json";
 
@@ -86,7 +86,7 @@ function fileRecord(name, bytes) {
 
 /** One persistent, sequential queue. No network request is made by initialize(). */
 export class ProfileManager {
-  constructor({ stateDirectory, browser, fetchImpl = globalThis.fetch, onUpdate = () => {}, now = Date.now, sleep = defaultSleep, random = Math.random, mediaOptions = {} }) {
+  constructor({ stateDirectory, browser, fetchImpl = globalThis.fetch, onUpdate = () => {}, now = Date.now, sleep = defaultSleep, random = Math.random, mediaOptions = {}, authorize, authorizationIntervalMs = 30_000 }) {
     if (!stateDirectory || !browser) throw new Error("ProfileManager requires stateDirectory and browser.");
     this.stateDirectory = path.resolve(stateDirectory);
     this.browser = browser;
@@ -96,6 +96,8 @@ export class ProfileManager {
     this.sleep = sleep;
     this.random = random;
     this.mediaOptions = mediaOptions;
+    this.authorize = authorize || (async () => { throw new Error('软件账号授权服务不可用。'); });
+    this.authorizationIntervalMs = authorizationIntervalMs;
     this.state = initialState(this.now());
     this._lastRequestAt = null;
     this._saveChain = Promise.resolve();
@@ -152,6 +154,7 @@ export class ProfileManager {
 
   start(options = {}) {
     return this._command(async () => {
+      await this._authorize();
       const parsed = parseProfileUrl(options.profileUrl);
       const profileUrl = typeof parsed === "string" ? parsed : parsed.url || parsed.profileUrl;
       if (!profileUrl) throw new Error("小红书主页链接无效。");
@@ -195,6 +198,7 @@ export class ProfileManager {
   resume() { return this._command(() => this._resume()); }
 
   async _resume(retryIds = null) {
+    await this._authorize();
     if (this._runTask) return this.snapshot();
     if (!this.state.profileUrl || !this.state.directory) throw new Error("没有可以继续的主页下载任务。");
     await fs.access(this.state.directory);
@@ -211,6 +215,7 @@ export class ProfileManager {
       if (this._runTask) throw new Error("请先暂停任务，再重试失败的帖子。");
       const failed = this.state.items.filter(item => item.status === "failed");
       if (!failed.length) return this.snapshot();
+      await this._authorize();
       for (const item of failed) { item.status = "pending"; item.error = ""; }
       return this._resume(new Set(failed.map(item => item.id)));
     });
@@ -223,6 +228,7 @@ export class ProfileManager {
       const item = this.state.items.find(item => item.id === noteId);
       if (!item) throw new Error("未找到这篇帖子。");
       if (item.status !== "failed") throw new Error("只有失败的帖子可以单项重试。");
+      await this._authorize();
       item.status = "pending";
       item.error = "";
       return this._resume(new Set([noteId]));
@@ -232,10 +238,22 @@ export class ProfileManager {
   _launch(retryIds = null) {
     this._directoryIndex = null;
     this._controller = new AbortController();
-    const signal = this._controller.signal;
+    const controller = this._controller;
+    const signal = controller.signal;
+    let authorizationError = null, checkingAuthorization = false;
+    // A revoked device stops even during a long download/discovery request.
+    const authorizationTimer = setInterval(async () => {
+      if (checkingAuthorization || signal.aborted) return;
+      checkingAuthorization = true;
+      try { await this._authorize(); }
+      catch (error) { authorizationError = error; controller.abort(error); }
+      finally { checkingAuthorization = false; }
+    }, this.authorizationIntervalMs);
+    authorizationTimer.unref?.();
     this._emit();
     this._runTask = this._run(signal, retryIds).catch(async (error) => {
-      if (signal.aborted || error.name === "AbortError") return;
+      if (authorizationError) error = authorizationError;
+      else if (signal.aborted || error.name === "AbortError") return;
       this.state.status = PAUSE_CODES.has(error.code) ? "paused" : "error";
       this.state.message = error.message || "主页下载中断，请重试。";
       this.state.nextRequestAt = null;
@@ -247,10 +265,18 @@ export class ProfileManager {
       this.state.message = `无法保存任务记录：${error.message}。请检查磁盘空间及目录权限。`;
       this.state.nextRequestAt = null;
       this._emit();
-    }).finally(() => { this._runTask = null; this._controller = null; });
+    }).finally(() => { clearInterval(authorizationTimer); this._runTask = null; this._controller = null; });
+  }
+
+  async _authorize() {
+    try { await this.authorize('profile-download'); }
+    catch (error) {
+      throw Object.assign(new Error(error.message || '软件账号授权不可用，任务已暂停。'), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED', cause: error });
+    }
   }
 
   async _run(signal, retryIds = null) {
+    await this._authorize();
     if (!retryIds && !this.state.discoveryComplete) {
       this.state.phase = "discovery";
       this.state.status = "discovering";
@@ -259,6 +285,7 @@ export class ProfileManager {
         signal, intervalSeconds: this.state.intervalSeconds, jitterSeconds: this.state.jitterSeconds
       })) {
         throwIfAborted(signal);
+        await this._authorize();
         this._lastRequestAt = this.now();
         const indexed = new Map(this.state.items.map((item) => [item.id, item]));
         let nextSequence = this.state.items.reduce((highest, item) => Math.max(highest, item.sequence || 0), 0) + 1;
@@ -286,6 +313,7 @@ export class ProfileManager {
     for (const item of this.state.items) {
       throwIfAborted(signal);
       if (item.status === "failed" || (retryIds && !retryIds.has(item.id))) continue;
+      await this._authorize();
       this.state.status = "downloading";
       this.state.currentTitle = item.title || item.id;
       item.status = "downloading";
@@ -329,6 +357,8 @@ export class ProfileManager {
         await this.sleep(remaining, signal);
       }
     }
+    throwIfAborted(signal);
+    await this._authorize();
     throwIfAborted(signal);
     this._lastRequestAt = this.now();
     this.state.status = "downloading";

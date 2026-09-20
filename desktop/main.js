@@ -1,5 +1,5 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, session, shell } from 'electron';
-import { access, realpath, stat } from 'node:fs/promises';
+import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, safeStorage, session, shell } from 'electron';
+import { access, readFile, realpath, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
 import { APP_URL, createProtocolHandler, isAppUrl } from './protocol.js';
@@ -7,6 +7,8 @@ import { PythonBackend } from './python-backend.js';
 import { XhsBrowser } from './profile-browser.js';
 import { ProfileManager } from './profile-manager.js';
 import { UpdateManager, createElectronUpdateFetch } from './update-manager.js';
+import { SecureAccountStore } from './account-storage.js';
+import { AccountClient } from './account-client.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -23,6 +25,8 @@ let manager;
 let pythonBackend;
 let updateManager;
 let updateCheckTimer;
+let accountClient;
+let accountRefreshTimer;
 let quitting = false;
 let shutdownComplete = false;
 const selectedDirectories = new Set();
@@ -77,6 +81,28 @@ function openLocalPreview(url) {
 }
 
 function registerIpc() {
+  const accountAction = (callback) => async (...args) => {
+    try { return { ok: true, result: await callback(...args), state: accountClient.snapshot() }; }
+    catch (error) { return { ok: false, error: { code: error.code || 'SERVICE_UNAVAILABLE', message: error.message }, state: accountClient.snapshot() }; }
+  };
+  handle('desktop:account-state', () => accountClient.snapshot());
+  handle('desktop:account-refresh', accountAction(() => accountClient.refresh()));
+  handle('desktop:account-send-code', accountAction((email) => {
+    if (typeof email !== 'string' || email.length > 254) throw new Error('请输入有效邮箱。');
+    return accountClient.sendCode(email);
+  }));
+  handle('desktop:account-verify-code', accountAction((email, code) => {
+    if (typeof email !== 'string' || email.length > 254 || typeof code !== 'string' || !/^\d{6}$/.test(code.trim())) throw new Error('请输入邮箱及六位验证码。');
+    return accountClient.verifyCode(email, code);
+  }));
+  handle('desktop:account-redeem', accountAction((code) => {
+    if (typeof code !== 'string' || !code.trim() || code.length > 256) throw new Error('请输入有效激活码。');
+    return accountClient.redeem(code);
+  }));
+  handle('desktop:account-logout', accountAction(async () => {
+    await manager.pause();
+    return accountClient.logout();
+  }));
   handle('desktop:get-info', () => ({ name: APP_NAME, version: app.getVersion(), platform: process.platform, arch: process.arch,
     portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR), pythonAvailable: pythonBackend.available }));
   handle('desktop:get-update-state', () => updateManager.snapshot());
@@ -168,7 +194,18 @@ async function boot() {
   if (app.isPackaged && !pythonBackend.available) {
     throw new Error('安装包内置的 Python 后台无法启动，请重新安装完整版本。');
   }
-  protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend }));
+  const accountConfig = JSON.parse(await readFile(path.join(app.getAppPath(), 'desktop/account-config.json'), 'utf8'));
+  accountClient = new AccountClient({
+    store: new SecureAccountStore({ directory: path.join(app.getPath('userData'), 'account'), safeStorage }),
+    endpoint: !app.isPackaged && process.env.XHS_ACCOUNT_ENDPOINT !== undefined ? process.env.XHS_ACCOUNT_ENDPOINT : accountConfig.endpoint,
+    allowInsecureDevelopment: !app.isPackaged,
+    onUpdate(state) {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:account-update', state);
+    }
+  });
+  await accountClient.initialize();
+  protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend,
+    authorize: feature => accountClient.authorize(feature) }));
   const permissions = new Set(['clipboard-read', 'clipboard-sanitized-write']);
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
     callback(contents === mainWindow?.webContents && isAppUrl(details.requestingUrl || contents.getURL()) && permissions.has(permission));
@@ -178,7 +215,8 @@ async function boot() {
   browser = new XhsBrowser({ BrowserWindow, session, onLoginState(state) {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:login-update', state);
   } });
-  manager = new ProfileManager({ stateDirectory: path.join(app.getPath('userData'), 'profile-jobs'), browser, onUpdate: sendUpdate });
+  manager = new ProfileManager({ stateDirectory: path.join(app.getPath('userData'), 'profile-jobs'), browser, onUpdate: sendUpdate,
+    authorize: feature => accountClient.authorize(feature) });
   await manager.initialize();
   if (manager.snapshot().directory) {
     try { selectedDirectories.add(await validateDirectory(manager.snapshot().directory)); }
@@ -205,6 +243,9 @@ async function boot() {
   });
   registerIpc();
   await createWindow();
+  void accountClient.refresh().catch(() => {});
+  accountRefreshTimer = setInterval(() => { void accountClient.refresh().catch(() => {}); }, 60_000);
+  accountRefreshTimer.unref();
   if (app.isPackaged) {
     updateCheckTimer = setTimeout(() => { void updateManager.checkForUpdates(); }, 5000);
     updateCheckTimer.unref();
@@ -223,6 +264,7 @@ else {
     if (quitting) return;
     quitting = true;
     clearTimeout(updateCheckTimer);
+    clearInterval(accountRefreshTimer);
     void (async () => {
       try { await updateManager?.shutdown(); await manager?.shutdown(); }
       catch { dialog.showErrorBox('保存任务失败', '本次下载进度未能完整保存，请检查磁盘剩余空间和文件夹权限。'); }

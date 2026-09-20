@@ -12,6 +12,7 @@ const root = process.cwd();
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
 const { version } = pkg;
 const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+const sourceDirty = Boolean(execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim());
 const platform = process.platform;
 const arch = process.arch;
 assert.ok((platform === 'darwin' && ['arm64', 'x64'].includes(arch)) || (platform === 'win32' && arch === 'x64'));
@@ -82,7 +83,7 @@ try {
     assert.ok(info.isFile() && info.size > 10 * 1024 * 1024);
     files.push({ name, bytes: info.size, sha256: await digest(file) });
   }
-  const proof = { version, sourceSha, platform, arch, productName: pkg.build.productName, comparedSources, bundledPythonVerified: true, files };
+  const proof = { version, sourceSha, sourceDirty, platform, arch, productName: pkg.build.productName, comparedSources, bundledPythonVerified: true, files };
   await writeFile(path.join(output, `release-proof-${label}.json`), `${JSON.stringify(proof, null, 2)}\n`);
   console.log(JSON.stringify(proof, null, 2));
 } finally {

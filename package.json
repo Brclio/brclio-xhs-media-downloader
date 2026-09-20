@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "1.6.3",
+  "version": "1.7.0",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页版与 Mac / Windows 本地版，支持主页批量下载和自定义间隔",
@@ -18,7 +18,10 @@
     "desktop:build:mac": "electron-builder --mac --publish never",
     "desktop:build:win": "electron-builder --win --x64 --publish never",
     "desktop:prepare:windows:cross": "python3 scripts/build-windows-python.py",
-    "desktop:prepare:mac": "python3 scripts/build-mac-python.py"
+    "desktop:prepare:mac": "python3 scripts/build-mac-python.py",
+    "build:web": "node deploy/build-web.mjs",
+    "desktop:verify:account": "node scripts/verify-account-storage.mjs",
+    "admin:verify": "electron scripts/verify-admin-ui.cjs"
   },
   "engines": {
     "node": ">=22"
@@ -40,18 +43,24 @@
     "beforePack": "scripts/check-desktop-runtime.cjs",
     "files": [
       "package.json",
-      "*.html",
+      "index.html",
+      "changelog.html",
       "*.css",
       "*.svg",
       "app.js",
       "visit-counter.js",
       "desktop-ui.js",
+      "account-ui.js",
       "assets/**/*",
       "lib/**/*.js",
-      "api/*.js",
+      "api/parse.js",
+      "api/image.js",
+      "api/video.js",
       "desktop/**/*.js",
       "desktop/**/*.cjs",
-      "!desktop/**/*.test.js"
+      "desktop/account-config.json",
+      "!desktop/**/*.test.js",
+      "!node_modules/nodemailer/**/*"
     ],
     "extraResources": [
       {
@@ -102,5 +111,8 @@
   "homepage": "https://github.com/Brclio/brclio-xhs-media-downloader",
   "bugs": {
     "url": "https://github.com/Brclio/brclio-xhs-media-downloader/issues"
+  },
+  "dependencies": {
+    "nodemailer": "10.0.10"
   }
 }

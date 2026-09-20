@@ -1,5 +1,7 @@
 # Brclio 小红书下载器 · 桌面版
 
+v1.7.0 增加独立的软件账号。首次邮箱验证会创建账号，登录凭据由系统安全存储保护；小红书登录仍在单独窗口完成。默认单篇下载免费，主页批量下载需要有效会员和已授权设备。退出软件账号、会员到期或管理员撤销设备不会删除下载文件和任务记录。部署、人工发码、设备恢复与验证边界见 [账号系统说明](../docs/account-system.md) 和 [本轮测试结果](../docs/account-validation.md)。
+
 ## 安装与使用
 
 从 [GitHub Releases](https://github.com/Brclio/brclio-xhs-media-downloader/releases) 下载对应系统安装包。Mac Apple 芯片选择 `mac-arm64.dmg`，Intel 芯片选择 `mac-x64.dmg`；Windows 选择 `windows-x64-setup.exe`（安装版）或 `windows-x64-portable.exe`（便携版）。
