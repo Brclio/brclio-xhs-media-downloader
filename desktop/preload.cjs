@@ -2,6 +2,18 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
   getInfo: () => ipcRenderer.invoke('desktop:get-info'),
+  getAccountState: () => ipcRenderer.invoke('desktop:account-state'),
+  refreshAccount: () => ipcRenderer.invoke('desktop:account-refresh'),
+  sendAccountCode: (email) => ipcRenderer.invoke('desktop:account-send-code', email),
+  verifyAccountCode: (email, code) => ipcRenderer.invoke('desktop:account-verify-code', email, code),
+  redeemAccountCode: (code) => ipcRenderer.invoke('desktop:account-redeem', code),
+  logoutAccount: () => ipcRenderer.invoke('desktop:account-logout'),
+  onAccountUpdate: (callback) => {
+    if (typeof callback !== 'function') throw new TypeError('callback must be a function');
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('desktop:account-update', listener);
+    return () => ipcRenderer.removeListener('desktop:account-update', listener);
+  },
   getUpdateState: () => ipcRenderer.invoke('desktop:get-update-state'),
   checkForUpdates: () => ipcRenderer.invoke('desktop:check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('desktop:download-update'),

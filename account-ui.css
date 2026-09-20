@@ -1,0 +1,30 @@
+/* Brclio app template extension · © 2026 Brclio · CC BY-NC-SA 4.0 */
+.software-account { margin: 24px 0; padding: clamp(20px, 2.5vw, 32px); border: 1px solid var(--line-strong, #d7d2c8); border-radius: 12px; background: var(--cream-deep, #faf6eb); color: var(--ink, #1a1a2e); }
+.account-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.account-heading h2 { margin: 4px 0 0; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 1.25rem; line-height: 1.5; }
+.account-eyebrow { color: var(--blue-deep, #236cb8); font-size: .65rem; font-weight: 700; letter-spacing: .15em; }
+.account-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.account-badge { display: inline-block; padding: 5px 10px; border-radius: 5px; background: #ece7dc; font-size: .75rem; font-weight: 700; }
+.account-badge.is-member { background: var(--yellow, #f4d758); }
+.account-intro, .account-scope, .account-form-note { margin: 13px 0 0; color: var(--ink-light, #4a4a5a); font-size: .78rem; line-height: 1.8; }
+.account-scope { border-top: 1px solid var(--line-strong, #d7d2c8); padding-top: 13px; }
+.account-notice { margin: 12px 0 0; font-size: .84rem; line-height: 1.7; color: var(--blue-deep, #236cb8); overflow-wrap: anywhere; }
+.account-notice:empty { display: none; }
+.account-notice.is-error { color: #a42a3d; }
+.account-login-form, .account-redeem-form { display: grid; grid-template-columns: minmax(190px, 1fr) minmax(250px, 1.2fr) auto; align-items: end; gap: 16px; margin-top: 22px; }
+.software-account label { display: grid; gap: 7px; color: var(--ink-light, #4a4a5a); font-size: .78rem; font-weight: 600; }
+.software-account input { width: 100%; min-width: 0; height: 44px; padding: 10px 12px; border: 1px solid var(--line-strong, #d7d2c8); border-radius: 6px; color: var(--ink, #1a1a2e); background: #fefcf6; font: inherit; font-size: .88rem; }
+.software-account input:focus-visible, .software-account button:focus-visible { outline: 3px solid var(--blue, #2b7fd8); outline-offset: 3px; }
+.software-account .button { min-height: 44px; padding: 10px 15px; font-size: .78rem; white-space: nowrap; }
+.software-account .button:disabled { opacity: .5; cursor: not-allowed; }
+.account-code-row { display: flex; gap: 8px; }
+.account-code-row input { flex: 1; }
+.account-login-form > .account-form-note { grid-column: 1 / -1; margin-top: -4px; font-weight: 400; }
+.account-facts { display: grid; grid-template-columns: 1fr 1.4fr 1.2fr; gap: 24px; padding: 0; margin: 24px 0; }
+.account-facts dt { margin-bottom: 7px; font-size: .72rem; color: var(--ink-light, #4a4a5a); }
+.account-facts dd { margin: 0; font-size: .87rem; line-height: 1.6; overflow-wrap: anywhere; }
+.account-facts .account-secondary { margin-top: 5px; font-size: .73rem; color: var(--ink-light, #4a4a5a); }
+.account-redeem-form { grid-template-columns: minmax(200px, 1fr) auto auto; }
+.software-account [hidden] { display: none !important; }
+@media (max-width: 1050px) { .account-login-form { grid-template-columns: 1fr 1fr; } .account-login-form > .button { grid-column: 1 / -1; justify-self: start; } }
+@media (max-width: 720px) { .account-heading { align-items: flex-start; flex-direction: column; } .account-login-form, .account-redeem-form, .account-facts { grid-template-columns: 1fr; } .account-redeem-form .button { justify-self: start; } .account-facts { gap: 16px; } }

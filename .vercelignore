@@ -6,3 +6,7 @@ dist-desktop/
 scripts/
 .github/
 test/
+docs/
+dist-web/
+.env*
+*.local.json

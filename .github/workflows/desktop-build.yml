@@ -61,6 +61,8 @@ jobs:
         run: npm run desktop:verify
       - name: Verify retry and update controls in the real desktop renderer
         run: npx electron scripts/verify-desktop-ui.mjs
+      - name: Verify native credential encryption across two app processes
+        run: npm run desktop:verify:account
       - uses: actions/upload-artifact@v4
         with:
           name: XHS-Downloader-${{ matrix.label }}

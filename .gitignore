@@ -9,3 +9,8 @@ desktop-runtime/
 .venv-desktop/
 __pycache__/
 *.pyc
+dist-web/
+.env
+.env.*
+!.env.example
+*.local.json

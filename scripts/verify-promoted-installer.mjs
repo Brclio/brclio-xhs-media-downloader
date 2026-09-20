@@ -34,6 +34,11 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   // Historical v1.5 artifacts predate the update manager.
   try { await stat(path.join(sourceDirectory, 'desktop/update-manager.js')); expectedSources.push('desktop/update-manager.js'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
+  for (const name of ['account-ui.js', 'account-ui.css', 'desktop/account-client.js',
+    'desktop/account-storage.js', 'lib/membership-policy.js']) {
+    try { await stat(path.join(sourceDirectory, name)); expectedSources.push(name); }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
   expectedSources.sort();
   const actualSources = asar.listPackage(archive)
     .map(name => name.replaceAll('\\', '/').replace(/^\//, ''))
@@ -48,6 +53,12 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   for (const name of expectedSources) {
     assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))),
       `Packaged source differs from release tag: ${name}`);
+  }
+  if (expectedSources.includes('desktop/account-client.js')) {
+    const name = 'desktop/account-config.json';
+    assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))), 'Packaged account endpoint differs from configured source');
+    const names = asar.listPackage(archive).map(name => name.replaceAll('\\', '/'));
+    assert.ok(!names.some(name => /^\/(?:server|admin|test|docs)\//.test(name) || /\/\.env(?:\.|$)/.test(name)), 'Server/admin/private files must not enter desktop package');
   }
   return expectedSources.length;
 }

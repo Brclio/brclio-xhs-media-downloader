@@ -43,7 +43,7 @@ async function fixture(t, options = {}) {
     return mediaResponse(url);
   });
   const config = {
-    stateDirectory, browser, fetchImpl, now: () => clock, random: () => 0.5,
+    stateDirectory, browser, fetchImpl, authorize: async () => ({ authorized: true }), now: () => clock, random: () => 0.5,
     sleep: async (ms, signal) => { signal?.throwIfAborted(); waits.push(ms); clock += ms; },
     ...options
   };
