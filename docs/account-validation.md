@@ -57,7 +57,7 @@ Windows 检查是 Mac 上的静态校验，不能替代 Windows 原生启动、�
 - 桌面安装包与真实服务的完整邮箱登录、真实激活码兑换/设备撤销整条人工交互验收；当前这些业务并发及组合场景通过模拟测试，实际远端只验收了上述管理员与存储/邮件路径。
 - 真实 GitHub 高并发压力、实际限流与灾难恢复演练；自动测试已注入相应故障，不能代替生产演练。
 - 新一轮真实小红书账号的完整主页下载；既有本地任务和原下载实现保留，相关回归通过。
-- GitHub 自动部署：关联尝试被 Vercel 拒绝，要求账号先添加 GitHub Login Connection。连接后还需关联代码仓库并验证一次推送触发。当前部署由本地源码通过 Vercel API 完成。
+- GitHub 自动部署的生产分支推送验收：用户完成 GitHub 登录连接后，现有 Vercel 项目已成功关联代码仓库，确认生产分支为 `main`。本次生产部署先通过 Vercel API 完成；功能分支尚未合并 `main`，不把手工部署等同于主分支自动部署已验收。
 
 ## 交付文件与复验
 
@@ -67,6 +67,8 @@ Windows 检查是 Mac 上的静态校验，不能替代 Windows 原生启动、�
 - `XHS-Downloader-1.7.0-windows-x64-setup.exe`
 - `XHS-Downloader-1.7.0-windows-x64-portable.exe`
 - `release-proof-mac-arm64.json`、`release-proof-windows-x64-static.json`：文件大小、SHA-256、校验范围。
+
+原生 CI 完整安装包另保存在 [三平台构建](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/35515331702) 的 artifacts；本轮保留 14 天。Intel Mac 可从 [Intel 构建产物](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/35515061254/artifacts/10606821810) 下载。CI 产物传回本机速度过慢，已取消不完整下载；`dist-desktop/ci-mac-intel/` 和 `ci-windows-x64/` 保存 CI 证明与明确的未下载说明。CI Windows EXE 与本机交叉打包的 EXE 哈希不同；本机包的 32 个源码文件和配置已逐字节比对 CI 提交一致，不能将两者说成同一个二进制。
 
 ```bash
 npm ci
