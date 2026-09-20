@@ -40,7 +40,7 @@ export class XhsBrowser {
     browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     browserSession.setPermissionCheckHandler(() => false);
     const win = new this.electron.BrowserWindow({
-      width: 1180, height: 820, show: false, title: '小红书 · 登录与验证',
+      width: 1180, height: 820, show: false, title: 'Brclio 小红书下载器 · 登录与验证',
       webPreferences: { session: browserSession, nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false }
     });
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));

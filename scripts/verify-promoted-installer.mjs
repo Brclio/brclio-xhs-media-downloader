@@ -40,8 +40,10 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     .filter(name => /\.(?:js|cjs|html|css)$/.test(name)).sort();
   assert.deepEqual(actualSources, expectedSources, 'Packaged source must contain exactly the reviewed application files');
   const packaged = JSON.parse(asar.extractFile(archive, 'package.json').toString('utf8'));
+  const sourcePackage = JSON.parse(await readFile(path.join(sourceDirectory, 'package.json'), 'utf8'));
   assert.equal(packaged.version, version, 'ASAR package version mismatch');
   assert.equal(packaged.name, 'brclio-xhs-media-downloader');
+  assert.equal(packaged.productName, sourcePackage.productName);
   assert.equal(packaged.repository?.url, `git+https://github.com/${REPOSITORY}.git`);
   for (const name of expectedSources) {
     assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))),

@@ -1,9 +1,9 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "private": true,
   "type": "module",
-  "description": "小红书媒体下载器：网页版与 Mac / Windows 本地版，支持主页批量下载和自定义间隔",
+  "description": "Brclio 小红书下载器：网页版与 Mac / Windows 本地版，支持主页批量下载和自定义间隔",
   "scripts": {
     "dev:vercel": "vercel dev",
     "test": "npm run test:node && npm run test:python",
@@ -32,7 +32,7 @@
   "author": "Bornforthis",
   "build": {
     "appId": "cn.bornforthis.xhs-downloader",
-    "productName": "小红书媒体下载器",
+    "productName": "Brclio 小红书下载器",
     "directories": {
       "output": "dist-desktop",
       "buildResources": "desktop/resources"

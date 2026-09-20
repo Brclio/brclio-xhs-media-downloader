@@ -40,9 +40,13 @@ try {
     command('ditto', ['-x', '-k', zip, temporary]);
     const apps = (await readdir(temporary, { withFileTypes: true })).filter(entry => entry.isDirectory() && entry.name.endsWith('.app'));
     assert.equal(apps.length, 1);
+    assert.equal(apps[0].name, `${pkg.build.productName}.app`);
     const contents = path.join(temporary, apps[0].name, 'Contents');
     const value = key => command('/usr/libexec/PlistBuddy', ['-c', `Print :${key}`, path.join(contents, 'Info.plist')]).trim();
     assert.equal(value('CFBundleShortVersionString'), version);
+    assert.equal(value('CFBundleName'), pkg.build.productName);
+    assert.equal(value('CFBundleDisplayName'), pkg.build.productName);
+    assert.equal(value('CFBundleIdentifier'), pkg.build.appId);
     const executable = value('CFBundleExecutable');
     assert.equal(executable, path.basename(executable));
     resources = path.join(contents, 'Resources');
@@ -51,6 +55,13 @@ try {
     }
   } else {
     resources = path.join(output, 'win-unpacked/resources');
+    const executable = path.join(output, 'win-unpacked', `${pkg.build.productName}.exe`);
+    assert.ok((await stat(executable)).isFile());
+    const versionInfo = JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+      '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); (Get-Item -LiteralPath $env:XHS_VERIFY_EXECUTABLE).VersionInfo | Select-Object ProductName, FileDescription | ConvertTo-Json -Compress'],
+    { encoding: 'utf8', timeout: 30000, env: { ...process.env, XHS_VERIFY_EXECUTABLE: executable } }));
+    assert.equal(versionInfo.ProductName, pkg.build.productName);
+    assert.equal(versionInfo.FileDescription, pkg.build.productName);
     for (const name of names) command('7z', ['t', path.join(output, name)]);
   }
   const comparedSources = await verifyAsar(path.join(resources, 'app.asar'), root, version);
@@ -71,7 +82,7 @@ try {
     assert.ok(info.isFile() && info.size > 10 * 1024 * 1024);
     files.push({ name, bytes: info.size, sha256: await digest(file) });
   }
-  const proof = { version, sourceSha, platform, arch, comparedSources, bundledPythonVerified: true, files };
+  const proof = { version, sourceSha, platform, arch, productName: pkg.build.productName, comparedSources, bundledPythonVerified: true, files };
   await writeFile(path.join(output, `release-proof-${label}.json`), `${JSON.stringify(proof, null, 2)}\n`);
   console.log(JSON.stringify(proof, null, 2));
 } finally {

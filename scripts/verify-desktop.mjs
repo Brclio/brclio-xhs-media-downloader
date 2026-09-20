@@ -1,6 +1,6 @@
 // Developer smoke: run with node_modules/.bin/electron scripts/verify-desktop.mjs.
 // Uses a disposable application profile and the real main/preload/protocol code.
-import { app, net } from 'electron';
+import { app, Menu, net, session } from 'electron';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -10,8 +10,12 @@ import { fileURLToPath } from 'node:url';
 import { createElectronUpdateFetch } from '../desktop/update-manager.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
+// Match Electron's packaged init while keeping every session in a throwaway path.
+app.setName(pkg.productName);
 const temporary = mkdtempSync(path.join(tmpdir(), 'xhs-desktop-smoke-'));
 app.setPath('userData', temporary);
+app.setPath('sessionData', temporary);
 app.getAppPath = () => root;
 app.getVersion = () => JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version;
 let done = false;
@@ -51,6 +55,13 @@ app.on('browser-window-created', (_event, win) => {
     if (done || !win.webContents.getURL().startsWith('xhs-app://local/')) return;
     done = true;
     try {
+      assert.equal(app.getName(), '小红书媒体下载器', 'Keep the existing profile and macOS cookie encryption identity');
+      assert.equal(pkg.build.appId, 'cn.bornforthis.xhs-downloader', 'Keep the installation and upgrade identity');
+      assert.equal(app.getPath('userData'), temporary);
+      assert.equal(app.getPath('sessionData'), temporary);
+      assert.equal(session.fromPartition('persist:xhs-account').getStoragePath(), path.join(temporary, 'Partitions', 'xhs-account'));
+      assert.equal(win.getTitle(), 'Brclio 小红书下载器');
+      if (process.platform === 'darwin') assert.equal(Menu.getApplicationMenu().items[0].label, 'Brclio 小红书下载器');
       const updateTransportVerified = await verifyUpdateTransport();
       const result = await win.webContents.executeJavaScript(`(async () => {
         const info = await window.xhsDesktop.getInfo();
@@ -72,7 +83,7 @@ app.on('browser-window-created', (_event, win) => {
           nodeAvailable:typeof require === 'function',
           secureContext:window.isSecureContext};
       })()`);
-      if (!result.info.pythonAvailable || result.status !== 'idle' || !result.profileVisible
+      if (result.info.name !== 'Brclio 小红书下载器' || !result.info.pythonAvailable || result.status !== 'idle' || !result.profileVisible
           || !result.tabsVisible || result.nodeAvailable || !result.secureContext || !result.updateMethods || result.updateStatus !== 'idle'
           || result.payloads.some(value => !value.success || value.images !== 1 || value.status !== 200)) {
         throw new Error(JSON.stringify(result));

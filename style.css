@@ -1732,6 +1732,16 @@ footer > p {
 }
 
 @media (max-width: 480px) {
+  .app-header-inner,
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-copy strong span {
+    display: block;
+    white-space: nowrap;
+  }
+
   .clipboard-fallback {
     grid-template-columns: 1fr;
     padding: 17px 16px;

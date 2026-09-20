@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, session, shell } from 'electron';
 import { access, realpath, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
@@ -7,6 +7,11 @@ import { PythonBackend } from './python-backend.js';
 import { XhsBrowser } from './profile-browser.js';
 import { ProfileManager } from './profile-manager.js';
 import { UpdateManager, createElectronUpdateFetch } from './update-manager.js';
+
+const APP_NAME = 'Brclio 小红书下载器';
+// Keep package.productName / app.name stable: Electron uses it for the data
+// directory and macOS Keychain cookie key. build.productName and UI use APP_NAME.
+// Do not call app.setName(APP_NAME), which would strand existing login sessions.
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'xhs-app', privileges: {
   standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true
@@ -72,7 +77,7 @@ function openLocalPreview(url) {
 }
 
 function registerIpc() {
-  handle('desktop:get-info', () => ({ version: app.getVersion(), platform: process.platform, arch: process.arch,
+  handle('desktop:get-info', () => ({ name: APP_NAME, version: app.getVersion(), platform: process.platform, arch: process.arch,
     portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR), pythonAvailable: pythonBackend.available }));
   handle('desktop:get-update-state', () => updateManager.snapshot());
   handle('desktop:check-for-updates', () => updateManager.checkForUpdates());
@@ -126,7 +131,7 @@ function registerIpc() {
 
 async function createWindow() {
   mainWindow = new BrowserWindow({ width: 1320, height: 940, minWidth: 760, minHeight: 600,
-    title: '小红书媒体下载器', backgroundColor: '#f7f4ef', show: false,
+    title: APP_NAME, backgroundColor: '#f7f4ef', show: false,
     webPreferences: { preload: path.join(app.getAppPath(), 'desktop/preload.cjs'),
       nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true }
   });
@@ -145,6 +150,19 @@ async function createWindow() {
 }
 
 async function boot() {
+  app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: app.getVersion() });
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+      { label: APP_NAME, submenu: [
+        { role: 'about', label: `关于 ${APP_NAME}` },
+        { type: 'separator' }, { role: 'services', label: '服务' }, { type: 'separator' },
+        { role: 'hide', label: `隐藏 ${APP_NAME}` },
+        { role: 'hideOthers', label: '隐藏其他' }, { role: 'unhide', label: '显示全部' },
+        { type: 'separator' }, { role: 'quit', label: `退出 ${APP_NAME}` }
+      ] },
+      { role: 'editMenu', label: '编辑' }, { role: 'windowMenu', label: '窗口' }
+    ]));
+  }
   pythonBackend = new PythonBackend({ appDirectory: app.getAppPath(), resourcesDirectory: process.resourcesPath, packaged: app.isPackaged });
   await pythonBackend.initialize();
   if (app.isPackaged && !pythonBackend.available) {
@@ -217,7 +235,7 @@ else {
     })();
   });
   app.whenReady().then(boot).catch((error) => {
-    dialog.showErrorBox('无法启动小红书下载器', error.message);
+    dialog.showErrorBox(`无法启动 ${APP_NAME}`, error.message);
     app.quit();
   });
 }

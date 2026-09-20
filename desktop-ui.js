@@ -130,7 +130,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     && typeof bridge.checkForUpdates === "function";
 
   document.body.classList.add("is-desktop");
-  document.title = "小红书媒体下载 · 本地版";
+  document.title = "Brclio 小红书下载器";
   ui.navigation.hidden = false;
   ui.singlePanel.setAttribute("role", "tabpanel");
   ui.singlePanel.setAttribute("aria-labelledby", "single-note-tab");
