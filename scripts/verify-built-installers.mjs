@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { readdir, readFile, writeFile, stat, mkdtemp, rm } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { verifyAsar } from './verify-promoted-installer.mjs';
 import { PythonBackend } from '../desktop/python-backend.js';
+import { verifyPackagedMacLaunch } from './verify-packaged-mac.mjs';
 
 const root = process.cwd();
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -30,6 +31,22 @@ const digest = async file => {
 };
 let temporary;
 let resources;
+let mountedDmg;
+let dmgAttached = false;
+let macCodeSigning;
+const macApps = [];
+function verifyMacSignature(appPath) {
+  command('codesign', ['--verify', '--deep', '--strict', '--verbose=2', appPath]);
+  command('codesign', ['--verify', '--strict', path.join(appPath, 'Contents/Resources/python/xhs-python')]);
+  const signature = spawnSync('codesign', ['--display', '--verbose=4', appPath], { encoding: 'utf8', timeout: 30000 });
+  assert.equal(signature.status, 0, signature.stderr);
+  assert.ok(signature.stderr.includes(`Identifier=${pkg.build.appId}\n`), 'The full application must be signed with its own bundle identifier');
+  assert.match(signature.stderr, /Sealed Resources version=2 /, 'Bundle resources must be sealed, not only the executable linker signature');
+  assert.doesNotMatch(signature.stderr, /Info\.plist=not bound/);
+  if (/^Signature=adhoc$/m.test(signature.stderr)) return 'adhoc';
+  assert.match(signature.stderr, /^Authority=Developer ID Application:/m);
+  return 'developer-id';
+}
 try {
   if (platform === 'darwin') {
     command('hdiutil', ['verify', path.join(output, names[0])]);
@@ -42,6 +59,18 @@ try {
     const apps = (await readdir(temporary, { withFileTypes: true })).filter(entry => entry.isDirectory() && entry.name.endsWith('.app'));
     assert.equal(apps.length, 1);
     assert.equal(apps[0].name, `${pkg.build.productName}.app`);
+    const zipApp = path.join(temporary, apps[0].name);
+    macCodeSigning = verifyMacSignature(zipApp);
+    macApps.push(zipApp);
+    // Inspect the actual DMG payload too; a valid ZIP does not establish its contents.
+    mountedDmg = path.join(await mkdtemp(path.join(tmpdir(), 'xhs-dmg-verify-')), 'volume');
+    command('hdiutil', ['attach', '-readonly', '-nobrowse', '-mountpoint', mountedDmg, path.join(output, names[0])]);
+    dmgAttached = true;
+    const dmgApp = path.join(mountedDmg, apps[0].name);
+    assert.equal(verifyMacSignature(dmgApp), macCodeSigning);
+    assert.equal(await digest(path.join(dmgApp, 'Contents/Resources/app.asar')),
+      await digest(path.join(zipApp, 'Contents/Resources/app.asar')), 'DMG and ZIP must contain identical application source');
+    macApps.push(dmgApp);
     const contents = path.join(temporary, apps[0].name, 'Contents');
     const value = key => command('/usr/libexec/PlistBuddy', ['-c', `Print :${key}`, path.join(contents, 'Info.plist')]).trim();
     assert.equal(value('CFBundleShortVersionString'), version);
@@ -76,6 +105,11 @@ try {
     assert.equal(payload.engine, 'python');
     assert.equal(payload.count, 1);
   } finally { backend.close(); }
+  if (platform === 'darwin') {
+    await verifyPackagedMacLaunch(macApps[0], { version, productName: pkg.build.productName });
+    // Python and app startup must not invalidate the sealed bundle resources.
+    for (const appPath of macApps) assert.equal(verifyMacSignature(appPath), macCodeSigning);
+  }
   const files = [];
   for (const name of names) {
     const file = path.join(output, name);
@@ -83,9 +117,14 @@ try {
     assert.ok(info.isFile() && info.size > 10 * 1024 * 1024);
     files.push({ name, bytes: info.size, sha256: await digest(file) });
   }
-  const proof = { version, sourceSha, sourceDirty, platform, arch, productName: pkg.build.productName, comparedSources, bundledPythonVerified: true, files };
+  const proof = { version, sourceSha, sourceDirty, platform, arch, productName: pkg.build.productName, comparedSources, bundledPythonVerified: true,
+    ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning, macSignatureContainers: ['dmg', 'zip'], packagedMacLaunchVerified: true } : {}), files };
   await writeFile(path.join(output, `release-proof-${label}.json`), `${JSON.stringify(proof, null, 2)}\n`);
   console.log(JSON.stringify(proof, null, 2));
 } finally {
+  if (mountedDmg) {
+    if (dmgAttached) command('hdiutil', ['detach', mountedDmg]);
+    await rm(path.dirname(mountedDmg), { recursive: true, force: true });
+  }
   if (temporary) await rm(temporary, { recursive: true, force: true });
 }

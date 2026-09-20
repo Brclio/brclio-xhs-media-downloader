@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Brclio 小红书下载器的更新记录。v1.7.0 新增邮箱账号、会员、激活码、设备绑定与管理员后台；主页批量下载需要会员及设备授权，单篇下载继续免费。"
+      content="Brclio 小红书下载器的更新记录。v1.7.1 修补 Mac 应用包签名完整性，分别校验最终 ZIP 和 DMG 内的应用；ad hoc 签名不等于 Apple Developer ID 签名或公证。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.7.0 本地版">
+          <div class="header-status" aria-label="当前记录：v1.7.1 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.7.0 本地版</span>
+            <span>v1.7.1 本地版</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.7.0 加入软件账号、会员与设备授权，支持管理员人工开通和发码。单篇下载继续免费，已有下载文件与任务记录保留。
+              这里记录功能增加、体验优化与问题修复。v1.7.1 修补 Mac 应用包的签名完整性，并把最终 ZIP 与 DMG 内的应用都纳入发布校验。账号、会员及原有下载功能保持不变。
             </p>
 
             <div class="release-hero-actions">
@@ -70,7 +70,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.7.0</strong>
+              <strong>v1.7.1</strong>
               <small>本地版 · 2026.09.20</small>
             </div>
 
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#mac-signature-update"><span>v1.7.1</span><strong>Mac 应用包签名修复</strong></a>
               <a href="#account-membership-update"><span>v1.7.0</span><strong>账号与会员授权</strong></a>
               <a href="#app-name-update"><span>v1.6.3</span><strong>统一应用名称</strong></a>
               <a href="#design-credit-update"><span>v1.6.2</span><strong>Brclio 设计署名</strong></a>
@@ -134,7 +135,30 @@
           </aside>
 
           <div class="release-feed">
-            <article id="account-membership-update" class="release-entry release-entry-featured">
+            <article id="mac-signature-update" class="release-entry release-entry-featured">
+              <div class="release-entry-rail">
+                <span class="release-dot" aria-hidden="true"></span>
+                <time datetime="2026-09-20"><span>09.20</span><small>2026 · 修复版</small></time>
+              </div>
+              <div class="release-card">
+                <header class="release-card-heading">
+                  <div>
+                    <div class="release-badges"><span class="release-badge release-badge-yellow">v1.7.1</span><span class="release-status">Mac 签名修复</span></div>
+                    <h3>修补应用包签名，检查真正交付的安装包</h3>
+                  </div>
+                </header>
+                <p class="release-lead">v1.7.0 的 Mac 应用包检查出现签名与资源不一致，可能导致无法打开。本补丁明确为完整应用执行 ad hoc 签名，并分别从最终 ZIP 与 DMG 取得应用，进行完整性校验。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>应用包完整签名</strong>签名覆盖完整应用与内嵌组件；发布校验检查最终安装包中的应用，而不只检查打包前目录或单个可执行文件。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>签名类型说明清楚</strong>ad hoc 不等于 Apple Developer ID 签名，也不等于 Apple 公证。系统仍可能要求为该应用单独确认安全例外，不能保证其他 Mac 无提示打开。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>验证以本次产物为准</strong>实际结果以发布工作流及随包构建记录为准。此前反馈打不开的那台 Mac 仍待用户安装补丁后人工确认，系统重启与覆盖升级也不因此视为已验收。</p></div>
+                </div>
+                <p class="release-lead">继续提供 macOS 13+ 的 Apple 芯片和 Intel 版本，以及 Windows x64 安装版与便携版，运行环境完整内置。默认主页批量下载需要会员与设备授权，单篇下载继续免费；账号和人工发码功能沿用 v1.7.0。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.7.1" target="_blank" rel="noopener noreferrer">查看修复版与验证边界 ↗</a><span>Mac 签名 · 2026.09.20</span></div>
+              </div>
+            </article>
+
+            <article id="account-membership-update" class="release-entry">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20"><span>09.20</span><small>2026 · 本地版</small></time>
