@@ -45,9 +45,11 @@ GitHub 自动部署需在 Vercel 账号中连接有权限的 GitHub 身份，再
 
 支持 SMTP、Resend 和自有邮件网关。本次采用 Gmail SMTP：设置 `AUTH_MAIL_PROVIDER=smtp`、`AUTH_SMTP_HOST=smtp.gmail.com`、`AUTH_SMTP_PORT=465`、`AUTH_SMTP_USER` 为发信邮箱、`AUTH_SMTP_PASS` 为启用两步验证后生成的应用专用密码，`AUTH_MAIL_FROM` 使用相同邮箱。仅在 Vercel Secrets 保存应用密码。端口 465 使用 TLS，587 强制 STARTTLS，保持证书验证；SMTP 日志关闭。
 
-使用 Resend 时先验证发信域名，设置 `AUTH_MAIL_PROVIDER=resend`、`AUTH_MAIL_FROM`、`AUTH_MAIL_API_KEY`，密钥只需邮件发送权限。邮件携带首次验证创建账号说明。服务商接收不代表收件箱投递成功，正式验收必须使用真实邮箱。
+使用 Resend 时先验证发信域名，设置 `AUTH_MAIL_PROVIDER=resend`、`AUTH_MAIL_FROM`、`AUTH_MAIL_API_KEY`，密钥只需邮件发送权限。服务商接收不代表收件箱投递成功，正式验收必须使用真实邮箱。
 
-替换邮件供应商可使用自有 HTTPS 网关：设置 `AUTH_MAIL_PROVIDER=webhook`、`AUTH_MAIL_WEBHOOK_URL`、`AUTH_MAIL_WEBHOOK_SECRET`。网关接收 Bearer 认证和 `Idempotency-Key` 头，请求体包含 `email`、`code`、`expiresInMinutes`、`deliveryId`、`template: account-login`；接受发送后返回成功状态。网关不要记录验证码或认证头。
+注册与登录使用统一验证码邮件正文：首段保留验证码、有效期、仅能使用一次、首次验证创建账号及非本人操作可忽略的说明；底部依次增加编程私教咨询（微信 `Jiabcdefh`）、新书推荐《编程启蒙：思维与代码》，以及中英文“这不是垃圾邮件 / Not spam”提示。SMTP 与 Resend 直接发送同一正文。
+
+替换邮件供应商可使用自有 HTTPS 网关：设置 `AUTH_MAIL_PROVIDER=webhook`、`AUTH_MAIL_WEBHOOK_URL`、`AUTH_MAIL_WEBHOOK_SECRET`。网关接收 Bearer 认证和 `Idempotency-Key` 头，请求体保留 `email`、`code`、`expiresInMinutes`、`deliveryId`、`template: account-login`，另提供与 SMTP、Resend 一致的 `subject` 和完整 `text`；网关应直接复用这两个字段以保持统一模板，接受发送后返回成功状态。网关不要记录邮件正文、验证码或认证头。
 
 默认验证码有效 5 分钟，发送间隔 60 秒，每邮箱每小时最多 6 次、每 IP 每小时最多 20 次、全局每小时最多 200 次。单次验证码最多 5 次校验失败。限制保存在 GitHub 中，多个后端实例共享；IP 仅存服务端摘要。平台 WAF 可额外限制请求量，不代替业务限制。邮件发送失败有明确提示，验证码不以明文保存在 GitHub，也不返回客户端。
 

@@ -365,6 +365,80 @@ test('mailer adapters enforce HTTPS, do not expose provider failures, and identi
   assert.equal(smtp.configured, true); assert.equal(smtp.provider, 'smtp');
 });
 
+test('SMTP, Resend and webhook share an OTP-first message with the complete footer', async () => {
+  const delivery = { email: 'recipient@example.test', code: '123456', expiresInMinutes: 5, deliveryId: 'shared-template-fixture' };
+  const messages = {};
+  for (const provider of ['smtp', 'resend', 'webhook']) {
+    const mailer = createMailer({
+      AUTH_MAIL_PROVIDER: provider, AUTH_MAIL_FROM: 'test@example.test', AUTH_MAIL_API_KEY: 'fake-api-key',
+      AUTH_SMTP_HOST: 'smtp.example.test', AUTH_SMTP_USER: 'fake-user', AUTH_SMTP_PASS: 'fake-password',
+      AUTH_MAIL_WEBHOOK_URL: 'https://mail.example.test/send', AUTH_MAIL_WEBHOOK_SECRET: 'fake-webhook-secret',
+    }, async (_url, options) => {
+      messages[provider] = JSON.parse(options.body);
+      assert.equal(options.headers['Idempotency-Key'], delivery.deliveryId);
+      return Response.json({ id: delivery.deliveryId });
+    }, {
+      createSmtpTransport: () => ({
+        async sendMail(message) { messages.smtp = message; return { accepted: [delivery.email], rejected: [] }; },
+        close() {},
+      }),
+    });
+    await mailer.send(delivery);
+  }
+  for (const message of Object.values(messages)) {
+    assert.equal(message.subject, '小红书下载器登录验证码');
+    assert.equal(message.text, messages.smtp.text);
+    const [verification, tutoring, book, tips, ...extra] = message.text.split('\n\n');
+    assert.equal(verification, '您的登录验证码为 123456，5 分钟内有效，仅能使用一次。首次验证将创建账号。如果不是您本人操作，请忽略此邮件。');
+    assert.match(tutoring, /长期招收编程私教学员/);
+    assert.match(tutoring, /微信：Jiabcdefh/);
+    assert.match(book, /新书推荐：《编程启蒙：思维与代码》/);
+    assert.match(tips, /Tips：如果此邮件出现在垃圾邮件文件夹，请点一下“这不是垃圾邮件”，以免影响下次接收验证码。/);
+    assert.match(tips, /If this message is in your spam folder, please mark it as “Not spam” to help ensure you receive future verification codes\./);
+    assert.equal(extra.length, 0);
+  }
+  const { subject, text, ...webhookFields } = messages.webhook;
+  assert.deepEqual(webhookFields, { ...delivery, template: 'account-login' });
+  assert.deepEqual(messages.resend.to, [delivery.email]);
+  assert.deepEqual(messages.smtp.to, { address: delivery.email });
+  assert.equal(messages.smtp.headers['X-Account-Delivery-ID'], delivery.deliveryId);
+});
+
+test('mail provider failures do not expose the complete message, OTP or credentials in errors or status', async () => {
+  for (const provider of ['smtp', 'resend', 'webhook']) {
+    const f = fixture(), admin = await f.admin();
+    let failedMessage, failedCode;
+    const providerSecret = 'provider-secret-sentinel';
+    const mailer = createMailer({
+      AUTH_MAIL_PROVIDER: provider, AUTH_MAIL_FROM: 'test@example.test', AUTH_MAIL_API_KEY: providerSecret,
+      AUTH_SMTP_HOST: 'smtp.example.test', AUTH_SMTP_USER: 'fake-user', AUTH_SMTP_PASS: providerSecret,
+      AUTH_MAIL_WEBHOOK_URL: 'https://mail.example.test/send', AUTH_MAIL_WEBHOOK_SECRET: providerSecret,
+    }, async (_url, options) => {
+      failedMessage = JSON.parse(options.body).text;
+      if (provider === 'resend') throw Error(`${providerSecret}: ${failedMessage}`);
+      return Response.json({ error: `${providerSecret}: ${failedMessage}` }, { status: 502 });
+    }, {
+      createSmtpTransport: () => ({
+        async sendMail(message) { failedMessage = message.text; throw Error(`${providerSecret}: ${failedMessage}`); },
+        close() {},
+      }),
+    });
+    f.mailer.send = delivery => { failedCode = delivery.code; return mailer.send(delivery); };
+    await assert.rejects(f.issue('failed@example.test'), error => {
+      assert.equal(error.code, 'MAIL_SEND_FAILED');
+      assert.equal(error.status, 503);
+      for (const value of [failedCode, failedMessage, providerSecret]) assert.ok(!`${error.message} ${JSON.stringify(error)}`.includes(value));
+      return true;
+    });
+    assert.ok(failedMessage.includes('Jiabcdefh'), 'the failure follows construction of the full message');
+    assert.deepEqual(f.state.mailStatus, { status: 'failed', at: new Date(f.clock).toISOString() });
+    const status = await f.adminCall(admin, 'admin-status');
+    for (const value of [failedCode, failedMessage, providerSecret]) assert.ok(!JSON.stringify(status).includes(value));
+    const d = device();
+    await assert.rejects(f.execute(f.instance(), 'verify-code', { email: 'failed@example.test', code: failedCode, client: 'desktop', device: d.input }, null, d), { code: 'CODE_NOT_READY' });
+  }
+});
+
 test('SMTP verifies the current service, uses authenticated TLS, and closes each connection', async () => {
   let captured, sent, closed = 0, reject = false;
   const smtp = createMailer({ AUTH_MAIL_PROVIDER: 'smtp', AUTH_SMTP_HOST: 'smtp.example.test', AUTH_SMTP_PORT: '465', AUTH_SMTP_USER: 'fake-user', AUTH_SMTP_PASS: 'fake-test-password', AUTH_MAIL_FROM: 'test@example.test' }, undefined, {

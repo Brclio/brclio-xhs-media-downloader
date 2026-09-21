@@ -1,5 +1,7 @@
 # Brclio 小红书下载器
 
+v1.8.1 重新发布品牌安装包，应用内更新优先选择 `Brclio-XHS-Downloader` 文件并保留旧版更新兼容。注册／登录邮件新增编程私教、微信、新书推荐与中英文收件提示。详见 [v1.8.1 版本说明](docs/releases/v1.8.1.md)。
+
 v1.8.0 改为桌面五页导航，增加问题反馈与脱敏诊断日志、后台复制/下载日志，改进自动检查更新和 Mac 原位覆盖安装，并修复部分笔记读取失败、普通视频缺音轨的问题。详见 [版本说明](docs/releases/v1.8.0.md) 与 [反馈及日志说明](docs/feedback-diagnostics.md)。
 
 v1.7.1 修补 Mac 应用包的签名完整性：完整应用使用 ad hoc 签名，发布验证分别检查最终 ZIP 与 DMG 内的应用。ad hoc 不是 Apple Developer ID 签名或公证，具体产物验证以发布工作流和 `build-evidence.json` 为准，详见 [v1.7.1 说明](docs/releases/v1.7.1.md)。

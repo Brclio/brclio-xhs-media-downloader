@@ -31,7 +31,12 @@ export function createMailer(env = process.env, fetchImpl = fetch, { createSmtpT
     async send({ email, code, expiresInMinutes, deliveryId }) {
       if (!configured) fail('MAIL_NOT_CONFIGURED', '邮件服务尚未配置，请联系管理员。', 503);
       const subject = '小红书下载器登录验证码';
-      const text = `您的登录验证码为 ${code}，${expiresInMinutes} 分钟内有效，仅能使用一次。首次验证将创建账号。如果不是您本人操作，请忽略此邮件。`;
+      const text = [
+        `您的登录验证码为 ${code}，${expiresInMinutes} 分钟内有效，仅能使用一次。首次验证将创建账号。如果不是您本人操作，请忽略此邮件。`,
+        '本人长期招收编程私教学员，欢迎零基础入门或希望系统提升编程能力的朋友咨询。微信：Jiabcdefh。',
+        '新书推荐：《编程启蒙：思维与代码》。一起从思维训练开始，迈出写代码的第一步。',
+        'Tips：如果此邮件出现在垃圾邮件文件夹，请点一下“这不是垃圾邮件”，以免影响下次接收验证码。\nIf this message is in your spam folder, please mark it as “Not spam” to help ensure you receive future verification codes.',
+      ].join('\n\n');
       if (provider === 'smtp') {
         const transport = await smtpTransport();
         try {
@@ -50,7 +55,7 @@ export function createMailer(env = process.env, fetchImpl = fetch, { createSmtpT
         url = env.AUTH_MAIL_WEBHOOK_URL;
         if (!url.startsWith('https://')) fail('MAIL_NOT_CONFIGURED', '邮件服务地址必须使用 HTTPS。', 503);
         headers = { Authorization: `Bearer ${env.AUTH_MAIL_WEBHOOK_SECRET}`, 'Idempotency-Key': deliveryId };
-        body = { email, code, expiresInMinutes, deliveryId, template: 'account-login' };
+        body = { email, code, expiresInMinutes, deliveryId, template: 'account-login', subject, text };
       }
       let response;
       try { response = await fetchImpl(url, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10_000), headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
