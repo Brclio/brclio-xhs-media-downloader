@@ -71,11 +71,13 @@ npm run desktop:prepare:windows
 npm run desktop:build:win
 ```
 
-输出在 `dist-desktop/`：Mac 为 `.dmg` / `.zip`，Windows 为 `-setup.exe` / `-portable.exe`。Mac arm64 面向 Apple 芯片，最低 macOS 13；Intel Mac x64 由同一流程在 Intel 构建机或 CI 构建。Windows 包面向 Windows 10/11 x64。便携版同样包含完整运行环境，但任务与登录数据仍保存在当前系统用户的应用数据目录。
+输出在 `dist-desktop/`，文件名统一为 `Brclio-XHS-Downloader-版本号-系统-架构`：Mac 为 `.dmg` / `.zip`，Windows 为 `-setup.exe` / `-portable.exe`。例如 `Brclio-XHS-Downloader-1.8.0-mac-arm64.dmg`。Mac arm64 面向 Apple 芯片，最低 macOS 13；Intel Mac x64 由同一流程在 Intel 构建机或 CI 构建。Windows 包面向 Windows 10/11 x64。便携版同样包含完整运行环境，但任务与登录数据仍保存在当前系统用户的应用数据目录。
 
 开发者可在 GitHub Actions 中手动运行 `Desktop installers`，或推送 `v*` 标签。矩阵分别构建 Mac arm64、Mac x64、Windows x64，运行测试、真实 Electron 冒烟检查、归档源码比对和内置 Python 启动验证。推送与 package.json 一致的 `vX.Y.Z` 标签会在全部平台通过后自动发布：先合并六个安装包并复核构建提交与 SHA-256，再上传草稿，验证 GitHub 返回的文件摘要，最后将完整版本设为最新正式版。手动分支构建只上传 Actions 附件，不发布。
 
 发布包必须包含对应操作系统、CPU 架构的 Python 引擎；缺少引擎时构建失败，本机原生构建还会实际启动引擎验证，不能产出要求用户自行安装 Python 的“完整安装包”。Release 附带 `SHA256SUMS.txt` 和 `build-evidence.json`，记录各平台源码提交、归档源码比对、运行时验证与安装包摘要。
+
+发布脚本将 `docs/releases/vX.Y.Z.md` 第一行标题用于 GitHub Release 标题，正文自动去掉该行，并转换文档相对链接。发布说明顶部应提供六个品牌安装包的直接下载链接。为保持 v1.8.0 及更早客户端的更新兼容性，发布时额外保留两个 Mac DMG 和 Windows setup 的 `XHS-Downloader-...` 旧名副本，标为“旧版自动更新兼容包”；它们与对应品牌包逐字节相同，校验清单包含全部文件。新版更新器优先选择品牌包，也支持旧发布的文件名。历史 Intel 产物补发流程仍使用历史命名，不改变已经发布的版本标签或程序内容。
 
 Mac 的 Apple 签名 / 公证和 Windows 的代码签名需要发布者配置自己的证书。未配置证书的构建是未签名测试包，分发时系统可能提示无法验证开发者。正式发布前应在目标系统上执行安装、启动、登录、下载和卸载验收。
 

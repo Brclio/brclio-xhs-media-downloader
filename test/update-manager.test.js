@@ -87,8 +87,9 @@ test('Electron transport handles bodyless status responses without an uncaught c
   assert.equal(response.body, null);
 });
 
-function release({ version = '1.7.0', platform = 'darwin', arch = 'arm64', digest = `sha256:${sha256(content)}` } = {}) {
-  const name = installerName(version, platform, arch);
+function release({ version = '1.7.0', platform = 'darwin', arch = 'arm64', digest = `sha256:${sha256(content)}`, legacy = false } = {}) {
+  const preferredName = installerName(version, platform, arch);
+  const name = legacy ? preferredName.replace(/^Brclio-/, '') : preferredName;
   const prefix = `https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v${version}/`;
   const checksum = `${sha256(content)}  ${name}\n`;
   return { tag_name: `v${version}`, draft: false, prerelease: false,
@@ -125,8 +126,9 @@ test('semantic versions and platform asset selection reject unsupported or nonst
   for (const version of ['1.6.0-beta', '01.6.0', 'v1.6.0', '1.6', '../1.0.0']) {
     assert.throws(() => compareVersions(version, '1.6.0'));
   }
-  assert.equal(installerName('1.7.0', 'darwin', 'x64'), 'XHS-Downloader-1.7.0-mac-x64.dmg');
-  assert.equal(installerName('1.7.0', 'win32', 'x64'), 'XHS-Downloader-1.7.0-windows-x64-setup.exe');
+  assert.equal(installerName('1.7.0', 'darwin', 'arm64'), 'Brclio-XHS-Downloader-1.7.0-mac-arm64.dmg');
+  assert.equal(installerName('1.7.0', 'darwin', 'x64'), 'Brclio-XHS-Downloader-1.7.0-mac-x64.dmg');
+  assert.equal(installerName('1.7.0', 'win32', 'x64'), 'Brclio-XHS-Downloader-1.7.0-windows-x64-setup.exe');
   assert.throws(() => installerName('1.7.0', 'win32', 'arm64'));
 });
 
@@ -146,6 +148,61 @@ test('only stable releases and exact project installer URLs are accepted', () =>
   ];
   for (const mutate of mutations) { const value = release(); mutate(value); assert.throws(() => parseRelease(value, defaults)); }
   assert.equal(parseRelease(release(), defaults).candidate.sha256, sha256(content));
+});
+
+test('branded installers take priority over legacy compatibility copies regardless of asset order', () => {
+  for (const [platform, arch] of [['darwin', 'arm64'], ['darwin', 'x64'], ['win32', 'x64']]) {
+    const value = release({ platform, arch });
+    const preferred = value.assets[0];
+    const legacy = release({ platform, arch, legacy: true, digest: `sha256:${'a'.repeat(64)}` }).assets[0];
+    value.assets.unshift(legacy);
+    for (const assets of [value.assets, [...value.assets].reverse()]) {
+      const { candidate } = parseRelease({ ...value, assets }, { ...defaults, platform, arch });
+      assert.equal(candidate.name, preferred.name);
+      assert.equal(candidate.url, preferred.browser_download_url);
+      assert.equal(candidate.sha256, sha256(content));
+    }
+  }
+});
+
+test('legacy installers remain available on every supported platform only when branded ones are absent', () => {
+  for (const [platform, arch] of [['darwin', 'arm64'], ['darwin', 'x64'], ['win32', 'x64']]) {
+    const value = release({ platform, arch, legacy: true });
+    const { candidate } = parseRelease(value, { ...defaults, platform, arch });
+    assert.match(candidate.name, /^XHS-Downloader-/);
+    assert.equal(candidate.url, value.assets[0].browser_download_url);
+    assert.equal(candidate.sha256, sha256(content));
+  }
+});
+
+test('invalid or duplicate branded assets never fall back to a valid legacy installer', () => {
+  for (const [mutate, code] of [
+    [value => { value.assets[0].browser_download_url = 'https://evil.example/installer.dmg'; }, 'UNTRUSTED_URL'],
+    [value => { value.assets[0].browser_download_url = value.assets.at(-1).browser_download_url; }, 'UNTRUSTED_URL'],
+    [value => { value.assets[0].size = 0; }, 'INVALID_ASSET'],
+    [value => { value.assets[0].digest = 'sha256:invalid'; }, 'INVALID_CHECKSUM'],
+    [value => { value.assets.push({ ...value.assets[0] }); }, 'ASSET_NOT_FOUND'],
+    [value => { value.assets[0].digest = null; value.assets = value.assets.filter(asset => asset.name !== 'SHA256SUMS.txt'); }, 'ASSET_NOT_FOUND'],
+    [value => { value.assets[0].digest = null; value.assets.push({ ...value.assets[1] }); }, 'ASSET_NOT_FOUND']
+  ]) {
+    const value = release();
+    value.assets.push(release({ legacy: true }).assets[0]);
+    mutate(value);
+    assert.throws(() => parseRelease(value, defaults), { code });
+  }
+});
+
+test('legacy fallback still rejects malicious URLs, invalid checksums and duplicate installers', () => {
+  for (const [mutate, code] of [
+    [value => { value.assets[0].browser_download_url += '?redirect=evil'; }, 'UNTRUSTED_URL'],
+    [value => { value.assets[0].browser_download_url = value.assets[0].browser_download_url.replace('Brclio/', 'other/'); }, 'UNTRUSTED_URL'],
+    [value => { value.assets[0].digest = 'sha1:123'; }, 'INVALID_CHECKSUM'],
+    [value => { value.assets.push({ ...value.assets[0] }); }, 'ASSET_NOT_FOUND']
+  ]) {
+    const value = release({ legacy: true });
+    mutate(value);
+    assert.throws(() => parseRelease(value, defaults), { code });
+  }
 });
 
 test('asset redirects only permit HTTPS GitHub release CDNs, never arbitrary hosts or another repository', () => {
@@ -231,6 +288,31 @@ test('missing asset digest uses the release SHA256SUMS, and absent trust data is
   assert.ok(f.requests.some(url => url.endsWith('SHA256SUMS.txt')));
   const invalid = release({ digest: null }); invalid.assets.pop();
   assert.throws(() => parseRelease(invalid, defaults), /校验文件/);
+});
+
+test('legacy fallback downloads only the legacy filename verified by its exact manifest entry', async t => {
+  const latest = release({ legacy: true, digest: null });
+  const f = await fixture(t, { release: latest });
+  assert.equal((await f.manager.checkForUpdates()).status, 'available');
+  assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
+  assert.deepEqual(await readdir(f.directory), [latest.assets[0].name]);
+  assert.deepEqual(await readFile(path.join(f.directory, latest.assets[0].name)), content);
+  assert.ok(f.requests.includes(latest.assets[0].browser_download_url));
+});
+
+test('a legacy checksum cannot authorize a branded installer or trigger a download fallback', async t => {
+  const latest = release({ digest: null });
+  const legacy = release({ legacy: true }).assets[0];
+  latest.assets.push(legacy);
+  const checksum = `${sha256(content)}  ${legacy.name}\n`;
+  latest.assets[1].size = Buffer.byteLength(checksum);
+  const f = await fixture(t, { release: latest, fetchImpl: url => url === LATEST_RELEASE_URL
+    ? Response.json(latest) : new Response(checksum) });
+  assert.equal((await f.manager.checkForUpdates()).status, 'available');
+  const result = await f.manager.downloadUpdate();
+  assert.equal(result.error.code, 'INVALID_CHECKSUM');
+  assert.deepEqual(f.requests, [LATEST_RELEASE_URL, latest.assets[1].browser_download_url]);
+  assert.deepEqual(await readdir(f.directory), []);
 });
 
 test('invalid manifest stops before requesting the installer', async t => {

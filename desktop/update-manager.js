@@ -121,8 +121,8 @@ export function compareVersions(left, right) {
 
 export function installerName(version, platform, arch) {
   versionParts(version);
-  if (platform === 'darwin' && ['arm64', 'x64'].includes(arch)) return `XHS-Downloader-${version}-mac-${arch}.dmg`;
-  if (platform === 'win32' && arch === 'x64') return `XHS-Downloader-${version}-windows-x64-setup.exe`;
+  if (platform === 'darwin' && ['arm64', 'x64'].includes(arch)) return `Brclio-XHS-Downloader-${version}-mac-${arch}.dmg`;
+  if (platform === 'win32' && arch === 'x64') return `Brclio-XHS-Downloader-${version}-windows-x64-setup.exe`;
   fail('UNSUPPORTED_PLATFORM', '当前系统或处理器没有可用的更新安装包。');
 }
 
@@ -165,7 +165,11 @@ export function parseRelease(release, { currentVersion, platform, arch }) {
     publishedAt: typeof release.published_at === 'string' ? release.published_at.slice(0, 40) : '' };
   if (compareVersions(version, currentVersion) <= 0) return { metadata, candidate: null };
   if (!Array.isArray(release.assets) || release.assets.length > 1000) fail('INVALID_ASSET', '发布附件列表无效。');
-  const name = installerName(version, platform, arch);
+  const preferredName = installerName(version, platform, arch);
+  // Older releases only contain the original filename. A present branded
+  // asset must pass all checks; a malformed or duplicate one never falls back.
+  const name = release.assets.some(asset => asset?.name === preferredName)
+    ? preferredName : preferredName.replace(/^Brclio-/, '');
   const asset = releaseAsset(uniqueAsset(release.assets, name), name, release.tag_name, MAX_INSTALLER_BYTES);
   let sha256 = null;
   let manifest = null;

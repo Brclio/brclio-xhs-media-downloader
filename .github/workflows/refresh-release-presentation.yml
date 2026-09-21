@@ -1,0 +1,37 @@
+name: Refresh release downloads and notes
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published release to give Brclio download names (e.g. v1.8.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-refs/tags/${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test download compatibility and release metadata
+        run: node --test test/release-artifacts.test.js test/update-manager.test.js
+      - name: Refresh names and links without rebuilding published binaries
+        run: node scripts/refresh-release-presentation.mjs
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
