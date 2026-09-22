@@ -36,7 +36,8 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   catch (error) { if (error.code !== 'ENOENT') throw error; }
   for (const name of ['account-ui.js', 'account-ui.css', 'desktop/account-client.js',
     'desktop/account-storage.js', 'lib/membership-policy.js', 'desktop/diagnostic-log.js',
-    'desktop/feedback-client.js', 'desktop/mac-update.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js']) {
+    'desktop/feedback-client.js', 'desktop/mac-update.js', 'desktop/mac-install-progress.js',
+    'desktop/windows-update.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js']) {
     try { await stat(path.join(sourceDirectory, name)); expectedSources.push(name); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }

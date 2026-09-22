@@ -99,9 +99,17 @@ app.whenReady().then(async () => {
   const publishUpdate = value => { update = value; win.webContents.send('ui-fixture:update', value); return value; };
   const available = () => ({
     status: 'available', currentVersion: '1.6.0', latestVersion: '1.6.1',
-    releaseNotes: '测试更新说明 <img src=x onerror=alert(1)>\n改进任务恢复。',
+    releaseNotes: ['下载与更新，更顺畅了。', '', '### 下载可以接着来',
+      '- 更新包下载中断后保留已有进度，重新打开软件也可以继续下载。',
+      '- 支持暂停下载，在你准备好时再继续。', '', '### 安装过程看得见',
+      '- 显示校验、复制和覆盖安装进度，随时了解当前步骤。',
+      '- 安装成功后自动重新打开软件，保留原有账号和任务记录。', '',
+      '### 使用体验', '- 更新说明集中展示，下载、暂停和继续都可以在这里完成。',
+      '- 也可以收起弹窗，在后台下载更新。', '', '### 更多改进',
+      ...Array.from({ length: 8 }, (_, i) => `- 稳定性验证 ${i + 1}：改进任务恢复和更新提示。`),
+      '测试更新说明 <img src=x onerror=alert(1)>', '[不执行链接](javascript:alert(1))'].join('\n'),
     installationHint: 'Mac：确认后覆盖当前应用并重新启动，保留账号和任务记录。',
-    download: { receivedBytes: 0, totalBytes: 0 }, error: null, canRetry: true
+    download: { receivedBytes: 0, totalBytes: 0, canResume: false }, error: null, canRetry: true
   });
   ipcMain.handle('ui-fixture:invoke', (_event, method, value) => {
     calls.push({ method, value });
@@ -128,11 +136,12 @@ app.whenReady().then(async () => {
     if (method === 'checkForUpdates') return publishUpdate(available());
     if (method === 'downloadUpdate') {
       if (downloadMode === 'downloaded') return publishUpdate({ ...available(), status: 'downloaded' });
-      publishUpdate({ ...available(), status: 'downloading', download: { receivedBytes: 512, totalBytes: 1024 } });
+      const receivedBytes = update.download?.canResume ? 768 : 512;
+      publishUpdate({ ...available(), status: 'downloading', download: { receivedBytes, totalBytes: 1024, canResume: false } });
       return new Promise(resolve => { resolveDownload = resolve; });
     }
     if (method === 'cancelUpdateDownload') {
-      const state = publishUpdate(available());
+      const state = publishUpdate({ ...available(), download: { ...update.download, canResume: true } });
       resolveDownload?.(state);
       resolveDownload = null;
       return state;
@@ -207,45 +216,109 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#profile-items button[data-retry-id]').disabled`), true);
   resolveDirectory('/fixture/下载');
   await check(`!document.querySelector('#profile-items button[data-retry-id]').disabled`, 'retry unlocks after operation');
-  // A main-process background check announces a new version once, without
-  // initiating another request from this renderer or interrupting work.
+  // Show the requested version modal once, without downloading or installing
+  // until the user acts. Its body scrolls independently of the fixed actions.
+  await evaluate(`document.querySelector('#profile-tab').focus()`);
   publishUpdate(available());
   await check(`!document.querySelector('#desktop-update-announcement').hidden && !document.querySelector('#desktop-update-badge').hidden`, 'automatic update notice');
+  await check(`document.querySelector('#desktop-update-dialog').open`, 'automatic version dialog');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog').getAttribute('aria-labelledby')`), 'desktop-update-dialog-title');
+  assert.match(await evaluate(`document.querySelector('#desktop-update-dialog-version').textContent`), /v1\.6\.1.*v1\.6\.0/);
+  assert.equal(await evaluate(`document.querySelectorAll('#desktop-update-dialog-notes img, #desktop-update-dialog-notes a, #desktop-update-dialog-notes script').length`), 0, 'release HTML and links never execute');
+  assert.equal(await evaluate(`document.querySelectorAll('#desktop-update-dialog-notes h3').length > 0 && document.querySelectorAll('#desktop-update-dialog-notes li').length > 0`), true, 'release sections and bullets are readable');
+  assert.equal(calls.some(call => ['downloadUpdate', 'installUpdate'].includes(call.method)), false);
+  const dialogFits = `(() => { const d = document.querySelector('#desktop-update-dialog'), n = document.querySelector('#desktop-update-dialog-notes'), a = document.querySelector('#desktop-update-dialog-action'); const b = d.getBoundingClientRect(), f = a.getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight && n.scrollHeight > n.clientHeight && n.scrollWidth <= n.clientWidth && f.bottom <= b.bottom && f.top >= b.top; })()`;
+  assert.equal(await evaluate(dialogFits), true, 'long notes scroll while actions stay visible');
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Tab' });
+  await check(`document.querySelector('#desktop-update-dialog').contains(document.activeElement)`, 'keyboard focus stays in modal');
+  const updateDialogScreenshot = path.join(temporary, 'desktop-update-dialog.png');
+  writeFileSync(updateDialogScreenshot, await captureFrame());
+  for (const boundary of ['#', '##']) {
+    publishUpdate({ ...available(), releaseNotes: [
+      '## 下载安装', '| 系统 | 安装包 |', '| --- | --- |', '| macOS | [下载](https://example.com/setup.dmg) |',
+      '', '## 本次更新', '### 下载与安装', '- 更新中断后可以继续下载。',
+      '', `${boundary} 验证`, '- 此处是发布验证记录。'
+    ].join('\n') });
+    await check(`document.querySelector('#desktop-update-dialog-notes li')?.textContent === '更新中断后可以继续下载。'`, 'release dialog prefers the actual update section');
+    assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#desktop-update-dialog-notes li'), item => item.textContent)`), ['更新中断后可以继续下载。']);
+    const displayedNotes = await evaluate(`document.querySelector('#desktop-update-dialog-notes').textContent`);
+    assert.match(displayedNotes, /下载与安装/, 'nested subsection remains visible');
+    assert.doesNotMatch(displayedNotes, /下载安装|\||发布验证记录|验证/, 'download tables and following release sections stay outside the modal');
+  }
+  publishUpdate({ ...available(), releaseNotes: '完整发布附注。\n## 本次更新\n\n## 验证\n- 发布记录仍可阅读。' });
+  await check(`document.querySelector('#desktop-update-dialog-notes').textContent.includes('完整发布附注。') && document.querySelector('#desktop-update-dialog-notes').textContent.includes('发布记录仍可阅读。')`, 'empty update section preserves the full release notes');
+  publishUpdate(available());
+  await check(`document.querySelector('#desktop-update-dialog-notes').textContent.includes('下载与更新，更顺畅了。')`, 'restore realistic dialog content after release-format checks');
+  await click('#desktop-update-dialog-later');
+  await check(`!document.querySelector('#desktop-update-dialog').open && document.activeElement.id === 'profile-tab'`, 'later closes and restores focus');
   await click('#desktop-announcement-dismiss');
   publishUpdate(available());
-  await check(`document.querySelector('#desktop-update-announcement').hidden`, 'dismissed version is not repeatedly announced');
+  await check(`document.querySelector('#desktop-update-announcement').hidden && !document.querySelector('#desktop-update-dialog').open`, 'dismissed version is not repeatedly announced');
   await click('#about-tab');
   assert.equal(await evaluate(`document.body.dataset.desktopPage`), 'about');
   await click('#desktop-check-updates');
+  await check(`document.querySelector('#desktop-update-dialog').open`, 'manual check reopens dismissed version');
   await check(`!document.querySelector('#desktop-update-download').hidden && !document.querySelector('#desktop-update-download').disabled`, 'update available');
   assert.match(await evaluate(`document.querySelector('#desktop-update-title').textContent`), /1\.6\.1/);
   assert.equal(await evaluate(`document.querySelector('#desktop-update-notes').querySelectorAll('img').length`), 0, 'release notes render as text');
   assert.equal(calls.filter(call => call.method === 'installUpdate').length, 0, 'no automatic installation');
-  await click('#desktop-update-download');
-  await check(`!document.querySelector('#desktop-update-cancel').hidden && !document.querySelector('#desktop-update-cancel').disabled`, 'cancel works during pending download IPC');
+  await click('#desktop-update-dialog-action');
+  await check(`!document.querySelector('#desktop-update-cancel').hidden && !document.querySelector('#desktop-update-cancel').disabled`, 'pause works during pending download IPC');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-cancel').textContent`), '暂停下载');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 50);
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-progress').value`), 50);
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '暂停下载');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-later').textContent`), '后台下载');
   assert.match(await evaluate(`document.querySelector('#desktop-update-progress-text').textContent`), /50%/);
   await paint();
   const screenshot = path.join(temporary, 'desktop-ui.png');
   writeFileSync(screenshot, await captureFrame());
-  await click('#desktop-update-cancel');
-  await check(`!document.querySelector('#desktop-update-download').hidden && !document.querySelector('#desktop-update-download').disabled`, 'cancel returns to available');
+  await click('#desktop-update-dialog-action');
+  await check(`!document.querySelector('#desktop-update-download').hidden && !document.querySelector('#desktop-update-download').disabled`, 'pause returns to available');
   assert.equal(calls.filter(call => call.method === 'cancelUpdateDownload').length, 1);
-  publishUpdate({ ...available(), status: 'error', error: { phase: 'download', message: '测试下载失败' } });
-  await check(`document.querySelector('#desktop-update-download').textContent === '重试下载'`, 'download error retry');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-download').textContent`), '继续下载');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-progress-wrap').hidden`), false, 'paused progress remains visible');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 50);
+  assert.match(await evaluate(`document.querySelector('#desktop-update-message').textContent`), /已保存下载进度/);
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '继续下载');
+  await click('#desktop-update-dialog-action');
+  await check(`document.querySelector('#desktop-update-progress').value === 75`, 'continued download progresses from retained bytes');
+  const interrupted = publishUpdate({ ...available(), status: 'error', download: { receivedBytes: 768, totalBytes: 1024, canResume: true }, error: { phase: 'download', message: '测试连接中断' } });
+  resolveDownload(interrupted);
+  resolveDownload = null;
+  await check(`document.querySelector('#desktop-update-download').textContent === '继续下载' && !document.querySelector('#desktop-update-download').disabled`, 'interrupted download can continue');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-progress-wrap').hidden`), false, 'failed resumable progress remains visible');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 75);
+  assert.match(await evaluate(`document.querySelector('#desktop-update-message').textContent`), /已保存下载进度/);
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '继续下载');
   downloadMode = 'downloaded';
+  await click('#desktop-update-dialog-action');
+  await check(`!document.querySelector('#desktop-update-install').hidden && !document.querySelector('#desktop-update-install').disabled`, 'continued download reaches ready to install');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '安装并重启');
+  assert.equal(calls.filter(call => call.method === 'installUpdate').length, 0, 'completed download still requires installation action');
+  await click('#desktop-update-dialog-action');
+  await check(`!document.querySelector('#desktop-update-dialog-action').disabled`, 'cancelled installation confirmation keeps the modal usable');
+  assert.equal(calls.filter(call => call.method === 'installUpdate').length, 1, 'modal install reaches the existing main-process confirmation');
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+  await check(`!document.querySelector('#desktop-update-dialog').open`, 'Escape closes dialog');
+  publishUpdate({ ...available(), status: 'error', error: { phase: 'download', message: '测试下载失败' } });
+  await check(`document.querySelector('#desktop-update-download').textContent === '重试下载'`, 'download without retained bytes offers retry');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-progress-wrap').hidden`), true, 'no partial download means no retained progress');
   await click('#desktop-update-download');
   await check(`!document.querySelector('#desktop-update-install').hidden && !document.querySelector('#desktop-update-install').disabled`, 'ready to install');
   assert.match(await evaluate(`document.querySelector('#desktop-update-installation-hint').textContent`), /覆盖当前应用/);
   await click('#desktop-update-install');
   await check(`!document.querySelector('#desktop-update-install').disabled`, 'cancelled main-process confirmation remains retryable');
-  assert.equal(calls.filter(call => call.method === 'installUpdate').length, 1);
+  assert.equal(calls.filter(call => call.method === 'installUpdate').length, 2);
   publishUpdate({ ...available(), status: 'error', error: { phase: 'install', message: '测试安装失败' } });
   await check(`document.querySelector('#desktop-update-install').textContent === '重试安装'`, 'installation error retry');
   publishUpdate({ ...available(), status: 'error', error: { phase: 'check', message: '测试检查失败' } });
   await check(`!document.querySelector('#desktop-update-retry').hidden`, 'check error retry');
   await click('#desktop-update-retry');
   await check(`!document.querySelector('#desktop-update-download').hidden`, 'check retry result');
+  await click('#desktop-update-dialog-later');
   assert.equal(calls.filter(call => call.method === 'checkForUpdates').length, 2);
   publishUpdate({ ...available(), status: 'downloaded', installationHint: '当前为 Windows 便携版；本次更新会运行安装程序，安装正式版。' });
   await check(`document.querySelector('#desktop-update-installation-hint').textContent.includes('便携版')`, 'Windows portable installation explanation');
@@ -319,13 +392,39 @@ app.whenReady().then(async () => {
   await paint();
   const narrowScreenshot = path.join(temporary, 'desktop-ui-narrow.png');
   writeFileSync(narrowScreenshot, await captureFrame());
+  publishUpdate({ ...available(), latestVersion: '1.6.2' });
+  await check(`document.querySelector('#desktop-update-dialog').open`, 'a newer version may announce again');
+  assert.equal(await evaluate(dialogFits), true, '390px dialog keeps long notes inside and footer visible');
+  await evaluate(`document.querySelector('#desktop-update-dialog-notes').scrollTop = 300`);
+  assert.equal(await evaluate(dialogFits), true, 'scrolling notes does not move the action row out of view');
+  await evaluate(`document.querySelector('#desktop-update-dialog-notes').scrollTop = 0`);
+  const updateDialogNarrowScreenshot = path.join(temporary, 'desktop-update-dialog-narrow.png');
+  writeFileSync(updateDialogNarrowScreenshot, await captureFrame());
+  win.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, x: 2, y: 2 });
+  win.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, x: 2, y: 2 });
+  await check(`!document.querySelector('#desktop-update-dialog').open`, 'backdrop dismisses modal');
+  await click('#desktop-check-updates');
+  await check(`document.querySelector('#desktop-update-dialog').open`, 'dialog can reopen for background download');
+  downloadMode = 'pending';
+  await click('#desktop-update-dialog-action');
+  await check(`document.querySelector('#desktop-update-dialog-later').textContent === '后台下载'`, 'background download action available');
+  const pausesBefore = calls.filter(call => call.method === 'cancelUpdateDownload').length;
+  await click('#desktop-update-dialog-later');
+  await check(`!document.querySelector('#desktop-update-dialog').open`, 'background action closes only the modal');
+  assert.equal(calls.filter(call => call.method === 'cancelUpdateDownload').length, pausesBefore, 'background download never pauses');
+  await click('#desktop-update-cancel');
+  await check(`!document.querySelector('#desktop-update-download').disabled`, 'background download can still pause from about page');
+  await click('#desktop-check-updates');
+  await check(`document.querySelector('#desktop-update-dialog').open`, 'explicit recheck can reopen');
+  publishUpdate({ ...available(), status: 'up-to-date', latestVersion: '1.6.0' });
+  await check(`!document.querySelector('#desktop-update-dialog').open`, 'a newer check with no update closes the obsolete modal');
   const web = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false } });
   await web.loadURL('xhs-app://local/');
-  assert.equal(await web.webContents.executeJavaScript(`document.querySelector('#desktop-navigation').hidden && document.querySelector('#desktop-update-panel').hidden && !document.querySelector('#single-note-panel').hidden`), true, 'web interface remains unchanged without bridge');
+  assert.equal(await web.webContents.executeJavaScript(`document.querySelector('#desktop-navigation').hidden && document.querySelector('#desktop-update-panel').hidden && !document.querySelector('#single-note-panel').hidden && !document.querySelector('#desktop-update-dialog').open`), true, 'web interface remains unchanged without bridge');
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and cancellation', 'phase-aware retries', 'manual install only', 'safe text rendering', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, pageScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, pageScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

@@ -23,9 +23,17 @@ const timer = setTimeout(() => { console.error('DESKTOP_SMOKE_TIMEOUT'); app.exi
 
 async function verifyUpdateTransport() {
   let payloadRequests = 0;
+  const installer = Buffer.from('verified installer fixture');
+  let requestedRange;
   const server = createServer((request, response) => {
     if (request.url === '/redirect') { response.writeHead(302, { Location: '/payload' }); response.end(); }
     else if (request.url === '/slow') { response.writeHead(200, { 'content-type': 'application/octet-stream', 'x-content-type-options': 'nosniff' }); response.write('begin'); }
+    else if (request.url === '/range') {
+      requestedRange = request.headers.range;
+      response.writeHead(206, { 'content-type': 'application/octet-stream',
+        'content-range': `bytes 9-${installer.length - 1}/${installer.length}`, 'content-length': installer.length - 9 });
+      response.end(installer.subarray(9));
+    }
     else { payloadRequests++; response.writeHead(200, { 'content-type': 'application/octet-stream' }); response.end('verified installer fixture'); }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -38,6 +46,11 @@ async function verifyUpdateTransport() {
     assert.equal(payloadRequests, 0, 'The transport must not follow an unchecked redirect');
     const payload = await fetch(`${base}/payload`, { method: 'GET', redirect: 'manual', headers: {} });
     assert.equal(await payload.text(), 'verified installer fixture');
+    const resumed = await fetch(`${base}/range`, { headers: { Range: 'bytes=9-', 'Accept-Encoding': 'identity' } });
+    assert.equal(requestedRange, 'bytes=9-', 'The actual Electron transport forwards the persisted byte offset');
+    assert.equal(resumed.status, 206);
+    assert.equal(resumed.headers.get('content-range'), `bytes 9-${installer.length - 1}/${installer.length}`);
+    assert.deepEqual(Buffer.concat([installer.subarray(0, 9), Buffer.from(await resumed.arrayBuffer())]), installer);
     const controller = new AbortController();
     const slow = await fetch(`${base}/slow`, { method: 'GET', redirect: 'manual', headers: {}, signal: controller.signal });
     const body = slow.text();

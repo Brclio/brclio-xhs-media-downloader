@@ -5,6 +5,7 @@ import { access, chmod, copyFile, lstat, mkdir, mkdtemp, open, readFile, readdir
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
+import { startMacInstallProgress } from './mac-install-progress.js';
 
 const execute = promisify(execFile);
 const APP_ID = 'cn.bornforthis.xhs-downloader';
@@ -65,7 +66,7 @@ async function rollback() {
     await fs.rename(backup, current);
     if (await inode(current) !== currentInode) throw new Error('Restored application changed');
     await status('rolled_back');
-    await run('/usr/bin/open', [current], { timeout: 30000 }).catch(() => {});
+    await run('/usr/bin/open', ['-n', current], { timeout: 30000 }).catch(() => {});
   } catch { await status('rollback_failed'); }
   finally { process.exitCode = 1; }
 }
@@ -92,6 +93,7 @@ async function main() {
     if (!stat.isDirectory() || stat.isSymbolicLink() || await inode(current) !== currentInode || hash !== infoHash) {
       await status('current_changed'); process.exitCode = 1; return;
     }
+    await status('validating');
     try { if (await inode(staged) !== stagedInode) throw new Error('Staging changed'); await verify(staged); }
     catch { await status('candidate_invalid'); process.exitCode = 1; return; }
     if (await exists(backup)) { await status('backup_exists'); process.exitCode = 1; return; }
@@ -103,7 +105,10 @@ async function main() {
       await fs.rename(staged, current);
       if (await inode(current) !== stagedInode) throw new Error('Unexpected installed application');
       await verify(current);
-      await run('/usr/bin/open', [current], { timeout: 30000 });
+      await status('launching');
+      // This helper still runs with the old bundle's Electron executable.
+      // Force a new instance so LaunchServices cannot merely activate it.
+      await run('/usr/bin/open', ['-n', current], { timeout: 30000 });
     } catch { await rollback(); return; }
     await status('installed');
   } finally { if (ownsLock) await fs.rmdir(lock).catch(() => {}); }
@@ -120,7 +125,8 @@ const RESULTS = {
   ready: '安装助手已准备好，尚未批准替换。', cancelled: '安装准备已取消，当前应用未修改。',
   readiness_timeout: '未收到安装批准，已取消替换。', helper_failed: '安装助手遇到错误，恢复记录已保留。',
   waiting: '等待旧应用退出，当前应用尚未修改。', replacing: '正在替换应用，旧版本已保留为备份。',
-  installed: '应用已替换并向系统请求打开；系统安全检查或首次启动仍可能需要手动确认。',
+  validating: '正在确认新版应用完整性，准备覆盖安装。', launching: '覆盖安装已完成，正在自动打开新版应用。',
+  installed: '应用已替换，正在自动重新打开新版本；如系统显示安全确认，请按提示允许打开。',
   rolled_back: '安装或启动请求失败，已恢复旧应用并请求重新打开。',
   rollback_blocked: '应用路径被其他操作修改，未覆盖该路径。旧应用备份已保留，请手动恢复。',
   rollback_failed: '自动恢复未完成；旧应用备份已保留，请手动恢复。',
@@ -199,7 +205,7 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
   await mkdir(cache, { recursive: true, mode: 0o700 }); cache = await realpath(cache);
   if (contained(current, cache)) fail('MAC_UPDATE_PATH', '更新缓存不能放在待替换应用内部。');
   let stageDirectory, work, mountpoint, mounted = false, committed = false, launching = false, disposed = false;
-  let child, childExited, childStopped = true;
+  let child, childExited, childStopped = true, progressWindow;
   const detach = async () => {
     if (!mounted) return;
     await run('/usr/bin/hdiutil', ['detach', mountpoint], { timeout: 30000 }); mounted = false;
@@ -208,8 +214,17 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
     try { stageDirectory = await mkdtemp(path.join(parent, '.brclio-update-')); await chmod(stageDirectory, 0o700); }
     catch (cause) { fail('MAC_UPDATE_PERMISSION', '无法在当前应用旁准备更新。请移到可写文件夹，或手动打开 DMG 安装。', cause); }
     work = await mkdtemp(path.join(cache, 'mac-install-')); await chmod(work, 0o700);
+    const resultPath = path.join(work, 'install-result.json');
+    async function progress(status, message) {
+      await writeFile(`${resultPath}.next`, JSON.stringify({ status, message, version: expectedVersion,
+        currentAppPath: current }), { mode: 0o600 });
+      await rename(`${resultPath}.next`, resultPath);
+    }
+    await progress('preparing', '正在准备覆盖安装，请保持设备开启。');
+    progressWindow = await (dependencies.startProgress || startMacInstallProgress)({ resultPath, version: expectedVersion });
     mountpoint = path.join(work, 'mount'); await mkdir(mountpoint, { mode: 0o700 });
     try {
+      await progress('opening', '正在打开更新安装包。');
       mounted = true;
       const attached = await run('/usr/bin/hdiutil', ['attach', '-readonly', '-nobrowse', '-noautoopen', '-mountpoint', mountpoint, '-plist', installer]);
       const plist = path.join(work, 'attach.plist'); await writeFile(plist, attached.stdout, { mode: 0o600 });
@@ -219,15 +234,17 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
     } catch (cause) { fail('MAC_UPDATE_MOUNT', '无法只读打开 DMG，或安装包包含意外的卷。请重新下载或手动安装。', cause); }
     const entries = (await readdir(mountpoint, { withFileTypes: true })).filter(entry => entry.name.endsWith('.app'));
     if (entries.length !== 1 || !entries[0].isDirectory() || entries[0].isSymbolicLink()) fail('MAC_UPDATE_CONTENTS', 'DMG 必须只包含一个完整应用，已停止安装。');
+    await progress('verifying', '正在校验新版应用的版本、架构和完整性。');
     const source = path.join(mountpoint, entries[0].name); await verify(source);
     const staged = path.join(stageDirectory, 'next.app'), backup = path.join(stageDirectory, 'previous.app'), failed = path.join(stageDirectory, 'failed.app');
+    await progress('copying', '正在复制新版应用文件，请稍候。');
     await run('/usr/bin/ditto', ['--rsrc', '--extattr', '--acl', source, staged], { timeout: 300000 });
+    await progress('checking', '正在检查复制结果，确保新版应用完整。');
     await verify(staged); await detach();
     const currentStat = await lstat(current), stagedStat = await lstat(staged);
     const inode = value => `${value.dev}:${value.ino}`;
     if (currentStat.dev !== stagedStat.dev) fail('MAC_UPDATE_VOLUME', '更新临时文件与当前应用不在同一磁盘，已停止安装。');
     const infoHash = createHash('sha256').update(await readFile(path.join(current, 'Contents/Info.plist'))).digest('hex');
-    const resultPath = path.join(work, 'install-result.json');
     const lockPath = path.join(parent, `.brclio-update-${createHash('sha256').update(current).digest('hex').slice(0, 16)}.lock`);
     for (const [status, message] of Object.entries(RESULTS)) await writeFile(path.join(work, `${status}.json`), JSON.stringify({
       status, message, version: expectedVersion, appId: expectedAppId, currentAppPath: current,
@@ -235,7 +252,7 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
       launchRequested: status === 'installed', signature: 'integrity-verified-not-notarization'
     }, null, 2), { mode: 0o600 });
     const helperPath = path.join(work, 'install.cjs'); await writeFile(helperPath, HELPER, { mode: 0o700 });
-    await writeFile(resultPath, JSON.stringify({ status: 'prepared', version: expectedVersion, currentAppPath: current, backupPath: backup }), { mode: 0o600 });
+    await progress('prepared', '新版已准备好，正在启动覆盖安装助手。');
     async function cancelHelper() {
       if (committed) return;
       await writeFile(path.join(work, 'cancel'), 'cancelled\n', { mode: 0o600 });
@@ -303,11 +320,13 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
         if (committed || disposed) return;
         if (launching) fail('MAC_UPDATE_BUSY', '安装助手正在确认就绪，请等待后再取消。');
         await cancelHelper();
+        await progressWindow.close();
         disposed = true;
         await rm(stageDirectory, { recursive: true, force: true }); await rm(work, { recursive: true, force: true });
       }
     };
   } catch (error) {
+    await progressWindow?.close().catch(() => {});
     let detached = !mounted;
     try { await detach(); detached = true; } catch { /* Retain mountpoint for manual cleanup. */ }
     if (stageDirectory) await rm(stageDirectory, { recursive: true, force: true }).catch(() => {});

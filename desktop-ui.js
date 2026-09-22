@@ -91,6 +91,16 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     updateInstallationHint: element("desktop-update-installation-hint"),
     updateNotesDetails: element("desktop-update-notes-details"),
     updateNotes: element("desktop-update-notes"),
+    updateDialog: element("desktop-update-dialog"),
+    updateDialogTitle: element("desktop-update-dialog-title"),
+    updateDialogVersion: element("desktop-update-dialog-version"),
+    updateDialogNotes: element("desktop-update-dialog-notes"),
+    updateDialogProgressWrap: element("desktop-update-dialog-progress-wrap"),
+    updateDialogProgress: element("desktop-update-dialog-progress"),
+    updateDialogProgressText: element("desktop-update-dialog-progress-text"),
+    updateDialogError: element("desktop-update-dialog-error"),
+    updateDialogLater: element("desktop-update-dialog-later"),
+    updateDialogAction: element("desktop-update-dialog-action"),
     singleTab: element("single-note-tab"),
     profileTab: element("profile-tab"),
     singlePanel: element("single-note-panel"),
@@ -147,6 +157,9 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   let updateState = { status: "idle" };
   let updatePending = null;
   let updateRequestId = 0;
+  const shownUpdateDialogs = new Set();
+  let updateDialogPreviousFocus = null;
+  let updateDialogNotesText = null;
   let desktopInfo = {};
   const updatesAvailable = typeof bridge.getUpdateState === "function"
     && typeof bridge.checkForUpdates === "function";
@@ -219,7 +232,10 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   element("desktop-account-shortcut").addEventListener("click", () => navigate("account"));
   element("desktop-feedback-login").addEventListener("click", () => navigate("account"));
   element("desktop-about-feedback").addEventListener("click", () => navigate("feedback"));
-  element("desktop-announcement-open").addEventListener("click", () => navigate("about"));
+  element("desktop-announcement-open").addEventListener("click", () => {
+    navigate("about");
+    openUpdateDialog();
+  });
   element("desktop-announcement-dismiss").addEventListener("click", () => {
     dismissedUpdate = String(updateState.latestVersion || "");
     element("desktop-update-announcement").hidden = true;
@@ -379,6 +395,91 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
       : "在本地版应用内登录，登录状态会保存在这台电脑；浏览器或 Codex 中的登录不会自动共享。";
   }
 
+  function openUpdateDialog() {
+    if (!ui.updateDialog || !updateState.latestVersion
+      || !["available", "downloading", "downloaded", "installing", "error"].includes(updateState.status)) return;
+    if (!ui.updateDialog.open) {
+      updateDialogPreviousFocus = document.activeElement;
+      ui.updateDialog.showModal();
+    }
+    shownUpdateDialogs.add(String(updateState.latestVersion));
+  }
+
+  function closeUpdateDialog() {
+    if (ui.updateDialog?.open) ui.updateDialog.close();
+  }
+
+  function renderUpdateDialogNotes(notes) {
+    if (updateDialogNotesText === notes) return;
+    updateDialogNotesText = notes;
+    ui.updateDialogNotes.replaceChildren();
+    const plain = value => value.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/(\*\*|__|`)(.*?)\1/g, "$2");
+    let lines = (notes || "此版本暂未提供更新说明。").split(/\r?\n/);
+    const updateSection = lines.findIndex(line => /^\s{0,3}##\s+本次更新(?:\s+#+)?\s*$/.test(line));
+    if (updateSection >= 0) {
+      const nextSection = lines.findIndex((line, index) => index > updateSection && /^\s{0,3}#{1,2}\s+/.test(line));
+      const contents = lines.slice(updateSection + 1, nextSection < 0 ? lines.length : nextSection);
+      if (contents.some(line => line.trim())) lines = [lines[updateSection], ...contents];
+    }
+    let list = null;
+    for (const line of lines) {
+      if (!line.trim()) { list = null; continue; }
+      const heading = /^\s{0,3}#{1,6}\s+(.+?)(?:\s+#+)?$/.exec(line);
+      const bullet = /^\s*(?:[-*+]\s+|\d+[.)]\s+)(.+)$/.exec(line);
+      if (bullet) {
+        if (!list) { list = document.createElement("ul"); ui.updateDialogNotes.append(list); }
+        const item = document.createElement("li");
+        item.textContent = plain(bullet[1]);
+        list.append(item);
+      } else {
+        list = null;
+        const block = document.createElement(heading ? "h3" : "p");
+        block.textContent = plain(heading ? heading[1] : line.trim());
+        ui.updateDialogNotes.append(block);
+      }
+    }
+  }
+
+  function renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes }) {
+    if (!ui.updateDialog) return;
+    ui.updateDialog.dataset.status = status;
+    if (["idle", "up-to-date"].includes(status)) { closeUpdateDialog(); return; }
+    ui.updateDialogTitle.textContent = status === "downloaded" ? "新版本已准备好"
+      : status === "installing" ? "正在安装更新" : status === "checking" ? "正在检查更新"
+        : status === "error" ? "更新未完成" : "发现新版本";
+    ui.updateDialogVersion.textContent = `${next.latestVersion ? `v${next.latestVersion}` : "新版本"}${version ? ` · 当前版本 v${version}` : ""}`;
+    renderUpdateDialogNotes(notes);
+    const showProgress = status === "downloading" || savedProgress;
+    const showInstallMessage = status === "downloaded" || status === "installing";
+    ui.updateDialogProgressWrap.hidden = !showProgress && !showInstallMessage;
+    ui.updateDialogProgress.hidden = !showProgress;
+    if (percent === null) ui.updateDialogProgress.removeAttribute("value");
+    else ui.updateDialogProgress.value = percent;
+    const message = status === "installing" ? "确认安装后会显示独立的安装进度窗口，完成后自动重新打开软件。"
+      : status === "downloaded" ? "安装完成后会自动重新打开软件。"
+        : savedProgress ? `${progressText} · 进度已保存` : progressText;
+    ui.updateDialogProgressText.textContent = message;
+    ui.updateDialogProgress.setAttribute("aria-valuetext", message);
+    ui.updateDialogError.hidden = status !== "error";
+    ui.updateDialogError.textContent = status === "error" ? String(next.error?.message || "更新未完成，请稍后重试。") : "";
+    ui.updateDialogLater.textContent = status === "downloading" ? "后台下载" : "稍后再说";
+    let action = "", label = "立即更新";
+    if (status === "downloading") { action = "cancel"; label = updatePending === "cancel" ? "正在暂停…" : "暂停下载"; }
+    else if (status === "downloaded") { action = "install"; label = "安装并重启"; }
+    else if (status === "available") { action = "download"; label = canResume ? "继续下载" : "立即更新"; }
+    else if (status === "error" && mayRetry) {
+      action = failedPhase;
+      label = failedPhase === "download" ? canResume ? "继续下载" : "重试下载"
+        : failedPhase === "install" ? "重试安装" : "重新检查";
+    } else if (status === "installing") label = "正在安装…";
+    else if (status === "checking") label = "正在检查…";
+    ui.updateDialogAction.dataset.action = action;
+    ui.updateDialogAction.textContent = label;
+    ui.updateDialogAction.disabled = !action || (action === "cancel" ? updatePending === "cancel" : Boolean(updatePending));
+    if (status === "available" && next.latestVersion && !shownUpdateDialogs.has(String(next.latestVersion))) openUpdateDialog();
+  }
+
   function renderUpdateState(next) {
     if (!next || typeof next !== "object") return;
     updateState = next;
@@ -386,8 +487,12 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     const version = String(next.currentVersion || desktopInfo.version || "");
     const latest = next.latestVersion ? `v${next.latestVersion}` : "新版本";
     const failed = status === "error";
-    const failedPhase = next.error?.phase || "check";
+    const failedPhase = ["check", "download", "install"].includes(next.error?.phase) ? next.error.phase : "check";
     const mayRetry = next.canRetry !== false;
+    const received = count(next.download?.receivedBytes);
+    const total = count(next.download?.totalBytes);
+    const canResume = next.download?.canResume === true && received > 0;
+    const savedProgress = canResume && (status === "available" || (failed && failedPhase === "download"));
     const busy = Boolean(updatePending) || ["checking", "downloading", "installing"].includes(status);
     if (version) ui.version.textContent = `本地版 v${version}`;
     ui.updateCheck.disabled = !updatesAvailable || busy;
@@ -400,35 +505,33 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
       idle: ["应用更新", "点击“检查更新”，查看是否有新的安装包。"],
       checking: ["正在检查更新", "稍等片刻，检查完成后会在这里显示结果。"],
       "up-to-date": ["当前已是最新版本", version ? `你正在使用 v${version}。` : "暂时没有发现更新。"],
-      available: [`发现新版本 ${latest}`, "可以继续使用当前版本，准备好后再下载更新。"],
-      downloading: [`正在下载 ${latest}`, "下载期间可以继续使用应用，也可以随时取消更新下载。"],
+      available: [`发现新版本 ${latest}`, savedProgress ? "已保存下载进度，点击“继续下载”即可接着下载。" : "可以继续使用当前版本，准备好后再下载更新。"],
+      downloading: [`正在下载 ${latest}`, "下载期间可以继续使用应用，也可以随时暂停；已下载的进度会保留。"],
       downloaded: [`${latest} 已准备好安装`, "确认后将暂停当前任务并开始安装更新，请先保存正在编辑的内容。"],
       installing: ["正在准备安装更新", "请在确认窗口中选择是否暂停任务并继续安装。"],
-      error: [failedPhase === "install" ? "安装更新未完成" : failedPhase === "download" ? "更新下载失败" : "检查更新失败", "当前版本仍可继续使用。"]
+      error: [failedPhase === "install" ? "安装更新未完成" : failedPhase === "download" ? "更新下载失败" : "检查更新失败", savedProgress ? "已保存下载进度，点击“继续下载”即可接着下载。当前版本仍可继续使用。" : "当前版本仍可继续使用。"]
     }[status] || ["应用更新", "正在读取更新状态。"];
     ui.updateTitle.textContent = text[0];
     ui.updateMessage.textContent = text[1];
     ui.updateDownload.hidden = !(status === "available" || (failed && failedPhase === "download" && mayRetry));
-    ui.updateDownload.textContent = failed ? "重试下载" : "下载更新";
+    ui.updateDownload.textContent = canResume ? "继续下载" : failed ? "重试下载" : "下载更新";
     ui.updateInstall.hidden = !(status === "downloaded" || (failed && failedPhase === "install" && mayRetry));
     ui.updateInstall.textContent = failed ? "重试安装" : "安装更新";
     ui.updateRetry.hidden = !(failed && failedPhase === "check" && mayRetry);
     ui.updateCancel.hidden = status !== "downloading";
     for (const button of [ui.updateDownload, ui.updateInstall, ui.updateRetry]) button.disabled = busy;
     // The download invocation may remain pending until all bytes are received.
-    // Cancellation stays available while that invocation is in flight.
+    // Pausing stays available while that invocation is in flight.
     ui.updateCancel.disabled = updatePending === "cancel";
-    ui.updateCancel.textContent = updatePending === "cancel" ? "正在取消…" : "取消下载";
+    ui.updateCancel.textContent = updatePending === "cancel" ? "正在暂停…" : "暂停下载";
 
-    const received = count(next.download?.receivedBytes);
-    const total = count(next.download?.totalBytes);
     const percent = total > 0 ? Math.min(100, Math.round(received * 100 / total)) : null;
-    ui.updateProgressWrap.hidden = status !== "downloading";
+    ui.updateProgressWrap.hidden = status !== "downloading" && !savedProgress;
     if (percent === null) ui.updateProgress.removeAttribute("value");
     else ui.updateProgress.value = percent;
     const progressText = total > 0
       ? `${updateBytes(received)} / ${updateBytes(total)} · ${percent}%`
-      : `已下载 ${updateBytes(received)} · 正在接收安装包`;
+      : `已下载 ${updateBytes(received)} · ${savedProgress ? "进度已保存" : "正在接收安装包"}`;
     ui.updateProgressText.textContent = progressText;
     ui.updateProgress.setAttribute("aria-valuetext", progressText);
     ui.updateError.hidden = !failed;
@@ -455,9 +558,11 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
       element("desktop-update-announcement").hidden = currentPage === "about" || dismissedUpdate === next.latestVersion;
     }
     if (!newVersion) element("desktop-update-announcement").hidden = true;
+    renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes });
   }
 
   async function performUpdate(action) {
+    if (!["check", "download", "cancel", "install"].includes(action)) return;
     if (updatePending && !(action === "cancel" && updateState.status === "downloading")) return;
     const method = { check: "checkForUpdates", download: "downloadUpdate", cancel: "cancelUpdateDownload", install: "installUpdate" }[action];
     const requestId = ++updateRequestId;
@@ -475,6 +580,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
       if (requestId === updateRequestId) {
         updatePending = null;
         renderUpdateState(updateState);
+        if (action === "check" && ["available", "downloaded"].includes(updateState.status)) openUpdateDialog();
       }
     }
   }
@@ -729,6 +835,23 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   ui.updateDownload.addEventListener("click", () => void performUpdate("download"));
   ui.updateCancel.addEventListener("click", () => void performUpdate("cancel"));
   ui.updateInstall.addEventListener("click", () => void performUpdate("install"));
+  ui.updateDialogLater?.addEventListener("click", closeUpdateDialog);
+  ui.updateDialogAction?.addEventListener("click", () => {
+    const action = ui.updateDialogAction.dataset.action;
+    if (action && !ui.updateDialogAction.disabled) void performUpdate(action);
+  });
+  ui.updateDialog?.addEventListener("cancel", event => { event.preventDefault(); closeUpdateDialog(); });
+  ui.updateDialog?.addEventListener("click", event => {
+    if (event.target !== ui.updateDialog) return;
+    const bounds = ui.updateDialog.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeUpdateDialog();
+  });
+  ui.updateDialog?.addEventListener("close", () => {
+    if (ui.updateDialog.open) return;
+    const previous = updateDialogPreviousFocus;
+    updateDialogPreviousFocus = null;
+    if (previous?.isConnected && previous.getClientRects().length) previous.focus({ preventScroll: true });
+  });
   renderUpdateState(updateState);
   if (typeof bridge.onUpdateState === "function") {
     const cleanup = bridge.onUpdateState((next) => {

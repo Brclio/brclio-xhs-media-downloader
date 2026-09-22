@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
-import { lstat, mkdir, open, realpath, rename, rm } from 'node:fs/promises';
+import { lstat, mkdir, open, readdir, realpath, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 const REPOSITORY = 'Brclio/brclio-xhs-media-downloader';
@@ -200,10 +200,18 @@ export function allowedAssetRedirect(value, initialUrl) {
 }
 
 function installationHint(platform, portable) {
-  if (platform === 'darwin') return '安装时会暂停并保存下载任务，校验新版应用后退出并在原位置替换，再重新打开。旧版本保留为备份。请从可写文件夹中的应用启动；从 DMG 或只读位置运行时需手动安装。此版本没有 Apple Developer ID 签名或公证，系统可能仍需确认。';
-  if (portable) return '当前为 Windows 便携版；更新包是安装版。安装时会暂停并保存任务、退出应用并打开安装向导，完成后请从新版快捷方式启动。系统可能提示未签名。';
-  return '安装时会暂停并保存下载任务、退出应用并打开 Windows 安装向导。完成后重新打开应用；系统可能提示未签名。';
+  if (platform === 'darwin') return '安装时会暂停并保存下载任务，在独立进度窗口中显示校验、复制和覆盖安装的阶段，完成后自动重新打开。旧版本保留为备份。请从可写文件夹中的应用启动；从 DMG 或只读位置运行时需手动安装。此版本没有 Apple Developer ID 签名或公证，系统可能仍需确认。';
+  if (portable) return '当前为 Windows 便携版；更新包是安装版。安装时会暂停并保存任务、退出应用并显示新版安装进度，安装成功后自动打开新版。旧便携文件不会被覆盖，之后请使用新版快捷方式。系统可能提示未签名。';
+  return '安装时会暂停并保存下载任务、退出应用并显示覆盖安装进度。安装成功后自动重新打开应用；系统可能提示未签名。';
 }
+
+function downloadProgress(receivedBytes, totalBytes, canResume = receivedBytes > 0) {
+  return { receivedBytes, totalBytes, percent: totalBytes ? Math.floor(receivedBytes * 100 / totalBytes) : 0, canResume };
+}
+
+// Bind saved bytes to the trusted release checksum, not an expiring CDN URL.
+// A changed asset or a different version can never reuse this partial file.
+function partialName(candidate) { return `${candidate.name}.${candidate.sha256}.partial`; }
 
 export class UpdateManager {
   constructor({ currentVersion, platform = process.platform, arch = process.arch, portable = false,
@@ -227,7 +235,7 @@ export class UpdateManager {
     this.lastProgressAt = 0;
     this.state = { status: 'idle', currentVersion, latestVersion: null, platform, arch,
       releaseUrl: null, releaseNotes: '', publishedAt: '',
-      download: { receivedBytes: 0, totalBytes: 0, percent: 0 },
+      download: downloadProgress(0, 0),
       error: null, canRetry: false, installationHint: installationHint(platform, portable) };
   }
 
@@ -246,8 +254,7 @@ export class UpdateManager {
       try { await work(controller); }
       catch (error) {
         if (controller.signal.aborted && controller.signal.reason?.code === 'CANCELED') {
-          this.emit({ status: this.candidate ? 'available' : 'idle', error: null, canRetry: false,
-            download: { receivedBytes: 0, totalBytes: this.candidate?.size || 0, percent: 0 } });
+          this.emit({ status: this.candidate ? 'available' : 'idle', error: null, canRetry: false });
         } else {
           const reason = controller.signal.aborted ? controller.signal.reason : error;
           const failure = reason instanceof UpdateError ? reason : /^MAC_UPDATE_[A-Z_]+$/.test(error?.code || '') ? new UpdateError(error.code, error.message) : new UpdateError(
@@ -277,14 +284,14 @@ export class UpdateManager {
     } finally { clearTimeout(timer); signal.removeEventListener('abort', abort); }
   }
 
-  async request(url, controller, asset = false) {
+  async request(url, controller, asset = false, { headers = {}, statuses = [200] } = {}) {
     let current = url;
     for (let redirects = 0; redirects <= 4; redirects++) {
       controller.signal.throwIfAborted();
       const response = await this.bounded(this.fetchImpl(current, {
         method: 'GET', redirect: 'manual', signal: controller.signal, credentials: 'omit',
         headers: { Accept: asset ? 'application/octet-stream' : 'application/vnd.github+json',
-          'User-Agent': 'Brclio-XHS-Downloader', 'Accept-Encoding': 'identity' }
+          'User-Agent': 'Brclio-XHS-Downloader', 'Accept-Encoding': 'identity', ...headers }
       }), controller);
       if (response.redirected) fail('UNTRUSTED_REDIRECT', '更新请求未按要求检查重定向。');
       if ([301, 302, 303, 307, 308].includes(response.status)) {
@@ -297,7 +304,7 @@ export class UpdateManager {
         current = allowedAssetRedirect(target, url);
         continue;
       }
-      if (response.status !== 200) {
+      if (!statuses.includes(response.status)) {
         void response.body?.cancel().catch(() => {});
         if (response.status === 403 || response.status === 429) fail('RATE_LIMITED', 'GitHub 暂时限制请求，请稍后再检查更新。');
         if (response.status === 404) fail('RELEASE_NOT_FOUND', '正式版本或安装包暂不可用，请稍后重试。');
@@ -334,6 +341,14 @@ export class UpdateManager {
     return Buffer.concat(chunks).toString('utf8');
   }
 
+  async ensureChecksum(candidate, controller) {
+    if (candidate.sha256) return;
+    const response = await this.request(candidate.manifest.url, controller, true);
+    const contents = await this.text(response, candidate.manifest.size, controller);
+    if (Buffer.byteLength(contents) !== candidate.manifest.size) fail('SIZE_MISMATCH', '更新校验文件没有下载完整。');
+    candidate.sha256 = checksumFromManifest(contents, candidate.name);
+  }
+
   checkForUpdates() {
     return this.run('check', async controller => {
       if (this.state.status === 'downloaded') return;
@@ -345,8 +360,12 @@ export class UpdateManager {
       const { metadata, candidate } = parseRelease(release, this.state);
       this.candidate = candidate;
       this.verifiedFile = null;
+      // Cached filenames only signal that progress may exist. Resolve the
+      // current trusted manifest before deciding which saved bytes are usable.
+      if (candidate && !candidate.sha256 && await this.hasCachedPartial(candidate)) await this.ensureChecksum(candidate, controller);
+      const received = candidate?.sha256 ? await this.partialSize(candidate) : 0;
       this.emit({ ...metadata, status: candidate ? 'available' : 'up-to-date', error: null, canRetry: false,
-        download: { receivedBytes: 0, totalBytes: candidate?.size || 0, percent: 0 } });
+        download: downloadProgress(received, candidate?.size || 0) });
     });
   }
 
@@ -354,6 +373,26 @@ export class UpdateManager {
     await mkdir(this.directory, { recursive: true, mode: 0o700 });
     if (!(await lstat(this.directory)).isDirectory()) fail('INVALID_CACHE', '更新缓存目录无效。');
     return realpath(this.directory);
+  }
+
+  async hasCachedPartial(candidate) {
+    try {
+      if (!(await lstat(this.directory)).isDirectory()) return false;
+      const directory = await realpath(this.directory);
+      const prefix = `${candidate.name}.`;
+      return (await readdir(directory, { withFileTypes: true })).some(entry => entry.isFile()
+        && entry.name.startsWith(prefix) && /^[a-f0-9]{64}\.partial$/.test(entry.name.slice(prefix.length)));
+    } catch (error) { if (error.code === 'ENOENT') return false; throw error; }
+  }
+
+  async partialSize(candidate) {
+    try {
+      if (!(await lstat(this.directory)).isDirectory()) return 0;
+      const directory = await realpath(this.directory);
+      const file = path.join(directory, partialName(candidate));
+      const info = await lstat(file);
+      return info.isFile() && info.nlink === 1 && info.size <= candidate.size ? info.size : 0;
+    } catch (error) { if (error.code === 'ENOENT') return 0; throw error; }
   }
 
   async verifyFile(file, candidate) {
@@ -377,65 +416,103 @@ export class UpdateManager {
       const candidate = this.candidate;
       if (!candidate) fail('CHECK_REQUIRED', '请先检查更新。');
       if (this.state.status === 'downloaded') return;
-      this.emit({ status: 'downloading', error: null, canRetry: false,
-        download: { receivedBytes: 0, totalBytes: candidate.size, percent: 0 } });
-      if (!candidate.sha256) {
-        const response = await this.request(candidate.manifest.url, controller, true);
-        const contents = await this.text(response, candidate.manifest.size, controller);
-        if (Buffer.byteLength(contents) !== candidate.manifest.size) fail('SIZE_MISMATCH', '更新校验文件没有下载完整。');
-        candidate.sha256 = checksumFromManifest(contents, candidate.name);
-      }
+      this.emit({ status: 'downloading', error: null, canRetry: false });
+      await this.ensureChecksum(candidate, controller);
       const directory = await this.cacheDirectory();
       const final = path.join(directory, candidate.name);
-      const partial = `${final}.partial`;
-      await rm(partial, { force: true });
+      const partial = path.join(directory, partialName(candidate));
       try {
         await this.verifyFile(final, candidate);
         controller.signal.throwIfAborted();
         this.verifiedFile = final;
-        this.emit({ status: 'downloaded', download: { receivedBytes: candidate.size, totalBytes: candidate.size, percent: 100 } });
+        await rm(partial, { force: true });
+        this.emit({ status: 'downloaded', download: downloadProgress(candidate.size, candidate.size, false) });
         return;
       } catch (error) {
         controller.signal.throwIfAborted();
         if (error?.code !== 'ENOENT' && !(error instanceof UpdateError)) throw error;
       }
-      let handle;
+      let handle, response;
+      let discard = false, readingBody = false;
       try {
-        const response = await this.request(candidate.url, controller, true);
-        const length = response.headers.get('content-length');
-        if (length && Number(length) !== candidate.size) fail('SIZE_MISMATCH', '安装包大小与发布信息不一致。');
-        handle = await open(partial, 'wx', 0o600);
-        const hash = createHash('sha256');
-        const received = await this.read(response, candidate.size, controller, async (chunk, count) => {
-          await handle.writeFile(chunk);
-          hash.update(chunk);
-          this.state.download = { receivedBytes: count, totalBytes: candidate.size,
-            percent: Math.floor(count * 100 / candidate.size) };
-          if (Date.now() - this.lastProgressAt >= 100 || count === candidate.size) {
-            this.lastProgressAt = Date.now();
-            this.emit();
+        try {
+          const info = await lstat(partial);
+          if (!info.isFile() || info.nlink !== 1 || await realpath(partial) !== partial) fail('INVALID_CACHE', '更新临时文件无效，请清理更新缓存后重试。');
+          if (info.size > candidate.size) await rm(partial);
+        } catch (error) { if (error.code !== 'ENOENT') throw error; }
+        handle = await open(partial, constants.O_RDWR | constants.O_APPEND | constants.O_CREAT | (constants.O_NOFOLLOW || 0), 0o600);
+        const info = await handle.stat();
+        if (!info.isFile() || info.nlink !== 1 || info.size > candidate.size) fail('INVALID_CACHE', '更新临时文件无效，请清理更新缓存后重试。');
+        let offset = info.size;
+        this.emit({ download: downloadProgress(offset, candidate.size) });
+        if (offset < candidate.size) {
+          response = await this.request(candidate.url, controller, true, offset ? {
+            headers: { Range: `bytes=${offset}-` }, statuses: [200, 206, 416]
+          } : {});
+          if (response.status === 416) {
+            void response.body?.cancel().catch(() => {});
+            response = await this.request(candidate.url, controller, true);
           }
-        });
-        if (received !== candidate.size) fail('SIZE_MISMATCH', '安装包没有下载完整，请重试。');
-        if (hash.digest('hex') !== candidate.sha256) fail('HASH_MISMATCH', '安装包 SHA256 校验失败，已删除未验证的文件。');
+          const encoding = response.headers.get('content-encoding');
+          if (encoding && encoding.toLowerCase() !== 'identity') fail('INVALID_RANGE', '更新服务器返回了压缩内容，无法安全续传，请重试。');
+          const range = response.headers.get('content-range');
+          if (response.status === 206) {
+            const match = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(range || '');
+            if (!match || Number(match[1]) !== offset || Number(match[2]) !== candidate.size - 1 || Number(match[3]) !== candidate.size) {
+              fail('INVALID_RANGE', '更新服务器返回的续传范围不一致，已保留原进度，请重试。');
+            }
+          } else if (range) fail('INVALID_RANGE', '更新服务器返回了异常的文件范围，请重试。');
+          const remaining = response.status === 206 ? candidate.size - offset : candidate.size;
+          const length = response.headers.get('content-length');
+          if (length !== null && (!/^\d+$/.test(length) || Number(length) !== remaining)) fail('SIZE_MISMATCH', '安装包大小与发布信息不一致。');
+          if (!response.body) fail('EMPTY_RESPONSE', '更新服务器没有返回文件内容。');
+          if (response.status === 200 && offset) {
+            // A server may ignore Range. Replace the prefix only after accepting
+            // valid full-response headers; never append a second complete file.
+            await handle.truncate(0);
+            offset = 0;
+            this.emit({ download: downloadProgress(0, candidate.size) });
+          }
+          readingBody = true;
+          const received = await this.read(response, remaining, controller, async (chunk, count) => {
+            await handle.writeFile(chunk);
+            this.state.download = downloadProgress(offset + count, candidate.size);
+            if (Date.now() - this.lastProgressAt >= 100 || offset + count === candidate.size) {
+              this.lastProgressAt = Date.now();
+              this.emit();
+            }
+          });
+          readingBody = false;
+          if (received !== remaining) fail('DOWNLOAD_INCOMPLETE', '安装包尚未下载完整，已保留进度，请继续下载。');
+        }
         controller.signal.throwIfAborted();
         await handle.sync();
         await handle.close(); handle = null;
+        // Hash all bytes, including the persisted prefix, before installation.
+        await this.verifyFile(partial, candidate);
         controller.signal.throwIfAborted();
         await rm(final, { force: true });
         await rename(partial, final);
         this.verifiedFile = final;
-        this.emit({ status: 'downloaded', download: { receivedBytes: received, totalBytes: candidate.size, percent: 100 } });
+        this.emit({ status: 'downloaded', download: downloadProgress(candidate.size, candidate.size, false) });
+      } catch (error) {
+        discard = error.code === 'HASH_MISMATCH' || (error.code === 'SIZE_MISMATCH' && readingBody);
+        throw error;
       } finally {
+        void response?.body?.cancel().catch(() => {});
         await handle?.close();
-        await rm(partial, { force: true });
+        if (!this.verifiedFile) {
+          const received = discard ? 0 : await this.partialSize(candidate);
+          if (discard || !received) await rm(partial, { force: true });
+          this.state.download = downloadProgress(received, candidate.size);
+        }
       }
     });
   }
 
   async cancelUpdateDownload() {
     if (this.state.status === 'downloading') {
-      this.controller?.abort(new UpdateError('CANCELED', '已取消下载。'));
+      this.controller?.abort(new UpdateError('CANCELED', '已暂停下载并保留进度。'));
       await this.operation;
     }
     return this.snapshot();
@@ -462,6 +539,10 @@ export class UpdateManager {
   async shutdown() {
     if (['checking', 'downloading'].includes(this.state.status)) {
       this.controller?.abort(new UpdateError('CANCELED', '应用即将关闭。'));
+      await this.operation;
+    } else if (this.state.status === 'installing') {
+      // Keep the app alive through preparation and the helper handoff. Once
+      // handed off, onInstalled requests quit and this operation settles.
       await this.operation;
     }
   }

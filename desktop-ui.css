@@ -935,6 +935,94 @@ body.is-desktop .desktop-feedback-progress-wrap progress { width: 100%; height: 
 body.is-desktop .desktop-feedback-progress-wrap p { margin-top: 7px; color: var(--blue-deep); font-size: .75rem; }
 body.is-desktop .desktop-feedback-result { padding: 13px 15px; border: 1px solid #c4d7ed; border-radius: 6px; background: #edf4fb; color: var(--blue-deep); font-size: .81rem; line-height: 1.8; overflow-wrap: anywhere; }
 body.is-desktop .desktop-feedback-result[data-status="error"] { color: var(--red-deep); background: #fcefeb; border-color: #e7c2c9; }
+/* Version dialog: Brclio app-modal structure with a fixed CTA row and a
+ * separately scrolling changelog, matching the supplied update-dialog layout. */
+.desktop-update-dialog {
+  width: min(560px, calc(100vw - 40px));
+  height: min(700px, calc(100dvh - 64px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1rem/1.75 var(--font-sans);
+  box-shadow: 0 24px 80px rgba(26, 26, 46, .18);
+}
+.desktop-update-dialog[open] { display: flex; flex-direction: column; }
+.desktop-update-dialog::backdrop { background: rgba(26, 26, 36, .48); }
+.desktop-update-dialog-heading {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(24px, 4vh, 34px) 28px 20px;
+  text-align: center;
+}
+.desktop-update-dialog-heading img { display: block; margin-bottom: 4px; object-fit: contain; }
+.desktop-update-dialog-heading h2 { margin: 0; font: 900 1.3rem/1.5 var(--font-serif); }
+.desktop-update-dialog-heading p { margin: 0; color: var(--ink-faint); font-size: .91rem; }
+.desktop-update-dialog-notes {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 18px 0 28px;
+  padding: 0 10px 4px 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 26, 46, .17) transparent;
+}
+.desktop-update-dialog-notes p { margin: 0 0 16px; white-space: pre-wrap; }
+.desktop-update-dialog-notes :is(h3, h4) { margin: 20px 0 10px; font-size: 1rem; line-height: 1.6; }
+.desktop-update-dialog-notes > :first-child { margin-top: 0; }
+.desktop-update-dialog-notes ul { display: flex; flex-direction: column; gap: 9px; margin: 12px 0 20px; padding: 0; list-style: none; }
+.desktop-update-dialog-notes li { position: relative; padding-left: 18px; }
+.desktop-update-dialog-notes li::before { position: absolute; top: .68em; left: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); content: ""; }
+.desktop-update-dialog-bottom { flex: 0 0 auto; padding: 18px 28px 26px; }
+.desktop-update-dialog-bottom .desktop-update-progress-wrap { margin: 0 0 14px; }
+.desktop-update-dialog-bottom .desktop-update-error { margin: 0 0 14px; max-height: 74px; overflow-y: auto; font-size: .8rem; }
+.desktop-update-dialog-actions { display: flex; gap: 12px; }
+.desktop-update-dialog-actions button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: 600 .95rem/1.5 var(--font-sans);
+  cursor: pointer;
+}
+.desktop-update-dialog-secondary { background: var(--paper); color: var(--ink); }
+.desktop-update-dialog-secondary:hover { background: var(--cream-deep); }
+.desktop-update-dialog-actions .desktop-update-dialog-primary { border-color: var(--ink); background: var(--ink); color: var(--cream); }
+.desktop-update-dialog-actions .desktop-update-dialog-primary:hover { border-color: var(--blue-deep); background: var(--blue-deep); }
+.desktop-update-dialog-actions button:disabled { cursor: wait; opacity: .55; }
+.desktop-update-dialog-actions button:focus-visible,
+.desktop-update-dialog-notes:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+@media (max-width: 600px) {
+  .desktop-update-dialog { width: calc(100vw - 24px); height: min(700px, calc(100dvh - 32px)); border-radius: 18px; font-size: .9rem; }
+  .desktop-update-dialog-heading { padding: 22px 20px 16px; }
+  .desktop-update-dialog-heading img { width: 48px; height: 48px; }
+  .desktop-update-dialog-notes { margin-left: 20px; margin-right: 12px; padding-right: 8px; }
+  .desktop-update-dialog-bottom { padding: 16px 20px 20px; }
+  .desktop-update-dialog-actions { gap: 8px; }
+  .desktop-update-dialog-actions button { min-height: 46px; padding-inline: 10px; font-size: .88rem; }
+}
+@media (max-height: 540px) {
+  .desktop-update-dialog { height: calc(100dvh - 24px); }
+  .desktop-update-dialog-heading { padding: 12px 20px; gap: 2px; }
+  .desktop-update-dialog-heading img { width: 32px; height: 32px; }
+  .desktop-update-dialog-bottom { padding-top: 10px; padding-bottom: 12px; }
+}
+
 /* About page retains the existing updater controls and progress IDs. */
 body.is-desktop #desktop-about-page { max-width: none; }
 body.is-desktop .desktop-about-identity { display: flex; align-items: center; gap: 22px; padding: 25px 0 30px; border-bottom: 1px solid var(--line); }

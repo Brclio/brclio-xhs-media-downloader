@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Brclio 小红书下载器的更新记录。v1.8.1 统一品牌安装包、优化发布下载入口，并更新注册与登录验证码邮件。"
+      content="Brclio 小红书下载器的更新记录。v1.8.2 支持更新包断点续传、覆盖安装进度、自动重新打开软件和新版更新弹窗。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.8.1 本地版">
+          <div class="header-status" aria-label="当前记录：v1.8.2 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.8.1 本地版</span>
+            <span>v1.8.2 本地版</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.8.1 统一品牌安装包和直接下载入口，并为验证码邮件补充编程私教、新书推荐及收件提示。
+              这里记录功能增加、体验优化与问题修复。v1.8.2 让更新下载可以断点继续，覆盖安装有进度可看，安装成功自动重新打开软件。
             </p>
 
             <div class="release-hero-actions">
@@ -70,8 +70,8 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.8.1</strong>
-              <small>本地版 · 2026.09.21</small>
+              <strong>v1.8.2</strong>
+              <small>本地版 · 2026.09.22</small>
             </div>
 
             <div class="summary-grid">
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#resumable-update"><span>v1.8.2</span><strong>续传、安装进度与更新弹窗</strong></a>
               <a href="#branded-downloads-update"><span>v1.8.1</span><strong>品牌安装包与验证码邮件</strong></a>
               <a href="#desktop-feedback-update"><span>v1.8.0</span><strong>桌面分页、反馈与下载修复</strong></a>
               <a href="#mac-signature-update"><span>v1.7.1</span><strong>Mac 应用包签名修复</strong></a>
@@ -137,6 +138,19 @@
           </aside>
 
           <div class="release-feed">
+            <article id="resumable-update" class="release-entry release-entry-featured">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-22"><span>09.22</span><small>2026 · 体验版</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.2</span><span class="release-status">Mac / Windows</span></div><h3>下载接着来，安装看得见</h3></div></header>
+                <p class="release-lead">把更新的每一步交代清楚：断线后继续下载，覆盖安装显示进度，完成后自动打开新版。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>更新包断点续传</strong>网络中断、暂停或关闭软件后保留已有进度，重新打开可以继续。完整文件通过大小与 SHA-256 校验后才允许安装。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>安装进度与自动重开</strong>Mac 独立窗口显示校验、复制、覆盖和启动阶段；Windows 显示安装进度。成功后自动打开软件，原有账号和任务继续保留。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>版本更新弹窗</strong>滚动查看更新说明，直接下载、暂停或继续，也可以选择稍后再说。同一版本在本次使用期间不会反复弹出。</p></div>
+                </div>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.2" target="_blank" rel="noopener noreferrer">下载 v1.8.2 与查看验证说明 ↗</a><span>应用更新 · 2026.09.22</span></div>
+              </div>
+            </article>
             <article id="branded-downloads-update" class="release-entry release-entry-featured">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-21"><span>09.21</span><small>2026 · 优化版</small></time></div>
               <div class="release-card">
@@ -1230,7 +1244,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本地版记录更新至 v1.8.0（2026.09.21）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
+        <p>本地版记录更新至 v1.8.2（2026.09.22）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

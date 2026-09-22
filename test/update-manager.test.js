@@ -119,6 +119,18 @@ async function fixture(t, options = {}) {
   return { manager, directory, requests, release: releases };
 }
 
+function partialFile(f, latest = f.release) {
+  const asset = latest.assets[0];
+  return path.join(f.directory, `${asset.name}.${asset.digest.slice('sha256:'.length)}.partial`);
+}
+
+function rangedResponse(offset, bytes = content) {
+  return new Response(bytes.subarray(offset), { status: 206, headers: {
+    'content-range': `bytes ${offset}-${bytes.length - 1}/${bytes.length}`,
+    'content-length': String(bytes.length - offset)
+  } });
+}
+
 test('semantic versions and platform asset selection reject unsupported or nonstable values', () => {
   assert.equal(compareVersions('1.10.0', '1.9.20'), 1);
   assert.equal(compareVersions('2.0.0', '2.0.0'), 0);
@@ -338,14 +350,28 @@ test('hash failures delete partial data and allow a full retry', async t => {
   assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
 });
 
-test('declared, overflowing, and truncated download lengths all reject the file', async t => {
+test('declared and overflowing download lengths reject the file', async t => {
   for (const body of [new Response(content, { headers: { 'content-length': String(content.length + 1) } }),
-    new Response(Buffer.concat([content, Buffer.from('extra')])), new Response(content.subarray(0, 3))]) {
+    new Response(Buffer.concat([content, Buffer.from('extra')]))]) {
     const f = await fixture(t, { fetchImpl: url => url === LATEST_RELEASE_URL ? Response.json(release()) : body });
     await f.manager.checkForUpdates();
     assert.equal((await f.manager.downloadUpdate()).error.code, 'SIZE_MISMATCH');
     assert.deepEqual(await readdir(f.directory), []);
   }
+});
+
+test('an early end of the response retains the prefix and reports a resumable incomplete download', async t => {
+  const f = await fixture(t, { fetchImpl: url => url === LATEST_RELEASE_URL ? Response.json(release())
+    : new Response(content.subarray(0, 3), { headers: { 'content-length': String(content.length) } }) });
+  await f.manager.checkForUpdates();
+  const state = await f.manager.downloadUpdate();
+  assert.equal(state.error.code, 'DOWNLOAD_INCOMPLETE');
+  assert.equal(state.error.phase, 'download');
+  assert.equal(state.canRetry, true);
+  assert.equal(state.download.receivedBytes, 3);
+  assert.equal(state.download.canResume, true);
+  assert.deepEqual(await readdir(f.directory), [path.basename(partialFile(f))]);
+  assert.deepEqual(await readFile(partialFile(f)), content.subarray(0, 3));
 });
 
 test('unexpected asset redirection never downloads from the foreign destination', async t => {
@@ -357,7 +383,7 @@ test('unexpected asset redirection never downloads from the foreign destination'
   assert.deepEqual(await readdir(f.directory), []);
 });
 
-test('canceling an in-flight stream cleans its partial file and preserves release metadata', async t => {
+test('canceling an in-flight stream retains its partial file and preserves release metadata', async t => {
   let started;
   const ready = new Promise(resolve => { started = resolve; });
   const f = await fixture(t, { onUpdate: state => { if (state.download.receivedBytes > 0) started(); }, fetchImpl: url => {
@@ -371,16 +397,268 @@ test('canceling an in-flight stream cleans its partial file and preserves releas
   await work;
   assert.equal(state.status, 'available');
   assert.equal(state.latestVersion, '1.7.0');
-  assert.equal(state.download.receivedBytes, 0);
-  assert.deepEqual(await readdir(f.directory), []);
+  assert.equal(state.download.receivedBytes, 5);
+  assert.equal(state.download.canResume, true);
+  assert.deepEqual(await readdir(f.directory), [path.basename(partialFile(f))]);
+  assert.deepEqual(await readFile(partialFile(f)), content.subarray(0, 5));
 });
 
-test('stalled body download times out and deletes partial bytes', async t => {
+test('stalled body download times out and retains partial bytes', async t => {
   const f = await fixture(t, { networkTimeoutMs: 20, fetchImpl: url => url === LATEST_RELEASE_URL
     ? Response.json(release()) : new Response(new ReadableStream({ start(controller) { controller.enqueue(content.subarray(0, 5)); } })) });
   await f.manager.checkForUpdates();
-  assert.equal((await f.manager.downloadUpdate()).error.code, 'TIMEOUT');
+  const state = await f.manager.downloadUpdate();
+  assert.equal(state.error.code, 'TIMEOUT');
+  assert.equal(state.download.receivedBytes, 5);
+  assert.equal(state.download.canResume, true);
+  assert.deepEqual(await readdir(f.directory), [path.basename(partialFile(f))]);
+  assert.deepEqual(await readFile(partialFile(f)), content.subarray(0, 5));
+});
+
+test('a network interruption retries from the persisted byte offset and verifies the complete installer', async t => {
+  const offset = 11;
+  const ranges = [];
+  let streamController;
+  let interrupted = false;
+  const f = await fixture(t, { onUpdate: state => {
+    if (!interrupted && streamController && state.download.receivedBytes === offset) {
+      interrupted = true;
+      streamController.error(new Error('network connection reset'));
+    }
+  }, fetchImpl: (url, init) => {
+    if (url === LATEST_RELEASE_URL) return Response.json(release());
+    ranges.push(new Headers(init.headers).get('range'));
+    if (ranges.length > 1) return rangedResponse(offset);
+    return new Response(new ReadableStream({ start(controller) {
+      streamController = controller;
+      controller.enqueue(content.subarray(0, offset));
+    } }));
+  } });
+  await f.manager.checkForUpdates();
+  const failed = await f.manager.downloadUpdate();
+  assert.equal(failed.error.code, 'NETWORK_ERROR');
+  assert.equal(failed.download.receivedBytes, offset);
+  assert.equal(failed.download.canResume, true);
+  assert.deepEqual(await readFile(partialFile(f)), content.subarray(0, offset));
+  const completed = await f.manager.downloadUpdate();
+  assert.equal(completed.status, 'downloaded');
+  assert.equal(completed.download.canResume, false);
+  assert.deepEqual(ranges, [null, `bytes=${offset}-`]);
+  assert.deepEqual(await readdir(f.directory), [f.release.assets[0].name]);
+  assert.deepEqual(await readFile(path.join(f.directory, f.release.assets[0].name)), content);
+});
+
+test('shutdown keeps progress that a fresh manager discovers and resumes after checking release metadata', async t => {
+  const offset = 9;
+  let started;
+  const ready = new Promise(resolve => { started = resolve; });
+  const ranges = [];
+  const f = await fixture(t, { onUpdate: state => { if (state.download.receivedBytes === offset) started(); },
+    fetchImpl: (url, init) => {
+      if (url === LATEST_RELEASE_URL) return Response.json(release());
+      ranges.push(new Headers(init.headers).get('range'));
+      return ranges.length === 1 ? new Response(new ReadableStream({ start(controller) {
+        controller.enqueue(content.subarray(0, offset));
+      } })) : rangedResponse(offset);
+    }
+  });
+  await f.manager.checkForUpdates();
+  const work = f.manager.downloadUpdate();
+  await ready;
+  await f.manager.shutdown();
+  await work;
+  const restarted = new UpdateManager({ ...defaults, directory: f.directory, fetchImpl: f.manager.fetchImpl });
+  const available = await restarted.checkForUpdates();
+  assert.equal(available.status, 'available');
+  assert.equal(available.download.receivedBytes, offset);
+  assert.equal(available.download.canResume, true);
+  assert.equal((await restarted.downloadUpdate()).status, 'downloaded');
+  assert.deepEqual(ranges, [null, `bytes=${offset}-`]);
+  assert.deepEqual(await readFile(path.join(f.directory, f.release.assets[0].name)), content);
+});
+
+test('manifest-only releases restore resumable progress on recheck and after a process restart', async t => {
+  const latest = release({ digest: null });
+  const offset = 9;
+  const ranges = [];
+  const f = await fixture(t, { release: latest, fetchImpl: (url, init) => {
+    if (url === LATEST_RELEASE_URL) return Response.json(latest);
+    if (url.endsWith('SHA256SUMS.txt')) return new Response(`${sha256(content)}  ${latest.assets[0].name}\n`);
+    ranges.push(new Headers(init.headers).get('range'));
+    return ranges.length === 1 ? new Response(content.subarray(0, offset)) : rangedResponse(offset);
+  } });
+  await f.manager.checkForUpdates();
+  assert.deepEqual(f.requests, [LATEST_RELEASE_URL], 'a fresh check does not need to download a manifest');
+  assert.equal((await f.manager.downloadUpdate()).error.code, 'DOWNLOAD_INCOMPLETE');
+  const rechecked = await f.manager.checkForUpdates();
+  assert.equal(rechecked.download.receivedBytes, offset);
+  assert.equal(rechecked.download.canResume, true);
+  const restarted = new UpdateManager({ ...defaults, directory: f.directory, fetchImpl: f.manager.fetchImpl });
+  const restored = await restarted.checkForUpdates();
+  assert.equal(restored.status, 'available');
+  assert.equal(restored.download.receivedBytes, offset);
+  assert.equal(restored.download.canResume, true);
+  assert.equal((await restarted.downloadUpdate()).status, 'downloaded');
+  assert.deepEqual(ranges, [null, `bytes=${offset}-`]);
+  assert.deepEqual(await readFile(path.join(f.directory, latest.assets[0].name)), content);
+});
+
+test('a changed manifest checksum cannot authorize old partial bytes for the same installer name and size', async t => {
+  const latest = release({ digest: null });
+  const offset = 9;
+  let bytes = content;
+  const ranges = [];
+  const f = await fixture(t, { release: latest, fetchImpl: (url, init) => {
+    if (url === LATEST_RELEASE_URL) return Response.json(latest);
+    if (url.endsWith('SHA256SUMS.txt')) return new Response(`${sha256(bytes)}  ${latest.assets[0].name}\n`);
+    ranges.push(new Headers(init.headers).get('range'));
+    return new Response(ranges.length === 1 ? bytes.subarray(0, offset) : bytes);
+  } });
+  await f.manager.checkForUpdates();
+  assert.equal((await f.manager.downloadUpdate()).error.code, 'DOWNLOAD_INCOMPLETE');
+  bytes = Buffer.alloc(content.length, 65);
+  const restarted = new UpdateManager({ ...defaults, directory: f.directory, fetchImpl: f.manager.fetchImpl });
+  const available = await restarted.checkForUpdates();
+  assert.equal(available.status, 'available');
+  assert.equal(available.download.receivedBytes, 0);
+  assert.equal(available.download.canResume, false);
+  assert.equal((await restarted.downloadUpdate()).status, 'downloaded');
+  assert.deepEqual(ranges, [null, null]);
+  assert.deepEqual(await readFile(partialFile(f, release())), content.subarray(0, offset));
+  assert.deepEqual(await readFile(path.join(f.directory, latest.assets[0].name)), bytes);
+});
+
+test('saved progress is never reused for a different checksum, version, or installer asset', async t => {
+  for (const change of ['checksum', 'version', 'asset']) {
+    const oldRelease = release();
+    const nextBytes = change === 'checksum' ? Buffer.alloc(content.length, 65) : content;
+    const nextRelease = release({ version: change === 'version' ? '1.8.0' : '1.7.0',
+      legacy: change === 'asset', digest: `sha256:${sha256(nextBytes)}` });
+    const ranges = [];
+    const f = await fixture(t, { release: nextRelease, fetchImpl: (url, init) => {
+      if (url === LATEST_RELEASE_URL) return Response.json(nextRelease);
+      ranges.push(new Headers(init.headers).get('range'));
+      return new Response(nextBytes);
+    } });
+    await writeFile(partialFile(f, oldRelease), content.subarray(0, 7));
+    const available = await f.manager.checkForUpdates();
+    assert.equal(available.download.receivedBytes, 0, change);
+    assert.equal(available.download.canResume, false, change);
+    assert.equal((await f.manager.downloadUpdate()).status, 'downloaded', change);
+    assert.deepEqual(ranges, [null], change);
+    assert.deepEqual(await readFile(partialFile(f, oldRelease)), content.subarray(0, 7), change);
+    assert.deepEqual(await readFile(path.join(f.directory, nextRelease.assets[0].name)), nextBytes, change);
+  }
+});
+
+test('a server that ignores Range replaces the saved prefix with its complete 200 response', async t => {
+  const offset = 8;
+  const ranges = [];
+  const f = await fixture(t, { fetchImpl: (url, init) => {
+    if (url === LATEST_RELEASE_URL) return Response.json(release());
+    ranges.push(new Headers(init.headers).get('range'));
+    return new Response(content, { headers: { 'content-length': String(content.length) } });
+  } });
+  await writeFile(partialFile(f), Buffer.alloc(offset, 90));
+  await f.manager.checkForUpdates();
+  assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
+  assert.deepEqual(ranges, [`bytes=${offset}-`]);
+  assert.deepEqual(await readFile(path.join(f.directory, f.release.assets[0].name)), content);
+  assert.deepEqual(await readdir(f.directory), [f.release.assets[0].name]);
+});
+
+test('a 416 response retries a full request without Range and replaces the saved prefix', async t => {
+  const offset = 8;
+  const ranges = [];
+  const f = await fixture(t, { fetchImpl: (url, init) => {
+    if (url === LATEST_RELEASE_URL) return Response.json(release());
+    ranges.push(new Headers(init.headers).get('range'));
+    return ranges.length === 1 ? new Response(null, { status: 416, headers: { 'content-range': `bytes */${content.length}` } })
+      : new Response(content, { headers: { 'content-length': String(content.length) } });
+  } });
+  await writeFile(partialFile(f), Buffer.alloc(offset, 90));
+  await f.manager.checkForUpdates();
+  assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
+  assert.deepEqual(ranges, [`bytes=${offset}-`, null]);
+  assert.deepEqual(await readFile(path.join(f.directory, f.release.assets[0].name)), content);
+});
+
+test('invalid partial-response ranges never append to or discard previously saved bytes', async t => {
+  const offset = 8;
+  const cases = [null, 'invalid', `bytes 0-${content.length - 1}/${content.length}`,
+    `bytes ${offset}-${content.length - 2}/${content.length}`, `bytes ${offset}-${content.length - 1}/${content.length + 1}`,
+    `bytes ${offset}-${content.length - 1}/*`];
+  for (const range of cases) {
+    const f = await fixture(t, { fetchImpl: url => url === LATEST_RELEASE_URL ? Response.json(release())
+      : new Response(content.subarray(offset), { status: 206, headers: range ? { 'content-range': range } : {} }) });
+    await writeFile(partialFile(f), content.subarray(0, offset));
+    await f.manager.checkForUpdates();
+    const state = await f.manager.downloadUpdate();
+    assert.equal(state.error.code, 'INVALID_RANGE', range);
+    assert.equal(state.download.receivedBytes, offset, range);
+    assert.equal(state.download.canResume, true, range);
+    assert.deepEqual(await readFile(partialFile(f)), content.subarray(0, offset), range);
+    assert.deepEqual(await readdir(f.directory), [path.basename(partialFile(f))], range);
+  }
+});
+
+test('checksum verification includes the resumed prefix and deletes corrupt assembled bytes', async t => {
+  const offset = 8;
+  const f = await fixture(t, { fetchImpl: url => url === LATEST_RELEASE_URL ? Response.json(release()) : rangedResponse(offset) });
+  await writeFile(partialFile(f), Buffer.alloc(offset, 90));
+  await f.manager.checkForUpdates();
+  const state = await f.manager.downloadUpdate();
+  assert.equal(state.error.code, 'HASH_MISMATCH');
+  assert.equal(state.download.receivedBytes, 0);
+  assert.equal(state.download.canResume, false);
+  assert.equal(f.manager.verifiedFile, null);
   assert.deepEqual(await readdir(f.directory), []);
+});
+
+test('a complete partial file is verified and promoted without another installer request', async t => {
+  const f = await fixture(t);
+  await writeFile(partialFile(f), content);
+  await f.manager.checkForUpdates();
+  assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
+  assert.deepEqual(f.requests, [LATEST_RELEASE_URL]);
+  assert.deepEqual(await readdir(f.directory), [f.release.assets[0].name]);
+  assert.deepEqual(await readFile(path.join(f.directory, f.release.assets[0].name)), content);
+});
+
+test('a symlink partial file cannot be used as resumable data or written through', async t => {
+  const f = await fixture(t);
+  const target = path.join(f.directory, 'untouched-target');
+  await writeFile(target, content.subarray(0, 8));
+  try { await symlink(target, partialFile(f)); }
+  catch (error) { if (error.code === 'EPERM') return; throw error; }
+  const available = await f.manager.checkForUpdates();
+  assert.equal(available.download.canResume, false);
+  const state = await f.manager.downloadUpdate();
+  assert.equal(state.error.code, 'INVALID_CACHE');
+  assert.equal(state.download.receivedBytes, 0);
+  assert.deepEqual(f.requests, [LATEST_RELEASE_URL]);
+  assert.deepEqual(await readFile(target), content.subarray(0, 8));
+  assert.equal(f.manager.verifiedFile, null);
+});
+
+test('Range and identity encoding are preserved through a validated CDN redirect', async t => {
+  const offset = 8;
+  const headers = [];
+  const cdn = 'https://release-assets.githubusercontent.com/installer?token=fresh';
+  const f = await fixture(t, { fetchImpl: (url, init) => {
+    if (url === LATEST_RELEASE_URL) return Response.json(release());
+    const requestHeaders = new Headers(init.headers);
+    headers.push({ range: requestHeaders.get('range'), encoding: requestHeaders.get('accept-encoding') });
+    return url === cdn ? rangedResponse(offset)
+      : new Response(null, { status: 302, headers: { location: cdn } });
+  } });
+  await writeFile(partialFile(f), content.subarray(0, offset));
+  await f.manager.checkForUpdates();
+  const state = await f.manager.downloadUpdate();
+  assert.equal(state.status, 'downloaded');
+  assert.deepEqual(headers, [{ range: `bytes=${offset}-`, encoding: 'identity' }, { range: `bytes=${offset}-`, encoding: 'identity' }]);
+  assert.ok(!JSON.stringify(state).includes('token=fresh'));
+  assert.deepEqual(await readFile(path.join(f.directory, f.release.assets[0].name)), content);
 });
 
 test('write failure removes partial bytes and never leaves an installable file', async t => {
@@ -485,6 +763,57 @@ test('task-save failure prevents installer launch and application exit', async t
   await f.manager.checkForUpdates(); await f.manager.downloadUpdate();
   assert.equal((await f.manager.installUpdate()).error.phase, 'install');
   assert.equal(opened, false);
+});
+
+test('ordinary shutdown waits for installer preparation and its successful handoff', { timeout: 2000 }, async t => {
+  let entered, finishPreparation;
+  const preparing = new Promise(resolve => { entered = resolve; });
+  const prepared = new Promise(resolve => { finishPreparation = resolve; });
+  const calls = [];
+  const f = await fixture(t, { confirmInstall: async () => true,
+    openInstaller: async () => {
+      calls.push('preparing');
+      entered();
+      await prepared;
+      calls.push('handed off');
+      return '';
+    }, onInstalled: () => { calls.push('quit requested'); }
+  });
+  await f.manager.checkForUpdates();
+  await f.manager.downloadUpdate();
+  const installing = f.manager.installUpdate();
+  await preparing;
+  let shutdownFinished = false;
+  const shuttingDown = f.manager.shutdown().then(() => { shutdownFinished = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(shutdownFinished, false, 'quitting must not orphan preparation or the native progress window');
+  assert.deepEqual(calls, ['preparing']);
+  finishPreparation();
+  const [state] = await Promise.all([installing, shuttingDown]);
+  assert.equal(state.status, 'installing');
+  assert.equal(shutdownFinished, true);
+  assert.deepEqual(calls, ['preparing', 'handed off', 'quit requested']);
+});
+
+test('the successful handoff can synchronously request shutdown without deadlocking the install operation', { timeout: 2000 }, async t => {
+  let shuttingDown;
+  const calls = [];
+  const f = await fixture(t, { confirmInstall: async () => true,
+    openInstaller: async () => { calls.push('handed off'); return ''; },
+    onInstalled: () => {
+      calls.push('quit requested');
+      // Electron app.quit() emits before-quit synchronously. That handler starts
+      // async shutdown but must not return its promise to the installation hook.
+      shuttingDown = f.manager.shutdown().then(() => { calls.push('shutdown complete'); });
+    }
+  });
+  await f.manager.checkForUpdates();
+  await f.manager.downloadUpdate();
+  const state = await f.manager.installUpdate();
+  assert.ok(shuttingDown);
+  await shuttingDown;
+  assert.equal(state.status, 'installing');
+  assert.deepEqual(calls, ['handed off', 'quit requested', 'shutdown complete']);
 });
 
 test('shutdown cancels a pending check and concurrent checks share one request', async t => {

@@ -25,9 +25,16 @@ async function fixture(t, overrides = {}) {
   await bundle(current, { ...metadata('1.7.1'), ...overrides.current });
   await bundle(source, { ...metadata('1.8.0'), ...overrides.target });
   const installer = path.join(root, 'fixture.dmg'); await writeFile(installer, 'already verified fixture');
-  const calls = [];
+  const calls = [], progressStates = [];
+  let progressPath;
+  const startProgress = async ({ resultPath }) => {
+    progressPath = resultPath;
+    progressStates.push(JSON.parse(await readFile(resultPath, 'utf8')).status);
+    return { close: async () => { progressStates.push('closed'); } };
+  };
   const run = async (command, args) => {
     calls.push({ command, args });
+    if (progressPath) progressStates.push(JSON.parse(await readFile(progressPath, 'utf8')).status);
     if (command.endsWith('/plutil')) return { stdout: await readFile(args.at(-1), 'utf8') };
     if (command.endsWith('/hdiutil') && args[0] === 'attach') {
       if (overrides.mountFailure) throw new Error('mount failed');
@@ -45,7 +52,7 @@ async function fixture(t, overrides = {}) {
     if (command.endsWith('/ditto')) { await cp(args.at(-2), args.at(-1), { recursive: true }); return { stdout: '' }; }
     throw new Error(`Unexpected command ${command}`);
   };
-  return { root, current, calls, options: { installerPath: installer, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: 'arm64', cacheDirectory: path.join(root, 'cache'), parentPid: process.pid }, dependencies: { platform: 'darwin', run } };
+  return { root, current, calls, progressStates, options: { installerPath: installer, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: 'arm64', cacheDirectory: path.join(root, 'cache'), parentPid: process.pid }, dependencies: { platform: 'darwin', run, startProgress } };
 }
 
 test('preparation leaves current app untouched, verifies source and staged copy, then disposes', async t => {
@@ -59,14 +66,26 @@ test('preparation leaves current app untouched, verifies source and staged copy,
   const attach = f.calls.find(call => call.args[0] === 'attach');
   assert.ok(attach.args.includes('-readonly'));
   assert.equal(f.calls.at(-1).args[0], 'detach');
+  assert.deepEqual([...new Set(f.progressStates)], ['preparing', 'opening', 'verifying', 'copying', 'checking'], 'visible progress follows the actual preparation operations');
   const helper = await readFile(path.join(path.dirname(prepared.resultPath), 'install.cjs'), 'utf8');
   assert.ok(helper.includes('process.argv.slice(2)'));
+  assert.equal(helper.match(/run\('\/usr\/bin\/open', \['-n', current\]/g)?.length, 2, 'replacement and rollback explicitly start a new app instance while the Electron helper still lives');
   assert.ok(!helper.includes(f.current), 'paths are not interpolated into helper source');
   assert.ok(!/sudo|spctl|xattr.*(?:-d|-c)/.test(helper), 'does not disable platform security');
   await prepared.dispose();
+  assert.equal(f.progressStates.at(-1), 'closed', 'cancelled preparation closes its progress window');
   await assert.rejects(lstat(path.dirname(prepared.backupPath)), { code: 'ENOENT' });
   await assert.rejects(prepared.launch(), { code: 'MAC_UPDATE_DISPOSED' });
   assert.equal((await lstat(f.current)).ino, before.ino);
+});
+
+test('a failed progress window prevents starting an invisible overwrite installation', async t => {
+  const f = await fixture(t);
+  await assert.rejects(prepareMacUpdate(f.options, { ...f.dependencies, startProgress: async () => {
+    throw Object.assign(new Error('native progress unavailable'), { code: 'MAC_UPDATE_PROGRESS' });
+  } }), { code: 'MAC_UPDATE_PROGRESS' });
+  assert.equal(f.calls.some(call => call.command.endsWith('/hdiutil')), false);
+  assert.equal(JSON.parse(await readFile(path.join(f.current, 'Contents/Info.plist'))).CFBundleShortVersionString, '1.7.1');
 });
 
 for (const [description, overrides, code] of [
@@ -159,6 +178,7 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
   t.after(() => rm(root, { recursive: true, force: true }));
   const arch = process.arch === 'x64' ? 'x86_64' : 'arm64';
   const payload = path.join(root, 'payload'); await mkdir(payload);
+  const launchLog = path.join(root, 'launches.log');
   async function appBundle(directory, version) {
     await mkdir(path.join(directory, 'Contents/MacOS'), { recursive: true });
     await mkdir(path.join(directory, 'Contents/Resources'));
@@ -166,7 +186,8 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     const json = path.join(directory, 'Contents/Info.json'); await writeFile(json, JSON.stringify(value));
     await execute('/usr/bin/plutil', ['-convert', 'xml1', '-o', path.join(directory, 'Contents/Info.plist'), json]);
     await rm(json);
-    const code = path.join(root, 'fixture.c'); await writeFile(code, 'int main(void) { return 0; }\n');
+    const code = path.join(root, 'fixture.c');
+    await writeFile(code, `#include <stdio.h>\nint main(void) {\n  FILE *file = fopen(${JSON.stringify(launchLog)}, "a");\n  if (!file) return 2;\n  fputs("${version}\\n", file);\n  fclose(file);\n  return 0;\n}\n`);
     await execute('/usr/bin/xcrun', ['--sdk', 'macosx', 'clang', '-arch', arch, code, '-o', path.join(directory, 'Contents/MacOS/fixture')]);
     await writeFile(path.join(directory, 'Contents/Resources/version.txt'), version);
     await execute('/usr/bin/codesign', ['--force', '--deep', '--sign', '-', directory]);
@@ -178,12 +199,13 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     for (let attempt = 0; attempt < 150; attempt++) {
       const result = JSON.parse(await readFile(filename, 'utf8'));
       if (states.includes(result.status)) return result;
-      if (!['prepared', 'ready', 'waiting', 'replacing'].includes(result.status)) assert.fail(`Unexpected native result ${JSON.stringify(result)}`);
+      if (!['prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching'].includes(result.status)) assert.fail(`Unexpected native result ${JSON.stringify(result)}`);
       await delay(100);
     }
     assert.fail('Native helper did not finish');
   }
   for (const outcome of ['installed', 'rolled_back', 'rollback_blocked', 'cancelled']) {
+    const previousLaunches = await readFile(launchLog, 'utf8').catch(() => '');
     const fault = outcome === 'rolled_back';
     const current = path.join(root, outcome === 'installed' ? 'Fixture with quotes \' $().app' : `${outcome} fixture.app`);
     await appBundle(current, '1.7.1');
@@ -191,14 +213,14 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     t.after(() => { try { oldPid.kill(); } catch {} });
     await new Promise((resolve, reject) => { oldPid.once('spawn', resolve); oldPid.once('error', reject); });
     const prepared = await prepareMacUpdate({ installerPath: dmg, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: process.arch,
-      cacheDirectory: path.join(root, 'cache'), parentPid: oldPid.pid }, { ...(fault ? { executable: electronExecutable } : {}), ...(outcome === 'cancelled' ? { readinessTimeoutMs: 0 } : {}) });
+      cacheDirectory: path.join(root, 'cache'), parentPid: oldPid.pid }, { startProgress: async () => ({ close: async () => {} }), ...(fault ? { executable: electronExecutable } : {}), ...(outcome === 'cancelled' ? { readinessTimeoutMs: 0 } : {}) });
     if (fault) {
       // Test-only fault injection: the real helper still performs both atomic
       // filesystem moves and codesign checks, then experiences an open failure.
       const helper = path.join(path.dirname(prepared.resultPath), 'install.cjs');
       const sourceText = await readFile(helper, 'utf8');
-      assert.ok(sourceText.includes("await run('/usr/bin/open', [current], { timeout: 30000 });"));
-      await writeFile(helper, sourceText.replace("await run('/usr/bin/open', [current], { timeout: 30000 });", "throw new Error('Injected open failure');"));
+      assert.ok(sourceText.includes("await run('/usr/bin/open', ['-n', current], { timeout: 30000 });"));
+      await writeFile(helper, sourceText.replace("await run('/usr/bin/open', ['-n', current], { timeout: 30000 });", "throw new Error('Injected open failure');"));
     }
     if (outcome === 'rollback_blocked') {
       const helper = path.join(path.dirname(prepared.resultPath), 'install.cjs');
@@ -246,6 +268,12 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
       assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), fault ? '1.7.1' : '1.8.0');
       if (!fault) assert.equal(await readFile(path.join(prepared.backupPath, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1');
       else assert.equal(await readFile(path.join(result.failedAppPath, 'Contents/Resources/version.txt'), 'utf8'), '1.8.0');
+      const expectedLaunches = `${previousLaunches}${fault ? '1.7.1' : '1.8.0'}\n`;
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (await readFile(launchLog, 'utf8').catch(() => '') === expectedLaunches) break;
+        await delay(100);
+      }
+      assert.equal(await readFile(launchLog, 'utf8'), expectedLaunches, 'the installed or restored application actually executes without any user click');
     }
     await prepared.dispose();
     assert.equal(JSON.parse(await readFile(prepared.resultPath, 'utf8')).status, result.status, 'post-launch disposal preserves recovery evidence');
@@ -256,7 +284,7 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
   await execute('/usr/bin/hdiutil', ['create', '-quiet', '-volname', 'Invalid Update Test', '-srcfolder', payload, '-format', 'UDZO', invalid], { timeout: 60000 });
   const current = path.join(root, 'Signature rejection.app'); await appBundle(current, '1.7.1');
   await assert.rejects(prepareMacUpdate({ installerPath: invalid, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: process.arch,
-    cacheDirectory: path.join(root, 'cache'), parentPid: process.pid }), { code: 'MAC_UPDATE_SIGNATURE' });
+    cacheDirectory: path.join(root, 'cache'), parentPid: process.pid }, { startProgress: async () => ({ close: async () => {} }) }), { code: 'MAC_UPDATE_SIGNATURE' });
   assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1');
-  t.diagnostic('Real local codesign/DMG/ditto/helper replacement passed with Node and bundled Electron executors; rollback used an injected open failure. Temporary fixture apps only. This does not establish notarization or another Mac acceptance.');
+  t.diagnostic('Real local codesign/DMG/ditto/helper replacement and actual automatic app execution passed with Node and bundled Electron executors; rollback used an injected open failure. Temporary fixture apps only. This does not establish notarization or another Mac acceptance.');
 });

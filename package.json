@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页版与 Mac / Windows 本地版，支持主页批量下载和自定义间隔",
@@ -96,6 +96,8 @@
     },
     "nsis": {
       "oneClick": false,
+      "include": "desktop/resources/installer.nsh",
+      "runAfterFinish": true,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "artifactName": "Brclio-XHS-Downloader-${version}-windows-${arch}-setup.${ext}"

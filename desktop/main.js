@@ -13,6 +13,7 @@ import { AccountClient } from './account-client.js';
 import { DiagnosticLog } from './diagnostic-log.js';
 import { FeedbackClient } from './feedback-client.js';
 import { prepareMacUpdate } from './mac-update.js';
+import { launchWindowsUpdate } from './windows-update.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -297,12 +298,16 @@ async function boot() {
       const result = await dialog.showMessageBox(mainWindow, {
         type: 'question', title: '安装更新', message: `准备安装 ${state.latestVersion}，是否继续？`,
         detail: state.installationHint,
-        buttons: ['取消', process.platform === 'darwin' ? '暂停任务并覆盖更新' : '暂停任务并打开安装包'], defaultId: 0, cancelId: 0, noLink: true
+        buttons: ['取消', '暂停任务并安装更新'], defaultId: 0, cancelId: 0, noLink: true
       });
       return result.response === 1;
     },
     pauseDownloads: () => manager.pause(),
     async openInstaller(file, candidate) {
+      if (process.platform === 'win32') {
+        await launchWindowsUpdate(file);
+        return '';
+      }
       if (process.platform !== 'darwin') return shell.openPath(file);
       if (!app.isPackaged) throw Object.assign(new Error('开发环境不能覆盖安装，请使用完整客户端。'), { code: 'MAC_UPDATE_DEVELOPMENT' });
       const cacheDirectory = path.join(app.getPath('userData'), 'updates');
@@ -349,7 +354,7 @@ async function reportPreviousMacUpdate() {
       || path.basename(resultPath) !== 'install-result.json' || (await stat(resultPath)).size > 16000) return;
     const result = JSON.parse(await readFile(resultPath, 'utf8'));
     diagnostic('update.install_result', result, result.status === 'installed' ? 'info' : 'warn');
-    if (!['prepared', 'waiting', 'replacing'].includes(result.status)) {
+    if (!['preparing', 'opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching'].includes(result.status)) {
       await rm(pointer, { force: true });
       if (result.status !== 'installed') await dialog.showMessageBox(mainWindow, {
         type: 'warning', title: '上次更新未完成', message: result.message || '请重新检查更新或手动安装。',
