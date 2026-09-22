@@ -583,6 +583,36 @@ test('a 416 response retries a full request without Range and replaces the saved
   assert.deepEqual(await readFile(path.join(f.directory, f.release.assets[0].name)), content);
 });
 
+test('short file writes preserve the complete installer after a full restart or a ranged continuation', async t => {
+  for (const responseMode of ['200', '416', '206']) {
+    const offset = 8;
+    let requests = 0, writes = 0;
+    const f = await fixture(t, { fetchImpl: url => {
+      if (url === LATEST_RELEASE_URL) return Response.json(release());
+      requests++;
+      if (responseMode === '416' && requests === 1) return new Response(null, { status: 416 });
+      return responseMode === '206' ? rangedResponse(offset) : new Response(content);
+    } });
+    await writeFile(partialFile(f), responseMode === '206' ? content.subarray(0, offset) : Buffer.alloc(offset, 90));
+    const probe = await open(partialFile(f), 'r');
+    const prototype = Object.getPrototypeOf(probe);
+    const originalWrite = prototype.write;
+    await probe.close();
+    await f.manager.checkForUpdates();
+    const write = t.mock.method(prototype, 'write', function (buffer, start, length, position) {
+      writes++;
+      assert.equal(Number.isSafeInteger(position), true, 'download writes cannot depend on a platform-specific append cursor');
+      return originalWrite.call(this, buffer, start, Math.min(length, 3), position);
+    });
+    try {
+      const state = await f.manager.downloadUpdate();
+      assert.equal(state.status, 'downloaded', JSON.stringify({ responseMode, error: state.error }));
+      assert.ok(writes > 1, 'a short OS write must not drop the rest of its chunk');
+      assert.deepEqual(await readFile(path.join(f.directory, f.release.assets[0].name)), content, responseMode);
+    } finally { write.mock.restore(); }
+  }
+});
+
 test('invalid partial-response ranges never append to or discard previously saved bytes', async t => {
   const offset = 8;
   const cases = [null, 'invalid', `bytes 0-${content.length - 1}/${content.length}`,
@@ -669,7 +699,7 @@ test('write failure removes partial bytes and never leaves an installable file',
   const prototype = Object.getPrototypeOf(handle);
   await handle.close();
   await rm(probe);
-  const write = t.mock.method(prototype, 'writeFile', async () => { const error = new Error('disk full'); error.code = 'ENOSPC'; throw error; });
+  const write = t.mock.method(prototype, 'write', async () => { const error = new Error('disk full'); error.code = 'ENOSPC'; throw error; });
   try {
     const state = await f.manager.downloadUpdate();
     assert.equal(state.error.code, 'DISK_FULL');

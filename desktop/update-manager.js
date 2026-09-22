@@ -440,7 +440,7 @@ export class UpdateManager {
           if (!info.isFile() || info.nlink !== 1 || await realpath(partial) !== partial) fail('INVALID_CACHE', '更新临时文件无效，请清理更新缓存后重试。');
           if (info.size > candidate.size) await rm(partial);
         } catch (error) { if (error.code !== 'ENOENT') throw error; }
-        handle = await open(partial, constants.O_RDWR | constants.O_APPEND | constants.O_CREAT | (constants.O_NOFOLLOW || 0), 0o600);
+        handle = await open(partial, constants.O_RDWR | constants.O_CREAT | (constants.O_NOFOLLOW || 0), 0o600);
         const info = await handle.stat();
         if (!info.isFile() || info.nlink !== 1 || info.size > candidate.size) fail('INVALID_CACHE', '更新临时文件无效，请清理更新缓存后重试。');
         let offset = info.size;
@@ -475,7 +475,15 @@ export class UpdateManager {
           }
           readingBody = true;
           const received = await this.read(response, remaining, controller, async (chunk, count) => {
-            await handle.writeFile(chunk);
+            // Explicit offsets permit both resume and full-response restart.
+            // Windows append-only handles cannot safely support truncation.
+            let written = 0;
+            while (written < chunk.byteLength) {
+              const { bytesWritten } = await handle.write(chunk, written, chunk.byteLength - written,
+                offset + count - chunk.byteLength + written);
+              if (!bytesWritten) fail('WRITE_FAILED', '无法写入更新安装包，请检查磁盘后重试。');
+              written += bytesWritten;
+            }
             this.state.download = downloadProgress(offset + count, candidate.size);
             if (Date.now() - this.lastProgressAt >= 100 || offset + count === candidate.size) {
               this.lastProgressAt = Date.now();
