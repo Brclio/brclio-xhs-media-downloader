@@ -179,6 +179,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   let installUnderlyingFocus = null;
   let installRestoreUpdateDialog = false;
   let pendingInstallFocus = null;
+  let pendingInstallClosures = 0;
   let desktopInfo = {};
   const updatesAvailable = typeof bridge.getUpdateState === "function"
     && typeof bridge.checkForUpdates === "function";
@@ -425,7 +426,14 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   }
 
   function closeUpdateDialog() {
+    // Consume this dialog's focus before close queues its asynchronous event.
+    // That event must not steal focus from a subsequent installation dialog.
+    const previous = updateDialogPreviousFocus;
+    updateDialogPreviousFocus = null;
     if (ui.updateDialog?.open) ui.updateDialog.close();
+    if (!ui.installDialog?.open && previous?.isConnected && previous.getClientRects().length && !previous.disabled) {
+      previous.focus({ preventScroll: true });
+    }
   }
 
   function closeInstallConfirmation(restore = true) {
@@ -438,28 +446,27 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     installReturnFocus = null;
     installUnderlyingFocus = null;
     installRestoreUpdateDialog = false;
-    if (ui.installDialog?.open) ui.installDialog.close();
+    if (ui.installDialog?.open) {
+      pendingInstallClosures++;
+      ui.installDialog.close();
+    }
     if (restore && reopenUpdate) {
       openUpdateDialog();
       updateDialogPreviousFocus = underlyingFocus;
     }
     pendingInstallFocus = restore && (!reopenUpdate || ui.updateDialog?.open) ? returnFocus : underlyingFocus;
     restoreInstallFocus();
-    const focusAfterClose = restore && (!reopenUpdate || ui.updateDialog?.open) ? returnFocus : underlyingFocus;
-    requestAnimationFrame(() => {
-      if (!ui.installDialog?.open && focusAfterClose?.isConnected && focusAfterClose.getClientRects().length && !focusAfterClose.disabled) {
-        focusAfterClose.focus({ preventScroll: true });
-        if (pendingInstallFocus === focusAfterClose) pendingInstallFocus = null;
-      }
-    });
   }
 
   function restoreInstallFocus() {
-    if (!pendingInstallFocus || ui.installDialog?.open) return;
+    // Either the close event or the pending install invocation can finish
+    // first. Wait for both, so native focus restoration and disabled controls
+    // cannot overwrite our return focus on a later task or animation frame.
+    if (!pendingInstallFocus || ui.installDialog?.open || pendingInstallClosures || updatePending === "install") return;
     if (!pendingInstallFocus.isConnected) { pendingInstallFocus = null; return; }
     if (!pendingInstallFocus.getClientRects().length || pendingInstallFocus.disabled) return;
     pendingInstallFocus.focus({ preventScroll: true });
-    pendingInstallFocus = null;
+    if (document.activeElement === pendingInstallFocus) pendingInstallFocus = null;
   }
 
   function showInstallConfirmation(request) {
@@ -972,12 +979,6 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     const bounds = ui.updateDialog.getBoundingClientRect();
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeUpdateDialog();
   });
-  ui.updateDialog?.addEventListener("close", () => {
-    if (ui.updateDialog.open) return;
-    const previous = updateDialogPreviousFocus;
-    updateDialogPreviousFocus = null;
-    if (previous?.isConnected && previous.getClientRects().length) previous.focus({ preventScroll: true });
-  });
   ui.installLater?.addEventListener("click", () => void respondInstallConfirmation(false));
   ui.installConfirm?.addEventListener("click", () => void respondInstallConfirmation(true));
   ui.installDialog?.addEventListener("cancel", event => {
@@ -990,7 +991,9 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) void respondInstallConfirmation(false);
   });
   ui.installDialog?.addEventListener("close", () => {
+    if (pendingInstallClosures) pendingInstallClosures--;
     if (installConfirmation && !ui.installDialog.open) void respondInstallConfirmation(false);
+    restoreInstallFocus();
   });
   if (typeof bridge.onInstallConfirmation === "function") {
     const cleanup = bridge.onInstallConfirmation(showInstallConfirmation);

@@ -101,6 +101,9 @@ app.whenReady().then(async () => {
   let pendingInstall = null;
   let installSequence = 0;
   let acceptedInstallations = 0;
+  let installReplyOrder = 'normal';
+  let releaseInstallReply;
+  let releaseConfirmationReply;
   let installationPlatform = 'darwin';
   let installationPortable = false;
   let resolveDirectory;
@@ -177,6 +180,16 @@ app.whenReady().then(async () => {
       const pending = pendingInstall;
       pendingInstall = null;
       if (value.confirmed) acceptedInstallations++;
+      if (installReplyOrder === 'close-first') {
+        const next = publishUpdate({ ...available(), status: 'downloaded' });
+        releaseInstallReply = () => pending.resolve(next);
+        return true;
+      }
+      if (installReplyOrder === 'result-first') {
+        update = { ...available(), status: 'downloaded' };
+        pending.resolve(update);
+        return new Promise(resolve => { releaseConfirmationReply = () => resolve(true); });
+      }
       pending.resolve(publishUpdate({ ...available(), status: value.confirmed ? 'installing' : 'downloaded' }));
       return true;
     }
@@ -192,7 +205,15 @@ app.whenReady().then(async () => {
       if (await evaluate(expression)) return;
       await new Promise(resolve => setTimeout(resolve, 20));
     }
-    throw new Error(`UI check failed: ${description}; renderer: ${JSON.stringify(rendererErrors)}; body: ${await evaluate("document.body.innerText.slice(0, 400)")}`);
+    const focus = await evaluate(`(() => {
+      const button = document.querySelector('#desktop-update-install');
+      return { active: document.activeElement?.id || document.activeElement?.tagName,
+        buttonHidden: button?.hidden, buttonDisabled: button?.disabled,
+        buttonRects: button?.getClientRects().length,
+        confirmationOpen: document.querySelector('#desktop-install-confirmation')?.open,
+        updateDialogOpen: document.querySelector('#desktop-update-dialog')?.open };
+    })()`);
+    throw new Error(`UI check failed: ${description}; focus: ${JSON.stringify(focus)}; renderer: ${JSON.stringify(rendererErrors)}; body: ${await evaluate("document.body.innerText.slice(0, 400)")}`);
   };
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
   const paint = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
@@ -380,6 +401,24 @@ app.whenReady().then(async () => {
   await check(`!document.querySelector('#desktop-update-install').disabled`, 'cancelled main-process confirmation remains retryable');
   assert.equal(calls.filter(call => call.method === 'installUpdate').length, 2);
   await check(`!document.querySelector('#desktop-install-confirmation').open && document.activeElement.id === 'desktop-update-install'`, 'Escape cancels and restores the invoking control');
+  await evaluate(`document.querySelector('#desktop-install-confirmation').addEventListener('close', () => {
+    window.fixtureClosedWhileInstallDisabled = document.querySelector('#desktop-update-install').disabled;
+  })`);
+  for (const order of ['close-first', 'result-first']) {
+    installReplyOrder = order;
+    await evaluate(`window.fixtureClosedWhileInstallDisabled = null; document.querySelector('#desktop-update-install').focus()`);
+    await click('#desktop-update-install');
+    await check(`document.querySelector('#desktop-install-confirmation').open`, `${order}: confirmation opens`);
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+    await check(`window.fixtureClosedWhileInstallDisabled === ${order === 'close-first'}`, `${order}: native close and IPC completion order is exercised`);
+    if (order === 'close-first') releaseInstallReply();
+    await check(`!document.querySelector('#desktop-install-confirmation').open && !document.querySelector('#desktop-update-install').disabled && document.activeElement.id === 'desktop-update-install'`, `${order}: focus returns after closure and installation response both finish`);
+    if (order === 'result-first') releaseConfirmationReply();
+    await paint();
+    assert.equal(await evaluate('document.activeElement.id'), 'desktop-update-install', `${order}: late close/response cannot overwrite focus`);
+  }
+  installReplyOrder = 'normal';
   await click('#desktop-update-install');
   await check(`document.querySelector('#desktop-install-confirmation').open`, 'installation confirmation can retry after Escape');
   await evaluate(`document.querySelector('#desktop-install-confirmation').dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 0, clientY: 0 }))`);
