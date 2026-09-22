@@ -88,7 +88,7 @@ test('native AppKit window survives all installer stages and closes only after i
   t.after(() => progress.close());
   child.ref();
   const exited = new Promise(resolve => child.once('exit', (code, signal) => resolve({ code, signal })));
-  for (const status of ['opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching']) {
+  for (const status of ['opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'cleanup_pending', 'cleaning']) {
     await writeFile(input.resultPath, JSON.stringify({ status }));
     await delay(130);
     assert.equal(child.exitCode, null, `${status} must keep the progress viewer alive`);

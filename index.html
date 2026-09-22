@@ -66,6 +66,32 @@
       </div>
     </dialog>
 
+    <dialog id="desktop-install-confirmation" class="desktop-update-dialog desktop-install-dialog" aria-labelledby="desktop-install-confirmation-title" aria-describedby="desktop-install-confirmation-version">
+      <header class="desktop-update-dialog-heading desktop-install-heading">
+        <img src="/aiyc.svg" alt="" width="52" height="52" />
+        <h2 id="desktop-install-confirmation-title">安装新版本</h2>
+        <p id="desktop-install-confirmation-version" class="desktop-install-version"><span id="desktop-install-current-version"></span><span class="desktop-install-version-arrow" aria-hidden="true">→</span><strong id="desktop-install-latest-version"></strong></p>
+      </header>
+      <div class="desktop-install-body">
+        <ol class="desktop-install-steps" aria-label="安装过程">
+          <li><span class="desktop-install-step-number" aria-hidden="true">1</span><div><strong>暂停并保存任务</strong><p>保存当前下载进度，更新后可以继续。</p></div></li>
+          <li><span class="desktop-install-step-number" aria-hidden="true">2</span><div><strong id="desktop-install-replacement-title">原位置替换客户端</strong><p id="desktop-install-replacement-description">新版成功启动后，自动清理旧客户端备份。</p></div></li>
+          <li><span class="desktop-install-step-number" aria-hidden="true">3</span><div><strong>自动重新打开</strong><p>账号、任务和已下载文件都会保留。</p></div></li>
+        </ol>
+        <details id="desktop-install-details" class="desktop-install-details">
+          <summary>安装细节<span aria-hidden="true">按系统查看</span></summary>
+          <p id="desktop-install-technical-hint"></p>
+        </details>
+      </div>
+      <div class="desktop-update-dialog-bottom desktop-install-bottom">
+        <p id="desktop-install-confirmation-error" class="desktop-update-error" role="alert" hidden></p>
+        <div class="desktop-update-dialog-actions">
+          <button id="desktop-install-later" class="desktop-update-dialog-secondary" type="button" autofocus>稍后安装</button>
+          <button id="desktop-install-confirm" class="desktop-update-dialog-primary" type="button">安装并重启</button>
+        </div>
+      </div>
+    </dialog>
+
     <div class="page-shell">
       <main>
         <!-- Desktop-only app shell, adapted from Brclio's app template. -->

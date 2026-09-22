@@ -14,6 +14,8 @@ import { DiagnosticLog } from './diagnostic-log.js';
 import { FeedbackClient } from './feedback-client.js';
 import { prepareMacUpdate } from './mac-update.js';
 import { launchWindowsUpdate } from './windows-update.js';
+import { InstallConfirmation } from './install-confirmation.js';
+import { confirmMacUpdateStartup } from './mac-update-cleanup.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -37,6 +39,7 @@ let feedbackClient;
 let accountRefreshTimer;
 let quitting = false;
 let shutdownComplete = false;
+const installConfirmation = new InstallConfirmation();
 const selectedDirectories = new Set();
 const diagnostic = (event, details, level = 'info') => { void diagnostics?.record(event, details, level); };
 const appInfo = () => ({ name: APP_NAME, version: app.getVersion(), platform: process.platform, arch: process.arch,
@@ -159,6 +162,7 @@ function registerIpc() {
   handle('desktop:download-update', () => updateManager.downloadUpdate());
   handle('desktop:cancel-update-download', () => updateManager.cancelUpdateDownload());
   handle('desktop:install-update', () => updateManager.installUpdate());
+  handle('desktop:respond-install-confirmation', (id, confirmed) => installConfirmation.respond(id, confirmed));
   handle('desktop:choose-directory', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       title: '选择小红书主页下载文件夹', properties: ['openDirectory', 'createDirectory'],
@@ -219,11 +223,17 @@ async function createWindow() {
     if (!isAppUrl(url)) { event.preventDefault(); external(url); }
   });
   mainWindow.webContents.on('will-attach-webview', (event) => event.preventDefault());
-  mainWindow.webContents.on('render-process-gone', (_event, details) => diagnostic('renderer.process_gone', details, 'error'));
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    installConfirmation.cancel();
+    diagnostic('renderer.process_gone', details, 'error');
+  });
+  mainWindow.webContents.on('did-start-navigation', (_event, _url, isInPlace, isMainFrame) => {
+    if (isMainFrame && !isInPlace) installConfirmation.cancel();
+  });
   mainWindow.webContents.on('unresponsive', () => diagnostic('renderer.unresponsive', {}, 'warn'));
   mainWindow.webContents.on('did-fail-load', (_event, code, description, url, isMainFrame) => diagnostic('renderer.load_failed', { code, description, url, isMainFrame }, 'error'));
   mainWindow.once('ready-to-show', () => mainWindow?.show());
-  mainWindow.on('closed', () => { mainWindow = null; if (!quitting) app.quit(); });
+  mainWindow.on('closed', () => { installConfirmation.cancel(); mainWindow = null; if (!quitting) app.quit(); });
   await mainWindow.loadURL(`${APP_URL}/`);
 }
 
@@ -295,12 +305,12 @@ async function boot() {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:update-state', state);
     },
     async confirmInstall(state) {
-      const result = await dialog.showMessageBox(mainWindow, {
-        type: 'question', title: '安装更新', message: `准备安装 ${state.latestVersion}，是否继续？`,
-        detail: state.installationHint,
-        buttons: ['取消', '暂停任务并安装更新'], defaultId: 0, cancelId: 0, noLink: true
+      if (quitting || !mainWindow || mainWindow.isDestroyed()) return false;
+      return installConfirmation.request({ ...state, portable: appInfo().portable }, payload => {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show(); mainWindow.focus();
+        mainWindow.webContents.send('desktop:install-confirmation', payload);
       });
-      return result.response === 1;
     },
     pauseDownloads: () => manager.pause(),
     async openInstaller(file, candidate) {
@@ -329,6 +339,24 @@ async function boot() {
     } });
   registerIpc();
   await createWindow();
+  if (process.platform === 'darwin' && app.isPackaged) {
+    try {
+      const rendererReady = mainWindow && !mainWindow.isDestroyed() && await mainWindow.webContents.executeJavaScript(
+        `new Promise(resolve => {
+          const ready = () => document.readyState === 'complete' && document.body.dataset.desktopReady === 'true';
+          if (ready()) { resolve(true); return; }
+          const done = value => { clearTimeout(timer); window.removeEventListener('xhs-desktop-ready', onReady); resolve(value); };
+          const onReady = () => { if (ready()) done(true); };
+          const timer = setTimeout(() => done(false), 10000);
+          window.addEventListener('xhs-desktop-ready', onReady);
+        })`);
+      if (rendererReady && !quitting) {
+        const result = await confirmMacUpdateStartup({ cacheDirectory: path.join(app.getPath('userData'), 'updates'),
+          currentAppPath: path.resolve(process.execPath, '../../..'), currentVersion: app.getVersion() });
+        if (result.status !== 'none') diagnostic('update.startup_confirmed', result, result.cleaned ? 'info' : 'warn');
+      }
+    } catch (error) { diagnostic('update.backup_cleanup_failed', { error }, 'warn'); }
+  }
   await reportPreviousMacUpdate();
   void accountClient.refresh().catch(() => {});
   accountRefreshTimer = setInterval(() => { void accountClient.refresh().catch(() => {}); }, 60_000);
@@ -354,7 +382,7 @@ async function reportPreviousMacUpdate() {
       || path.basename(resultPath) !== 'install-result.json' || (await stat(resultPath)).size > 16000) return;
     const result = JSON.parse(await readFile(resultPath, 'utf8'));
     diagnostic('update.install_result', result, result.status === 'installed' ? 'info' : 'warn');
-    if (!['preparing', 'opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching'].includes(result.status)) {
+    if (!['preparing', 'opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'cleanup_pending', 'cleaning'].includes(result.status)) {
       await rm(pointer, { force: true });
       if (result.status !== 'installed') await dialog.showMessageBox(mainWindow, {
         type: 'warning', title: '上次更新未完成', message: result.message || '请重新检查更新或手动安装。',
@@ -386,6 +414,7 @@ else {
     event.preventDefault();
     if (quitting) return;
     quitting = true;
+    installConfirmation.cancel();
     clearTimeout(updateCheckTimer);
     clearInterval(updatePeriodicTimer);
     clearInterval(accountRefreshTimer);

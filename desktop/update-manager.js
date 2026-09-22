@@ -200,7 +200,7 @@ export function allowedAssetRedirect(value, initialUrl) {
 }
 
 function installationHint(platform, portable) {
-  if (platform === 'darwin') return '安装时会暂停并保存下载任务，在独立进度窗口中显示校验、复制和覆盖安装的阶段，完成后自动重新打开。旧版本保留为备份。请从可写文件夹中的应用启动；从 DMG 或只读位置运行时需手动安装。此版本没有 Apple Developer ID 签名或公证，系统可能仍需确认。';
+  if (platform === 'darwin') return '请从“应用程序”等可写文件夹中打开客户端后更新；从 DMG 或只读位置运行时需先移出。安装时会显示独立进度窗口，新版成功启动后自动清理旧客户端备份。系统可能要求确认打开。';
   if (portable) return '当前为 Windows 便携版；更新包是安装版。安装时会暂停并保存任务、退出应用并显示新版安装进度，安装成功后自动打开新版。旧便携文件不会被覆盖，之后请使用新版快捷方式。系统可能提示未签名。';
   return '安装时会暂停并保存下载任务、退出应用并显示覆盖安装进度。安装成功后自动重新打开应用；系统可能提示未签名。';
 }

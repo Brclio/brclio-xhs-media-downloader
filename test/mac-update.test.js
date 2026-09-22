@@ -9,6 +9,7 @@ import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
 import { prepareMacUpdate } from '../desktop/mac-update.js';
+import { confirmMacUpdateStartup } from '../desktop/mac-update-cleanup.js';
 
 const execute = promisify(execFile);
 const appId = 'cn.bornforthis.xhs-downloader';
@@ -199,12 +200,12 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     for (let attempt = 0; attempt < 150; attempt++) {
       const result = JSON.parse(await readFile(filename, 'utf8'));
       if (states.includes(result.status)) return result;
-      if (!['prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching'].includes(result.status)) assert.fail(`Unexpected native result ${JSON.stringify(result)}`);
+      if (!['prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'cleanup_pending', 'cleaning'].includes(result.status)) assert.fail(`Unexpected native result ${JSON.stringify(result)}`);
       await delay(100);
     }
     assert.fail('Native helper did not finish');
   }
-  for (const outcome of ['installed', 'rolled_back', 'rollback_blocked', 'cancelled']) {
+  for (const outcome of ['installed', 'startup_unconfirmed', 'rolled_back', 'rollback_blocked', 'cancelled']) {
     const previousLaunches = await readFile(launchLog, 'utf8').catch(() => '');
     const fault = outcome === 'rolled_back';
     const current = path.join(root, outcome === 'installed' ? 'Fixture with quotes \' $().app' : `${outcome} fixture.app`);
@@ -213,7 +214,10 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     t.after(() => { try { oldPid.kill(); } catch {} });
     await new Promise((resolve, reject) => { oldPid.once('spawn', resolve); oldPid.once('error', reject); });
     const prepared = await prepareMacUpdate({ installerPath: dmg, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: process.arch,
-      cacheDirectory: path.join(root, 'cache'), parentPid: oldPid.pid }, { startProgress: async () => ({ close: async () => {} }), ...(fault ? { executable: electronExecutable } : {}), ...(outcome === 'cancelled' ? { readinessTimeoutMs: 0 } : {}) });
+      cacheDirectory: path.join(root, 'cache'), parentPid: oldPid.pid }, { startProgress: async () => ({ close: async () => {} }),
+      ...(outcome === 'startup_unconfirmed' ? { startupTimeoutMs: 300 } : {}),
+      ...(fault ? { executable: electronExecutable } : {}), ...(outcome === 'cancelled' ? { readinessTimeoutMs: 0 } : {}) });
+    await writeFile(path.join(root, 'cache/mac-last-install.json'), JSON.stringify({ resultPath: prepared.resultPath }), { mode: 0o600 });
     if (fault) {
       // Test-only fault injection: the real helper still performs both atomic
       // filesystem moves and codesign checks, then experiences an open failure.
@@ -257,6 +261,17 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     assert.equal(await readFile(path.join(path.dirname(prepared.resultPath), 'commit'), 'utf8'), 'approved\n');
     assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1', 'helper cannot replace while old PID remains');
     oldPid.kill();
+    if (outcome === 'installed') {
+      await waitResult(prepared.resultPath, ['awaiting_startup']);
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (await readFile(launchLog, 'utf8').catch(() => '') === `${previousLaunches}1.8.0\n`) break;
+        await delay(100);
+      }
+      assert.equal(await readFile(launchLog, 'utf8'), `${previousLaunches}1.8.0\n`, 'the new executable must actually run before readiness is confirmed');
+      assert.equal(await readFile(path.join(prepared.backupPath, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1', 'open success alone cannot delete the rollback copy');
+      const completion = await confirmMacUpdateStartup({ cacheDirectory: path.join(root, 'cache'), currentAppPath: current, currentVersion: '1.8.0' });
+      assert.equal(completion.cleaned, true, JSON.stringify(completion));
+    }
     const result = await waitResult(prepared.resultPath, [outcome]);
     if (outcome === 'rollback_blocked') {
       assert.equal(await readFile(path.join(current, 'concurrent-owner'), 'utf8'), 'preserve me');
@@ -266,7 +281,12 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     } else {
       await execute('/usr/bin/codesign', ['--verify', '--deep', '--strict', current]);
       assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), fault ? '1.7.1' : '1.8.0');
-      if (!fault) assert.equal(await readFile(path.join(prepared.backupPath, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1');
+      if (outcome === 'installed') {
+        await assert.rejects(lstat(prepared.backupPath), { code: 'ENOENT' });
+        await assert.rejects(lstat(path.dirname(prepared.backupPath)), { code: 'ENOENT' });
+        assert.equal(result.backupRemoved, true);
+        assert.equal(result.startupConfirmed, true);
+      } else if (!fault) assert.equal(await readFile(path.join(prepared.backupPath, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1', 'unconfirmed startup retains a complete signed rollback copy');
       else assert.equal(await readFile(path.join(result.failedAppPath, 'Contents/Resources/version.txt'), 'utf8'), '1.8.0');
       const expectedLaunches = `${previousLaunches}${fault ? '1.7.1' : '1.8.0'}\n`;
       for (let attempt = 0; attempt < 100; attempt++) {
@@ -286,5 +306,5 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
   await assert.rejects(prepareMacUpdate({ installerPath: invalid, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: process.arch,
     cacheDirectory: path.join(root, 'cache'), parentPid: process.pid }, { startProgress: async () => ({ close: async () => {} }) }), { code: 'MAC_UPDATE_SIGNATURE' });
   assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1');
-  t.diagnostic('Real local codesign/DMG/ditto/helper replacement and actual automatic app execution passed with Node and bundled Electron executors; rollback used an injected open failure. Temporary fixture apps only. This does not establish notarization or another Mac acceptance.');
+  t.diagnostic('Real local signed-app replacement, actual app execution, startup confirmation, temporary-backup removal, unconfirmed-startup retention and rollback passed. Rollback used an injected open failure; temporary fixture apps only, no notarization or another Mac acceptance claim.');
 });

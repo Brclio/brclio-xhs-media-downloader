@@ -19,6 +19,7 @@ const timeout = setTimeout(() => { console.error('DESKTOP_UI_SMOKE_TIMEOUT'); ap
 const preload = path.join(temporary, 'fixture-preload.cjs');
 writeFileSync(preload, `
 const { contextBridge, ipcRenderer } = require('electron');
+window.addEventListener('xhs-desktop-ready', () => ipcRenderer.send('ui-fixture:desktop-ready'));
 const invoke = (method, value) => ipcRenderer.invoke('ui-fixture:invoke', method, value);
 const subscribe = (channel, callback) => {
   const listener = (_event, state) => callback(state);
@@ -48,6 +49,8 @@ contextBridge.exposeInMainWorld('xhsDesktop', {
   downloadUpdate: () => invoke('downloadUpdate'),
   cancelUpdateDownload: () => invoke('cancelUpdateDownload'),
   installUpdate: () => invoke('installUpdate'),
+  onInstallConfirmation: callback => subscribe('ui-fixture:install-confirmation', callback),
+  respondInstallConfirmation: (id, confirmed) => invoke('respondInstallConfirmation', { id, confirmed }),
   chooseDirectory: () => invoke('chooseDirectory'),
   openLogin: value => invoke('openLogin', value),
   openDirectory: () => invoke('openDirectory'),
@@ -68,6 +71,9 @@ app.whenReady().then(async () => {
   session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*'] }, (_details, callback) => callback({ cancel: true }));
   protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: root }));
   const calls = [];
+  const readyEvents = new Map();
+  const failedInitializationWindows = new Set();
+  ipcMain.on('ui-fixture:desktop-ready', event => readyEvents.set(event.sender.id, (readyEvents.get(event.sender.id) || 0) + 1));
   const failedId = (126).toString(16).padStart(24, '0');
   const fixtureTitle = '测试笔记 <img src=x onerror=alert(1)>';
   let profile = {
@@ -92,6 +98,11 @@ app.whenReady().then(async () => {
   const rendererErrors = [];
   let downloadMode = 'pending';
   let resolveDownload;
+  let pendingInstall = null;
+  let installSequence = 0;
+  let acceptedInstallations = 0;
+  let installationPlatform = 'darwin';
+  let installationPortable = false;
   let resolveDirectory;
   let win;
   const publishProfile = value => { profile = value; win.webContents.send('ui-fixture:profile', value); return value; };
@@ -126,7 +137,10 @@ app.whenReady().then(async () => {
       return new Promise(resolve => { resolveFeedback = resolve; });
     }
     if (method === 'getLoginState') return { status: 'unknown', loggedIn: false, nickname: '' };
-    if (method === 'getProfileState') return profile;
+    if (method === 'getProfileState') {
+      if (failedInitializationWindows.has(_event.sender.id)) throw new Error('fixture profile initialization failed');
+      return profile;
+    }
     if (method === 'getUpdateState') return update;
     if (method === 'chooseDirectory') return new Promise(resolve => { resolveDirectory = resolve; });
     if (method === 'retryItem') return publishProfile({
@@ -146,7 +160,26 @@ app.whenReady().then(async () => {
       resolveDownload = null;
       return state;
     }
-    if (method === 'installUpdate') return publishUpdate({ ...available(), status: 'downloaded' });
+    if (method === 'installUpdate') {
+      const id = `fixture-install-${++installSequence}`;
+      publishUpdate({ ...available(), status: 'installing' });
+      const result = new Promise(resolve => { pendingInstall = { id, resolve }; });
+      win.webContents.send('ui-fixture:install-confirmation', {
+        id, currentVersion: '1.6.0', latestVersion: '1.6.1', platform: installationPlatform,
+        portable: installationPortable,
+        installationHint: installationPortable ? '当前便携版将安装为正式版。旧便携文件不会被覆盖。'
+          : 'Mac：请从可写文件夹启动；从 DMG 或只读位置运行时需手动安装。安装包通过完整性校验，系统仍可能要求确认。'
+      });
+      return result;
+    }
+    if (method === 'respondInstallConfirmation') {
+      if (!pendingInstall || pendingInstall.id !== value?.id || typeof value.confirmed !== 'boolean') return false;
+      const pending = pendingInstall;
+      pendingInstall = null;
+      if (value.confirmed) acceptedInstallations++;
+      pending.resolve(publishUpdate({ ...available(), status: value.confirmed ? 'installing' : 'downloaded' }));
+      return true;
+    }
     return profile;
   });
   win = new BrowserWindow({ show: false, width: 1180, height: 980, webPreferences: {
@@ -172,6 +205,8 @@ app.whenReady().then(async () => {
   };
   await win.loadURL('xhs-app://local/');
   await check(`document.querySelector('#profile-items').children.length === 100`, 'initial list rendered');
+  await check(`document.body.dataset.desktopReady === 'true'`, 'desktop readiness follows successful info and profile initialization');
+  assert.equal(readyEvents.get(win.webContents.id), 1, 'successful initialization emits exactly one desktop-ready event');
   assert.equal(calls.filter(call => call.method === 'checkForUpdates').length, 0, 'renderer must not automatically check for updates');
   assert.equal(await evaluate(`document.querySelector('#desktop-about-page').hidden && document.querySelector('#desktop-about-update-mount').contains(document.querySelector('#desktop-update-panel'))`), true, 'updater lives inside the independent about page');
   await check(`document.querySelector('#desktop-account-mount #software-account') !== null`, 'account mounted in its own page');
@@ -297,9 +332,36 @@ app.whenReady().then(async () => {
   await check(`!document.querySelector('#desktop-update-install').hidden && !document.querySelector('#desktop-update-install').disabled`, 'continued download reaches ready to install');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '安装并重启');
   assert.equal(calls.filter(call => call.method === 'installUpdate').length, 0, 'completed download still requires installation action');
+  await evaluate(`document.querySelector('#desktop-update-dialog-action').focus()`);
   await click('#desktop-update-dialog-action');
+  await check(`document.querySelector('#desktop-install-confirmation').open`, 'main-process approval request opens the installation dialog');
+  assert.equal(await evaluate(`document.querySelectorAll('dialog[open]').length`), 1, 'version and installation dialogs never stack');
+  assert.equal(await evaluate(`document.activeElement.id`), 'desktop-install-later', 'installation starts with the safe later action focused');
+  assert.equal(await evaluate(`document.querySelector('#desktop-install-details').open`), false, 'platform restrictions are collapsed initially');
+  assert.match(await evaluate(`document.querySelector('#desktop-install-confirmation-version').textContent`), /v1\.6\.0.*v1\.6\.1/);
+  assert.match(await evaluate(`document.querySelector('#desktop-install-replacement-description').textContent`), /成功启动后.*清理旧客户端/);
+  assert.equal(acceptedInstallations, 0, 'opening confirmation does not approve installation');
+  const installDialogFits = `(() => { const d = document.querySelector('#desktop-install-confirmation'), a = document.querySelector('#desktop-install-confirm'), b = d.getBoundingClientRect(), f = a.getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight && b.height <= 600 && d.scrollWidth <= d.clientWidth && f.bottom <= b.bottom && b.bottom - f.bottom <= 32 && f.top >= b.top; })()`;
+  assert.equal(await evaluate(installDialogFits), true, 'installation summary and actions fit on desktop');
+  const installDialogScreenshot = path.join(temporary, 'desktop-install-confirmation.png');
+  writeFileSync(installDialogScreenshot, await captureFrame());
+  win.setSize(390, 760);
+  await check(`innerWidth === 390`, 'installation dialog narrow viewport');
+  await paint();
+  assert.equal(await evaluate(installDialogFits), true, 'installation dialog fits at 390px');
+  const installDialogNarrowScreenshot = path.join(temporary, 'desktop-install-confirmation-narrow.png');
+  writeFileSync(installDialogNarrowScreenshot, await captureFrame());
+  await click('#desktop-install-details summary');
+  win.setSize(390, 480);
+  await paint();
+  assert.equal(await evaluate(installDialogFits), true, 'expanded platform details scroll without hiding approval actions on short screens');
+  win.setSize(1180, 980);
+  await paint();
+  await click('#desktop-install-later');
+  await check(`!document.querySelector('#desktop-install-confirmation').open && document.querySelector('#desktop-update-dialog').open && document.activeElement.id === 'desktop-update-dialog-action'`, 'later returns to the original version dialog and restores focus');
   await check(`!document.querySelector('#desktop-update-dialog-action').disabled`, 'cancelled installation confirmation keeps the modal usable');
-  assert.equal(calls.filter(call => call.method === 'installUpdate').length, 1, 'modal install reaches the existing main-process confirmation');
+  assert.equal(calls.filter(call => call.method === 'installUpdate').length, 1, 'modal install reaches the main-process approval broker');
+  assert.equal(calls.filter(call => call.method === 'respondInstallConfirmation').at(-1).value.confirmed, false, 'later explicitly declines the pending broker request');
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
   await check(`!document.querySelector('#desktop-update-dialog').open`, 'Escape closes dialog');
@@ -309,9 +371,35 @@ app.whenReady().then(async () => {
   await click('#desktop-update-download');
   await check(`!document.querySelector('#desktop-update-install').hidden && !document.querySelector('#desktop-update-install').disabled`, 'ready to install');
   assert.match(await evaluate(`document.querySelector('#desktop-update-installation-hint').textContent`), /覆盖当前应用/);
+  await evaluate(`document.querySelector('#desktop-update-install').focus()`);
+  assert.equal(await evaluate('document.activeElement.id'), 'desktop-update-install', 'installation source is focused before the request');
   await click('#desktop-update-install');
+  await check(`document.querySelector('#desktop-install-confirmation').open`, 'about-page install also requires the same approval dialog');
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
   await check(`!document.querySelector('#desktop-update-install').disabled`, 'cancelled main-process confirmation remains retryable');
   assert.equal(calls.filter(call => call.method === 'installUpdate').length, 2);
+  await check(`!document.querySelector('#desktop-install-confirmation').open && document.activeElement.id === 'desktop-update-install'`, 'Escape cancels and restores the invoking control');
+  await click('#desktop-update-install');
+  await check(`document.querySelector('#desktop-install-confirmation').open`, 'installation confirmation can retry after Escape');
+  await evaluate(`document.querySelector('#desktop-install-confirmation').dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 0, clientY: 0 }))`);
+  await check(`!document.querySelector('#desktop-install-confirmation').open && !document.querySelector('#desktop-update-install').disabled`, 'backdrop declines installation without losing the download');
+  await click('#desktop-update-install');
+  await check(`document.querySelector('#desktop-install-confirmation').open`, 'pending approval can be invalidated by the main process');
+  const expiredInstall = pendingInstall;
+  pendingInstall = null;
+  expiredInstall.resolve(publishUpdate({ ...available(), status: 'downloaded' }));
+  await check(`!document.querySelector('#desktop-install-confirmation').open && !document.querySelector('#desktop-update-install').disabled`, 'expired main-process approval closes its obsolete dialog');
+  installationPlatform = 'win32'; installationPortable = true;
+  await click('#desktop-update-install');
+  await check(`document.querySelector('#desktop-install-confirmation').open`, 'portable Windows installation explanation');
+  assert.match(await evaluate(`document.querySelector('#desktop-install-replacement-description').textContent`), /安装正式版/);
+  assert.doesNotMatch(await evaluate(`document.querySelector('#desktop-install-replacement-description').textContent`), /清理旧客户端/);
+  assert.match(await evaluate(`document.querySelector('#desktop-install-technical-hint').textContent`), /旧便携文件不会被覆盖/);
+  await click('#desktop-install-confirm');
+  await check(`!document.querySelector('#desktop-install-confirmation').open`, 'explicit approval closes the dialog for installation');
+  assert.equal(acceptedInstallations, 1, 'only the explicit install-and-restart action approves the broker request');
+  assert.equal(calls.filter(call => call.method === 'respondInstallConfirmation').at(-1).value.confirmed, true);
   publishUpdate({ ...available(), status: 'error', error: { phase: 'install', message: '测试安装失败' } });
   await check(`document.querySelector('#desktop-update-install').textContent === '重试安装'`, 'installation error retry');
   publishUpdate({ ...available(), status: 'error', error: { phase: 'check', message: '测试检查失败' } });
@@ -420,11 +508,25 @@ app.whenReady().then(async () => {
   await check(`!document.querySelector('#desktop-update-dialog').open`, 'a newer check with no update closes the obsolete modal');
   const web = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false } });
   await web.loadURL('xhs-app://local/');
-  assert.equal(await web.webContents.executeJavaScript(`document.querySelector('#desktop-navigation').hidden && document.querySelector('#desktop-update-panel').hidden && !document.querySelector('#single-note-panel').hidden && !document.querySelector('#desktop-update-dialog').open`), true, 'web interface remains unchanged without bridge');
+  assert.equal(await web.webContents.executeJavaScript(`document.querySelector('#desktop-navigation').hidden && document.querySelector('#desktop-update-panel').hidden && !document.querySelector('#single-note-panel').hidden && !document.querySelector('#desktop-update-dialog').open && !document.querySelector('#desktop-install-confirmation').open`), true, 'web interface remains unchanged without bridge');
+  const failedInitialization = new BrowserWindow({ show: false, webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  const failedInitializationId = failedInitialization.webContents.id;
+  failedInitializationWindows.add(failedInitializationId);
+  await failedInitialization.loadURL('xhs-app://local/');
+  let failureShown = false;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    failureShown = await failedInitialization.webContents.executeJavaScript(`document.body.innerText.includes('fixture profile initialization failed')`);
+    if (failureShown) break;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(failureShown, true, 'profile initialization failure reaches the recoverable UI error');
+  assert.equal(await failedInitialization.webContents.executeJavaScript(`document.body.dataset.desktopReady`), undefined, 'failed initialization cannot authorize backup cleanup');
+  assert.equal(readyEvents.get(failedInitializationId) || 0, 0, 'failed initialization never emits desktop-ready');
+  failedInitialization.destroy();
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, pageScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, pageScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

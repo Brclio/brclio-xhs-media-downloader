@@ -47,6 +47,7 @@ function validProfileUrl(value) {
 // The bridge is only present in the packaged desktop window. The web interface
 // keeps its original single-note behavior and never invokes desktop APIs.
 export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
+  delete document.body.dataset.desktopReady;
   const bridge = window.xhsDesktop;
   if (!bridge) return;
 
@@ -101,6 +102,16 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     updateDialogError: element("desktop-update-dialog-error"),
     updateDialogLater: element("desktop-update-dialog-later"),
     updateDialogAction: element("desktop-update-dialog-action"),
+    installDialog: element("desktop-install-confirmation"),
+    installCurrentVersion: element("desktop-install-current-version"),
+    installLatestVersion: element("desktop-install-latest-version"),
+    installReplacementTitle: element("desktop-install-replacement-title"),
+    installReplacementDescription: element("desktop-install-replacement-description"),
+    installDetails: element("desktop-install-details"),
+    installTechnicalHint: element("desktop-install-technical-hint"),
+    installError: element("desktop-install-confirmation-error"),
+    installLater: element("desktop-install-later"),
+    installConfirm: element("desktop-install-confirm"),
     singleTab: element("single-note-tab"),
     profileTab: element("profile-tab"),
     singlePanel: element("single-note-panel"),
@@ -160,6 +171,14 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   const shownUpdateDialogs = new Set();
   let updateDialogPreviousFocus = null;
   let updateDialogNotesText = null;
+  let installConfirmation = null;
+  let installConfirmationPending = false;
+  let installDecision = null;
+  let installReturnFocus = null;
+  let requestedInstallFocus = null;
+  let installUnderlyingFocus = null;
+  let installRestoreUpdateDialog = false;
+  let pendingInstallFocus = null;
   let desktopInfo = {};
   const updatesAvailable = typeof bridge.getUpdateState === "function"
     && typeof bridge.checkForUpdates === "function";
@@ -396,7 +415,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   }
 
   function openUpdateDialog() {
-    if (!ui.updateDialog || !updateState.latestVersion
+    if (!ui.updateDialog || ui.installDialog?.open || !updateState.latestVersion
       || !["available", "downloading", "downloaded", "installing", "error"].includes(updateState.status)) return;
     if (!ui.updateDialog.open) {
       updateDialogPreviousFocus = document.activeElement;
@@ -407,6 +426,108 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
 
   function closeUpdateDialog() {
     if (ui.updateDialog?.open) ui.updateDialog.close();
+  }
+
+  function closeInstallConfirmation(restore = true) {
+    const returnFocus = installReturnFocus;
+    const underlyingFocus = installUnderlyingFocus;
+    const reopenUpdate = installRestoreUpdateDialog;
+    installConfirmation = null;
+    installConfirmationPending = false;
+    installDecision = null;
+    installReturnFocus = null;
+    installUnderlyingFocus = null;
+    installRestoreUpdateDialog = false;
+    if (ui.installDialog?.open) ui.installDialog.close();
+    if (restore && reopenUpdate) {
+      openUpdateDialog();
+      updateDialogPreviousFocus = underlyingFocus;
+    }
+    pendingInstallFocus = restore && (!reopenUpdate || ui.updateDialog?.open) ? returnFocus : underlyingFocus;
+    restoreInstallFocus();
+    const focusAfterClose = restore && (!reopenUpdate || ui.updateDialog?.open) ? returnFocus : underlyingFocus;
+    requestAnimationFrame(() => {
+      if (!ui.installDialog?.open && focusAfterClose?.isConnected && focusAfterClose.getClientRects().length && !focusAfterClose.disabled) {
+        focusAfterClose.focus({ preventScroll: true });
+        if (pendingInstallFocus === focusAfterClose) pendingInstallFocus = null;
+      }
+    });
+  }
+
+  function restoreInstallFocus() {
+    if (!pendingInstallFocus || ui.installDialog?.open) return;
+    if (!pendingInstallFocus.isConnected) { pendingInstallFocus = null; return; }
+    if (!pendingInstallFocus.getClientRects().length || pendingInstallFocus.disabled) return;
+    pendingInstallFocus.focus({ preventScroll: true });
+    pendingInstallFocus = null;
+  }
+
+  function showInstallConfirmation(request) {
+    if (!ui.installDialog || !request || typeof request.id !== "string" || !request.id
+      || typeof bridge.respondInstallConfirmation !== "function") return;
+    if (installConfirmation?.id === request.id) return;
+    if (installConfirmation) {
+      void bridge.respondInstallConfirmation(installConfirmation.id, false).catch(() => {});
+      closeInstallConfirmation(false);
+    }
+    installConfirmation = request;
+    installConfirmationPending = false;
+    installDecision = null;
+    installReturnFocus = requestedInstallFocus?.isConnected ? requestedInstallFocus : document.activeElement;
+    requestedInstallFocus = null;
+    installRestoreUpdateDialog = Boolean(ui.updateDialog?.open);
+    installUnderlyingFocus = installRestoreUpdateDialog ? updateDialogPreviousFocus : installReturnFocus;
+    closeUpdateDialog();
+    ui.installCurrentVersion.textContent = request.currentVersion ? `v${request.currentVersion}` : "当前版本";
+    ui.installLatestVersion.textContent = request.latestVersion ? `v${request.latestVersion}` : "新版本";
+    const portable = request.platform === "win32" && request.portable;
+    ui.installReplacementTitle.textContent = portable ? "安装新版客户端" : "原位置替换客户端";
+    ui.installReplacementDescription.textContent = portable ? "安装正式版，之后请使用新版快捷方式。"
+      : request.platform === "darwin" ? "新版成功启动后，自动清理旧客户端备份。" : "覆盖当前安装版本，无需保留旧客户端。";
+    ui.installDetails.open = false;
+    ui.installTechnicalHint.textContent = String(request.installationHint || "安装期间会短暂退出应用，请等待更新完成。");
+    ui.installError.hidden = true;
+    ui.installError.textContent = "";
+    ui.installLater.disabled = false;
+    ui.installConfirm.disabled = false;
+    ui.installConfirm.textContent = "安装并重启";
+    ui.installDialog.showModal();
+    ui.installLater.focus({ preventScroll: true });
+  }
+
+  async function respondInstallConfirmation(confirmed) {
+    if (!installConfirmation || installConfirmationPending) return;
+    const request = installConfirmation;
+    installConfirmationPending = true;
+    installDecision = confirmed;
+    ui.installLater.disabled = true;
+    ui.installConfirm.disabled = true;
+    ui.installConfirm.textContent = confirmed ? "正在准备…" : "安装并重启";
+    ui.installError.hidden = true;
+    try {
+      const accepted = await bridge.respondInstallConfirmation(request.id, confirmed);
+      if (installConfirmation?.id !== request.id) return;
+      if (accepted || !confirmed) closeInstallConfirmation(!confirmed);
+      else {
+        ui.installError.textContent = "安装确认已失效，请关闭后重新点击安装更新。";
+        ui.installError.hidden = false;
+      }
+    } catch {
+      if (installConfirmation?.id !== request.id) return;
+      if (!confirmed) closeInstallConfirmation();
+      else {
+        ui.installError.textContent = "暂时无法确认安装，请稍后重试。";
+        ui.installError.hidden = false;
+      }
+    } finally {
+      if (installConfirmation?.id === request.id) {
+        installConfirmationPending = false;
+        installDecision = null;
+        ui.installLater.disabled = false;
+        ui.installConfirm.disabled = false;
+        ui.installConfirm.textContent = "安装并重启";
+      }
+    }
   }
 
   function renderUpdateDialogNotes(notes) {
@@ -484,6 +605,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     if (!next || typeof next !== "object") return;
     updateState = next;
     const status = next.status || "idle";
+    if (installConfirmation && status !== "installing") closeInstallConfirmation(installDecision !== true);
     const version = String(next.currentVersion || desktopInfo.version || "");
     const latest = next.latestVersion ? `v${next.latestVersion}` : "新版本";
     const failed = status === "error";
@@ -559,11 +681,13 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     }
     if (!newVersion) element("desktop-update-announcement").hidden = true;
     renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes });
+    restoreInstallFocus();
   }
 
   async function performUpdate(action) {
     if (!["check", "download", "cancel", "install"].includes(action)) return;
     if (updatePending && !(action === "cancel" && updateState.status === "downloading")) return;
+    if (action === "install") requestedInstallFocus = document.activeElement;
     const method = { check: "checkForUpdates", download: "downloadUpdate", cancel: "cancelUpdateDownload", install: "installUpdate" }[action];
     const requestId = ++updateRequestId;
     updatePending = action;
@@ -578,9 +702,11 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
       });
     } finally {
       if (requestId === updateRequestId) {
+        if (action === "install") requestedInstallFocus = null;
         updatePending = null;
         renderUpdateState(updateState);
         if (action === "check" && ["available", "downloaded"].includes(updateState.status)) openUpdateDialog();
+        if (action === "install" && updateState.status === "error") openUpdateDialog();
       }
     }
   }
@@ -852,6 +978,24 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     updateDialogPreviousFocus = null;
     if (previous?.isConnected && previous.getClientRects().length) previous.focus({ preventScroll: true });
   });
+  ui.installLater?.addEventListener("click", () => void respondInstallConfirmation(false));
+  ui.installConfirm?.addEventListener("click", () => void respondInstallConfirmation(true));
+  ui.installDialog?.addEventListener("cancel", event => {
+    event.preventDefault();
+    void respondInstallConfirmation(false);
+  });
+  ui.installDialog?.addEventListener("click", event => {
+    if (event.target !== ui.installDialog) return;
+    const bounds = ui.installDialog.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) void respondInstallConfirmation(false);
+  });
+  ui.installDialog?.addEventListener("close", () => {
+    if (installConfirmation && !ui.installDialog.open) void respondInstallConfirmation(false);
+  });
+  if (typeof bridge.onInstallConfirmation === "function") {
+    const cleanup = bridge.onInstallConfirmation(showInstallConfirmation);
+    if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
+  }
   renderUpdateState(updateState);
   if (typeof bridge.onUpdateState === "function") {
     const cleanup = bridge.onUpdateState((next) => {
@@ -913,6 +1057,8 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
       populateSettings(snapshot);
       updateControls();
     }
+    document.body.dataset.desktopReady = "true";
+    window.dispatchEvent(new Event("xhs-desktop-ready"));
   } catch (error) {
     showError(`本地下载功能暂未就绪：${error?.message || "请重新打开应用。"}`);
     updateControls();

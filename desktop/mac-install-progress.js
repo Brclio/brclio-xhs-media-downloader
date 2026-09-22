@@ -15,13 +15,15 @@ function run(argv) {
   var alive = true, installedAt = 0, lastUpdate = Date.now(), missingSince = 0;
   var previous = '', terminal = false;
   var stages = { preparing: 0, opening: 1, verifying: 2, copying: 3, checking: 4,
-    prepared: 5, ready: 5, waiting: 5, validating: 5, replacing: 6, launching: 7, installed: 8 };
+    prepared: 5, ready: 5, waiting: 5, validating: 5, replacing: 6, launching: 7,
+    awaiting_startup: 7, cleanup_pending: 8, cleaning: 8, installed: 9 };
   var messages = { preparing: '正在准备安装更新…', opening: '正在打开安装包…',
     verifying: '正在校验新版应用…', copying: '正在复制新版应用…',
     checking: '正在检查安装文件…', prepared: '安装准备已完成…',
     ready: '安装助手已准备好…', waiting: '正在等待当前应用退出…', validating: '正在复核安装文件…',
-    replacing: '正在覆盖安装，旧版本已保留为备份…', launching: '正在重新打开新版应用…',
-    installed: '安装成功，正在自动打开新版应用。' };
+    replacing: '正在覆盖安装，临时旧版用于失败恢复…', launching: '正在重新打开新版应用…',
+    awaiting_startup: '正在确认新版启动…', cleanup_pending: '正在准备清理临时旧版…',
+    cleaning: '正在清理临时旧版文件…', installed: '新版已启动，临时旧版文件已自动清理。' };
 
   var app = $.NSApplication.sharedApplication;
   app.setActivationPolicy($.NSApplicationActivationPolicyAccessory);
@@ -52,10 +54,10 @@ function run(argv) {
   bar.style = $.NSProgressIndicatorStyleBar;
   bar.indeterminate = false;
   bar.minValue = 0;
-  bar.maxValue = 8;
+  bar.maxValue = 9;
   bar.doubleValue = 0;
   content.addSubview(bar);
-  var stageLabel = label('安装阶段 0 / 8 · 准备安装', 24, 63, 472, 22, 12, false);
+  var stageLabel = label('安装阶段 0 / 9 · 准备安装', 24, 63, 472, 22, 12, false);
   stageLabel.textColor = $.NSColor.secondaryLabelColor;
   var closeButton = $.NSButton.alloc.initWithFrame($.NSMakeRect(398, 15, 98, 30));
   closeButton.title = '关闭';
@@ -95,7 +97,7 @@ function run(argv) {
       var stage = stages[state.status];
       bar.doubleValue = stage;
       detail.stringValue = typeof state.message === 'string' && state.message ? state.message : messages[state.status];
-      stageLabel.stringValue = '安装阶段 ' + stage + ' / 8 · ' + messages[state.status].replace(/[…。]+$/, '');
+      stageLabel.stringValue = '安装阶段 ' + stage + ' / 9 · ' + messages[state.status].replace(/[…。]+$/, '');
       if (state.status === 'installed') { if (!installedAt) installedAt = Date.now(); }
       else if (Date.now() - lastUpdate > 15 * 60 * 1000) showFailure('安装进度长时间未更新。请查看应用中的更新结果或安装记录。');
     } else {

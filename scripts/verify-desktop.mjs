@@ -83,7 +83,7 @@ app.on('browser-window-created', (_event, win) => {
         await window.xhsDesktop.recordDiagnostic('renderer.smoke', { message: 'bridge verified' });
         const diagnostics = await window.xhsDesktop.getDiagnosticsInfo();
         const feedback = await window.xhsDesktop.submitFeedback({ title: '验证未登录反馈', description: '本地主进程接口验证，无远端上传。', category: 'other' });
-        const updateMethods = ['checkForUpdates', 'downloadUpdate', 'cancelUpdateDownload', 'installUpdate', 'onUpdateState', 'retryItem']
+        const updateMethods = ['checkForUpdates', 'downloadUpdate', 'cancelUpdateDownload', 'installUpdate', 'onUpdateState', 'onInstallConfirmation', 'respondInstallConfirmation', 'retryItem']
           .every(name => typeof window.xhsDesktop[name] === 'function');
         const payloads = [];
         for (const route of ['/api/parse', '/api/python_parse']) {

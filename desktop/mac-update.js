@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { constants } from 'node:fs';
 import { access, chmod, copyFile, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -110,7 +110,30 @@ async function main() {
       // Force a new instance so LaunchServices cannot merely activate it.
       await run('/usr/bin/open', ['-n', current], { timeout: 30000 });
     } catch { await rollback(); return; }
-    await status('installed');
+    await status('awaiting_startup');
+    const expected = JSON.parse(await fs.readFile(result, 'utf8'));
+    const startupDeadline = Date.now() + expected.startupTimeoutMs;
+    while (Date.now() < startupDeadline) {
+      try {
+        const filename = path.join(work, 'startup-confirmed.json');
+        const stat = await fs.lstat(filename);
+        if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.uid !== process.getuid() || stat.size > 4096) throw new Error('Invalid startup confirmation');
+        const confirmed = JSON.parse(await fs.readFile(filename, 'utf8'));
+        if (confirmed.token !== expected.startupToken || confirmed.currentAppPath !== current
+          || confirmed.version !== version || confirmed.appId !== appId || !Number.isSafeInteger(confirmed.pid)
+          || confirmed.pid <= 1 || confirmed.pid === parentPid) throw new Error('Startup confirmation mismatch');
+        process.kill(confirmed.pid, 0);
+        if (await inode(current) !== stagedInode) throw new Error('Installed application changed');
+        // The healthy new process performs guarded cleanup after this helper
+        // releases its installation lock. open(1) succeeding is not readiness.
+        await status('cleanup_pending');
+        return;
+      } catch (error) {
+        if (error.code !== 'ENOENT') console.error('Waiting for valid startup confirmation:', error.message);
+      }
+      await sleep(100);
+    }
+    await status('startup_unconfirmed');
   } finally { if (ownsLock) await fs.rmdir(lock).catch(() => {}); }
 }
 main().catch(async error => {
@@ -124,9 +147,11 @@ main().catch(async error => {
 const RESULTS = {
   ready: '安装助手已准备好，尚未批准替换。', cancelled: '安装准备已取消，当前应用未修改。',
   readiness_timeout: '未收到安装批准，已取消替换。', helper_failed: '安装助手遇到错误，恢复记录已保留。',
-  waiting: '等待旧应用退出，当前应用尚未修改。', replacing: '正在替换应用，旧版本已保留为备份。',
+  waiting: '等待旧应用退出，当前应用尚未修改。', replacing: '正在替换应用，旧版本暂存用于失败恢复。',
   validating: '正在确认新版应用完整性，准备覆盖安装。', launching: '覆盖安装已完成，正在自动打开新版应用。',
-  installed: '应用已替换，正在自动重新打开新版本；如系统显示安全确认，请按提示允许打开。',
+  awaiting_startup: '正在等待新版应用完成启动。', cleanup_pending: '新版已确认启动，正在清理临时旧版文件。',
+  startup_unconfirmed: '新版启动尚未确认，临时旧版已保留供恢复。请尝试打开新版应用。',
+  installed: '新版已成功启动，临时旧版文件已自动清理。',
   rolled_back: '安装或启动请求失败，已恢复旧应用并请求重新打开。',
   rollback_blocked: '应用路径被其他操作修改，未覆盖该路径。旧应用备份已保留，请手动恢复。',
   rollback_failed: '自动恢复未完成；旧应用备份已保留，请手动恢复。',
@@ -201,7 +226,7 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
     try { await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', '--verbose=2', bundle]); }
     catch (cause) { fail('MAC_UPDATE_SIGNATURE', '应用完整签名校验失败，已停止安装。请重新下载完整安装包。', cause); }
   }
-  await info(current);
+  const previousInfo = await info(current);
   await mkdir(cache, { recursive: true, mode: 0o700 }); cache = await realpath(cache);
   if (contained(current, cache)) fail('MAC_UPDATE_PATH', '更新缓存不能放在待替换应用内部。');
   let stageDirectory, work, mountpoint, mounted = false, committed = false, launching = false, disposed = false;
@@ -242,14 +267,21 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
     await progress('checking', '正在检查复制结果，确保新版应用完整。');
     await verify(staged); await detach();
     const currentStat = await lstat(current), stagedStat = await lstat(staged);
+    const stageStat = await lstat(stageDirectory);
     const inode = value => `${value.dev}:${value.ino}`;
     if (currentStat.dev !== stagedStat.dev) fail('MAC_UPDATE_VOLUME', '更新临时文件与当前应用不在同一磁盘，已停止安装。');
     const infoHash = createHash('sha256').update(await readFile(path.join(current, 'Contents/Info.plist'))).digest('hex');
+    const startupToken = randomBytes(32).toString('hex');
+    const startupTimeoutMs = dependencies.startupTimeoutMs ?? 120000;
+    if (!Number.isSafeInteger(startupTimeoutMs) || startupTimeoutMs < 100 || startupTimeoutMs > 300000) fail('MAC_UPDATE_METADATA', '启动确认等待时间无效。');
     const lockPath = path.join(parent, `.brclio-update-${createHash('sha256').update(current).digest('hex').slice(0, 16)}.lock`);
     for (const [status, message] of Object.entries(RESULTS)) await writeFile(path.join(work, `${status}.json`), JSON.stringify({
       status, message, version: expectedVersion, appId: expectedAppId, currentAppPath: current,
       backupPath: backup, failedAppPath: failed, lockPath, preparedAt: new Date().toISOString(),
-      launchRequested: status === 'installed', signature: 'integrity-verified-not-notarization'
+      launchRequested: ['awaiting_startup', 'startup_unconfirmed', 'cleanup_pending', 'installed'].includes(status), signature: 'integrity-verified-not-notarization',
+      schemaVersion: 2, startupToken, startupTimeoutMs, installedIdentity: inode(stagedStat),
+      stageIdentity: inode(stageStat), backupIdentity: inode(currentStat), backupInfoHash: infoHash,
+      backupVersion: previousInfo.CFBundleShortVersionString
     }, null, 2), { mode: 0o600 });
     const helperPath = path.join(work, 'install.cjs'); await writeFile(helperPath, HELPER, { mode: 0o700 });
     await progress('prepared', '新版已准备好，正在启动覆盖安装助手。');
