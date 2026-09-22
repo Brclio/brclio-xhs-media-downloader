@@ -256,7 +256,7 @@ test('equal and older releases never offer a downgrade or require installer asse
 });
 
 test('metadata failures are retryable without leaking network errors', async t => {
-  let response = () => new Response('', { status: 403 });
+  let response = () => new Response('', { status: 403, headers: { 'x-ratelimit-remaining': '0' } });
   const { manager } = await fixture(t, { fetchImpl: () => response() });
   assert.equal((await manager.checkForUpdates()).error.code, 'RATE_LIMITED');
   response = () => { throw new Error('secret URL and personal path'); };
@@ -266,6 +266,128 @@ test('metadata failures are retryable without leaking network errors', async t =
   assert.equal((await manager.checkForUpdates()).error.code, 'INVALID_RELEASE');
   response = () => Response.json(release());
   assert.equal((await manager.checkForUpdates()).status, 'available');
+});
+
+test('a failed metadata refresh keeps the known installer directly downloadable', async t => {
+  for (const failure of [
+    () => new Response('', { status: 403, headers: { 'x-ratelimit-remaining': '0' } }),
+    () => new Response('', { status: 429 }),
+    () => { throw new Error('offline'); },
+    () => new Response('{invalid json')
+  ]) {
+    let failCheck = false;
+    const latest = release();
+    const f = await fixture(t, { fetchImpl: url => url === LATEST_RELEASE_URL
+      ? failCheck ? failure() : Response.json(latest) : new Response(content) });
+    const found = await f.manager.checkForUpdates();
+    failCheck = true;
+    const refreshed = await f.manager.checkForUpdates();
+    assert.equal(refreshed.status, 'available');
+    assert.equal(refreshed.error, null);
+    assert.equal(refreshed.checkError.phase, 'check');
+    assert.equal(refreshed.latestVersion, found.latestVersion);
+    assert.equal(refreshed.releaseNotes, found.releaseNotes);
+    assert.deepEqual(refreshed.download, found.download);
+    const beforeDownload = f.requests.length;
+    const downloaded = await f.manager.downloadUpdate();
+    assert.equal(downloaded.status, 'downloaded');
+    assert.equal(downloaded.checkError, null);
+    assert.deepEqual(f.requests.slice(beforeDownload), [latest.assets[0].browser_download_url]);
+    assert.deepEqual(await readFile(path.join(f.directory, latest.assets[0].name)), content);
+  }
+});
+
+test('a limited version query cannot discard partial bytes or force another query before resume', async t => {
+  const offset = 11;
+  const latest = release();
+  let checks = 0, downloads = 0;
+  const f = await fixture(t, { fetchImpl: (url, init) => {
+    if (url === LATEST_RELEASE_URL) return ++checks === 1 ? Response.json(latest) : new Response('', { status: 429 });
+    assert.equal(url, latest.assets[0].browser_download_url);
+    if (++downloads === 1) return new Response(content.subarray(0, offset));
+    assert.equal(new Headers(init.headers).get('range'), `bytes=${offset}-`);
+    return rangedResponse(offset);
+  } });
+  await f.manager.checkForUpdates();
+  const interrupted = await f.manager.downloadUpdate();
+  assert.equal(interrupted.error.phase, 'download');
+  assert.equal(interrupted.download.receivedBytes, offset);
+  const limited = await f.manager.checkForUpdates();
+  assert.equal(limited.status, 'available');
+  assert.equal(limited.checkError.code, 'RATE_LIMITED');
+  assert.deepEqual(limited.download, interrupted.download);
+  assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
+  assert.equal(checks, 2);
+  assert.equal(downloads, 2);
+  assert.deepEqual(await readFile(path.join(f.directory, latest.assets[0].name)), content);
+});
+
+test('manifest-only known releases download their checksum attachment without querying latest again', async t => {
+  const latest = release({ digest: null });
+  let checks = 0;
+  const f = await fixture(t, { fetchImpl: url => {
+    if (url === LATEST_RELEASE_URL) return ++checks === 1 ? Response.json(latest) : new Response('', { status: 429 });
+    if (url.endsWith('SHA256SUMS.txt')) return new Response(`${sha256(content)}  ${latest.assets[0].name}\n`);
+    return new Response(content);
+  } });
+  await f.manager.checkForUpdates();
+  assert.equal((await f.manager.checkForUpdates()).status, 'available');
+  assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
+  assert.deepEqual(f.requests.slice(2), [latest.assets[1].browser_download_url, latest.assets[0].browser_download_url]);
+});
+
+test('an incomplete refresh never pairs old release metadata with a new candidate', async t => {
+  const original = release();
+  const newer = release({ version: '1.8.0', digest: null });
+  let checks = 0;
+  const f = await fixture(t, { fetchImpl: url => {
+    if (url === LATEST_RELEASE_URL) return Response.json(++checks === 1 ? original : newer);
+    if (url.endsWith('SHA256SUMS.txt')) return new Response('', { status: 429 });
+    assert.equal(url, original.assets[0].browser_download_url);
+    return new Response(content);
+  } });
+  await f.manager.checkForUpdates();
+  const candidate = f.manager.candidate;
+  await writeFile(path.join(f.directory, `${newer.assets[0].name}.${sha256(content)}.partial`), content.subarray(0, 5));
+  const failed = await f.manager.checkForUpdates();
+  assert.equal(failed.status, 'available');
+  assert.equal(failed.latestVersion, '1.7.0');
+  assert.equal(f.manager.candidate, candidate);
+  assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
+});
+
+test('a successful refresh clears its previous warning and adopts the newer release', async t => {
+  let checks = 0;
+  const f = await fixture(t, { fetchImpl: () => ++checks === 2
+    ? new Response('', { status: 429 }) : Response.json(release({ version: checks === 1 ? '1.7.0' : '1.8.0' })) });
+  await f.manager.checkForUpdates();
+  assert.equal((await f.manager.checkForUpdates()).checkError.code, 'RATE_LIMITED');
+  const refreshed = await f.manager.checkForUpdates();
+  assert.equal(refreshed.latestVersion, '1.8.0');
+  assert.equal(refreshed.checkError, null);
+  assert.equal(f.manager.candidate.version, '1.8.0');
+});
+
+test('forbidden responses are not all rate limits and file errors ask for a download retry', async t => {
+  const f = await fixture(t, { fetchImpl: () => new Response('', { status: 403 }) });
+  const denied = await f.manager.checkForUpdates();
+  assert.equal(denied.status, 'error');
+  assert.equal(denied.error.code, 'ACCESS_DENIED');
+  assert.equal(denied.checkError, null);
+  for (const [status, headers, code] of [
+    [403, {}, 'ACCESS_DENIED'], [429, {}, 'RATE_LIMITED'],
+    [403, { 'retry-after': '60' }, 'RATE_LIMITED']
+  ]) {
+    const g = await fixture(t, { fetchImpl: url => url === LATEST_RELEASE_URL
+      ? Response.json(release()) : new Response('', { status, headers }) });
+    await g.manager.checkForUpdates();
+    const failed = await g.manager.downloadUpdate();
+    assert.equal(failed.status, 'error');
+    assert.equal(failed.error.phase, 'download');
+    assert.equal(failed.error.code, code);
+    assert.match(failed.error.message, /重试下载/);
+    assert.doesNotMatch(failed.error.message, /检查更新/);
+  }
 });
 
 test('metadata timeouts and redirects fail closed', async t => {

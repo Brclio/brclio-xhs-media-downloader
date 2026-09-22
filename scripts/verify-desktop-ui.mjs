@@ -98,6 +98,8 @@ app.whenReady().then(async () => {
   const rendererErrors = [];
   let downloadMode = 'pending';
   let resolveDownload;
+  let checkMode = 'success';
+  let resolveUpdateCheck;
   let pendingInstall = null;
   let installSequence = 0;
   let acceptedInstallations = 0;
@@ -111,6 +113,7 @@ app.whenReady().then(async () => {
   const publishProfile = value => { profile = value; win.webContents.send('ui-fixture:profile', value); return value; };
   const publishAccount = value => { account = value; win.webContents.send('ui-fixture:account', value); return value; };
   const publishUpdate = value => { update = value; win.webContents.send('ui-fixture:update', value); return value; };
+  const retainedCheckError = { code: 'RATE_LIMITED', phase: 'check', message: 'GitHub 暂时限制请求 <img src=x onerror=alert(1)>' };
   const available = () => ({
     status: 'available', currentVersion: '1.6.0', latestVersion: '1.6.1',
     releaseNotes: ['下载与更新，更顺畅了。', '', '### 下载可以接着来',
@@ -123,7 +126,7 @@ app.whenReady().then(async () => {
       ...Array.from({ length: 8 }, (_, i) => `- 稳定性验证 ${i + 1}：改进任务恢复和更新提示。`),
       '测试更新说明 <img src=x onerror=alert(1)>', '[不执行链接](javascript:alert(1))'].join('\n'),
     installationHint: 'Mac：确认后覆盖当前应用并重新启动，保留账号和任务记录。',
-    download: { receivedBytes: 0, totalBytes: 0, canResume: false }, error: null, canRetry: true
+    download: { receivedBytes: 0, totalBytes: 0, canResume: false }, error: null, checkError: null, canRetry: true
   });
   ipcMain.handle('ui-fixture:invoke', (_event, method, value) => {
     calls.push({ method, value });
@@ -150,7 +153,16 @@ app.whenReady().then(async () => {
       ...profile, status: 'downloading', failed: 0,
       items: profile.items.map(item => item.id === value ? { ...item, status: 'downloading', error: '' } : item)
     });
-    if (method === 'checkForUpdates') return publishUpdate(available());
+    if (method === 'checkForUpdates') {
+      if (checkMode === 'retained-failure') {
+        const previous = update;
+        publishUpdate({ ...previous, status: 'checking', error: null, checkError: null, canRetry: false });
+        return new Promise(resolve => { resolveUpdateCheck = () => resolve(publishUpdate({
+          ...previous, status: 'available', error: null, checkError: retainedCheckError, canRetry: false
+        })); });
+      }
+      return publishUpdate(available());
+    }
     if (method === 'downloadUpdate') {
       if (downloadMode === 'downloaded') return publishUpdate({ ...available(), status: 'downloaded' });
       const receivedBytes = update.download?.canResume ? 768 : 512;
@@ -443,10 +455,66 @@ app.whenReady().then(async () => {
   await check(`document.querySelector('#desktop-update-install').textContent === '重试安装'`, 'installation error retry');
   publishUpdate({ ...available(), status: 'error', error: { phase: 'check', message: '测试检查失败' } });
   await check(`!document.querySelector('#desktop-update-retry').hidden`, 'check error retry');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-download').hidden`), true, 'a raw latestVersion cannot authorize downloading after an ordinary check error');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').dataset.action`), 'check');
   await click('#desktop-update-retry');
   await check(`!document.querySelector('#desktop-update-download').hidden`, 'check retry result');
   await click('#desktop-update-dialog-later');
   assert.equal(calls.filter(call => call.method === 'checkForUpdates').length, 2);
+  const checkFailureScreenshots = {};
+  for (const receivedBytes of [0, 512]) {
+    const retained = { ...available(), canRetry: false,
+      download: { receivedBytes, totalBytes: 1024, canResume: receivedBytes > 0 } };
+    publishUpdate(retained);
+    await check(`!document.querySelector('#desktop-update-download').hidden && !document.querySelector('#desktop-update-download').disabled`, 'known release is available before a recheck');
+    checkMode = 'retained-failure';
+    await click('#desktop-check-updates');
+    await check(`document.querySelector('#desktop-update-panel').dataset.status === 'checking' && document.querySelector('#desktop-update-download').disabled`, 'recheck enters a real pending checking state');
+    resolveUpdateCheck();
+    resolveUpdateCheck = null;
+    await check(`document.querySelector('#desktop-update-dialog').open && document.querySelector('#desktop-update-dialog-action').dataset.action === 'download' && !document.querySelector('#desktop-update-dialog-action').disabled`, 'failed recheck preserves the known release download action');
+    const expectedAction = receivedBytes ? '继续下载' : '立即更新';
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), expectedAction);
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-download').textContent`), receivedBytes ? '继续下载' : '下载更新');
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-title').textContent`), '发现新版本');
+    assert.match(await evaluate(`document.querySelector('#desktop-update-title').textContent`), /发现新版本 v1\.6\.1/);
+    assert.match(await evaluate(`document.querySelector('#desktop-update-dialog-version').textContent`), /v1\.6\.1.*v1\.6\.0/);
+    for (const selector of ['#desktop-update-check-note', '#desktop-update-dialog-check-note']) {
+      assert.equal(await evaluate(`document.querySelector('${selector}').hidden`), false, 'both views explain that the known release remains downloadable');
+      assert.equal(await evaluate(`document.querySelector('${selector}').textContent`), '暂时无法检查最新版本，仍可下载已发现的 v1.6.1。');
+      assert.equal(await evaluate(`document.querySelector('${selector}').getAttribute('role')`), 'status', 'the retry notice is polite rather than an error alert');
+      assert.equal(await evaluate(`document.querySelector('${selector}').querySelectorAll('img').length`), 0);
+    }
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-error').hidden && document.querySelector('#desktop-update-dialog-error').hidden`), true, 'recheck failure does not turn into a blocking download error');
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-progress-wrap').hidden`), receivedBytes === 0);
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-progress-wrap').hidden`), receivedBytes === 0);
+    if (receivedBytes) {
+      assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 50);
+      assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-progress').value`), 50);
+    }
+    assert.equal(await evaluate(dialogFits), true, 'recheck notice keeps the dialog footer visible');
+    const screenshotName = receivedBytes ? 'resume' : 'fresh';
+    checkFailureScreenshots[screenshotName] = path.join(temporary, `desktop-update-recheck-${screenshotName}.png`);
+    writeFileSync(checkFailureScreenshots[screenshotName], await captureFrame());
+    const downloadsBefore = calls.filter(call => call.method === 'downloadUpdate').length;
+    const checksBefore = calls.filter(call => call.method === 'checkForUpdates').length;
+    downloadMode = 'pending';
+    await click('#desktop-update-dialog-action');
+    await check(`document.querySelector('#desktop-update-dialog-action').textContent === '暂停下载'`, 'the retained release starts downloading without another metadata check');
+    assert.equal(calls.filter(call => call.method === 'downloadUpdate').length, downloadsBefore + 1);
+    assert.equal(calls.filter(call => call.method === 'checkForUpdates').length, checksBefore);
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-check-note').hidden && document.querySelector('#desktop-update-dialog-check-note').hidden`), true, 'starting a download clears the recheck notice');
+    await click('#desktop-update-dialog-action');
+    await check(`document.querySelector('#desktop-update-dialog-action').textContent === '继续下载' && !document.querySelector('#desktop-update-dialog-action').disabled`, 'fixture download pauses with saved progress');
+    await click('#desktop-update-dialog-later');
+    await check(`!document.querySelector('#desktop-update-dialog').open`, 'finish retained-release download regression');
+    checkMode = 'success';
+  }
+  publishUpdate({ ...available(), checkError: retainedCheckError });
+  await check(`!document.querySelector('#desktop-update-check-note').hidden`, 'a subsequent successful check can clear a retained warning');
+  await click('#desktop-check-updates');
+  await check(`document.querySelector('#desktop-update-dialog').open && document.querySelector('#desktop-update-check-note').hidden && document.querySelector('#desktop-update-dialog-check-note').hidden`, 'successful recheck clears the nonblocking notice in both views');
+  await click('#desktop-update-dialog-later');
   publishUpdate({ ...available(), status: 'downloaded', installationHint: '当前为 Windows 便携版；本次更新会运行安装程序，安装正式版。' });
   await check(`document.querySelector('#desktop-update-installation-hint').textContent.includes('便携版')`, 'Windows portable installation explanation');
   const pageScreenshots = {};
@@ -521,6 +589,8 @@ app.whenReady().then(async () => {
   writeFileSync(narrowScreenshot, await captureFrame());
   publishUpdate({ ...available(), latestVersion: '1.6.2' });
   await check(`document.querySelector('#desktop-update-dialog').open`, 'a newer version may announce again');
+  publishUpdate({ ...update, checkError: retainedCheckError });
+  await check(`!document.querySelector('#desktop-update-dialog-check-note').hidden`, 'retained release notice is visible at 390px');
   assert.equal(await evaluate(dialogFits), true, '390px dialog keeps long notes inside and footer visible');
   await evaluate(`document.querySelector('#desktop-update-dialog-notes').scrollTop = 300`);
   assert.equal(await evaluate(dialogFits), true, 'scrolling notes does not move the action row out of view');
@@ -565,7 +635,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, pageScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

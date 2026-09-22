@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Brclio 小红书下载器的更新记录。v1.8.3 改进安装确认弹窗，Mac 成功升级后自动清理旧客户端备份，保留账号和下载任务。"
+      content="Brclio 小红书下载器的更新记录。v1.8.4 修复检查受限时无法下载已发现更新的问题，保留下载入口和续传进度。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.8.3 本地版">
+          <div class="header-status" aria-label="当前记录：v1.8.4 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.8.3 本地版</span>
+            <span>v1.8.4 本地版</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.8.3 让安装确认更清晰，Mac 成功升级后自动清理旧客户端备份。原有账号、任务和下载文件继续保留。
+              这里记录功能增加、体验优化与问题修复。v1.8.4 让已发现的更新保持可下载，再次检查受限也能继续。原有续传、安装进度和自动重开继续保留。
             </p>
 
             <div class="release-hero-actions">
@@ -70,7 +70,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.8.3</strong>
+              <strong>v1.8.4</strong>
               <small>本地版 · 2026.09.22</small>
             </div>
 
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#known-update-download"><span>v1.8.4</span><strong>检查受限仍可继续更新</strong></a>
               <a href="#install-confirmation-update"><span>v1.8.3</span><strong>安装确认与旧客户端清理</strong></a>
               <a href="#resumable-update"><span>v1.8.2</span><strong>续传、安装进度与更新弹窗</strong></a>
               <a href="#branded-downloads-update"><span>v1.8.1</span><strong>品牌安装包与验证码邮件</strong></a>
@@ -139,6 +140,19 @@
           </aside>
 
           <div class="release-feed">
+            <article id="known-update-download" class="release-entry release-entry-featured">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-22"><span>09.22</span><small>2026 · 更新修复</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.4</span><span class="release-status">Mac / Windows</span></div><h3>已发现的更新，继续下载</h3></div></header>
+                <p class="release-lead">已发现新版后，再次检查受限不再挡住下载。保留安装包信息和已下载进度。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>继续下载已知版本</strong>查询失败时仍显示“立即更新”或“继续下载”，直接获取已发现版本的安装包。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>温和说明检查结果</strong>弹窗和关于页显示非阻塞提示，区分检查版本与下载文件的错误。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>进度和校验保持一致</strong>切换新版前先完成检查，续传后仍校验整个安装包。重启软件后仍需重新获取版本信息。</p></div>
+                </div>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.4" target="_blank" rel="noopener noreferrer">下载 v1.8.4 与查看验证说明 ↗</a><span>更新修复 · 2026.09.22</span></div>
+              </div>
+            </article>
             <article id="install-confirmation-update" class="release-entry release-entry-featured">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-22"><span>09.22</span><small>2026 · 体验修正</small></time></div>
               <div class="release-card">
@@ -1258,7 +1272,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本地版记录更新至 v1.8.3（2026.09.22）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
+        <p>本地版记录更新至 v1.8.4（2026.09.22）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

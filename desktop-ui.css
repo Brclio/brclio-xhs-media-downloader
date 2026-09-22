@@ -179,6 +179,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+.desktop-update-check-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--cream-deep);
+  color: var(--blue-deep);
+  font-size: 0.78rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
 .desktop-update-error {
   margin-top: 12px;
   color: var(--red-deep);
@@ -985,6 +996,7 @@ body.is-desktop .desktop-feedback-result[data-status="error"] { color: var(--red
 .desktop-update-dialog-notes li::before { position: absolute; top: .68em; left: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); content: ""; }
 .desktop-update-dialog-bottom { flex: 0 0 auto; padding: 18px 28px 26px; }
 .desktop-update-dialog-bottom .desktop-update-progress-wrap { margin: 0 0 14px; }
+.desktop-update-dialog-bottom .desktop-update-check-note { margin: 0 0 14px; }
 .desktop-update-dialog-bottom .desktop-update-error { margin: 0 0 14px; max-height: 74px; overflow-y: auto; font-size: .8rem; }
 .desktop-update-dialog-actions { display: flex; gap: 12px; }
 .desktop-update-dialog-actions button {

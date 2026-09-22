@@ -81,6 +81,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     updatePanel: element("desktop-update-panel"),
     updateTitle: element("desktop-update-title"),
     updateMessage: element("desktop-update-message"),
+    updateCheckNote: element("desktop-update-check-note"),
     updateDownload: element("desktop-update-download"),
     updateCancel: element("desktop-update-cancel"),
     updateInstall: element("desktop-update-install"),
@@ -99,6 +100,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     updateDialogProgressWrap: element("desktop-update-dialog-progress-wrap"),
     updateDialogProgress: element("desktop-update-dialog-progress"),
     updateDialogProgressText: element("desktop-update-dialog-progress-text"),
+    updateDialogCheckNote: element("desktop-update-dialog-check-note"),
     updateDialogError: element("desktop-update-dialog-error"),
     updateDialogLater: element("desktop-update-dialog-later"),
     updateDialogAction: element("desktop-update-dialog-action"),
@@ -569,7 +571,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     }
   }
 
-  function renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes }) {
+  function renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes, checkNote }) {
     if (!ui.updateDialog) return;
     ui.updateDialog.dataset.status = status;
     if (["idle", "up-to-date"].includes(status)) { closeUpdateDialog(); return; }
@@ -589,6 +591,8 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
         : savedProgress ? `${progressText} · 进度已保存` : progressText;
     ui.updateDialogProgressText.textContent = message;
     ui.updateDialogProgress.setAttribute("aria-valuetext", message);
+    ui.updateDialogCheckNote.hidden = !checkNote;
+    ui.updateDialogCheckNote.textContent = checkNote;
     ui.updateDialogError.hidden = status !== "error";
     ui.updateDialogError.textContent = status === "error" ? String(next.error?.message || "更新未完成，请稍后重试。") : "";
     ui.updateDialogLater.textContent = status === "downloading" ? "后台下载" : "稍后再说";
@@ -615,6 +619,10 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     if (installConfirmation && status !== "installing") closeInstallConfirmation(installDecision !== true);
     const version = String(next.currentVersion || desktopInfo.version || "");
     const latest = next.latestVersion ? `v${next.latestVersion}` : "新版本";
+    const checkNote = status === "available" && next.checkError
+      ? `暂时无法检查最新版本，仍可下载已发现的 ${latest}。` : "";
+    ui.updateCheckNote.hidden = !checkNote;
+    ui.updateCheckNote.textContent = checkNote;
     const failed = status === "error";
     const failedPhase = ["check", "download", "install"].includes(next.error?.phase) ? next.error.phase : "check";
     const mayRetry = next.canRetry !== false;
@@ -687,7 +695,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
       element("desktop-update-announcement").hidden = currentPage === "about" || dismissedUpdate === next.latestVersion;
     }
     if (!newVersion) element("desktop-update-announcement").hidden = true;
-    renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes });
+    renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes, checkNote });
     restoreInstallFocus();
   }
 

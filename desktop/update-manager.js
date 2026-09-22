@@ -236,7 +236,7 @@ export class UpdateManager {
     this.state = { status: 'idle', currentVersion, latestVersion: null, platform, arch,
       releaseUrl: null, releaseNotes: '', publishedAt: '',
       download: downloadProgress(0, 0),
-      error: null, canRetry: false, installationHint: installationHint(platform, portable) };
+      error: null, checkError: null, canRetry: false, installationHint: installationHint(platform, portable) };
   }
 
   snapshot() { return structuredClone(this.state); }
@@ -262,7 +262,15 @@ export class UpdateManager {
             error?.code === 'ENOSPC' ? '磁盘空间不足，请清理后重试。' : phase === 'install'
               ? '无法完成安装前准备或打开安装程序，请重试。' : '更新请求失败，请检查网络连接后重试。');
           const retryPhase = phase === 'install' && !this.verifiedFile && this.candidate ? 'download' : phase;
-          this.emit({ status: 'error', error: { code: failure.code, message: failure.message, phase: retryPhase }, canRetry: true });
+          const detail = { code: failure.code, message: failure.message, phase: retryPhase };
+          // A failed refresh says nothing about an already validated release.
+          // Keep its direct asset URL, checksum and saved bytes usable without
+          // spending another metadata request before downloading.
+          if (phase === 'check' && this.candidate) {
+            this.emit({ status: 'available', error: null, checkError: detail, canRetry: false });
+          } else {
+            this.emit({ status: 'error', error: detail, canRetry: true });
+          }
         }
       }
       return this.snapshot();
@@ -306,7 +314,12 @@ export class UpdateManager {
       }
       if (!statuses.includes(response.status)) {
         void response.body?.cancel().catch(() => {});
-        if (response.status === 403 || response.status === 429) fail('RATE_LIMITED', 'GitHub 暂时限制请求，请稍后再检查更新。');
+        if (response.status === 429 || (response.status === 403
+          && (response.headers.get('x-ratelimit-remaining') === '0' || response.headers.has('retry-after')))) {
+          fail('RATE_LIMITED', asset ? 'GitHub 暂时限制文件下载，请稍后重试下载。' : 'GitHub 暂时限制版本查询，请稍后再检查更新。');
+        }
+        if (response.status === 403) fail('ACCESS_DENIED', asset
+          ? 'GitHub 拒绝了文件下载请求（403），请稍后重试下载。' : 'GitHub 拒绝了版本查询请求（403），请稍后再检查更新。');
         if (response.status === 404) fail('RELEASE_NOT_FOUND', '正式版本或安装包暂不可用，请稍后重试。');
         fail('HTTP_ERROR', `更新服务器返回错误（${response.status}），请稍后重试。`);
       }
@@ -352,19 +365,21 @@ export class UpdateManager {
   checkForUpdates() {
     return this.run('check', async controller => {
       if (this.state.status === 'downloaded') return;
-      this.emit({ status: 'checking', error: null, canRetry: false });
+      this.emit({ status: 'checking', error: null, checkError: null, canRetry: false });
       const response = await this.request(LATEST_RELEASE_URL, controller);
       let release;
       try { release = JSON.parse(await this.text(response, MAX_RELEASE_BYTES, controller)); }
       catch (error) { if (error instanceof UpdateError) throw error; fail('INVALID_RELEASE', '无法读取更新信息，请稍后重试。'); }
       const { metadata, candidate } = parseRelease(release, this.state);
-      this.candidate = candidate;
-      this.verifiedFile = null;
       // Cached filenames only signal that progress may exist. Resolve the
       // current trusted manifest before deciding which saved bytes are usable.
       if (candidate && !candidate.sha256 && await this.hasCachedPartial(candidate)) await this.ensureChecksum(candidate, controller);
       const received = candidate?.sha256 ? await this.partialSize(candidate) : 0;
-      this.emit({ ...metadata, status: candidate ? 'available' : 'up-to-date', error: null, canRetry: false,
+      // Commit the new candidate only after all of its trust/progress checks
+      // succeed, so a failed refresh cannot mix old notes with a new asset.
+      this.candidate = candidate;
+      this.verifiedFile = null;
+      this.emit({ ...metadata, status: candidate ? 'available' : 'up-to-date', error: null, checkError: null, canRetry: false,
         download: downloadProgress(received, candidate?.size || 0) });
     });
   }
@@ -416,7 +431,7 @@ export class UpdateManager {
       const candidate = this.candidate;
       if (!candidate) fail('CHECK_REQUIRED', '请先检查更新。');
       if (this.state.status === 'downloaded') return;
-      this.emit({ status: 'downloading', error: null, canRetry: false });
+      this.emit({ status: 'downloading', error: null, checkError: null, canRetry: false });
       await this.ensureChecksum(candidate, controller);
       const directory = await this.cacheDirectory();
       const final = path.join(directory, candidate.name);
