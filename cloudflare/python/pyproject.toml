@@ -1,0 +1,8 @@
+[project]
+name = "brclio-xhs-python-worker"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = ["workers-runtime-sdk==1.9.0"]
+
+[dependency-groups]
+dev = ["workers-py==1.17.4"]

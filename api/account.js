@@ -39,7 +39,7 @@ function requireOrigin(req, origin) {
 }
 
 /** Injectable for HTTP boundary tests; the default instance is created lazily from platform Secrets. */
-export function createAccountHandler({ service, config, now = Date.now } = {}) {
+export function createAccountHandler({ service, config, env, clientIp, mailerFactory = createMailer, now = Date.now } = {}) {
   return async function handler(req, res) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
@@ -49,15 +49,18 @@ export function createAccountHandler({ service, config, now = Date.now } = {}) {
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); fail('METHOD_NOT_ALLOWED', '只支持 POST 请求。', 405); }
       if (!/^application\/json(?:\s*;|$)/i.test(header(req, 'content-type'))) fail('UNSUPPORTED_MEDIA_TYPE', '请使用 JSON 请求。', 415);
       const body = bodyValue(req);
-      const effectiveConfig = config || readConfig();
-      const effectiveService = service || createAccountService({ store: createGithubStore(), mailer: createMailer(), config: effectiveConfig });
+      // Workers supplies request-scoped bindings explicitly; never mutate process.env.
+      // Omitted env retains the Vercel / local process environment behavior.
+      const effectiveConfig = config || readConfig(env);
+      const effectiveService = service || createAccountService({ store: createGithubStore(env), mailer: mailerFactory(env), config: effectiveConfig });
       const cookie = cookieValue(req);
       const bearer = header(req, 'authorization').match(/^Bearer ([A-Za-z0-9_-]{32,200})$/)?.[1] || '';
       const adminFlow = body.action?.startsWith?.('admin-') || body.input?.client === 'admin' || Boolean(cookie);
       if (adminFlow) requireOrigin(req, effectiveConfig.siteOrigin);
       if (cookie && bearer) fail('AMBIGUOUS_CREDENTIALS', '请使用单一登录凭据。');
-      // Vercel overwrites x-vercel-forwarded-for. Never accept caller-controlled x-forwarded-for.
-      const ip = header(req, 'x-vercel-forwarded-for').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+      // Only the deployment adapter can select another platform's trusted IP header.
+      // The default is Vercel, which overwrites x-vercel-forwarded-for.
+      const ip = clientIp ? clientIp(req) : header(req, 'x-vercel-forwarded-for').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
       const result = await effectiveService.execute({ action: body.action, input: body.input, proof: body.proof, token: bearer || cookie, ip, client: adminFlow ? 'admin' : 'desktop' });
       if (body.action === 'verify-code' && body.input?.client === 'admin') {
         res.setHeader('Set-Cookie', `${ADMIN_COOKIE}=${result.token}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=34560000`);

@@ -2,12 +2,14 @@
 
 ## 目录和部署边界
 
-本项目沿用 **Vercel + Electron**。代码继续放在当前仓库，业务数据放在另一个不关联自动部署的 GitHub 私有仓库。不接入支付系统，不使用 D1、Redis 或其他数据库。
+本项目支持 **Vercel 或 Cloudflare Pages + Workers，以及 Electron**。代码继续放在当前仓库，业务数据放在另一个不关联自动部署的 GitHub 私有仓库。不接入支付系统，GitHub 仍是唯一业务存储，不迁入 D1 或 Redis。Cloudflare 的部署、原环境迁移和切换核验见 [Cloudflare 部署说明](cloudflare-deployment.md)；原 Vercel 部署流程保留，笔记解析还可能使用原 Vercel 的同引擎 JSON 回退。
 
 | 文件或目录 | 用途 | 发布到 |
 | --- | --- | --- |
-| `api/account.js`、`server/auth/` | 邮箱登录、会员、设备、激活码、管理员权限、GitHub 存储 | Vercel 服务端函数 |
-| `admin/` | 管理网页 | Vercel 静态发布目录 |
+| `api/account.js`、`server/auth/` | 邮箱登录、会员、设备、激活码、管理员权限、GitHub 存储 | Vercel 服务端函数，或主 Worker 私有 `AccountRuntime` 执行环境 |
+| `cloudflare/account-runtime.js` | 私有账号 Durable Object，不使用其存储 | 主 Worker 的 `ACCOUNT_RUNTIME` 绑定 |
+| `admin/` | 管理网页 | Vercel 静态目录，或经 Pages 网关与主 Worker 提供；保留后台安全响应头 |
+| `cloudflare/pages/` | 自定义域名入口 | Pages；API 与后台请求通过 `APP` 服务绑定交给主 Worker，不持有账号 Secrets |
 | `desktop/`、`account-ui.*` | 本地安全存储、软件账号界面、实际业务授权检查 | Electron 安装包 |
 | `lib/membership-policy.js` | 集中配置会员保护范围 | 后端与桌面共用 |
 | `deploy/build-web.mjs` | 将允许公开的网页文件复制到 `dist-web/` | 构建工具 |
@@ -15,13 +17,21 @@
 
 `vercel.json` 指定 `dist-web/` 为静态输出目录，根目录 `api/` 由 Vercel 单独构建函数并追踪服务端依赖。`.vercelignore` 排除桌面代码、运行环境、安装包、测试、文档与环境文件；安装时 `npm ci --omit=dev --ignore-scripts` 不下载 Electron。Electron `build.files` 使用独立白名单，不包含授权后端、管理员页面、环境文件或数据仓库。
 
+Cloudflare 使用同一 `dist-web/` 白名单和账号处理器，主 Worker 注入请求自己的 `env`，并使用平台覆盖的 `cf-connecting-ip`。Pages 可接收外部 DNS 的子域名 CNAME，先在 Pages 注册自定义域名，再指向实际 `pages.dev` 主机；网关保留 Origin、Cookie、签名请求字节和响应头，不放宽账号同源校验。现有 Vercel 的环境读取与可信 IP 路径不变。迁移时保持原 `AUTH_SECRET_PEPPER`、GitHub 数据文件、管理员名单和准确的 `AUTH_SITE_ORIGIN`；已有账号不能重新生成 pepper 或初始化空库。正式域名不变时，原客户端授权地址与管理员 Cookie 可以继续使用，仍需线上核验旧会话与设备授权。
+
+SQLite 类型 Durable Object `AccountRuntime` 已部署，用于账号和完整反馈校验的独立执行环境；主 Worker 通过 `ACCOUNT_RUNTIME` 调用固定对象 `accounts-v1`。代码不读写 Durable Object 存储，账号和反馈仍使用同一 GitHub 权威文件。解析另由 `ParseRuntime` 处理，不与账号接口混用。超过 8 MB、接近 8 MiB 的 64 分片反馈已在真实 workerd 中通过完整校验，GitHub GraphQL 分 4 次查询读取，未缩减日志内容。
+
+本轮主 Worker 版本 `06db7233-a9b9-4f10-baf2-cbc2d4dd8131` 已完成真实验证码发送、收件与管理员登录；同一测试会话在 Cloudflare 和 Vercel 均成功读取账号与后台数据。正式域名已切到 Pages，域名和证书状态为 ACTIVE，HTTPS 健康检查确认该 Cloudflare 版本。正式域名账号同源策略与已安装客户端的切换后验证，继续按 [迁移验收记录](cloudflare-deployment.md#已有验证记录) 标明范围。
+
+笔记解析回退只允许原 Vercel 的 `/api/parse` 和 `/api/python_parse`，**不包含 `/api/account`**，也不转发 Cookie、账号授权头或业务数据。该回退不能作为账号或邮件故障的替代路径；账号迁移必须单独验收。
+
 默认 **主页批量下载需要会员及已绑定设备，单篇下载免费**。修改 `lib/membership-policy.js` 后须同步部署后端并重新打包客户端。原下载功能实现保留；权限不通过删除功能来实现。已安装旧版本无法被新代码远程改变。
 
 ## GitHub 数据仓库与最小权限
 
 1. 新建独立私有仓库，例如 `xhs-account-data`，用 README 初始化，确保目标分支存在。不要将它连接 Vercel、开启 Pages 或公开可读权限。
 2. 创建 fine-grained PAT，仅选择该数据仓库，授予 **Contents: Read and write**。Metadata 只读由 GitHub自动提供。不需要代码仓库、Actions、Issues、Pull requests 或 Administration 写权限。
-3. 将令牌仅保存到 Vercel 的 `AUTH_GITHUB_TOKEN`。后端使用它访问 GitHub，桌面和网页不直接访问数据仓库。
+3. 将令牌仅保存到所用服务端平台的 `AUTH_GITHUB_TOKEN`（Vercel 环境变量或 Cloudflare 主 Worker Secret）。后端使用它访问 GitHub，桌面和网页不直接访问数据仓库。
 4. 设置 `AUTH_GITHUB_OWNER`、`AUTH_GITHUB_REPO`、`AUTH_GITHUB_BRANCH`（默认 `main`）、`AUTH_GITHUB_PATH`（默认 `state/accounts.json`）。后端检查仓库确为私有，否则拒绝读取和写入业务数据。
 5. 首次初始化将 `AUTH_ALLOW_INITIALIZE` 设为 `true`。首次成功业务写入创建状态文件。确认创建后设回 `false` 并重新部署；之后文件丢失报错，不会静默创建空库。
 
@@ -32,18 +42,20 @@
 1. 继续使用原 Vercel 项目和当前代码仓库，Node.js 22 或更新版，仓库 `vercel.json` 提供安装、构建、输出目录、函数及安全响应头配置。
 2. 按 `.env.example` 在 Vercel 项目中配置环境变量。Production / Preview 使用不同数据仓库与密钥。不要将实际 Secret 填进示例文件、网页或安装包。
 3. `AUTH_SITE_ORIGIN` 设置为管理员页面准确的 HTTPS Origin，如 `https://download.example.com`，不带路径或结尾斜线。管理员 cookie 使用 HttpOnly、Secure、SameSite；写接口校验来源。
-4. `AUTH_SECRET_PEPPER` 使用至少 32 字节的高熵随机值。可在安全终端生成 `openssl rand -hex 32` 并直接配置到平台。此值用于验证码、会话和激活码摘要；变更会使旧摘要无法验证，需要计划维护。
+4. **全新账号服务**的 `AUTH_SECRET_PEPPER` 使用至少 32 字节的高熵随机值。可在安全终端生成 `openssl rand -hex 32` 并直接配置到平台。迁移现有服务须原样保留旧值；此值用于验证码、会话和激活码摘要，变更会使旧摘要无法验证，需要计划维护。
 5. `AUTH_ADMIN_EMAILS` 填写管理员邮箱，多个用逗号分隔。角色由服务端配置决定，每次管理员操作重新检查，前端没有提升角色接口。空名单不允许任何管理员。
 6. 执行 `npm test`、`npm run build:web`，按原项目流程部署。访问 `/admin/`，管理员通过邮箱验证码登录后，可以搜索用户、开通会员、生成激活码。
 7. 验证真实邮件、GitHub 写入、管理员操作、兑换和解绑后，执行 `node scripts/configure-account-endpoint.mjs https://实际域名/api/account`，再重新打包客户端。配置文件只包含公开服务地址。地址尚未配置时会员功能拒绝运行，免费单篇下载可用。
 
-部署说明：[Vercel 输出目录](https://vercel.com/docs/builds/configure-a-build#output-directory)、[GitHub Contents API](https://docs.github.com/en/rest/repos/contents)。目前没有另建 Cloudflare 后端；如果将来迁移，应整体迁移授权入口，保持单一权威存储。
+部署说明：[Vercel 输出目录](https://vercel.com/docs/builds/configure-a-build#output-directory)、[GitHub Contents API](https://docs.github.com/en/rest/repos/contents)、[Cloudflare 部署与核验](cloudflare-deployment.md)。Cloudflare 已有共享账号后端的适配入口；切换整个授权域名时保持单一权威存储，不复制或回滚业务状态。
 
 GitHub 自动部署需在 Vercel 账号中连接有权限的 GitHub 身份，再在现有项目 Settings → Git 中关联**代码仓库**，生产分支设为 `main`。之后推送 `main` 才会触发生产构建；本机仅修改文件不会触发。业务数据仓库不关联 Vercel。`.vercelignore` 控制部署上传内容，本身不负责阻止代码仓库某次推送触发构建。桌面安装包仍需单独打包，网站自动部署不会自动替换用户已安装的客户端。
 
 ## 邮件服务
 
-支持 SMTP、Resend 和自有邮件网关。本次采用 Gmail SMTP：设置 `AUTH_MAIL_PROVIDER=smtp`、`AUTH_SMTP_HOST=smtp.gmail.com`、`AUTH_SMTP_PORT=465`、`AUTH_SMTP_USER` 为发信邮箱、`AUTH_SMTP_PASS` 为启用两步验证后生成的应用专用密码，`AUTH_MAIL_FROM` 使用相同邮箱。仅在 Vercel Secrets 保存应用密码。端口 465 使用 TLS，587 强制 STARTTLS，保持证书验证；SMTP 日志关闭。
+支持 SMTP、Resend 和自有邮件网关。使用 Gmail SMTP 时设置 `AUTH_MAIL_PROVIDER=smtp`、`AUTH_SMTP_HOST=smtp.gmail.com`、`AUTH_SMTP_PORT=465`、`AUTH_SMTP_USER` 为发信邮箱、`AUTH_SMTP_PASS` 为启用两步验证后生成的应用专用密码，`AUTH_MAIL_FROM` 使用相同邮箱。仅在服务端平台 Secrets 保存应用密码。端口 465 使用 TLS，587 强制 STARTTLS，保持证书验证；SMTP 日志关闭。Cloudflare 沿用同名配置，不使用 Vercel 邮件回退。
+
+本轮真实 Cloudflare 运行时中，465 TLS 和 587 STARTTLS 均验证成功。正式账号接口 `send-code` 返回 200，对应测试邮件在 Gmail INBOX 中确认收到；使用该验证码调用 `verify-code` 返回 200，获得 Secure、HttpOnly 管理员 Cookie。同一 Cookie 在两套后端均可读取 `me`、管理员用户、激活码、反馈和服务状态；本次读到 3 个用户、4 个激活码、1 条反馈，GitHub 与 SMTP 状态正常。以上仅记录数量与状态，不在文档保存邮箱、验证码、会话或凭据。
 
 使用 Resend 时先验证发信域名，设置 `AUTH_MAIL_PROVIDER=resend`、`AUTH_MAIL_FROM`、`AUTH_MAIL_API_KEY`，密钥只需邮件发送权限。服务商接收不代表收件箱投递成功，正式验收必须使用真实邮箱。
 

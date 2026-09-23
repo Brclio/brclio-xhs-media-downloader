@@ -17,10 +17,23 @@ const device = (label = randomUUID()) => {
 /** Shared fake GitHub Contents HTTP service, independent real GithubStateStore instances. */
 function fixture(overrides = {}) {
   let state = emptyState(), version = 1, clock = Date.parse('2026-09-20T00:00:00Z');
-  let writes = 0, conflicts = 0, onLogRead = null;
+  let writes = 0, conflicts = 0, graphqlQueries = 0, onLogRead = null;
   const faults = [], deliveries = [], logFiles = new Map();
   const config = { ...readConfig({ AUTH_SECRET_PEPPER: 'unit-test-pepper-only-'.repeat(3), AUTH_ADMIN_EMAILS: 'admin@example.test' }), ...overrides };
   const fetchImpl = async (url, options) => {
+    if (url === 'https://api.github.com/graphql') {
+      graphqlQueries++;
+      const { variables } = JSON.parse(options.body);
+      const repository = { isPrivate: true };
+      for (const [name, expression] of Object.entries(variables).filter(([name]) => name.startsWith('path'))) {
+        if (onLogRead) await onLogRead();
+        const key = `/repos/fake/private/contents/${expression.slice(expression.indexOf(':') + 1)}`;
+        const content = logFiles.get(key);
+        repository[name.replace('path', 'part')] = content === undefined ? null
+          : { oid: String(version), byteSize: Buffer.byteLength(content), isBinary: false, isTruncated: false, text: content };
+      }
+      return Response.json({ data: { repository } });
+    }
     if (!url.includes('/contents/')) return Response.json({ private: true });
     if (url.includes('/contents/feedback/')) {
       const key = new URL(url).pathname;
@@ -72,7 +85,7 @@ function fixture(overrides = {}) {
   const adminCall = (session, action, input = {}, service = instance()) => execute(service, action, { ...input, ...(['admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code', 'admin-feedback-status'].includes(action) ? { reason: input.reason || '测试操作原因', requestId: input.requestId || randomUUID() } : {}) }, session);
   const grant = (adminSession, userSession, days = 10) => adminCall(adminSession, 'admin-membership', { userId: userSession.account.user.id, operation: 'days', days });
   const generate = async (adminSession, input = {}) => (await adminCall(adminSession, 'admin-generate-codes', { type: 'duration', days: 10, count: 1, ...input })).codes;
-  return { instance, execute, login, issue, admin, adminCall, grant, generate, deliveries, mailer, config, faults, logFiles, advance: ms => { clock += ms; }, set onLogRead(callback) { onLogRead = callback; }, get clock() { return clock; }, get state() { return state; }, get writes() { return writes; }, get conflicts() { return conflicts; } };
+  return { instance, execute, login, issue, admin, adminCall, grant, generate, deliveries, mailer, config, faults, logFiles, advance: ms => { clock += ms; }, set onLogRead(callback) { onLogRead = callback; }, get clock() { return clock; }, get state() { return state; }, get writes() { return writes; }, get conflicts() { return conflicts; }, get graphqlQueries() { return graphqlQueries; } };
 }
 
 test('first email verification creates user, repeated login keeps user and device identity', async () => {
@@ -785,6 +798,7 @@ test('feedback supports 64 whole-line chunks within 8 MiB and snapshot header do
   rows[0] = `${JSON.stringify({ at: new Date(f.clock + 1000).toISOString(), level: 'info', event: 'diagnostics.snapshot', details: { truncated: false } })}\n` + rows[0];
   const submitted = await submitFeedback(f, user, feedbackInput(f, rows));
   assert.equal(submitted.feedback.status, 'new'); assert.equal(submitted.feedback.log.partCount, 64); assert.equal(f.logFiles.size, 64);
+  assert.equal(f.graphqlQueries, 4, 'finalization retrieves 64 files with four external calls');
 });
 
 test('tampered stored log prevents finalization and administrative download; metadata notes are sanitized', async () => {

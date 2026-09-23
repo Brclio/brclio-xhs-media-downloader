@@ -10,3 +10,8 @@ docs/
 dist-web/
 .env*
 *.local.json
+# Cloudflare runtimes, local bindings and probes never enter Vercel uploads.
+cloudflare/
+.wrangler/
+.dev.vars*
+wrangler.jsonc
