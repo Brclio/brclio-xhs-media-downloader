@@ -1,7 +1,7 @@
 // Real Electron main/preload/UI regression smoke with a disposable profile.
-// The fixture replaces only storage and XHS login discovery; it never reads the
-// user's Keychain, credentials, cookies, or external account/XHS services.
-import { app, session } from 'electron';
+// The fixture delays core IPC and replaces storage/XHS login discovery; it
+// never reads the user's Keychain, credentials, cookies or external services.
+import { app, ipcMain, session } from 'electron';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -11,6 +11,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { SecureAccountStore, accountError } from '../desktop/account-storage.js';
 import { XhsBrowser } from '../desktop/profile-browser.js';
+import { waitForDesktopReady } from '../desktop/startup-ready.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -45,6 +46,12 @@ function deferred() {
   return { promise, resolve, reject };
 }
 const initialLoad = deferred(), retryLoad = deferred();
+const coreReady = deferred();
+let coreRequests = 0;
+const registerHandle = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = (channel, callback) => registerHandle(channel, channel === 'desktop:get-profile-state'
+  ? async (...args) => { const result = await callback(...args); coreRequests++; await coreReady.promise; return result; }
+  : callback);
 let loadCalls = 0;
 SecureAccountStore.prototype.load = async function () {
   assert.equal(this.filename, path.join(temporary, 'account', 'account-v1.enc'));
@@ -115,6 +122,26 @@ app.on('browser-window-created', (_event, win) => {
     try {
       await until(() => loadCalls === 1, 'delayed storage initialization');
       await until(() => win.isVisible(), 'visible application before storage resolves');
+      // Delay real desktop-ui.js initialization, not a synthetic ready flag.
+      // This exceeds the old one-shot 10 s timeout and survives a real reload.
+      await until(() => coreRequests === 1, 'delayed core renderer IPC');
+      const readyStarted = Date.now();
+      const ready = waitForDesktopReady(win);
+      const cancel = new AbortController();
+      const cancelled = waitForDesktopReady(win, { signal: cancel.signal });
+      cancel.abort();
+      assert.equal(await cancelled, false, 'Quit cancels startup readiness immediately');
+      const reloaded = new Promise(resolve => win.webContents.once('did-finish-load', resolve));
+      win.webContents.reload();
+      await reloaded;
+      await until(() => coreRequests >= 2, 'core renderer IPC after reload');
+      await delay(10500);
+      assert.equal((await snapshot(win)).ready, false, 'An incomplete core UI must not confirm startup');
+      assert.equal(loadCalls, 1, 'Reload must not repeat secure storage initialization');
+      coreReady.resolve();
+      assert.equal(await ready, true, 'A real renderer ready after 10 s must still confirm startup');
+      const rendererReadyDelayMs = Date.now() - readyStarted;
+      assert.ok(rendererReadyDelayMs > 10000);
       const loading = await until(async () => {
         const value = await snapshot(win);
         return value.ready && value.buttons.length && value.state.status === 'initializing' ? value : null;
@@ -168,6 +195,7 @@ app.on('browser-window-created', (_event, win) => {
       console.log(JSON.stringify({ smoke: 'startup-storage-passed', visibleBeforeStorage: true,
         responsiveWhilePending: true, controlsGuarded: true, deniedStateRecoverable: true,
         explicitRetryDeduplicated: true, singleNoteEngines: ['node', 'python'], loadCalls, networkAttempts, blockedBrowserRequests,
+        rendererReadyDelayMs, lateRendererConfirmed: true, reloadRecovered: true, readinessCancelled: true,
         nativeKeychainTested: false }));
       app.quit();
     } catch (error) {

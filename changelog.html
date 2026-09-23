@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Brclio 小红书下载器的更新记录。v1.8.6 汇总 Mac 启动、旧版清理与激活码兼容修复，完善发布环境初始化及远端版本标签核验。"
+      content="Brclio 小红书下载器的更新记录。v1.8.7 修复 Mac 更新后退出，补全慢启动、页面重载后的就绪确认及临时旧版清理重试。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.8.6 本地版">
+          <div class="header-status" aria-label="当前记录：v1.8.7 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.8.6 本地版</span>
+            <span>v1.8.7 本地版</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.8.6 汇总已有的 Mac 启动、旧版清理与激活码修复，并完善构建环境初始化和安装包发布核验。
+              这里记录功能增加、体验优化与问题修复。v1.8.7 修复 Mac 更新后退出，补全慢启动与页面重载后的确认，并改进临时旧版清理和安装进度窗口。
             </p>
 
             <div class="release-hero-actions">
@@ -70,7 +70,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.8.6</strong>
+              <strong>v1.8.7</strong>
               <small>本地版 · 2026.09.23</small>
             </div>
 
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#mac-update-relaunch"><span>v1.8.7</span><strong>Mac 重开与清理恢复</strong></a>
               <a href="#verified-release-patch"><span>v1.8.6</span><strong>修复汇总与发布核验</strong></a>
               <a href="#mac-startup-recovery"><span>v1.8.5</span><strong>钥匙串、启动与旧版清理</strong></a>
               <a href="#known-update-download"><span>v1.8.4</span><strong>检查受限仍可继续更新</strong></a>
@@ -142,6 +143,20 @@
           </aside>
 
           <div class="release-feed">
+            <article id="mac-update-relaunch" class="release-entry release-entry-featured">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 更新修复</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.7</span><span class="release-status">Mac / Windows</span></div><h3>升级后正常打开，慢启动也能确认</h3></div></header>
+                <p class="release-lead">修复安装助手影响图形应用启动的问题，避免新版或恢复的旧版直接退出。原网页、单篇下载、账号和任务数据继续兼容。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>新旧应用使用正常启动环境</strong>启动新版或恢复旧版时清除安装助手的后台运行环境，避免应用被错误地当作后台脚本运行。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>慢启动与重载保留确认机会</strong>界面初始化超过 10 秒或页面重载仍可继续等待真实就绪；退出或关闭窗口时取消，不受钥匙串后台等待影响。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>清理有限重试，改进进度关闭</strong>安装助手暂时持锁时，额外重试清理对应旧版备份，每次重新核对安全条件；修复进度窗口无法激活、鼠标关闭无响应的问题。</p></div>
+                </div>
+                <p class="release-lead">从 v1.8.5 / v1.8.6 首次升级，推荐下载完整 DMG，完全退出旧版后覆盖安装，再从“应用程序”手动打开。旧更新助手不会因发布新版而自行修复。Mac 仍使用临时签名，可能再次要求系统授权。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.7" target="_blank" rel="noopener noreferrer">下载 v1.8.7 与查看升级步骤 ↗</a><span>启动与清理 · 2026.09.23</span></div>
+              </div>
+            </article>
             <article id="verified-release-patch" class="release-entry release-entry-featured">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 补丁版</small></time></div>
               <div class="release-card">
@@ -153,6 +168,7 @@
                   <div class="change-item"><span aria-hidden="true">03</span><p><strong>公开前再次核对版本来源</strong>创建发布和公开附件前核对远端标签与构建提交，全部安装包继续校验 SHA-256，并随包提供构建证据。</p></div>
                 </div>
                 <p class="release-lead">v1.8.5 用户可检查更新升级。Mac 仍使用 ad hoc 签名，尚无 Developer ID 签名及公证；Windows 安装交互仍需实机验收。</p>
+                <p class="release-lead">后续排查确认本版仍有升级后退出与启动确认时序问题，已在 <a href="#mac-update-relaunch">v1.8.7 修复</a>；从本版升级推荐按新说明使用完整 DMG 手动覆盖。</p>
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.6" target="_blank" rel="noopener noreferrer">下载 v1.8.6 与查看补丁说明 ↗</a><span>修复与发布 · 2026.09.23</span></div>
               </div>
             </article>
@@ -1302,7 +1318,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本地版记录更新至 v1.8.6（2026.09.23）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
+        <p>本地版记录更新至 v1.8.7（2026.09.23）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

@@ -169,6 +169,109 @@ for (const mode of ['timeout', 'malformed', 'early-exit']) test(`readiness ${mod
 });
 
 const nativeEnabled = process.platform === 'darwin' && process.env.XHS_MAC_UPDATE_NATIVE === '1';
+test('real Electron updater launches the replacement and rollback GUI without inheriting helper Node mode', { skip: !nativeEnabled, timeout: 300000 }, async t => {
+  const electronExecutable = createRequire(import.meta.url)('electron');
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'xhs-electron-update-native-')));
+  const launchLog = path.join(root, 'gui-launches.jsonl');
+  const controlPath = path.join(root, 'control.json');
+  const completionPath = path.join(root, 'completion.json');
+  const fixtureErrorPath = path.join(root, 'fixture-error.txt');
+  const processes = new Set();
+  t.after(async () => {
+    const launches = (await readFile(launchLog, 'utf8').catch(() => '')).trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+    for (const pid of [...processes, ...launches.map(value => value.pid)]) {
+      try {
+        const { stdout } = await execute('/bin/ps', ['-p', String(pid), '-o', 'comm=']);
+        if (stdout.trim().startsWith(`${root}${path.sep}`)) process.kill(pid, 'SIGKILL');
+      } catch { /* Fixture already exited. */ }
+    }
+    await rm(root, { recursive: true, force: true });
+  });
+  const cleanupUrl = new URL('../desktop/mac-update-cleanup.js', import.meta.url).href;
+  async function bundle(directory, version) {
+    // APFS clone keeps this real Electron fixture inexpensive without altering
+    // the repository runtime or any installed user application.
+    await execute('/bin/cp', ['-cR', path.resolve(electronExecutable, '../../..'), directory]);
+    const plist = path.join(directory, 'Contents/Info.plist');
+    const info = JSON.parse((await execute('/usr/bin/plutil', ['-convert', 'json', '-o', '-', plist])).stdout);
+    Object.assign(info, { CFBundleIdentifier: appId, CFBundleShortVersionString: version,
+      CFBundleVersion: version, CFBundleName: 'Brclio Update Test', CFBundleDisplayName: 'Brclio Update Test', LSUIElement: true });
+    await writeFile(plist, JSON.stringify(info));
+    await execute('/usr/bin/plutil', ['-convert', 'xml1', plist]);
+    const resources = path.join(directory, 'Contents/Resources/app');
+    await mkdir(resources);
+    await writeFile(path.join(resources, 'package.json'), JSON.stringify({ name: 'brclio-update-fixture', version, main: 'main.cjs' }));
+    await writeFile(path.join(resources, 'main.cjs'), `
+const { app, BrowserWindow } = require('electron');
+const fs = require('node:fs');
+const path = require('node:path');
+app.setPath('userData', ${JSON.stringify(path.join(root, 'isolated-profile'))});
+app.disableHardwareAcceleration(); app.dock?.hide();
+const deadline = setTimeout(() => app.exit(2), 30000);
+app.whenReady().then(async () => {
+  const window = new BrowserWindow({ show: false, webPreferences: { sandbox: true, offscreen: true } });
+  await window.loadURL('data:text/html,<title>Isolated update fixture</title><p>Ready</p>');
+  const rendererReady = await window.webContents.executeJavaScript("document.readyState === 'complete'");
+  fs.appendFileSync(${JSON.stringify(launchLog)}, JSON.stringify({ version: app.getVersion(), pid: process.pid,
+    rendererReady, nodeMode: process.env.ELECTRON_RUN_AS_NODE ?? null, noAsar: process.env.ELECTRON_NO_ASAR ?? null }) + '\\n');
+  const control = JSON.parse(fs.readFileSync(${JSON.stringify(controlPath)}, 'utf8'));
+  if (app.getVersion() === '1.8.1' && control.confirm) {
+    const { confirmMacUpdateStartup } = await import(${JSON.stringify(cleanupUrl)});
+    const result = await confirmMacUpdateStartup({ cacheDirectory: control.cacheDirectory,
+      currentAppPath: path.resolve(process.execPath, '../../..'), currentVersion: app.getVersion() });
+    fs.writeFileSync(${JSON.stringify(completionPath)}, JSON.stringify(result));
+    clearTimeout(deadline); app.exit(result.cleaned ? 0 : 1);
+  } else if (app.getVersion() === '1.8.0') { clearTimeout(deadline); app.quit(); }
+}).catch(error => { fs.writeFileSync(${JSON.stringify(fixtureErrorPath)}, error.stack); app.exit(1); });
+`);
+    await execute('/usr/bin/codesign', ['--force', '--deep', '--sign', '-', directory], { timeout: 120000 });
+  }
+  const payload = path.join(root, 'payload'); await mkdir(payload);
+  await bundle(path.join(payload, 'New application.app'), '1.8.1');
+  const dmg = path.join(root, 'electron-fixture.dmg');
+  await execute('/usr/bin/hdiutil', ['create', '-quiet', '-volname', 'Electron Update Test', '-srcfolder', payload, '-format', 'UDZO', dmg], { timeout: 120000 });
+  for (const confirm of [true, false]) {
+    const current = path.join(root, confirm ? 'Successful update.app' : 'Rolled back update.app');
+    await bundle(current, '1.8.0');
+    const cacheDirectory = path.join(root, confirm ? 'successful-cache' : 'rollback-cache');
+    await writeFile(controlPath, JSON.stringify({ confirm, cacheDirectory }));
+    const oldPid = spawn('/bin/sleep', ['90'], { stdio: 'ignore' });
+    t.after(() => { try { oldPid.kill(); } catch {} });
+    await new Promise((resolve, reject) => { oldPid.once('spawn', resolve); oldPid.once('error', reject); });
+    const prepared = await prepareMacUpdate({ installerPath: dmg, currentAppPath: current, expectedVersion: '1.8.1',
+      expectedArch: process.arch, cacheDirectory, parentPid: oldPid.pid }, {
+      executable: path.join(current, 'Contents/MacOS/Electron'), startupTimeoutMs: 10000,
+      startProgress: async () => ({ close: async () => {} }), spawn(command, args, options) {
+        assert.equal(options.env.ELECTRON_RUN_AS_NODE, '1', 'the real helper still requires Node mode');
+        const child = spawn(command, args, options); processes.add(child.pid); return child;
+      }
+    });
+    await writeFile(path.join(cacheDirectory, 'mac-last-install.json'), JSON.stringify({ resultPath: prepared.resultPath }), { mode: 0o600 });
+    await prepared.launch(); oldPid.kill();
+    let record, launches;
+    for (let attempt = 0; attempt < 300; attempt++) {
+      record = JSON.parse(await readFile(prepared.resultPath, 'utf8'));
+      launches = (await readFile(launchLog, 'utf8').catch(() => '')).trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+      if (confirm ? record.status === 'installed' && await readFile(completionPath, 'utf8').catch(() => '')
+        : record.status === 'rolled_back' && launches.some(value => value.version === '1.8.0')) break;
+      await delay(100);
+    }
+    const diagnostics = JSON.stringify({ record, launches, fixtureError: await readFile(fixtureErrorPath, 'utf8').catch(() => ''),
+      helperLog: await readFile(path.join(path.dirname(prepared.resultPath), 'helper.log'), 'utf8').catch(() => '') });
+    assert.equal(record.status, confirm ? 'installed' : 'rolled_back', diagnostics);
+    assert.deepEqual(launches.map(value => value.version), confirm ? ['1.8.1'] : ['1.8.1', '1.8.1', '1.8.0'], diagnostics);
+    for (const launched of launches) assert.deepEqual({ rendererReady: launched.rendererReady, nodeMode: launched.nodeMode, noAsar: launched.noAsar },
+      { rendererReady: true, nodeMode: null, noAsar: null }, 'both GUI versions load a real renderer with a clean runtime environment');
+    if (confirm) {
+      assert.equal(record.backupRemoved, true);
+      assert.equal(JSON.parse(await readFile(completionPath, 'utf8')).cleaned, true);
+      await assert.rejects(lstat(prepared.backupPath), { code: 'ENOENT' });
+    } else assert.equal(record.failureCode, 'MAC_UPDATE_STARTUP_TIMEOUT');
+    await prepared.dispose();
+  }
+  t.diagnostic('The actual old Electron executable ran the Node-mode helper. The replacement rendered, acknowledged startup and cleaned its backup; a non-acknowledging Electron GUI was stopped and the restored old GUI rendered too.');
+});
+
 test('native temporary signed app: read-only DMG preparation, replacement, and rollback', { skip: !nativeEnabled, timeout: 240000 }, async t => {
   // Electron 44 downloads its executable lazily from the package entry point.
   // npm ci alone does not create dist/. Resolve it before starting short-lived
@@ -230,8 +333,8 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
       // filesystem moves and codesign checks, then experiences an open failure.
       const helper = path.join(path.dirname(prepared.resultPath), 'install.cjs');
       const sourceText = await readFile(helper, 'utf8');
-      assert.ok(sourceText.includes("await run('/usr/bin/open', ['-n', current], { timeout: 30000 });"));
-      await writeFile(helper, sourceText.replace("await run('/usr/bin/open', ['-n', current], { timeout: 30000 });", "throw new Error('Injected open failure');"));
+      assert.ok(sourceText.includes("await run('/usr/bin/open', ['-n', current], { timeout: 30000, env: guiEnvironment() });"));
+      await writeFile(helper, sourceText.replace("await run('/usr/bin/open', ['-n', current], { timeout: 30000, env: guiEnvironment() });", "throw new Error('Injected open failure');"));
     }
     if (outcome === 'rollback_blocked') {
       const helper = path.join(path.dirname(prepared.resultPath), 'install.cjs');

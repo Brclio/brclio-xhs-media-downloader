@@ -15,7 +15,7 @@ import { FeedbackClient } from './feedback-client.js';
 import { prepareMacUpdate } from './mac-update.js';
 import { launchWindowsUpdate } from './windows-update.js';
 import { InstallConfirmation } from './install-confirmation.js';
-import { confirmMacUpdateStartup } from './mac-update-cleanup.js';
+import { confirmMacUpdateStartupWithRetry, hasPendingMacUpdate, waitForDesktopReady } from './startup-ready.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -40,6 +40,7 @@ let accountRefreshTimer;
 let quitting = false;
 let shutdownComplete = false;
 const installConfirmation = new InstallConfirmation();
+const startupReadyAbort = new AbortController();
 const selectedDirectories = new Set();
 const diagnostic = (event, details, level = 'info') => { void diagnostics?.record(event, details, level); };
 const appInfo = () => ({ name: APP_NAME, version: app.getVersion(), platform: process.platform, arch: process.arch,
@@ -356,22 +357,16 @@ async function boot() {
   if (quitting || !mainWindow || mainWindow.isDestroyed()) return;
   if (process.platform === 'darwin' && app.isPackaged) {
     try {
-      const rendererReady = mainWindow && !mainWindow.isDestroyed() && await mainWindow.webContents.executeJavaScript(
-        `new Promise(resolve => {
-          const ready = () => document.readyState === 'complete' && document.body.dataset.desktopReady === 'true';
-          if (ready()) { resolve(true); return; }
-          const done = value => { clearTimeout(timer); window.removeEventListener('xhs-desktop-ready', onReady); resolve(value); };
-          const onReady = () => { if (ready()) done(true); };
-          const timer = setTimeout(() => done(false), 10000);
-          window.addEventListener('xhs-desktop-ready', onReady);
-        })`);
-      if (rendererReady && !quitting) {
-        const result = await confirmMacUpdateStartup({ cacheDirectory: path.join(app.getPath('userData'), 'updates'),
-          currentAppPath: path.resolve(process.execPath, '../../..'), currentVersion: app.getVersion() });
-        if (result.status !== 'none') diagnostic('update.startup_confirmed', result, result.cleaned ? 'info' : 'warn');
+      const update = { cacheDirectory: path.join(app.getPath('userData'), 'updates'),
+        currentAppPath: path.resolve(process.execPath, '../../..'), currentVersion: app.getVersion() };
+      if (await hasPendingMacUpdate(update)
+        && await waitForDesktopReady(mainWindow, { signal: startupReadyAbort.signal }) && !quitting) {
+        const result = await confirmMacUpdateStartupWithRetry(update, { signal: startupReadyAbort.signal });
+        if (result && result.status !== 'none') diagnostic('update.startup_confirmed', result, result.cleaned ? 'info' : 'warn');
       }
     } catch (error) { diagnostic('update.backup_cleanup_failed', { error }, 'warn'); }
   }
+  if (quitting || !mainWindow || mainWindow.isDestroyed()) return;
   await reportPreviousMacUpdate();
   if (app.isPackaged) {
     updateCheckTimer = setTimeout(automaticUpdateCheck, 5000);
@@ -426,6 +421,7 @@ else {
     event.preventDefault();
     if (quitting) return;
     quitting = true;
+    startupReadyAbort.abort();
     installConfirmation.cancel();
     clearTimeout(updateCheckTimer);
     clearInterval(updatePeriodicTimer);

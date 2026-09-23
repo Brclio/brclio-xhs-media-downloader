@@ -130,7 +130,7 @@ export async function confirmMacUpdateStartup({ cacheDirectory, currentAppPath, 
         try { await mkdir(lock, { mode: 0o700 }); ownsLock = true; break; }
         catch (error) {
           if (error.code !== 'EEXIST') throw error;
-          if (Date.now() >= deadline) reject('安装助手尚未完成，已保留临时恢复文件。');
+          if (Date.now() >= deadline) throw Object.assign(new Error('安装助手尚未完成，已保留临时恢复文件。'), { code: 'MAC_UPDATE_LOCK_BUSY' });
           await pause(50);
         }
       }

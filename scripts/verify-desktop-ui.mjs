@@ -211,7 +211,7 @@ app.whenReady().then(async () => {
     preload, contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false, offscreen: true
   } });
   win.webContents.on('console-message', (_event, level, message) => { if (level >= 3) rendererErrors.push(message); });
-  const evaluate = expression => win.webContents.executeJavaScript(expression);
+  const evaluate = (expression, userGesture = false) => win.webContents.executeJavaScript(expression, userGesture);
   const check = async (expression, description) => {
     for (let attempt = 0; attempt < 50; attempt++) {
       if (await evaluate(expression)) return;
@@ -223,11 +223,15 @@ app.whenReady().then(async () => {
         buttonHidden: button?.hidden, buttonDisabled: button?.disabled,
         buttonRects: button?.getClientRects().length,
         confirmationOpen: document.querySelector('#desktop-install-confirmation')?.open,
+        installCancelEvent: window.fixtureCancelEvent,
         updateDialogOpen: document.querySelector('#desktop-update-dialog')?.open };
     })()`);
     throw new Error(`UI check failed: ${description}; focus: ${JSON.stringify(focus)}; renderer: ${JSON.stringify(rendererErrors)}; body: ${await evaluate("document.body.innerText.slice(0, 400)")}`);
   };
-  const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+  // Give scripted clicks the user activation a real click supplies. Otherwise
+  // repeated showModal/Escape cycles exhaust Chromium's CloseWatcher allowance:
+  // cancel becomes non-cancelable and the browser bypasses dialog.close itself.
+  const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`, true);
   const paint = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
   const captureFrame = async () => {
     // Chromium may still be rasterizing an earlier frame after DOM assertions.
@@ -416,19 +420,55 @@ app.whenReady().then(async () => {
   await evaluate(`document.querySelector('#desktop-install-confirmation').addEventListener('close', () => {
     window.fixtureClosedWhileInstallDisabled = document.querySelector('#desktop-update-install').disabled;
   })`);
+  const installationCloseOrders = [];
   for (const order of ['close-first', 'result-first']) {
     installReplyOrder = order;
-    await evaluate(`window.fixtureClosedWhileInstallDisabled = null; document.querySelector('#desktop-update-install').focus()`);
+    await evaluate(`window.fixtureClosedWhileInstallDisabled = null; window.fixtureCancelEvent = null;
+      document.querySelector('#desktop-update-install').focus();
+      document.querySelector('#desktop-install-confirmation').addEventListener('cancel', event => {
+        window.fixtureCancelEvent = { cancelable: event.cancelable, defaultPrevented: event.defaultPrevented };
+      }, { once: true });`);
+    if (order === 'result-first') await evaluate(`(() => {
+      // Native dialog close delivery differs between platforms. Hold the real
+      // close call until the IPC result has enabled its invoking control, so
+      // this case exercises that order instead of depending on a timing race.
+      const dialog = document.querySelector('#desktop-install-confirmation');
+      const nativeClose = dialog.close;
+      const ownClose = Object.getOwnPropertyDescriptor(dialog, 'close');
+      window.fixtureReleaseInstallClose = null;
+      window.fixtureCloseAttempts = 0;
+      dialog.close = function (...args) {
+        window.fixtureCloseAttempts++;
+        window.fixtureReleaseInstallClose = () => {
+          if (ownClose) Object.defineProperty(dialog, 'close', ownClose);
+          else delete dialog.close;
+          nativeClose.apply(dialog, args);
+          window.fixtureReleaseInstallClose = null;
+        };
+      };
+    })()`);
     await click('#desktop-update-install');
     await check(`document.querySelector('#desktop-install-confirmation').open`, `${order}: confirmation opens`);
     win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
     win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+    await check(`window.fixtureCancelEvent?.cancelable === true && window.fixtureCancelEvent.defaultPrevented === true`, `${order}: Escape reaches the application's cancel handler`);
+    if (order === 'result-first') {
+      await check(`typeof window.fixtureReleaseInstallClose === 'function' && !document.querySelector('#desktop-update-install').disabled`, 'result-first: IPC completes before releasing native close');
+      assert.equal(await evaluate('window.fixtureCloseAttempts'), 1, 'The fixture must intercept the actual application close call exactly once');
+      assert.equal(await evaluate(`document.querySelector('#desktop-install-confirmation').open`), true, 'Native close remains pending until explicitly released');
+      await evaluate(`window.fixtureReleaseInstallClose()`);
+    }
     await check(`window.fixtureClosedWhileInstallDisabled === ${order === 'close-first'}`, `${order}: native close and IPC completion order is exercised`);
     if (order === 'close-first') releaseInstallReply();
     await check(`!document.querySelector('#desktop-install-confirmation').open && !document.querySelector('#desktop-update-install').disabled && document.activeElement.id === 'desktop-update-install'`, `${order}: focus returns after closure and installation response both finish`);
     if (order === 'result-first') releaseConfirmationReply();
     await paint();
     assert.equal(await evaluate('document.activeElement.id'), 'desktop-update-install', `${order}: late close/response cannot overwrite focus`);
+    installationCloseOrders.push({ order, ...await evaluate(`({
+      cancelable: window.fixtureCancelEvent.cancelable,
+      closeWhileInstallDisabled: window.fixtureClosedWhileInstallDisabled,
+      finalFocus: document.activeElement.id
+    })`) });
   }
   installReplyOrder = 'normal';
   await click('#desktop-update-install');
@@ -635,7 +675,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, installationCloseOrders }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {
