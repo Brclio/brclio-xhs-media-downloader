@@ -93,6 +93,12 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     updateInstallationHint: element("desktop-update-installation-hint"),
     updateNotesDetails: element("desktop-update-notes-details"),
     updateNotes: element("desktop-update-notes"),
+    updateHistory: element("desktop-update-history"),
+    updateHistoryMeta: element("desktop-update-history-meta"),
+    updateHistoryOutcome: element("desktop-update-history-outcome"),
+    updateHistoryAction: element("desktop-update-history-action"),
+    updateHistoryDismiss: element("desktop-update-history-dismiss"),
+    updateHistoryError: element("desktop-update-history-error"),
     updateDialog: element("desktop-update-dialog"),
     updateDialogTitle: element("desktop-update-dialog-title"),
     updateDialogVersion: element("desktop-update-dialog-version"),
@@ -167,6 +173,9 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   let loginRevision = 0;
   let unsubscribeUpdates = () => {};
   let updateRevision = 0;
+  let updateHistoryRevision = 0;
+  let updateHistory = null;
+  let updateHistoryPending = false;
   let updateState = { status: "idle" };
   let updatePending = null;
   let updateRequestId = 0;
@@ -1006,6 +1015,61 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   if (typeof bridge.onInstallConfirmation === "function") {
     const cleanup = bridge.onInstallConfirmation(showInstallConfirmation);
     if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
+  }
+  // Installation receipts belong to a previous attempt. They never enter the
+  // live updater state, open a dialog, navigate, or claim the current download
+  // has finished. Subscribe before reading so a late snapshot cannot resurrect
+  // a dismissed receipt or overwrite a newer result.
+  function renderUpdateHistory(next) {
+    updateHistory = next && typeof next.id === "string" ? next : null;
+    ui.updateHistory.hidden = !updateHistory;
+    ui.updateHistoryError.hidden = true;
+    ui.updateHistoryError.textContent = "";
+    ui.updateHistoryDismiss.disabled = updateHistoryPending;
+    if (!updateHistory) return;
+    const metadata = [updateHistory.targetVersion ? `安装目标 v${updateHistory.targetVersion}` : "安装版本未记录"];
+    if (updateHistory.previousVersion) metadata.push(`当时版本 v${updateHistory.previousVersion}`);
+    if (updateHistory.currentVersion) metadata.push(`当前版本 v${updateHistory.currentVersion}`);
+    const recordedAt = updateHistory.recordedAt ? new Date(updateHistory.recordedAt) : null;
+    if (recordedAt && Number.isFinite(recordedAt.getTime())) metadata.push(recordedAt.toLocaleString("zh-CN", {
+      year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false
+    }));
+    ui.updateHistoryMeta.textContent = metadata.join(" · ");
+    ui.updateHistoryOutcome.textContent = updateHistory.outcome || "此前安装的结果尚未确认。";
+    ui.updateHistoryAction.textContent = updateHistory.action || "可重新检查更新，或前往发布记录获取完整安装包。";
+  }
+  ui.updateHistoryDismiss.addEventListener("click", async () => {
+    if (!updateHistory || updateHistoryPending || typeof bridge.dismissUpdateHistory !== "function") return;
+    const id = updateHistory.id;
+    const requestedRevision = ++updateHistoryRevision;
+    updateHistoryPending = true;
+    ui.updateHistoryDismiss.disabled = true;
+    ui.updateHistoryError.hidden = true;
+    try {
+      const next = await bridge.dismissUpdateHistory(id);
+      if (updateHistoryRevision === requestedRevision) renderUpdateHistory(next);
+    } catch {
+      if (updateHistoryRevision === requestedRevision && updateHistory?.id === id) {
+        ui.updateHistoryError.textContent = "暂时无法保存已读状态，请稍后重试。";
+        ui.updateHistoryError.hidden = false;
+      }
+    } finally {
+      updateHistoryPending = false;
+      ui.updateHistoryDismiss.disabled = false;
+    }
+  });
+  if (typeof bridge.onUpdateHistory === "function") {
+    const cleanup = bridge.onUpdateHistory(next => {
+      updateHistoryRevision++;
+      renderUpdateHistory(next);
+    });
+    if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
+  }
+  if (typeof bridge.getUpdateHistory === "function") {
+    const requestedRevision = updateHistoryRevision;
+    void bridge.getUpdateHistory().then(next => {
+      if (updateHistoryRevision === requestedRevision) renderUpdateHistory(next);
+    }).catch(() => {});
   }
   renderUpdateState(updateState);
   if (typeof bridge.onUpdateState === "function") {

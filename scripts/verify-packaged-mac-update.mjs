@@ -159,7 +159,7 @@ export async function verifyPackagedMacUpdate(input) {
     await command('/usr/bin/codesign', ['--verify', '--deep', '--strict', destination]);
     await rm(tree, { recursive: true, force: true });
   }
-  async function renderer(version) {
+  async function renderer(version, afterTimeOrigin = 0) {
     return until(async () => {
       try {
         const port = Number((await readFile(path.join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]);
@@ -168,7 +168,7 @@ export async function verifyPackagedMacUpdate(input) {
         if (!page) return false;
         const client = await cdp(page.webSocketDebuggerUrl);
         try {
-          if (await client.evaluate(`document.body?.dataset.desktopReady === 'true' && !!window.xhsDesktop`)
+          if (await client.evaluate(`document.body?.dataset.desktopReady === 'true' && !!window.xhsDesktop && performance.timeOrigin > ${afterTimeOrigin}`)
             && (await client.evaluate('window.xhsDesktop.getInfo()', true)).version === version) return client;
         } catch { /* Initial renderer navigation can replace its context. */ }
         client.close();
@@ -179,6 +179,26 @@ export async function verifyPackagedMacUpdate(input) {
   try {
     await clone(current, packaged.version);
     await clone(path.join(payload, path.basename(appPath)), targetVersion);
+    // Seed an actual old receipt in the isolated user profile. Production main
+    // must expose it as separately attributed history through its real preload,
+    // and acknowledgement must not erase the recovery journal or its pointer.
+    const updates = path.join(profile, 'updates');
+    const historyDirectory = path.join(updates, 'mac-install-Hst123');
+    await mkdir(historyDirectory, { recursive: true, mode: 0o700 });
+    const historyPath = path.join(historyDirectory, 'install-result.json');
+    const historyPointer = path.join(updates, 'mac-last-install.json');
+    const historyBackup = path.join(root, 'historical-backup', 'previous.app');
+    await mkdir(historyBackup, { recursive: true });
+    const historySentinel = path.join(historyBackup, 'keep.txt');
+    await writeFile(historySentinel, 'Historical recovery backup must remain untouched');
+    const historyReceipt = JSON.stringify({ appId: 'cn.bornforthis.xhs-downloader',
+      currentAppPath: current, version: '1.8.3', backupVersion: '1.8.2', status: 'rolled_back',
+      preparedAt: '2026-09-22T02:03:04.000Z', backupPath: historyBackup,
+      message: 'Historical raw receipt must not become a current update message',
+      startupToken: 'isolated-fixture-private-token' });
+    const historyPointerContents = JSON.stringify({ resultPath: historyPath });
+    await writeFile(historyPath, historyReceipt, { mode: 0o600 });
+    await writeFile(historyPointer, historyPointerContents, { mode: 0o600 });
     const assetName = `Brclio-XHS-Downloader-${targetVersion}-mac-${process.arch}.dmg`;
     const dmg = path.join(root, assetName);
     await command('/usr/bin/hdiutil', ['create', '-quiet', '-volname', 'Packaged Update Fixture', '-srcfolder', payload, '-format', 'UDZO', dmg]);
@@ -196,6 +216,36 @@ export async function verifyPackagedMacUpdate(input) {
     const click = selector => connection.evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
     const updateState = () => connection.evaluate('window.xhsDesktop.getUpdateState()', true);
     await click('#about-tab');
+    const historical = await until(() => connection.evaluate('window.xhsDesktop.getUpdateHistory()', true),
+      'real main/preload historical installation receipt');
+    assert.equal(historical.status, 'rolled_back');
+    assert.equal(historical.targetVersion, '1.8.3');
+    assert.equal(historical.previousVersion, '1.8.2');
+    assert.equal(historical.currentVersion, packaged.version);
+    assert.equal(historical.recordedAt, '2026-09-22T02:03:04.000Z');
+    assert.doesNotMatch(JSON.stringify(historical), /isolated-fixture-private-token|startupToken|backupPath|Historical raw receipt/);
+    await until(() => connection.evaluate("!document.querySelector('#desktop-update-history').hidden"),
+      'real UI nonmodal historical receipt');
+    const historyText = await connection.evaluate("document.querySelector('#desktop-update-history').textContent");
+    assert.match(historyText, /上次安装记录/);
+    assert.match(historyText, /安装目标 v1\.8\.3/);
+    assert.ok(historyText.includes(`当前版本 v${packaged.version}`));
+    assert.match(historyText, /此前安装的记录/);
+    await click('#desktop-update-history-dismiss');
+    await until(async () => await connection.evaluate('window.xhsDesktop.getUpdateHistory()', true) === null
+      && await connection.evaluate("document.querySelector('#desktop-update-history').hidden"),
+    'real main persisted history acknowledgement');
+    assert.equal(await readFile(historyPath, 'utf8'), historyReceipt);
+    assert.equal(await readFile(historyPointer, 'utf8'), historyPointerContents);
+    assert.ok(JSON.parse(await readFile(path.join(updates, 'mac-install-notices.json'), 'utf8')).ids.includes(historical.id),
+      'The actual main process must persist acknowledgement before hiding history');
+    assert.equal(await readFile(historySentinel, 'utf8'), 'Historical recovery backup must remain untouched');
+    const timeOrigin = await connection.evaluate('performance.timeOrigin');
+    await connection.evaluate('location.reload()');
+    connection.close(); connection = await renderer(packaged.version, timeOrigin);
+    assert.equal(await connection.evaluate('window.xhsDesktop.getUpdateHistory()', true), null);
+    assert.equal(await connection.evaluate("document.querySelector('#desktop-update-history').hidden"), true);
+    await click('#about-tab');
     await connection.evaluate('window.xhsDesktop.checkForUpdates()', true);
     assert.equal((await updateState()).latestVersion, targetVersion);
     await click('#desktop-update-dialog-action');
@@ -205,9 +255,11 @@ export async function verifyPackagedMacUpdate(input) {
     await click('#desktop-update-dialog-action');
     await until(() => connection.evaluate("document.querySelector('#desktop-install-confirmation').open"), 'real main/preload installation confirmation');
     await click('#desktop-install-confirm');
-    const updates = path.join(profile, 'updates');
     const resultPath = await until(async () => {
-      try { return JSON.parse(await readFile(path.join(updates, 'mac-last-install.json'), 'utf8')).resultPath; } catch { return false; }
+      try {
+        const value = JSON.parse(await readFile(historyPointer, 'utf8')).resultPath;
+        return value && value !== historyPath ? value : false;
+      } catch { return false; }
     }, 'packaged main generated installation transaction', 120000);
     assert.equal(path.dirname(path.dirname(resultPath)), updates);
     assert.equal(await readFile(path.join(path.dirname(resultPath), 'install.cjs'), 'utf8'), expectedHelper,
@@ -220,6 +272,9 @@ export async function verifyPackagedMacUpdate(input) {
     }, 'replacement GUI startup acknowledgment and old-bundle cleanup', 150000);
     connection = await renderer(targetVersion);
     assert.equal((await connection.evaluate('window.xhsDesktop.getInfo()', true)).pythonAvailable, true);
+    assert.equal(await connection.evaluate('window.xhsDesktop.getUpdateHistory()', true), null);
+    assert.equal(await readFile(historyPath, 'utf8'), historyReceipt);
+    assert.equal(await readFile(historySentinel, 'utf8'), 'Historical recovery backup must remain untouched');
     assert.equal(receipt.startupConfirmed, true);
     await assert.rejects(lstat(receipt.backupPath), { code: 'ENOENT' });
     const bootEvents = (await readEvents()).filter(value => value.type === 'boot');
@@ -229,6 +284,7 @@ export async function verifyPackagedMacUpdate(input) {
     assert.equal(await digest(inputArchive), originalDigest, 'Input application must remain unchanged');
     const evidence = { packagedMacUpdateVerified: true, currentVersion: packaged.version, targetVersion,
       originalApplicationFilesCompared: files.length, sourceUnchanged: true, realPackagedMainAndPreload: true,
+      packagedUpdateHistoryVerified: true, historyAcknowledgementPersisted: true, historyRecoveryFilesPreserved: true,
       realConfirmation: true, generatedHelperMatchesPackage: true, automaticGuiRelaunch: true, backupRemoved: true,
       profile: 'temporary', keychain: 'mock', updateNetwork: 'fixture-only', fixtureResigned: true, gatekeeperApprovalTested: false };
     console.log(JSON.stringify(evidence)); return evidence;

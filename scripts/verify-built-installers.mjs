@@ -123,7 +123,7 @@ try {
   }
   const proof = { version, sourceSha, sourceDirty, platform, arch, productName: pkg.build.productName, comparedSources, bundledPythonVerified: true,
     ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning, macSignatureContainers: ['dmg', 'zip'],
-      packagedMacLaunchVerified: true, packagedMacUpdateVerified: true } : {}), files };
+      packagedMacLaunchVerified: true, packagedMacUpdateVerified: true, packagedUpdateHistoryVerified: true } : {}), files };
   await writeFile(path.join(output, `release-proof-${label}.json`), `${JSON.stringify(proof, null, 2)}\n`);
   console.log(JSON.stringify(proof, null, 2));
 } finally {

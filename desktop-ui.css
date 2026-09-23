@@ -1089,6 +1089,14 @@ body.is-desktop .desktop-check-updates { min-height: 40px; padding: 8px 15px; bo
 body.is-desktop .desktop-check-updates:hover { background: var(--blue); }
 body.is-desktop .desktop-check-updates:disabled { color: var(--cream); opacity: .55; }
 body.is-desktop .desktop-update-panel { margin: 26px 0; border-color: var(--line); border-radius: 8px; }
+body.is-desktop .desktop-update-history { margin: 26px 0; padding: clamp(16px, 2vw, 24px); border: 1px solid var(--line); border-radius: 8px; background: var(--cream-deep); }
+body.is-desktop .desktop-update-history-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+body.is-desktop .desktop-update-history h2 { margin: 0; font-family: var(--font-serif); font-size: 1rem; }
+body.is-desktop .desktop-update-history-heading .button { flex-shrink: 0; min-height: 40px; padding: 8px 15px; font-size: .75rem; }
+body.is-desktop .desktop-update-history p { margin-top: 8px; color: var(--ink-light); font-size: .8rem; line-height: 1.8; overflow-wrap: anywhere; }
+body.is-desktop .desktop-update-history .desktop-update-history-meta { color: var(--ink-faint); font-size: .73rem; }
+body.is-desktop .desktop-update-history .desktop-update-history-caption { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: .74rem; }
+body.is-desktop .desktop-update-history .desktop-update-history-error { color: var(--red); }
 body.is-desktop .desktop-about-details { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; margin-top: 31px; padding-bottom: 20px; }
 body.is-desktop .desktop-about-details h2 { margin-bottom: 12px; font-family: var(--font-serif); font-size: 1.03rem; }
 body.is-desktop .desktop-about-details p { margin-top: 10px; color: var(--ink-light); font-size: .8rem; line-height: 1.85; }

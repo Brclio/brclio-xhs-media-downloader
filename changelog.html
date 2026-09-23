@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Brclio 小红书下载器的更新记录。v1.8.7 修复 Mac 更新后退出，补全慢启动、页面重载后的就绪确认及临时旧版清理重试。"
+      content="Brclio 小红书下载器的更新记录。v1.8.8 将历史安装结果移到关于软件页，注明版本与时间，不再弹窗打断新版下载。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.8.7 本地版">
+          <div class="header-status" aria-label="当前记录：v1.8.8 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.8.7 本地版</span>
+            <span>v1.8.8 本地版</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.8.7 修复 Mac 更新后退出，补全慢启动与页面重载后的确认，并改进临时旧版清理和安装进度窗口。
+              这里记录功能增加、体验优化与问题修复。v1.8.8 为历史安装结果注明版本和时间，在“关于软件”页展示，不再弹窗打断新版下载。
             </p>
 
             <div class="release-hero-actions">
@@ -70,7 +70,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.8.7</strong>
+              <strong>v1.8.8</strong>
               <small>本地版 · 2026.09.23</small>
             </div>
 
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#historical-update-notice"><span>v1.8.8</span><strong>历史安装提示不打断下载</strong></a>
               <a href="#mac-update-relaunch"><span>v1.8.7</span><strong>Mac 重开与清理恢复</strong></a>
               <a href="#verified-release-patch"><span>v1.8.6</span><strong>修复汇总与发布核验</strong></a>
               <a href="#mac-startup-recovery"><span>v1.8.5</span><strong>钥匙串、启动与旧版清理</strong></a>
@@ -143,6 +144,20 @@
           </aside>
 
           <div class="release-feed">
+            <article id="historical-update-notice" class="release-entry release-entry-featured">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 更新提示</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.8</span><span class="release-status">Mac / Windows</span></div><h3>上次安装的提示，不再打断这次下载</h3></div></header>
+                <p class="release-lead">历史清理结果改在“关于软件”页显示，清楚标记对应版本与记录时间，避免下载尚未完成就看到含糊的“新版已启动”弹窗。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>看清是哪次更新</strong>历史结果显示目标版本、当前运行版本和记录时间；不弹出阻塞窗口，不改变当前下载进度。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>关闭后记住已读</strong>按每次安装分别保存提示状态，重开应用不重复展示已关闭的同一记录，新安装结果仍可正常提醒。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>保留恢复与清理</strong>关闭提示不删除安装记录、临时备份或当前安装信息；安全清理仍会重试，当前安装和下载错误仍独立提示。</p></div>
+                </div>
+                <p class="release-lead">Mac v1.8.3–v1.8.6 请使用完整 DMG：等待现有安装结束，退出旧版后覆盖，再从安装位置手动打开。v1.8.7 可正常使用应用内更新。新版打开后，本次提示改进才会生效。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.8" target="_blank" rel="noopener noreferrer">查看 v1.8.8 安装包与升级步骤 ↗</a><span>历史提示 · 2026.09.23</span></div>
+              </div>
+            </article>
             <article id="mac-update-relaunch" class="release-entry release-entry-featured">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 更新修复</small></time></div>
               <div class="release-card">
@@ -1318,7 +1333,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本地版记录更新至 v1.8.7（2026.09.23）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
+        <p>本地版记录更新至 v1.8.8（2026.09.23）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

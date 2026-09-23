@@ -38,7 +38,7 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     'desktop/account-storage.js', 'lib/membership-policy.js', 'desktop/diagnostic-log.js',
     'desktop/feedback-client.js', 'desktop/mac-update.js', 'desktop/mac-install-progress.js',
     'desktop/windows-update.js', 'desktop/install-confirmation.js', 'desktop/mac-update-cleanup.js',
-    'desktop/startup-ready.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js']) {
+    'desktop/startup-ready.js', 'desktop/mac-update-history.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js']) {
     try { await stat(path.join(sourceDirectory, name)); expectedSources.push(name); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
