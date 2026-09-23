@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { promisify } from 'node:util';
 import { chmod, lstat, mkdir, mkdtemp, readFile, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -185,5 +188,52 @@ test('unsupported platform or invalid startup metadata has no filesystem side ef
     { cacheDirectory: '/unrelated', currentAppPath: '/App.app', currentVersion: 'invalid' }]) {
     assert.equal((await confirmMacUpdateStartup(options, { platform: 'darwin' })).cleaned, false);
     assert.equal((await confirmMacUpdateStartup(options, { platform: 'win32' })).cleaned, false);
+  }
+});
+
+test('real Electron removes an archived bundle and resumes a legacy app.asar-only failed cleanup', {
+  skip: process.platform !== 'darwin' || process.env.XHS_MAC_UPDATE_NATIVE !== '1', timeout: 45000
+}, async t => {
+  const require = createRequire(import.meta.url);
+  const { createPackage } = require('@electron/asar');
+  for (const legacyPartial of [false, true]) {
+    const f = await fixture(t, { modern: !legacyPartial });
+    const source = path.join(f.root, 'archive-source');
+    await mkdir(source); await writeFile(path.join(source, 'entry.js'), 'module.exports = "archive fixture";');
+    if (legacyPartial) {
+      Object.assign(f.record, { status: 'cleanup_failed', startupConfirmed: true, cleanupProof: {
+        stageIdentity: inode(await lstat(f.stage)), backupIdentity: inode(await lstat(f.backup)),
+        backupVersion: '1.8.1', removingName: `.removing-${'a'.repeat(32)}.app`
+      }, cleanupFailure: { code: 'ENOTEMPTY', message: 'previous archive deletion failed' } });
+      await rm(path.join(f.backup, 'Contents'), { recursive: true });
+      await f.save();
+    }
+    const resources = path.join(f.backup, 'Contents/Resources');
+    await mkdir(resources, { recursive: true });
+    await createPackage(source, path.join(resources, 'app.asar'));
+    const runner = path.join(f.root, 'run-electron.cjs');
+    const moduleUrl = new URL('../desktop/mac-update-cleanup.js', import.meta.url).href;
+    await writeFile(runner, `const { app } = require('electron');
+app.setPath('userData', ${JSON.stringify(path.join(f.root, 'electron-profile'))});
+app.dock?.hide();
+app.whenReady().then(async () => {
+  const { confirmMacUpdateStartup } = await import(${JSON.stringify(moduleUrl)});
+  const fs = require('original-fs').promises;
+  const result = await confirmMacUpdateStartup(${JSON.stringify(f.options)}, {
+    run: async (command, args) => command.endsWith('/plutil')
+      ? { stdout: await fs.readFile(args.at(-1), 'utf8') } : { stdout: '' }
+  });
+  process.stdout.write(JSON.stringify(result) + '\\n');
+  app.exit(result.cleaned ? 0 : 1);
+}).catch(error => { console.error(error); app.exit(1); });`);
+    const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
+    const { stdout } = await promisify(execFile)(require('electron'), [runner], { env, timeout: 20000 });
+    const result = JSON.parse(stdout.trim());
+    assert.equal(result.cleaned, true, stdout);
+    await assert.rejects(lstat(f.stage), { code: 'ENOENT' });
+    const final = JSON.parse(await readFile(f.recordPath, 'utf8'));
+    assert.equal(final.status, 'installed');
+    assert.equal(final.cleanupFailure, null);
+    assert.equal(await readFile(f.data, 'utf8'), 'keep downloaded media');
   }
 });

@@ -180,6 +180,8 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
   const arch = process.arch === 'x64' ? 'x86_64' : 'arm64';
   const payload = path.join(root, 'payload'); await mkdir(payload);
   const launchLog = path.join(root, 'launches.log');
+  const hangFlag = path.join(root, 'hang-new-app');
+  const candidatePidPath = path.join(root, 'candidate.pid');
   async function appBundle(directory, version) {
     await mkdir(path.join(directory, 'Contents/MacOS'), { recursive: true });
     await mkdir(path.join(directory, 'Contents/Resources'));
@@ -188,7 +190,7 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     await execute('/usr/bin/plutil', ['-convert', 'xml1', '-o', path.join(directory, 'Contents/Info.plist'), json]);
     await rm(json);
     const code = path.join(root, 'fixture.c');
-    await writeFile(code, `#include <stdio.h>\nint main(void) {\n  FILE *file = fopen(${JSON.stringify(launchLog)}, "a");\n  if (!file) return 2;\n  fputs("${version}\\n", file);\n  fclose(file);\n  return 0;\n}\n`);
+    await writeFile(code, `#include <stdio.h>\n#include <unistd.h>\nint main(void) {\n  FILE *file = fopen(${JSON.stringify(launchLog)}, "a");\n  if (!file) return 2;\n  fputs("${version}\\n", file);\n  fclose(file);\n${version === '1.8.0' ? `  FILE *pidfile = fopen(${JSON.stringify(candidatePidPath)}, "w");\n  if (pidfile) { fprintf(pidfile, "%d", getpid()); fclose(pidfile); }\n  while (access(${JSON.stringify(hangFlag)}, F_OK) == 0) sleep(1);\n` : ''}  return 0;\n}\n`);
     await execute('/usr/bin/xcrun', ['--sdk', 'macosx', 'clang', '-arch', arch, code, '-o', path.join(directory, 'Contents/MacOS/fixture')]);
     await writeFile(path.join(directory, 'Contents/Resources/version.txt'), version);
     await execute('/usr/bin/codesign', ['--force', '--deep', '--sign', '-', directory]);
@@ -200,14 +202,19 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     for (let attempt = 0; attempt < 150; attempt++) {
       const result = JSON.parse(await readFile(filename, 'utf8'));
       if (states.includes(result.status)) return result;
-      if (!['prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'cleanup_pending', 'cleaning'].includes(result.status)) assert.fail(`Unexpected native result ${JSON.stringify(result)}`);
+      if (!['prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'rolling_back', 'cleanup_pending', 'cleaning'].includes(result.status)) assert.fail(`Unexpected native result ${JSON.stringify(result)}`);
       await delay(100);
     }
     assert.fail('Native helper did not finish');
   }
-  for (const outcome of ['installed', 'startup_unconfirmed', 'rolled_back', 'rollback_blocked', 'cancelled']) {
+  for (const outcome of ['installed', 'startup_timeout', 'startup_timeout_hung', 'rolled_back', 'candidate_corrupted', 'journal_unwritable', 'rollback_blocked', 'cancelled']) {
     const previousLaunches = await readFile(launchLog, 'utf8').catch(() => '');
     const fault = outcome === 'rolled_back';
+    const startupTimeout = outcome.startsWith('startup_timeout');
+    const candidateCorrupted = outcome === 'candidate_corrupted';
+    const journalUnwritable = outcome === 'journal_unwritable';
+    if (outcome === 'startup_timeout_hung') await writeFile(hangFlag, 'hang only this synthetic candidate');
+    else await rm(hangFlag, { force: true });
     const current = path.join(root, outcome === 'installed' ? 'Fixture with quotes \' $().app' : `${outcome} fixture.app`);
     await appBundle(current, '1.7.1');
     const oldPid = spawn('/bin/sleep', ['30'], { stdio: 'ignore' });
@@ -215,7 +222,7 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     await new Promise((resolve, reject) => { oldPid.once('spawn', resolve); oldPid.once('error', reject); });
     const prepared = await prepareMacUpdate({ installerPath: dmg, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: process.arch,
       cacheDirectory: path.join(root, 'cache'), parentPid: oldPid.pid }, { startProgress: async () => ({ close: async () => {} }),
-      ...(outcome === 'startup_unconfirmed' ? { startupTimeoutMs: 300 } : {}),
+      ...(startupTimeout ? { startupTimeoutMs: 1500 } : {}),
       ...(fault ? { executable: electronExecutable } : {}), ...(outcome === 'cancelled' ? { readinessTimeoutMs: 0 } : {}) });
     await writeFile(path.join(root, 'cache/mac-last-install.json'), JSON.stringify({ resultPath: prepared.resultPath }), { mode: 0o600 });
     if (fault) {
@@ -234,6 +241,22 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
       // Simulate another process creating a nonempty app between the absence
       // check and rename. A POSIX rename must refuse, never nest next.app.
       await writeFile(helper, sourceText.replace(original, "await fs.mkdir(current); await fs.writeFile(path.join(current, 'concurrent-owner'), 'preserve me'); " + original));
+    }
+    if (candidateCorrupted) {
+      const helper = path.join(path.dirname(prepared.resultPath), 'install.cjs');
+      const sourceText = await readFile(helper, 'utf8');
+      const original = 'await fs.rename(staged, current);';
+      assert.ok(sourceText.includes(original));
+      await writeFile(helper, sourceText.replace(original, original + " await fs.writeFile(path.join(current, 'Contents/Info.plist'), 'damaged fixture plist');"));
+    }
+    if (journalUnwritable) {
+      const helper = path.join(path.dirname(prepared.resultPath), 'install.cjs');
+      const sourceText = await readFile(helper, 'utf8');
+      const original = 'await fs.rename(staged, current);';
+      assert.ok(sourceText.includes(original));
+      // The replacement has happened, then every result journal write fails,
+      // including rolling_back/rolled_back. Recovery must still run in full.
+      await writeFile(helper, sourceText.replace(original, original + " await fs.mkdir(result + '.next');"));
     }
     if (outcome === 'cancelled') {
       await assert.rejects(prepared.launch(), { code: 'MAC_UPDATE_HELPER' });
@@ -261,6 +284,25 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
     assert.equal(await readFile(path.join(path.dirname(prepared.resultPath), 'commit'), 'utf8'), 'approved\n');
     assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1', 'helper cannot replace while old PID remains');
     oldPid.kill();
+    if (journalUnwritable) {
+      const expectedLaunches = `${previousLaunches}1.7.1\n`;
+      for (let attempt = 0; attempt < 150; attempt++) {
+        if (await readFile(launchLog, 'utf8').catch(() => '') === expectedLaunches) break;
+        await delay(100);
+      }
+      assert.equal(await readFile(launchLog, 'utf8'), expectedLaunches, 'journal failure cannot prevent restoring and actually opening the old app');
+      assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1');
+      await execute('/usr/bin/codesign', ['--verify', '--deep', '--strict', current]);
+      await assert.rejects(lstat(prepared.backupPath), { code: 'ENOENT' });
+      assert.equal(await readFile(path.join(path.dirname(prepared.backupPath), 'failed.app/Contents/Resources/version.txt'), 'utf8'), '1.8.0');
+      const log = await readFile(path.join(path.dirname(prepared.resultPath), 'helper.log'), 'utf8');
+      assert.match(log, /Recovery journal write failed: rolling_back \(EISDIR\)/);
+      assert.match(log, /Recovery journal write failed: rolled_back \(EISDIR\)/);
+      assert.equal((await lstat(`${prepared.resultPath}.next`)).isDirectory(), true, 'rollback does not delete the obstructing path to fabricate a successful receipt');
+      assert.equal(JSON.parse(await readFile(prepared.resultPath, 'utf8')).status, 'replacing', 'receipt is unavailable, so success is proven from app identity and actual relaunch');
+      await prepared.dispose();
+      continue;
+    }
     if (outcome === 'installed') {
       await waitResult(prepared.resultPath, ['awaiting_startup']);
       for (let attempt = 0; attempt < 100; attempt++) {
@@ -272,7 +314,7 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
       const completion = await confirmMacUpdateStartup({ cacheDirectory: path.join(root, 'cache'), currentAppPath: current, currentVersion: '1.8.0' });
       assert.equal(completion.cleaned, true, JSON.stringify(completion));
     }
-    const result = await waitResult(prepared.resultPath, [outcome]);
+    const result = await waitResult(prepared.resultPath, [startupTimeout || candidateCorrupted ? 'rolled_back' : outcome]);
     if (outcome === 'rollback_blocked') {
       assert.equal(await readFile(path.join(current, 'concurrent-owner'), 'utf8'), 'preserve me');
       assert.deepEqual(await readdir(current), ['concurrent-owner'], 'unknown concurrent app does not gain a nested replacement');
@@ -280,15 +322,19 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
       await execute('/usr/bin/codesign', ['--verify', '--deep', '--strict', prepared.backupPath]);
     } else {
       await execute('/usr/bin/codesign', ['--verify', '--deep', '--strict', current]);
-      assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), fault ? '1.7.1' : '1.8.0');
+      assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), fault || startupTimeout || candidateCorrupted ? '1.7.1' : '1.8.0');
       if (outcome === 'installed') {
         await assert.rejects(lstat(prepared.backupPath), { code: 'ENOENT' });
         await assert.rejects(lstat(path.dirname(prepared.backupPath)), { code: 'ENOENT' });
         assert.equal(result.backupRemoved, true);
         assert.equal(result.startupConfirmed, true);
-      } else if (!fault) assert.equal(await readFile(path.join(prepared.backupPath, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1', 'unconfirmed startup retains a complete signed rollback copy');
-      else assert.equal(await readFile(path.join(result.failedAppPath, 'Contents/Resources/version.txt'), 'utf8'), '1.8.0');
-      const expectedLaunches = `${previousLaunches}${fault ? '1.7.1' : '1.8.0'}\n`;
+      } else assert.equal(await readFile(path.join(result.failedAppPath, 'Contents/Resources/version.txt'), 'utf8'), '1.8.0');
+      if (startupTimeout) assert.equal(result.failureCode, 'MAC_UPDATE_STARTUP_TIMEOUT');
+      if (outcome === 'startup_timeout_hung') {
+        const candidatePid = Number(await readFile(candidatePidPath, 'utf8'));
+        assert.throws(() => process.kill(candidatePid, 0), { code: 'ESRCH' }, 'hung replacement main process stops before rollback');
+      }
+      const expectedLaunches = `${previousLaunches}${startupTimeout ? '1.8.0\n1.7.1' : fault || candidateCorrupted ? '1.7.1' : '1.8.0'}\n`;
       for (let attempt = 0; attempt < 100; attempt++) {
         if (await readFile(launchLog, 'utf8').catch(() => '') === expectedLaunches) break;
         await delay(100);
@@ -306,5 +352,5 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
   await assert.rejects(prepareMacUpdate({ installerPath: invalid, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: process.arch,
     cacheDirectory: path.join(root, 'cache'), parentPid: process.pid }, { startProgress: async () => ({ close: async () => {} }) }), { code: 'MAC_UPDATE_SIGNATURE' });
   assert.equal(await readFile(path.join(current, 'Contents/Resources/version.txt'), 'utf8'), '1.7.1');
-  t.diagnostic('Real local signed-app replacement, actual app execution, startup confirmation, temporary-backup removal, unconfirmed-startup retention and rollback passed. Rollback used an injected open failure; temporary fixture apps only, no notarization or another Mac acceptance claim.');
+  t.diagnostic('Real local signed-app replacement, actual app execution, startup confirmation, temporary-backup removal and rollback passed. Crashed/hung candidates, corrupted candidate metadata and an unwritable recovery journal all restored and relaunched the old app; open failure and concurrent path replacement were also exercised. Temporary fixture apps only, no notarization or another Mac acceptance claim.');
 });

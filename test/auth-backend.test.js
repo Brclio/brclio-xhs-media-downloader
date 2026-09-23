@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateKeyPairSync, sign, randomUUID, createHash } from 'node:crypto';
+import { generateKeyPairSync, sign, randomUUID, createHash, createHmac } from 'node:crypto';
 import { GithubStateStore, emptyState } from '../server/auth/store.js';
 import { createAccountService } from '../server/auth/service.js';
 import { createMailer } from '../server/auth/mailer.js';
@@ -196,6 +196,46 @@ test('ordinary users cannot gain roles through input, create admin login, or cal
   const admin = await f.admin();
   f.config.adminEmails = [];
   await assert.rejects(f.adminCall(admin, 'admin-users'), { code: 'FORBIDDEN' });
+});
+
+test('new activation codes use Brclio branding and redeem with case-insensitive canonical digests', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login();
+  const codes = await f.generate(admin, { count: 4 });
+  assert.equal(new Set(codes.map(code => code.code)).size, codes.length);
+  const formats = [raw => raw, raw => raw.toUpperCase(), raw => raw.toLowerCase(), raw => ` \n${raw.replace('Brclio', 'bRcLiO')}\t `];
+  for (const [index, code] of codes.entries()) {
+    assert.match(code.code, /^Brclio-[A-F0-9]{40}$/);
+    assert.ok(!JSON.stringify(f.state).includes(code.code));
+    assert.ok(!JSON.stringify(f.state).includes(code.code.toUpperCase()));
+    const result = await f.execute(f.instance(), 'redeem', { code: formats[index](code.code), requestId: randomUUID() }, user, user.dev);
+    assert.equal(result.redeemed, true);
+    assert.equal(Date.parse(result.account.membership.expiresAt), f.clock + (index + 1) * 10 * DAY);
+  }
+});
+
+test('existing XHS activation digests remain redeemable without rewriting stored codes', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login();
+  const [metadata] = await f.generate(admin);
+  const legacyRaw = `XHS-${'0123456789ABCDEF'.repeat(2)}01234567`;
+  // This is the pre-migration HMAC formula, independent of the new generator.
+  const legacyDigest = createHmac('sha256', f.config.pepper).update(`activation\0${legacyRaw}`).digest('hex');
+  f.state.codes[metadata.id].digest = legacyDigest;
+  const requestId = randomUUID();
+  const result = await f.execute(f.instance(), 'redeem', { code: ` ${legacyRaw.toLowerCase()} `, requestId }, user, user.dev);
+  assert.equal(result.redeemed, true);
+  assert.equal(f.state.codes[metadata.id].digest, legacyDigest);
+  const replay = await f.execute(f.instance(), 'redeem', { code: legacyRaw, requestId }, user, user.dev);
+  assert.equal(replay.replayed, true);
+  assert.equal(Date.parse(replay.account.membership.expiresAt), f.clock + 10 * DAY);
+});
+
+test('activation prefixes cannot alias an existing code or bypass exact payload validation', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login(), [code] = await f.generate(admin);
+  const payload = code.code.slice('Brclio-'.length);
+  for (const invalid of [`XHS-${payload}`, `Other-${payload}`, `Brclio-${payload.slice(1)}`, `Brclio-${payload}A`, `Brclio-${payload.slice(0, -1)}G`, `Brclio- ${payload}`]) {
+    await assert.rejects(f.execute(f.instance(), 'redeem', { code: invalid, requestId: randomUUID() }, user, user.dev), { code: 'ACTIVATION_INVALID' });
+    assert.equal(f.state.codes[code.id].status, 'unused');
+  }
 });
 
 test('two users race the same activation code across backend instances: one atomic winner', async () => {

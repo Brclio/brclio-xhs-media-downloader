@@ -19,7 +19,9 @@ const arch = process.arch;
 assert.ok((platform === 'darwin' && ['arm64', 'x64'].includes(arch)) || (platform === 'win32' && arch === 'x64'));
 if (process.env.GITHUB_REF_TYPE === 'tag') assert.ok([`v${version}`, `desktop-v${version}`].includes(process.env.GITHUB_REF_NAME));
 const label = platform === 'darwin' ? `mac-${arch}` : 'windows-x64';
-const output = path.join(root, 'dist-desktop');
+// An alternate output keeps verification builds separate from a locally
+// installed app that may itself live in the default packaging directory.
+const output = path.resolve(root, process.argv[2] || pkg.build.directories.output);
 const names = platform === 'darwin'
   ? ['dmg', 'zip'].map(ext => `Brclio-XHS-Downloader-${version}-${label}.${ext}`)
   : ['setup', 'portable'].map(kind => `Brclio-XHS-Downloader-${version}-${label}-${kind}.exe`);

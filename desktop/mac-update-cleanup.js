@@ -1,12 +1,18 @@
 import { execFile } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
-import { constants } from 'node:fs';
-import { lstat, mkdir, open, readFile, readdir, realpath, rename, rm, rmdir, writeFile } from 'node:fs/promises';
+import * as nodeFs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 const execute = promisify(execFile);
+// Electron treats app.asar as a virtual directory. Recursive removal through
+// its patched fs can leave the physical archive behind with ENOTEMPTY. Keep
+// this operation on native filesystem APIs without changing global noAsar.
+const nativeFs = process.versions.electron ? createRequire(import.meta.url)('original-fs') : nodeFs;
+const { constants } = nativeFs;
+const { lstat, mkdir, open, readFile, readdir, realpath, rename, rm, rmdir, writeFile } = nativeFs.promises;
 const APP_ID = 'cn.bornforthis.xhs-downloader';
 const versionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const identity = stat => `${stat.dev}:${stat.ino}`;
@@ -104,7 +110,7 @@ export async function confirmMacUpdateStartup({ cacheDirectory, currentAppPath, 
       if (record.appId !== APP_ID || record.currentAppPath !== current || !versionPattern.test(record.version || '')
         || older(currentVersion, record.version) || record.backupRemoved === true) continue;
       const sameVersion = record.version === currentVersion;
-      const modern = record.schemaVersion === 2;
+      const modern = record.schemaVersion >= 2;
       const pending = ['launching', 'awaiting_startup', 'startup_unconfirmed', 'cleanup_pending'].includes(record.status);
       const interrupted = record.startupConfirmed === true && ['cleaning', 'cleanup_failed'].includes(record.status);
       const legacyLaunching = sameVersion && !modern && record.status === 'launching';
@@ -150,7 +156,7 @@ export async function confirmMacUpdateStartup({ cacheDirectory, currentAppPath, 
         // A previous attempt may have deleted the app and crashed before its
         // final journal write. Finishing that receipt never deletes new paths.
         await store(recordPath, { ...record, status: 'installed', startupConfirmed: true, backupRemoved: true,
-          cleanedAt: new Date().toISOString(), message: '新版已成功启动，临时旧版文件已自动清理。' });
+          cleanupFailure: null, cleanedAt: new Date().toISOString(), message: '新版已成功启动，临时旧版文件已自动清理。' });
         result.cleanedBackups.push(record.backupPath);
       };
       try { stageStat = await safeStat(stage, true, true); }
@@ -195,10 +201,11 @@ export async function confirmMacUpdateStartup({ cacheDirectory, currentAppPath, 
       await rmdir(stage); // Only an empty staging directory can be removed.
       await finish();
     } catch (error) {
-      result.retained.push({ resultPath: recordPath, message: error.message });
+      const failure = { code: error.code || 'MAC_UPDATE_CLEANUP', message: error.message };
+      result.retained.push({ resultPath: recordPath, ...failure });
       if (ownsLock && record?.currentAppPath === current && running?.version === currentVersion
         && ['installed', 'cleanup_pending', 'startup_unconfirmed', 'cleaning', 'cleanup_failed'].includes(record.status)) {
-        await store(recordPath, { ...record, status: 'cleanup_failed', startupConfirmed: true,
+        await store(recordPath, { ...record, status: 'cleanup_failed', startupConfirmed: true, cleanupFailure: failure,
           message: '新版已启动，临时旧版未能完成清理，已保留记录以便重试。' }).catch(() => {});
       }
     }

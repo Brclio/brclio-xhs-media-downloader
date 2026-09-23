@@ -16,13 +16,14 @@ function run(argv) {
   var previous = '', terminal = false;
   var stages = { preparing: 0, opening: 1, verifying: 2, copying: 3, checking: 4,
     prepared: 5, ready: 5, waiting: 5, validating: 5, replacing: 6, launching: 7,
-    awaiting_startup: 7, cleanup_pending: 8, cleaning: 8, installed: 9 };
+    awaiting_startup: 7, rolling_back: 7, cleanup_pending: 8, cleaning: 8, installed: 9 };
   var messages = { preparing: '正在准备安装更新…', opening: '正在打开安装包…',
     verifying: '正在校验新版应用…', copying: '正在复制新版应用…',
     checking: '正在检查安装文件…', prepared: '安装准备已完成…',
     ready: '安装助手已准备好…', waiting: '正在等待当前应用退出…', validating: '正在复核安装文件…',
     replacing: '正在覆盖安装，临时旧版用于失败恢复…', launching: '正在重新打开新版应用…',
     awaiting_startup: '正在确认新版启动…', cleanup_pending: '正在准备清理临时旧版…',
+    rolling_back: '正在恢复旧版应用…',
     cleaning: '正在清理临时旧版文件…', installed: '新版已启动，临时旧版文件已自动清理。' };
 
   var app = $.NSApplication.sharedApplication;

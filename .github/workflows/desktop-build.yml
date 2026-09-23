@@ -44,7 +44,7 @@ jobs:
       - run: npm run test:node
       - name: Verify native Mac replacement and rollback in temporary signed apps
         if: runner.os != 'Windows'
-        run: node --test test/mac-update.test.js
+        run: node --test test/mac-update.test.js test/mac-update-cleanup.test.js
         env:
           XHS_MAC_UPDATE_NATIVE: '1'
       - run: python -m unittest discover -s test -p 'test_python_*.py'
@@ -70,6 +70,8 @@ jobs:
         run: node scripts/verify-built-installers.mjs
       - name: Exercise real Electron main process, bridge, and both download engines
         run: npm run desktop:verify
+      - name: Verify responsive startup and credential access recovery
+        run: npm run desktop:verify:startup
       - name: Verify retry and update controls in the real desktop renderer
         run: npx electron scripts/verify-desktop-ui.mjs
       - name: Verify native credential encryption across two app processes

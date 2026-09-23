@@ -103,6 +103,74 @@ test('encrypted credentials, device keys, and permanent session survive client/s
   assert.equal(JSON.stringify(restarted.snapshot()).includes('PRIVATE KEY'), false);
 });
 
+test('async OS encryption reads existing sync credentials and rotates only after validating them', async t => {
+  const f = await fixture(t); await f.login();
+  const before = await f.store.load();
+  const sync = f.safeStorage;
+  let writes = 0;
+  const safeStorage = {
+    isAsyncEncryptionAvailable: async () => true,
+    decryptStringAsync: async bytes => ({ result: sync.decryptString(bytes), shouldReEncrypt: true }),
+    encryptStringAsync: async text => { writes++; return sync.encryptString(text); },
+    isEncryptionAvailable() { throw new Error('Blocking API must not be called'); },
+    decryptString() { throw new Error('Blocking API must not be called'); },
+    encryptString() { throw new Error('Blocking API must not be called'); }
+  };
+  const store = new SecureAccountStore({ directory: f.directory, safeStorage, deviceIdentity: async () => STABLE_HASH });
+  assert.deepEqual(await store.load(), before);
+  assert.equal(writes, 1);
+  assert.deepEqual(await f.store.load(), before, 'The encrypted format stays readable by the previous app for rollback');
+  const moved = new SecureAccountStore({ directory: f.directory, safeStorage, deviceIdentity: async () => 'b'.repeat(64) });
+  await assert.rejects(moved.load(), { code: 'DEVICE_ID_CHANGED' });
+  assert.equal(writes, 1, 'Never rewrite credentials before their device binding is validated');
+});
+
+test('denied async storage preserves credentials and retries once only on explicit initialization', async t => {
+  const f = await fixture(t); await f.login();
+  const before = await readFile(f.store.filename);
+  let allowed = false, attempts = 0, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const sync = f.safeStorage;
+  const safeStorage = {
+    isAsyncEncryptionAvailable: async () => { attempts++; await gate; return allowed; },
+    decryptStringAsync: async bytes => ({ result: sync.decryptString(bytes), shouldReEncrypt: false }),
+    encryptStringAsync: async text => sync.encryptString(text),
+    isEncryptionAvailable() { throw new Error('Never silently fall back after access denial'); }
+  };
+  const store = new SecureAccountStore({ directory: f.directory, safeStorage, deviceIdentity: async () => STABLE_HASH });
+  const client = new AccountClient({ ...f.config, store });
+  const pending = client.initialize();
+  assert.equal(client.initialize(), pending, 'Concurrent retry cannot open multiple prompts');
+  assert.equal(client.snapshot().status, 'initializing');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(client.snapshot().status, 'initializing', 'Main event loop remains responsive while the OS waits');
+  release(); await pending;
+  assert.equal(client.snapshot().status, 'secure_storage_unavailable');
+  await assert.rejects(client.refresh(), { code: 'SECURE_STORAGE_UNAVAILABLE' });
+  assert.equal(attempts, 1, 'Automatic refresh must not reopen the password dialog');
+  assert.deepEqual(await readFile(f.store.filename), before);
+  allowed = true;
+  await client.initialize(); await client.refresh();
+  assert.equal(client.snapshot().status, 'ready');
+  assert.equal(attempts, 2);
+});
+
+test('missing OS encryption keys never replace an existing encrypted account', async t => {
+  const f = await fixture(t); await f.login();
+  const before = await readFile(f.store.filename);
+  for (const phase of ['available', 'decrypt']) {
+    const missing = () => { throw Object.assign(new Error('OS key not found'), { code: 'ENOENT' }); };
+    const safeStorage = {
+      isAsyncEncryptionAvailable: async () => phase === 'available' ? missing() : true,
+      decryptStringAsync: async () => missing(),
+      encryptStringAsync: async () => { assert.fail('Must not overwrite saved device keys'); }
+    };
+    const store = new SecureAccountStore({ directory: f.directory, safeStorage, deviceIdentity: async () => STABLE_HASH });
+    await assert.rejects(store.load(), { code: 'SECURE_STORAGE_UNAVAILABLE' });
+    assert.deepEqual(await readFile(f.store.filename), before);
+  }
+});
+
 test('secure storage unavailable/corrupt/device mismatch fail closed and preserve previous ciphertext', async t => {
   const f = await fixture(t); await f.login();
   const bytes = await readFile(f.store.filename);
