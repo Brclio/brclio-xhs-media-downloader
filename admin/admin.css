@@ -161,5 +161,27 @@ dialog::backdrop { background: rgba(26,26,46,.4); }
 .feedback-status-form { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin-block: 15px 20px; }
 .feedback-status-form label { min-width: 180px; }
 .feedback-copy-fallback { margin-top: 14px; min-height: 160px; }
+.issue-shortcut { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 18px 0; margin-bottom: 22px; border-block: 1px solid var(--line); }
+.issue-shortcut h3 { font-size: .93rem; margin-bottom: 5px; }
+.email-issue-panel { scroll-margin-top: 160px; padding-bottom: clamp(28px, 4vw, 44px); margin-bottom: clamp(28px, 4vw, 44px); border-bottom: 1px solid var(--line); }
+.email-issue-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 48px); align-items: start; }
+.recipient-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 18px; }
+.issue-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.issue-form > .button { justify-self: start; }
+.issue-preview { min-width: 0; padding: clamp(20px, 2.5vw, 30px); border-radius: 8px; background: #faf5dc; }
+.issue-empty { min-height: 275px; display: flex; flex-direction: column; justify-content: center; }
+.issue-empty h3 { margin: 4px 0 12px; }
+.issue-empty p { font-size: .82rem; max-width: 340px; }
+.issue-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; margin: 20px 0; }
+.issue-facts > div:first-child { grid-column: 1 / -1; }
+.issue-facts dt { color: var(--muted); font-size: .74rem; margin-bottom: 4px; }
+.issue-facts dd { margin: 0; font-size: .87rem; overflow-wrap: anywhere; }
+.issue-facts > div:first-child dd { font-weight: 700; font-size: 1rem; }
+.issue-record { margin: 10px 0 18px; }
+.issue-preview > .field-help { margin-top: 12px; }
+.issue-preview .button { white-space: normal; }
+.code-actions { min-width: 122px; }
+@media (max-width: 900px) { .email-issue-layout { grid-template-columns: 1fr; } .issue-empty { min-height: 140px; } }
+@media (max-width: 600px) { .issue-shortcut { align-items: start; flex-direction: column; gap: 12px; } .email-issue-panel > .panel-heading { flex-direction: column; gap: 10px; } .recipient-search { grid-template-columns: 1fr; } .recipient-search .button { justify-self: start; } .issue-form { grid-template-columns: 1fr; } .issue-form .wide-field { grid-column: auto; } .issue-preview .panel-heading { flex-wrap: wrap; } .issue-facts { grid-template-columns: 1fr; } }
 @media (max-width: 900px) { .feedback-layout { grid-template-columns: 230px minmax(0, 1fr); gap: 20px; } }
 @media (max-width: 600px) { .feedback-layout { grid-template-columns: 1fr; } .feedback-log-section .button { white-space: normal; } }

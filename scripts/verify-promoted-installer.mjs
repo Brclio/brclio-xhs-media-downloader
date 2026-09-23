@@ -34,11 +34,11 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   // Historical v1.5 artifacts predate the update manager.
   try { await stat(path.join(sourceDirectory, 'desktop/update-manager.js')); expectedSources.push('desktop/update-manager.js'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
-  for (const name of ['account-ui.js', 'account-ui.css', 'desktop/account-client.js',
+  for (const name of ['account-ui.js', 'account-ui.css', 'download.html', 'download.css', 'download.js', 'desktop/account-client.js',
     'desktop/account-storage.js', 'lib/membership-policy.js', 'desktop/diagnostic-log.js',
     'desktop/feedback-client.js', 'desktop/mac-update.js', 'desktop/mac-install-progress.js',
     'desktop/windows-update.js', 'desktop/install-confirmation.js', 'desktop/mac-update-cleanup.js',
-    'desktop/startup-ready.js', 'desktop/mac-update-history.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js']) {
+    'desktop/startup-ready.js', 'desktop/mac-update-history.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js', 'lib/membership-plans.js']) {
     try { await stat(path.join(sourceDirectory, name)); expectedSources.push(name); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
@@ -56,6 +56,14 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   for (const name of expectedSources) {
     assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))),
       `Packaged source differs from release tag: ${name}`);
+  }
+  // Payment images must be the exact reviewed codes. Loading the purchase UI
+  // alone does not establish that its packaged QR assets are present or intact.
+  if (expectedSources.includes('lib/membership-plans.js')) {
+    for (const name of ['assets/membership/wechat-pay.png', 'assets/membership/alipay.png', 'assets/membership/wechat-contact.png']) {
+      assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))),
+        `Packaged membership QR differs from release tag: ${name}`);
+    }
   }
   if (expectedSources.includes('desktop/account-client.js')) {
     const name = 'desktop/account-config.json';

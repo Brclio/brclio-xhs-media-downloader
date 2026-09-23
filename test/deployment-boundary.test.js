@@ -24,10 +24,18 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   }
   await mkdir(path.join(root, 'assets/downloads'), { recursive: true });
   await writeFile(path.join(root, 'assets/downloads/hero.webp'), 'public-image');
+  await mkdir(path.join(root, 'assets/membership'), { recursive: true });
+  for (const name of ['wechat-pay', 'alipay', 'wechat-contact']) {
+    await writeFile(path.join(root, `assets/membership/${name}.png`), 'public-qr');
+  }
   const out = await buildWeb(root);
   const files = (await readdir(out, { recursive: true })).map(name => name.replaceAll('\\', '/'));
   assert.ok(files.includes('admin/index.html'));
   assert.ok(files.includes('lib/archive.js'));
+  assert.ok(files.includes('lib/membership-plans.js'), 'client and admin share the public plan catalog');
+  for (const name of ['wechat-pay', 'alipay', 'wechat-contact']) {
+    assert.ok(files.includes(`assets/membership/${name}.png`), `membership QR is included: ${name}`);
+  }
   for (const name of ['download.html', 'download.css', 'download.js', 'assets/downloads/hero.webp']) {
     assert.ok(files.includes(name), `download page asset is public: ${name}`);
   }

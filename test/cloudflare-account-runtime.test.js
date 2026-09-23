@@ -7,7 +7,7 @@ import { build } from 'esbuild';
 import { emptyState } from '../server/auth/store.js';
 import { digest } from '../server/auth/crypto.js';
 
-test('real SQLite Durable Object preserves account auth and validates near-8-MiB feedback through four batches', async t => {
+test('real SQLite Durable Object preserves auth, full feedback and targeted activation email delivery', async t => {
   const origin = 'https://account.example.test';
   const pepper = 'isolated-runtime-fixture-pepper-'.repeat(2);
   const token = 'a'.repeat(43), desktopToken = 'b'.repeat(43);
@@ -30,7 +30,7 @@ test('real SQLite Durable Object preserves account auth and validates near-8-MiB
     log: { partCount: chunks.length, totalBytes: Buffer.byteLength(chunks.join('')), sha256: sha256(chunks.join('')), firstTimestamp: createdAt, lastTimestamp: createdAt, truncated: false, parts: chunks.map(content => ({ bytes: Buffer.byteLength(content), sha256: sha256(content) })) },
   };
   assert.ok(state.feedback[feedbackId].log.totalBytes > 8_000_000);
-  const calls = [];
+  const calls = [], deliveries = [];
   const bundle = await build({
     stdin: { resolveDir: fileURLToPath(new URL('..', import.meta.url)), contents: `
       export { AccountRuntime } from './cloudflare/account-runtime.js';
@@ -44,10 +44,15 @@ test('real SQLite Durable Object preserves account auth and validates near-8-MiB
     modules: true, script: bundle.outputFiles[0].text,
     compatibilityDate: '2026-09-22', compatibilityFlags: ['nodejs_compat'],
     durableObjects: { ACCOUNT_RUNTIME: { className: 'AccountRuntime', useSQLite: true } },
-    bindings: { AUTH_SITE_ORIGIN: origin, AUTH_SECRET_PEPPER: pepper, AUTH_ADMIN_EMAILS: 'admin@example.test', AUTH_GITHUB_OWNER: 'fixture', AUTH_GITHUB_REPO: 'fixture', AUTH_GITHUB_TOKEN: 'fixture-token' },
+    bindings: { AUTH_SITE_ORIGIN: origin, AUTH_SECRET_PEPPER: pepper, AUTH_ADMIN_EMAILS: 'admin@example.test', AUTH_GITHUB_OWNER: 'fixture', AUTH_GITHUB_REPO: 'fixture', AUTH_GITHUB_TOKEN: 'fixture-token', AUTH_MAIL_PROVIDER: 'webhook', AUTH_MAIL_WEBHOOK_URL: 'https://mail.example.test/send', AUTH_MAIL_WEBHOOK_SECRET: 'fixture-mail-secret' },
     outboundService: async request => {
       const url = new URL(request.url);
       calls.push({ path: url.pathname, method: request.method });
+      if (url.origin === 'https://mail.example.test') {
+        assert.equal(request.headers.get('authorization'), 'Bearer fixture-mail-secret');
+        deliveries.push(await request.json());
+        return Response.json({ accepted: true });
+      }
       assert.equal(url.origin, 'https://api.github.com');
       assert.equal(request.headers.get('authorization'), 'Bearer fixture-token');
       if (url.pathname === '/graphql') {
@@ -97,6 +102,29 @@ test('real SQLite Durable Object preserves account auth and validates near-8-MiB
   assert.equal(state.feedback[feedbackId].status, 'new');
   assert.ok(state.feedback[feedbackId].submittedAt);
   assert.equal(calls.filter(call => call.method === 'PUT').length, 1);
+
+  const adminHeaders = { Origin: origin, Cookie: `__Host-xhs-admin=${token}` };
+  const issueInput = { userId: 'desktop', planId: 'monthly', count: 1, reason: '测试已核实月付付款', requestId: 'fixture-issue-membership-123' };
+  const issued = await call({ action: 'admin-generate-codes', input: issueInput }, adminHeaders);
+  assert.equal(issued.status, 200);
+  const { codes: [code] } = await issued.json();
+  assert.equal(code.recipientEmail, 'user@example.test');
+  assert.equal(code.days, 30);
+  assert.equal(code.priceCents, 990);
+  assert.match(code.code, /^Brclio-[A-F0-9]{40}$/);
+  assert.ok(!JSON.stringify(state).includes(code.code), 'raw activation code never reaches GitHub state');
+  const sendInput = { codeId: code.id, reason: '测试发送月付激活码', requestId: 'fixture-send-membership-123' };
+  const send = await call({ action: 'admin-send-activation', input: sendInput }, adminHeaders);
+  assert.equal(send.status, 200, JSON.stringify(await send.clone().json()));
+  assert.equal(deliveries.length, 1);
+  assert.equal(deliveries[0].email, 'user@example.test');
+  assert.equal(deliveries[0].code, code.code);
+  assert.match(deliveries[0].text, /30/);
+  const replay = await call({ action: 'admin-send-activation', input: sendInput }, adminHeaders);
+  assert.equal(replay.status, 200);
+  assert.equal(deliveries.length, 1, 'confirmed send replay does not issue another email');
+  assert.equal(Object.keys(state.codes).length, 1, 'email retries never mint another activation code');
+  assert.ok(!JSON.stringify(state).includes(code.code));
 
   const logout = await call({ action: 'logout', input: {} }, { Origin: origin, Cookie: `__Host-xhs-admin=${token}` });
   assert.equal(logout.status, 200);

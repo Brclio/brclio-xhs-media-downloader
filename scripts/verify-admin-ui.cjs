@@ -92,9 +92,15 @@ app.whenReady().then(async () => {
     },
   };
   const deliveries = [];
+  const activationDeliveries = [];
+  let failNextActivation = false;
   const mailer = {
     provider: 'smtp', configured: true,
     async send(message) { deliveries.push(message); },
+    async sendActivation(message) {
+      if (failNextActivation) { failNextActivation = false; throw new Error('Fixture activation SMTP failure'); }
+      activationDeliveries.push(message);
+    },
     async check() { return { status: 'unavailable', message: 'Fixture SMTP unavailable' }; },
   };
   const store = new GithubStateStore({
@@ -149,7 +155,7 @@ app.whenReady().then(async () => {
       return;
     }
     const file = req.url === '/admin/' ? 'admin/index.html' : req.url.replace(/^\//, '');
-    if (!['admin/index.html', 'admin/admin.js', 'admin/admin.css'].includes(file)) {
+    if (!['admin/index.html', 'admin/admin.js', 'admin/admin.css', 'lib/membership-plans.js'].includes(file)) {
       res.statusCode = 404;
       res.end();
       return;
@@ -271,6 +277,62 @@ app.whenReady().then(async () => {
   await check(`document.querySelectorAll('.codes-table tbody tr').length === 1`, 'server filters code status');
   await click('#tab-audit');
   await check(`document.querySelectorAll('.audit-table tbody tr').length === 8`, 'eight successful mutations have audit entries');
+  await click('#tab-users');
+  await click('.issue-shortcut button');
+  await check(`document.querySelector('#issue-recipient').selectedOptions[0].textContent === 'student@example.test' && document.querySelector('#panel-codes').hidden === false`, 'user shortcut preselects the registered email');
+  assert.equal(await evaluate(`Array.from(document.querySelector('#issue-plan').options).map(option => option.textContent).join('|')`), '日付 · ¥2 · 1 天|月付 · ¥9.9 · 30 天|年付 · ¥39.9 · 365 天');
+  await change('#code-status', ''); await click('#codes-filter-form button');
+  await change('#issue-plan', 'yearly');
+  await fill('#issue-reason', '已核对付款邮箱，测试年付套餐发码');
+  const beforeIssue = Object.keys(state.codes).length;
+  await click('#issue-generate');
+  await check(`document.querySelector('#issue-code')?.value.startsWith('Brclio-') && document.querySelector('#issue-send')?.disabled === false`, 'targeted plan code generated and ready to send');
+  const issuedRaw = await evaluate(`document.querySelector('#issue-code').value`);
+  const issuedCode = Object.values(state.codes).find(code => code.recipientId === 'u1');
+  assert.ok(issuedCode, 'target customer is stored on the code');
+  assert.equal(issuedCode.planId, 'yearly');
+  assert.equal(issuedCode.days, 365);
+  assert.equal(Object.keys(state.codes).length, beforeIssue + 1);
+  assert.equal(JSON.stringify(state).includes(issuedRaw), false, 'targeted plaintext is not persisted');
+  assert.equal(state.users.u1.membership.type, 'none', 'generation does not grant membership before redemption');
+  const beforeMail = activationDeliveries.length;
+  fs.writeFileSync(path.join(screenshots, 'membership-email-generated.png'), (await win.webContents.capturePage()).toPNG());
+  win.setContentSize(560, 1000); await pause(80);
+  assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'email issue panel fits narrow display');
+  fs.writeFileSync(path.join(screenshots, 'membership-email-narrow.png'), (await win.webContents.capturePage()).toPNG());
+  await evaluate(`document.querySelector('#issue-preview').scrollIntoView({ block: 'start' })`);
+  fs.writeFileSync(path.join(screenshots, 'membership-email-preview-narrow.png'), (await win.webContents.capturePage()).toPNG());
+  win.setContentSize(1280, 1000);
+  await evaluate(`document.querySelector('#email-issue-panel').scrollIntoView({ block: 'start' })`);
+  failNextActivation = true;
+  await click('#issue-send');
+  await check(`document.querySelector('#issue-preview').textContent.includes('发送失败，可重试') && document.querySelector('#notice .notice-actions button')`, 'failed send preserves the code and offers safe retry');
+  assert.equal(Object.keys(state.codes).length, beforeIssue + 1, 'failed sending cannot mint another code');
+  assert.equal(activationDeliveries.length, beforeMail);
+  await click('#notice .notice-actions button');
+  await check(`document.querySelector('#issue-send')?.disabled && document.querySelector('#issue-preview').textContent.includes('已提交邮件服务')`, 'activation email reports mail-provider submission');
+  assert.equal(activationDeliveries.length, beforeMail + 1, 'explicit send delivers exactly one activation email');
+  assert.equal(activationDeliveries.at(-1).email, 'student@example.test');
+  assert.equal(activationDeliveries.at(-1).code, issuedRaw, 'email contains the exact generated code');
+  const attempts = calls.filter(call => call.action === 'admin-send-activation');
+  assert.equal(attempts.length, 2);
+  assert.equal(attempts[0].input.requestId, attempts[1].input.requestId, 'failed send retry reuses the original request ID');
+  assert.equal(Object.keys(state.codes).length, beforeIssue + 1, 'sending never generates another code');
+  await click('#issue-send');
+  assert.equal(activationDeliveries.length, beforeMail + 1, 'disabled sent button cannot repeat delivery');
+  fs.writeFileSync(path.join(screenshots, 'membership-email-sent.png'), (await win.webContents.capturePage()).toPNG());
+  await fill('#code-query', 'student@example.test'); await click('#codes-filter-form button');
+  await check(`document.querySelectorAll('.codes-table tbody tr').length === 1 && document.querySelector('.codes-table').textContent.includes('student@example.test')`, 'code records filter by recipient email');
+  await click('#dismiss-codes'); await click('#dialog-confirm');
+  await new Promise(resolve => { win.webContents.once('did-finish-load', resolve); win.reload(); });
+  await check(`!document.querySelector('#workspace').hidden`, 'admin session survives reload after sending');
+  await click('#tab-codes');
+  await fill('#code-query', 'student@example.test'); await click('#codes-filter-form button');
+  await check(`document.querySelectorAll('.codes-table tbody tr').length === 1`, 'sent targeted code survives page reload');
+  await click('.codes-table .button-secondary');
+  await check(`document.querySelector('#issue-send')?.disabled && document.querySelector('#issue-preview').textContent.includes('已提交邮件服务')`, 'reopened sent record is read-only for delivery');
+  assert.equal(await evaluate(`document.querySelector('#issue-code')`), null, 'reload does not recover plaintext into the browser');
+  assert.equal(activationDeliveries.length, beforeMail + 1, 'reopening sent record never sends another email');
   await click('#tab-feedback');
   await check(`document.querySelectorAll('.feedback-list-item').length === 2`, 'complete and incomplete feedback visible');
   await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('尚未上传')).click()`);
@@ -317,11 +379,14 @@ app.whenReady().then(async () => {
   await check(`document.querySelector('#status-content').textContent.includes('连接或认证失败')`, 'configured but unavailable SMTP is visibly unsuccessful');
   fs.writeFileSync(path.join(screenshots, 'status.png'), (await win.webContents.capturePage()).toPNG());
   await click('#tab-codes');
-  await click('#dismiss-codes');
-  await click('#dialog-confirm');
+  if (await evaluate(`!document.querySelector('#generated-panel').hidden`)) {
+    await click('#dismiss-codes');
+    await click('#dialog-confirm');
+  }
   await click('#logout');
   await check(`document.querySelector('#workspace').hidden`, 'actual logout');
   assert.equal(await evaluate(`document.querySelector('#feedback-detail').textContent`), '', 'logout clears retained feedback and logs from the document');
+  assert.equal(await evaluate(`document.querySelector('#issue-preview').textContent.includes('student@example.test')`), false, 'logout clears targeted customer details');
   assert.equal(Object.values(state.sessions).filter(session => session.client === 'admin').every(session => session.revokedAt), true);
   assert.equal((await win.webContents.session.cookies.get({ url: config.siteOrigin, name: ADMIN_COOKIE })).length, 0);
   assert.equal(await evaluate('localStorage.length'), 0, 'no credential localStorage');

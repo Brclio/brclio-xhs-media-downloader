@@ -50,3 +50,79 @@ body.is-desktop .account-scope { margin-top: 32px; padding-top: 20px; }
   body.is-desktop .account-facts > div:last-child { border-bottom: 0; }
   body.is-desktop .account-redeem-form { grid-template-columns: 1fr; }
 }
+
+/* Membership purchase dialog: Brclio app modal, plan choices and payment instructions. */
+.membership-dialog { --membership-border: var(--line-strong, #d7d2c8); width: min(780px, calc(100vw - 40px)); max-height: calc(100dvh - 40px); margin: auto; padding: clamp(22px, 3vw, 32px); border: 1px solid var(--membership-border); border-radius: 14px; color: var(--ink, #1a1a2e); background: var(--cream, #fefcf6); overflow-y: auto; overscroll-behavior: contain; }
+.membership-dialog::backdrop { background: rgba(26, 26, 46, .48); }
+.membership-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.membership-dialog h2 { margin: 3px 0 0; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 1.2rem; line-height: 1.5; }
+.membership-close { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; padding: 0; border: 1px solid var(--membership-border); border-radius: 50%; background: var(--cream-deep, #faf6eb); color: var(--ink, #1a1a2e); font: inherit; font-size: 1.6rem; cursor: pointer; }
+.membership-close:hover { background: var(--yellow, #f4d758); }
+.membership-description { margin: 13px 0 22px; color: var(--ink-light, #4a4a5a); font-size: .82rem; line-height: 1.8; }
+.membership-dialog fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.membership-dialog legend { margin-bottom: 10px; padding: 0; color: var(--ink, #1a1a2e); font-size: .78rem; font-weight: 700; }
+.membership-plan-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.software-account label.membership-plan { position: relative; display: grid; align-content: start; gap: 7px; padding: 16px; border: 1px solid var(--membership-border); border-radius: 8px; cursor: pointer; background: var(--cream, #fefcf6); }
+.membership-plan:hover, .membership-method-options label:hover { background: var(--cream-deep, #faf6eb); }
+.software-account label.membership-plan:has(input:checked) { border-color: var(--blue, #2b7fd8); background: #edf3f7; box-shadow: inset 0 0 0 1px var(--blue, #2b7fd8); }
+.software-account .membership-plan input, .software-account .membership-method-options input { position: absolute; width: 1px; height: 1px; min-width: 0; padding: 0; margin: 0; border: 0; opacity: 0; }
+.membership-plan:has(input:focus-visible), .membership-method-options label:has(input:focus-visible) { outline: 3px solid var(--blue, #2b7fd8); outline-offset: 3px; }
+.membership-plan-name { color: var(--ink, #1a1a2e); font-size: .85rem; }
+.membership-plan-price { color: var(--blue-deep, #236cb8); font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 2rem; font-weight: 800; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.membership-plan-price > span { margin-right: 4px; font-family: var(--font-sans, 'PingFang SC', sans-serif); font-size: 1rem; }
+.membership-plan-duration { color: var(--ink-light, #4a4a5a); font-size: .73rem; font-weight: 400; }
+.membership-plan-selected { position: absolute; top: 16px; right: 12px; color: var(--blue-deep, #236cb8); font-size: .66rem; visibility: hidden; }
+.membership-plan:has(input:checked) .membership-plan-selected { visibility: visible; }
+.membership-small { margin: 10px 0 0; color: var(--ink-light, #4a4a5a); font-size: .73rem; line-height: 1.85; }
+.membership-payment-note { margin: 22px 0; padding: 17px 20px; border-radius: 8px; background: #f9ecc0; }
+.membership-payment-note h3 { margin: 0; font-size: .95rem; font-weight: 800; line-height: 1.6; }
+.membership-payment-note p { margin: 6px 0 0; font-size: .77rem; line-height: 1.8; }
+.membership-email-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 12px; }
+.membership-email { min-width: 0; overflow-wrap: anywhere; font-size: .9rem; font-weight: 700; user-select: text; }
+.membership-email-row .button { flex-shrink: 0; min-height: 38px; padding: 7px 12px; background: var(--cream, #fefcf6); }
+.membership-email-status:empty { display: none; }
+.membership-email-status { color: #355331; }
+.membership-login-guidance { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 4px 0 22px; }
+.membership-login-guidance p { margin: 0; font-size: .8rem; line-height: 1.8; }
+.membership-payment { display: grid; grid-template-columns: minmax(0, 1fr) 228px; align-items: center; gap: 30px; }
+.membership-method-options { display: flex; gap: 8px; }
+.software-account .membership-method-options label { position: relative; display: block; padding: 10px 14px; border: 1px solid var(--membership-border); border-radius: 6px; font-size: .8rem; cursor: pointer; }
+.membership-method-options label:has(input:checked) { color: var(--cream, #fefcf6); background: var(--blue-deep, #236cb8); border-color: var(--blue-deep, #236cb8); }
+.membership-amount { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 17px 0 0; font-size: .8rem; }
+.membership-amount strong { font-size: 1.45rem; color: var(--blue-deep, #236cb8); font-variant-numeric: tabular-nums; }
+.membership-amount > span { color: var(--ink-light, #4a4a5a); font-size: .73rem; }
+.membership-payment-qr { margin: 0; text-align: center; }
+.membership-payment-qr img { display: block; width: 100%; max-width: 228px; height: auto; aspect-ratio: 1; margin: 0 auto; border: 1px solid var(--membership-border); border-radius: 6px; }
+.membership-payment-qr figcaption { margin-top: 7px; color: var(--ink-light, #4a4a5a); font-size: .72rem; }
+.membership-contact { margin-top: 23px; padding: 14px 0; border-top: 1px solid var(--membership-border); border-bottom: 1px solid var(--membership-border); }
+.membership-contact summary { position: relative; padding-right: 25px; color: var(--blue-deep, #236cb8); font-size: .78rem; font-weight: 600; line-height: 1.8; list-style: none; cursor: pointer; }
+.membership-contact summary::-webkit-details-marker { display: none; }
+.membership-contact summary::after { position: absolute; right: 4px; top: 0; content: '+'; font-size: 1rem; }
+.membership-contact[open] summary::after { content: '−'; }
+.membership-contact summary:hover { text-decoration: underline; text-underline-offset: 4px; }
+.membership-contact summary:focus-visible { outline: 3px solid var(--blue, #2b7fd8); outline-offset: 3px; }
+.membership-contact-content { display: flex; align-items: center; gap: 24px; margin-top: 15px; }
+.membership-contact-content p { margin: 0; color: var(--ink-light, #4a4a5a); font-size: .77rem; line-height: 1.9; }
+.membership-contact-content strong { display: block; margin-top: 7px; color: var(--ink, #1a1a2e); }
+.membership-contact-content img { width: 176px; height: 176px; flex-shrink: 0; border: 1px solid var(--membership-border); border-radius: 6px; }
+.membership-dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 18px; }
+.membership-dialog-footer p { margin: 0; color: var(--ink-light, #4a4a5a); font-size: .73rem; line-height: 1.8; }
+@media (max-width: 900px) {
+  .membership-dialog { padding: clamp(18px, 3vw, 26px); }
+  .membership-payment { grid-template-columns: minmax(0, 1fr) 212px; gap: 22px; }
+  .membership-dialog-footer { align-items: flex-start; flex-direction: column; gap: 12px; }
+}
+@media (max-width: 600px) {
+  .membership-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); padding: 20px 16px; border-radius: 10px; }
+  .membership-plan-options { gap: 8px; }
+  .software-account label.membership-plan { padding: 12px 10px; gap: 8px; }
+  .membership-plan-price { font-size: 1.65rem; }
+  .membership-plan-selected { position: static; font-size: .65rem; }
+  .membership-payment-note { padding: 14px; }
+  .membership-email-row, .membership-login-guidance { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .membership-payment { grid-template-columns: 1fr; gap: 20px; }
+  .membership-payment-qr img { max-width: 240px; }
+  .membership-contact-content { align-items: flex-start; flex-direction: column; gap: 15px; }
+  .membership-contact-content img { align-self: center; }
+  .membership-dialog-footer .button { width: 100%; white-space: normal; }
+}

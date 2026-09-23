@@ -2,10 +2,12 @@ import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { AccountError, fail } from './errors.js';
 import { digest, equalDigest, normalizeDevice, verifyProof } from './crypto.js';
 import { KNOWN_FEATURES } from '../../lib/membership-policy.js';
+import { getMembershipPlan } from '../../lib/membership-plans.js';
 import { createFeedbackService } from './feedback.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
+const ACTIVATION_SEND_LEASE = 120_000;
 const owns = (object, key) => Object.hasOwn(object, key) ? object[key] : undefined;
 const clone = value => structuredClone(value);
 const iso = timestamp => new Date(timestamp).toISOString();
@@ -52,7 +54,11 @@ function futureDate(value, time) {
   return iso(parsed);
 }
 function publicCode(code) {
-  const { digest: ignored, ...result } = code;
+  const { digest: ignored, derivationVersion: ignoredVersion, ...result } = code;
+  if (result.delivery) {
+    const { attemptId: ignoredAttempt, ...delivery } = result.delivery;
+    result.delivery = delivery;
+  }
   return clone(result);
 }
 function activationCodeValue(value) {
@@ -67,6 +73,10 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
   const isAdmin = user => config.adminEmails.includes(user.email);
   const role = user => isAdmin(user) ? 'admin' : 'user';
   const otpKey = (email, client) => hash('otp-key', `${client}:${email}`);
+  // A secret, purpose-separated HMAC makes targeted codes recoverable for email
+  // retries without committing plaintext or reversible ciphertext to Git history.
+  const targetedCode = code => `Brclio-${hash('targeted-activation-v1', `${code.id}:${code.recipientId}:${code.planId}`).slice(0, 40).toUpperCase()}`;
+
 
   function membership(user, time) {
     const member = user.membership || noMembership();
@@ -270,7 +280,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       const status = String(request.input.status || '');
       const codes = Object.values(state.codes).map(item => ({ ...publicCode(item), redeemedEmail: item.redeemedBy ? state.users[item.redeemedBy]?.email || null : null })).filter(item => {
         const derivedStatus = item.status === 'unused' && item.redeemBy && Date.parse(item.redeemBy) <= time ? 'expired' : item.status;
-        return (!status || derivedStatus === status) && (!query || [item.id, item.redeemedBy, item.redeemedEmail].some(value => String(value || '').toLowerCase().includes(query)));
+        return (!status || derivedStatus === status) && (!query || [item.id, item.recipientId, item.recipientEmail, item.planName, item.redeemedBy, item.redeemedEmail].some(value => String(value || '').toLowerCase().includes(query)));
       }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       return { codes: codes.slice(0, 1000), total: codes.length };
     }
@@ -279,10 +289,75 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     fail('UNKNOWN_ACTION', '未知操作。', 404);
   }
 
+  async function sendActivation(request) {
+    const attemptId = randomUUID();
+    const prepared = await store.transaction(state => {
+      const time = now();
+      const { user } = authenticate(state, request, time, true);
+      const requestId = requestIdValue(request.input.requestId);
+      const reason = reasonValue(request.input.reason);
+      const operationKey = hash('operation', `${user.id}:${requestId}`);
+      const inputHash = hash('operation-input', `${request.action}:${JSON.stringify(request.input)}`);
+      const prior = owns(state.operations, operationKey);
+      if (prior && prior.inputHash !== inputHash) fail('REQUEST_ID_REUSED', '该请求 ID 已用于其他操作，请重新发起。', 409);
+      const code = owns(state.codes, request.input.codeId);
+      if (!code || code.derivationVersion !== 1 || !code.recipientId) fail('ACTIVATION_NOT_TARGETED', '请选择为指定邮箱生成的套餐激活码。');
+      const recipient = requireUser(state, code.recipientId);
+      if (recipient.email !== code.recipientEmail) fail('ACTIVATION_RECIPIENT_MISMATCH', '收件账号邮箱已变更，请核实后重新生成。', 409);
+      // A durable success is replayed before checking current redeemability:
+      // the recipient may already have redeemed after a lost send response.
+      // This branch never contacts the provider again.
+      if (code.delivery?.status === 'sent') return { changed: false, value: { sent: true, replayed: true, code: publicCode(code), message: '此激活码邮件已由邮件服务接受，无需重复发送。' } };
+      if (code.status !== 'unused') fail('ACTIVATION_NOT_UNUSED', '已兑换或已作废的激活码不能发送。', 409);
+      if (code.redeemBy && Date.parse(code.redeemBy) <= time) fail('ACTIVATION_EXPIRED', '激活码已超过兑换截止时间。');
+      const raw = targetedCode(code);
+      if (!equalDigest(code.digest, hash('activation', activationCodeValue(raw)))) fail('ACTIVATION_INVALID', '激活码校验失败，请联系管理员。');
+      if (code.delivery?.status === 'sending' && Date.parse(code.delivery.leaseUntil) > time) fail('ACTIVATION_SEND_IN_PROGRESS', '邮件正在发送或结果待确认，请两分钟后刷新并重试原激活码。', 409);
+      if (mailer.configured === false || typeof mailer.sendActivation !== 'function') fail('MAIL_NOT_CONFIGURED', '激活码邮件服务尚未配置，请联系管理员。', 503);
+      // This ID is stable across retries and administrator/browser sessions.
+      // Resend/webhooks can deduplicate it; SMTP may deliver the same code again
+      // after an ambiguous response, but never creates another entitlement.
+      const deliveryId = `activation-${code.id}`;
+      code.delivery = { status: 'sending', deliveryId, attemptId, attempts: (code.delivery?.attempts || 0) + 1, attemptedAt: iso(time), leaseUntil: iso(time + ACTIVATION_SEND_LEASE), sentAt: null };
+      state.operations[operationKey] = { actorId: user.id, action: request.action, inputHash, at: prior?.at || iso(time), result: { codeId: code.id, deliveryId } };
+      audit(state, user, request.action, recipient.id, reason, null, { codeId: code.id, recipientEmail: recipient.email, planId: code.planId, delivery: publicCode(code).delivery }, time);
+      return { value: { code: publicCode(code), raw, actor: { id: user.id, email: user.email }, reason } };
+    });
+    if (prepared.sent) return prepared;
+
+    const { code, raw, actor, reason } = prepared;
+    const finish = async status => store.transaction(state => {
+      const current = owns(state.codes, code.id);
+      // An expired lease may have been acquired by a later explicit retry.
+      if (!current || current.delivery?.attemptId !== attemptId) fail('ACTIVATION_DELIVERY_UNCONFIRMED', '邮件发送结果待确认，请刷新后重试原激活码。', 503);
+      const time = now();
+      current.delivery.status = status;
+      current.delivery.finishedAt = iso(time);
+      current.delivery.sentAt = status === 'sent' ? iso(time) : null;
+      delete current.delivery.leaseUntil;
+      delete current.delivery.attemptId;
+      state.mailStatus = { kind: 'activation', status, at: iso(time), deliveryId: current.delivery.deliveryId };
+      audit(state, actor, 'admin-send-activation-result', current.recipientId, reason, null, { codeId: current.id, recipientEmail: current.recipientEmail, delivery: publicCode(current).delivery }, time);
+      return { value: publicCode(current) };
+    });
+    try {
+      await mailer.sendActivation({ email: code.recipientEmail, code: raw, plan: { id: code.planId, name: code.planName, days: code.days, priceCents: code.priceCents }, redeemBy: code.redeemBy, deliveryId: code.delivery.deliveryId });
+    } catch {
+      try { await finish('failed'); }
+      catch { fail('ACTIVATION_DELIVERY_UNCONFIRMED', '激活码邮件发送结果未确认，请两分钟后刷新并重试原激活码，不要重新生成。', 503); }
+      fail('MAIL_SEND_FAILED', '激活码邮件发送未确认，请重试发送原激活码；可能收到相同激活码的重复邮件。', 503);
+    }
+    let delivered;
+    try { delivered = await finish('sent'); }
+    catch { fail('ACTIVATION_DELIVERY_UNCONFIRMED', '邮件服务已接受激活码，但发送状态尚未保存确认。请两分钟后刷新并重试原激活码，不要重新生成。', 503); }
+    return { sent: true, replayed: false, code: delivered, message: '激活码邮件已由邮件服务接受，请客户查看收件箱或垃圾邮件。' };
+  }
+
   async function mutateAction(request) {
-    // Plaintext is returned only for the first successful generation and is never persisted.
+    // Generic codes remain one-time plaintext. Targeted codes can be re-derived
+    // only by this authenticated service; neither form is persisted as plaintext.
     const generated = request.action === 'admin-generate-codes' ? Array.from({ length: Math.min(Math.max(Number(request.input.count) || 1, 1), 100) }, () => ({ id: randomUUID(), raw: `Brclio-${randomBytes(20).toString('hex').toUpperCase()}` })) : [];
-    return store.transaction(state => {
+    const result = await store.transaction(state => {
       const time = now();
       const { user, session } = authenticate(state, request, time, request.action.startsWith('admin-'));
       if (request.action === 'logout') { session.revokedAt = iso(time); return { value: { loggedOut: true } }; }
@@ -293,6 +368,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
         const codeHash = hash('activation', raw);
         const code = Object.values(state.codes).find(item => equalDigest(item.digest, codeHash));
         if (!code) fail('ACTIVATION_INVALID', '激活码无效。');
+        if (code.recipientId && code.recipientId !== user.id) fail('ACTIVATION_RECIPIENT_MISMATCH', '此激活码仅限收件邮箱对应的账号使用，请登录付款时备注的邮箱。', 403);
         if (code.status === 'used') {
           if (code.redeemedBy === user.id && code.requestId === requestId) return { changed: false, value: { account: account(state, user, session, time), redeemed: true, replayed: true, codeId: code.id } };
           fail('ACTIVATION_USED', '激活码已使用，不能重复兑换。', 409);
@@ -362,24 +438,35 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
         const reason = reasonValue(request.input.reason);
         const count = request.input.count === undefined ? 1 : Number(request.input.count);
         if (!Number.isSafeInteger(count) || count < 1 || count > 100) fail('INVALID_COUNT', '每次可生成 1 至 100 个激活码。');
-        const type = request.input.type;
+        const targeted = request.input.userId !== undefined || request.input.planId !== undefined;
+        const target = targeted ? requireUser(state, request.input.userId) : null;
+        const plan = targeted ? getMembershipPlan(request.input.planId) : null;
+        if (targeted && !plan) fail('INVALID_PLAN', '请选择日付、月付或年付套餐。');
+        if (targeted && count !== 1) fail('INVALID_COUNT', '指定邮箱时每次只能生成一个激活码。');
+        // The plan catalog is authoritative; client-provided days or prices cannot
+        // silently alter a purchased plan's entitlement.
+        const type = plan ? 'duration' : request.input.type;
         if (!['permanent', 'duration'].includes(type)) fail('INVALID_CODE_TYPE', '激活码类型无效。');
-        const days = type === 'duration' ? daysValue(request.input.days) : null;
+        const days = plan ? plan.days : type === 'duration' ? daysValue(request.input.days) : null;
         const redeemBy = request.input.redeemBy ? futureDate(request.input.redeemBy, time) : null;
         const codes = generated.map(({ id, raw }) => {
-          const code = { id, digest: hash('activation', activationCodeValue(raw)), type, days, redeemBy, createdAt: iso(time), createdBy: user.id, status: 'unused', redeemedBy: null, redeemedAt: null };
+          const code = { id, type, days, redeemBy, createdAt: iso(time), createdBy: user.id, status: 'unused', redeemedBy: null, redeemedAt: null,
+            ...(target ? { recipientId: target.id, recipientEmail: target.email, planId: plan.id, planName: plan.name, priceCents: plan.priceCents, derivationVersion: 1, delivery: null } : {}) };
+          const plaintext = target ? targetedCode(code) : raw;
+          code.digest = hash('activation', activationCodeValue(plaintext));
           state.codes[id] = code;
-          return { ...publicCode(code), code: raw };
+          return { ...publicCode(code), code: plaintext };
         });
         const metadata = codes.map(({ code: ignored, ...item }) => item);
-        audit(state, user, request.action, null, reason, null, { count, type, days, redeemBy, codeIds: codes.map(c => c.id) }, time);
-        return { response: { codes, replayed: false }, persisted: { codes: metadata, replayed: true, message: '本次生成已保存。原码只展示一次，无法重新读取；若未保存，请作废后重新生成。' } };
+        audit(state, user, request.action, target?.id || null, reason, null, { count, type, days, redeemBy, ...(target ? { recipientEmail: target.email, planId: plan.id, priceCents: plan.priceCents } : {}), codeIds: codes.map(c => c.id) }, time);
+        return { response: { codes, replayed: false }, persisted: { codes: metadata, replayed: true, message: target ? '已恢复本次生成的激活码，可继续发送至指定邮箱。' : '本次生成已保存。原码只展示一次，无法重新读取；若未保存，请作废后重新生成。' } };
       });
       if (request.action === 'admin-void-code') return operation(state, user, request, () => {
         const reason = reasonValue(request.input.reason);
         const code = owns(state.codes, request.input.codeId);
         if (!code) fail('ACTIVATION_INVALID', '激活码不存在。', 404);
         if (code.status !== 'unused') fail('ACTIVATION_NOT_UNUSED', '只有尚未使用的激活码可以作废。', 409);
+        if (code.delivery?.status === 'sending' && Date.parse(code.delivery.leaseUntil) > time) fail('ACTIVATION_SEND_IN_PROGRESS', '激活码邮件正在发送，请稍后再作废。', 409);
         const before = publicCode(code);
         code.status = 'void'; code.voidedAt = iso(time);
         audit(state, user, request.action, code.id, reason, before, publicCode(code), time);
@@ -387,6 +474,10 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       });
       fail('UNKNOWN_ACTION', '未知操作。', 404);
     });
+    if (request.action === 'admin-generate-codes') {
+      result.codes = result.codes.map(code => code.recipientId ? { ...code, code: targetedCode(code) } : code);
+    }
+    return result;
   }
 
   const feedbackService = createFeedbackService({ store, now, authenticate, hash, operation, audit });
@@ -397,6 +488,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       let result;
       if (action.startsWith('feedback-') || action.startsWith('admin-feedback')) result = await feedbackService.execute(request);
       else if (action === 'send-code') result = await sendCode(request);
+      else if (action === 'admin-send-activation') result = await sendActivation(request);
       else if (action === 'verify-code') result = await verifyCode(request);
       else if (['logout', 'redeem', 'admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code'].includes(action)) result = await mutateAction(request);
       else result = await readAction(request);

@@ -37,7 +37,7 @@ test('HTTP desktop proof and bearer pass only to service while browser cookies r
 });
 
 test('every admin-prefixed endpoint requires trusted origin before service access', async () => {
-  for (const action of ['admin-users', 'admin-user', 'admin-membership', 'admin-unbind', 'admin-codes', 'admin-generate-codes', 'admin-void-code', 'admin-audit', 'admin-status', 'admin-feedback', 'admin-feedback-detail', 'admin-feedback-part', 'admin-feedback-status']) {
+  for (const action of ['admin-users', 'admin-user', 'admin-membership', 'admin-unbind', 'admin-codes', 'admin-generate-codes', 'admin-send-activation', 'admin-void-code', 'admin-audit', 'admin-status', 'admin-feedback', 'admin-feedback-detail', 'admin-feedback-part', 'admin-feedback-status']) {
     const rejected = await request({ body: { action, input: {} } });
     assert.equal(rejected.code, 403, action);
     assert.equal(rejected.calls.length, 0);

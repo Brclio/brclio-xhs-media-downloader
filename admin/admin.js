@@ -1,9 +1,11 @@
 /* Brclio membership administration. Authentication is an HttpOnly server cookie. */
+import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
   const state = { admin: null, users: [], codes: [], audit: [], feedback: [], selectedFeedback: null, feedbackDetail: null, feedbackHistory: [], feedbackLog: null, selectedId: null, user: null, history: [], pendingDevices: [], generated: [], generatedSaved: false, tab: 'users', serverTime: null, loaded: new Set(), requestIds: new Map(), pendingMutation: null, mutating: false, pages: { users: 0, codes: 0, audit: 0, feedback: 0 }, total: {} };
   const PAGE_SIZE = 20;
+  const issue = { recipients: [], code: null, reason: '', searchRequest: 0 };
   let dialogResolve = null;
   let sendTimer = null;
   let userRequest = 0;
@@ -150,9 +152,11 @@
           if (!pending) return;
           const result = await mutate(pending.action, pending.input);
           state.loaded.delete('audit');
-          if (pending.action === 'admin-generate-codes') displayGenerated(result);
+          if (pending.action === 'admin-generate-codes') displayGenerated(result, pending.input);
+          else if (pending.action === 'admin-send-activation') displaySent(result);
           else tell('原操作已确认完成，未重复增加权益或重复生成记录。', 'success');
-          if (pending.input.userId) await refreshUserAfterChange(pending.input.userId);
+          if (['admin-generate-codes', 'admin-send-activation'].includes(pending.action)) await loadCodes();
+          else if (pending.input.userId) await refreshUserAfterChange(pending.input.userId);
           else if (pending.action === 'admin-feedback-status') { await loadFeedback(); await selectFeedback(pending.input.feedbackId); }
           else await loadCodes();
         });
@@ -189,6 +193,9 @@
   function resetSession() {
     state.admin = null; state.users = []; state.codes = []; state.audit = []; state.user = null; state.history = []; state.pendingDevices = []; state.selectedId = null; state.loaded.clear(); state.requestIds.clear(); state.pendingMutation = null;
     clearGenerated();
+    issue.recipients = []; issue.code = null; issue.reason = ''; issue.searchRequest += 1;
+    $('issue-query').value = ''; $('issue-reason').value = ''; $('issue-deadline').value = '';
+    renderRecipients(); renderIssuePreview();
     feedbackSessionEpoch += 1; feedbackRequest += 1;
     state.feedback = []; state.selectedFeedback = null; state.feedbackDetail = null; state.feedbackHistory = []; state.feedbackLog = null;
     $('workspace').hidden = true; $('login-panel').hidden = false; $('logout').hidden = true; $('admin-email').textContent = '';
@@ -235,6 +242,7 @@
     state.tab = name;
     tabs.forEach((tab) => { const active = tab.dataset.tab === name; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; $(`panel-${tab.dataset.tab}`).hidden = !active; });
     if (!state.loaded.has(name)) await ({ users: loadUsers, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback })[name]();
+    if (name === 'codes' && !issue.recipients.length) await findRecipients();
   }
   tabs.forEach((tab, index) => {
     tab.addEventListener('click', () => run(tab, () => switchTab(tab.dataset.tab)));
@@ -276,6 +284,15 @@
     const text = el('div'); text.append(el('h2', '', user.email), el('span', 'small-text', `用户 ID：${user.id}`));
     identity.append(text, membershipBadge(membership)); content.append(identity);
     content.append(facts([['注册时间', fmt(user.createdAt)], ['账号角色', user.role === 'admin' ? '管理员' : '普通用户'], ['会员生效时间', fmt(membership.startsAt)], ['会员到期时间', membership.type === 'permanent' ? '永久有效' : fmt(membership.expiresAt)], ['已绑定设备', `${(user.devices || []).filter((d) => d.status === 'active').length} 台`], ['状态校验时间', fmt(state.serverTime)]]));
+    const issueShortcut = el('div', 'issue-shortcut');
+    const issueDescription = el('div'); issueDescription.append(el('h3', '', '付款后发放激活码'), el('p', 'field-help', '选择套餐，生成后直接发送至此账号邮箱，由客户自行兑换。'));
+    issueShortcut.append(issueDescription, button('为此邮箱发码', 'button-secondary', async () => {
+      issue.searchRequest += 1;
+      if (!issue.recipients.some((item) => item.id === user.id)) issue.recipients.unshift(user);
+      renderRecipients(user.id); $('issue-query').value = user.email;
+      await switchTab('codes'); $('email-issue-panel').scrollIntoView({ block: 'start' }); $('issue-plan').focus();
+    }));
+    content.append(issueShortcut);
     content.append(membershipForm(user));
     const devices = el('section', 'detail-section'); devices.append(el('h3', '', '绑定设备'));
     devices.append(el('p', 'field-help', '解绑后，旧设备授权立即撤销，持续登录或刷新不会自动占回名额。换机后请重新验证邮箱；同一台电脑重装或丢失凭据时，可在下方单独授权新的设备密钥。'));
@@ -368,8 +385,92 @@
   async function refreshUserAfterChange(id) { state.loaded.delete('audit'); await loadUser(id); await loadUsers(); }
   $('search-form').addEventListener('submit', (event) => { event.preventDefault(); run(event.submitter, loadUsers); });
   $('refresh-users').addEventListener('click', () => run($('refresh-users'), async () => { await loadUsers(); if (state.selectedId) await loadUser(state.selectedId); }));
+  function renderRecipients(selected = $('issue-recipient').value) {
+    const placeholder = el('option', '', issue.recipients.length ? '请选择已注册的客户邮箱' : '未找到用户，请查找邮箱'); placeholder.value = '';
+    $('issue-recipient').replaceChildren(placeholder);
+    issue.recipients.forEach((user) => { const option = el('option', '', user.email); option.value = user.id; $('issue-recipient').append(option); });
+    $('issue-recipient').value = issue.recipients.some((user) => user.id === selected) ? selected : '';
+  }
+  async function findRecipients() {
+    const request = ++issue.searchRequest;
+    const result = await api('admin-users', { query: $('issue-query').value.trim() });
+    if (request !== issue.searchRequest || !state.admin) return;
+    const selected = $('issue-recipient').value;
+    issue.recipients = result.users || [];
+    renderRecipients(issue.recipients.length === 1 ? issue.recipients[0].id : selected);
+    if (!issue.recipients.length) tell('未找到此邮箱，请让客户先在客户端完成邮箱登录，再查找发码。', 'info');
+  }
+  MEMBERSHIP_PLANS.forEach((plan) => { const option = el('option', '', `${plan.name} · ¥${plan.priceLabel} · ${plan.days} 天`); option.value = plan.id; $('issue-plan').append(option); });
+  $('issue-plan').value = 'monthly';
+  function updateIssuePlan() {
+    const plan = MEMBERSHIP_PLANS.find((item) => item.id === $('issue-plan').value);
+    $('issue-plan-help').textContent = `${plan.name}会员有效期 ${plan.days} 天，从兑换时开始计算；已有有效期会员会顺延。兑换截止时间仅限制可兑换的最后时间，留空表示不限制。`;
+  }
+  updateIssuePlan();
+  $('issue-plan').addEventListener('change', updateIssuePlan);
+  $('issue-search-form').addEventListener('submit', (event) => { event.preventDefault(); run(event.submitter, findRecipients); });
+  function deliveryStatus(code) {
+    return ({ sending: '发送结果待确认', sent: '已提交邮件服务', failed: '发送失败，可重试' })[code.delivery?.status] || '尚未发送';
+  }
+  function issuePlanText(code) {
+    const plan = MEMBERSHIP_PLANS.find((item) => item.id === code.planId);
+    return plan ? `${plan.name} · ¥${plan.priceLabel}` : code.planName || '指定时长会员';
+  }
+  function showIssueCode(code, reason = '') {
+    issue.code = code; issue.reason = reason || '会员开通，发送激活码至所选客户邮箱';
+    renderIssuePreview();
+  }
+  function renderIssuePreview() {
+    const panel = $('issue-preview'); panel.replaceChildren();
+    const code = issue.code;
+    if (!code) {
+      const emptyPreview = el('div', 'issue-empty'); emptyPreview.append(el('span', 'eyebrow', 'NEXT · SEND'), el('h3', '', '生成后，在这里确认并发送'), el('p', 'muted', '收件邮箱、套餐、有效期与激活码会一起显示。邮件发送结果也会保留在下方记录中。'));
+      panel.append(emptyPreview); return;
+    }
+    const heading = el('div', 'panel-heading'); heading.append(el('h3', '', '发放详情'), badge(deliveryStatus(code), code.delivery?.status === 'failed' ? 'badge-danger' : 'badge-gold'));
+    panel.append(heading, facts([['收件邮箱', code.recipientEmail], ['套餐 / 价格', issuePlanText(code)], ['会员有效期', `${code.days} 天 · 兑换后开始`], ['兑换截止', code.redeemBy ? fmt(code.redeemBy) : '不限制'], ['创建时间', fmt(code.createdAt)], ['邮件提交时间', fmt(code.delivery?.sentAt)]], 'issue-facts'));
+    if (code.code) { const raw = el('textarea'); raw.id = 'issue-code'; raw.readOnly = true; raw.rows = 2; raw.spellcheck = false; raw.value = code.code; panel.append(inputLabel('本次生成的激活码', raw)); }
+    else panel.append(el('p', 'field-help', '原码已从页面清除，仍可发送此记录对应的激活码，不会重复生成。'));
+    panel.append(el('p', 'small-text issue-record', `记录 ID：${code.id}`));
+    const sent = code.delivery?.status === 'sent';
+    const active = codeState(code) === 'unused';
+    const submit = button(sent ? '已发送至客户邮箱' : code.delivery ? '重试发送同一激活码' : '发送激活码至客户邮箱', '', async () => {
+      if (issue.code?.id !== code.id) return;
+      let result;
+      try { result = await mutate('admin-send-activation', { codeId: code.id, reason: issue.reason }); }
+      catch (error) { if (state.admin) await loadCodes().catch(() => {}); throw error; }
+      displaySent(result); state.loaded.delete('audit'); await loadCodes();
+    });
+    submit.id = 'issue-send'; submit.disabled = sent || !active;
+    const actions = el('div', 'button-row'); actions.append(submit); panel.append(actions);
+    const help = el('p', 'field-help'); help.textContent = sent ? '邮件已提交给邮件服务，请客户检查收件箱与垃圾邮件；实际到达以客户邮箱为准。' : active ? '邮件包含激活码、套餐、会员有效期和兑换说明。点击发送即发往上方邮箱。' : '此激活码已兑换、作废或超过兑换期限，无法继续发送。'; panel.append(help);
+  }
+  function displayIssued(result, input) {
+    const code = result.codes?.[0];
+    if (!code) throw new Error('未返回激活码记录，请刷新记录核对后再继续。');
+    showIssueCode(code, input.reason);
+    tell(result.replayed ? '已找回本次生成的记录，未重复生成。可直接将同一激活码发送至客户邮箱。' : '激活码已生成。请核对右侧收件邮箱、套餐和有效期，然后点击发送。', 'success');
+  }
+  function displaySent(result) {
+    const code = result.code;
+    if (code) {
+      const raw = issue.code?.id === code.id ? issue.code.code : null;
+      showIssueCode({ ...code, ...(raw ? { code: raw } : {}) }, issue.reason);
+    }
+    tell(result.message || '激活码邮件已提交发送，请客户检查收件箱和垃圾邮件。', 'success');
+  }
+  $('issue-form').addEventListener('submit', (event) => { event.preventDefault(); run(event.submitter, async () => {
+    if (!$('issue-form').reportValidity()) return;
+    const input = { userId: $('issue-recipient').value, planId: $('issue-plan').value, count: 1, reason: $('issue-reason').value.trim() };
+    if (input.reason.length < 3) throw new Error('请填写至少 3 个字符的操作原因。');
+    if ($('issue-deadline').value) input.redeemBy = new Date($('issue-deadline').value).toISOString();
+    const result = await mutate('admin-generate-codes', input);
+    displayIssued(result, input); state.loaded.delete('audit'); await loadCodes();
+  }); });
   async function loadCodes() {
     const data = await api('admin-codes', { query: $('code-query').value.trim(), status: $('code-status').value }); state.codes = data.codes || []; state.total.codes = data.total || state.codes.length; state.pages.codes = 0; state.loaded.add('codes'); renderCodes();
+    const updated = state.codes.find((code) => code.id === issue.code?.id);
+    if (updated) { issue.code = { ...issue.code, ...updated }; renderIssuePreview(); }
   }
   function codeState(code) {
     if (code.status === 'unused' && code.redeemBy && state.serverTime && Date.parse(code.redeemBy) <= Date.parse(state.serverTime)) return 'expired';
@@ -377,20 +478,26 @@
   }
   function renderCodes() {
     const query = $('code-query').value.trim().toLowerCase(); const filter = $('code-status').value;
-    const matching = state.codes.filter((code) => (!filter || codeState(code) === filter) && (!query || [code.id, code.redeemedBy, code.redeemedEmail].some((value) => String(value || '').toLowerCase().includes(query))));
+    const matching = state.codes.filter((code) => (!filter || codeState(code) === filter) && (!query || [code.id, code.recipientEmail, code.redeemedBy, code.redeemedEmail].some((value) => String(value || '').toLowerCase().includes(query))));
     const visible = pageItems('codes', matching, renderCodes);
     if (!visible.length) { empty($('codes-list'), '没有符合条件的激活码。'); return; }
     const labels = { unused: '待兑换', used: '已兑换', void: '已作废', expired: '已过兑换期限' };
     const rows = visible.map((code) => {
       const status = codeState(code);
-      const control = code.status === 'unused' ? button('作废', 'button-danger button-small', async () => {
+      const control = el('div', 'button-row code-actions');
+      if (code.recipientEmail) control.append(button(code.delivery?.status === 'sent' ? '查看发放详情' : code.delivery ? '查看 / 重试发送' : '查看 / 发送', 'button-secondary button-small', () => {
+        showIssueCode({ ...code, ...(issue.code?.id === code.id && issue.code.code ? { code: issue.code.code } : {}) });
+        $('email-issue-panel').scrollIntoView({ block: 'start' }); $('issue-send').focus();
+      }));
+      if (code.status === 'unused') control.append(button('作废', 'button-danger button-small', async () => {
         const reason = await confirmAction('作废激活码', `记录：${code.id}\n权益：${code.type === 'permanent' ? '永久会员' : `${code.days} 天会员`}\n\n作废后无法兑换，已使用的激活码不能恢复为未使用。`, { danger: true, confirm: '确认作废' });
         if (!reason) return;
         await mutate('admin-void-code', { codeId: code.id, reason }); tell('激活码已作废。', 'success'); state.loaded.delete('audit'); await loadCodes();
-      }) : el('span', 'small-text', '—');
-      return [record(code.id, `创建于 ${fmt(code.createdAt)}`), record(code.type === 'permanent' ? '永久会员' : `${code.days} 天会员`, `兑换截止：${code.redeemBy ? fmt(code.redeemBy) : '不限制'}`), badge(labels[status] || status, status === 'used' ? '' : status === 'unused' ? 'badge-gold' : 'badge-muted'), record(code.redeemedEmail || code.redeemedBy || '—', code.redeemedAt ? fmt(code.redeemedAt) : ''), control];
+      }));
+      if (!control.childElementCount) control.append(el('span', 'small-text', '—'));
+      return [record(code.id, `创建于 ${fmt(code.createdAt)}`), record(code.planId ? `${issuePlanText(code)} · ${code.days} 天` : code.type === 'permanent' ? '永久会员' : `${code.days} 天会员`, `兑换截止：${code.redeemBy ? fmt(code.redeemBy) : '不限制'}`), record(code.recipientEmail || '未指定邮箱', code.recipientEmail ? deliveryStatus(code) : '手动发放'), badge(labels[status] || status, status === 'used' ? '' : status === 'unused' ? 'badge-gold' : 'badge-muted'), record(code.redeemedEmail || code.redeemedBy || '—', code.redeemedAt ? fmt(code.redeemedAt) : ''), control];
     });
-    $('codes-list').replaceChildren(table(['记录 / 创建时间', '权益 / 兑换截止', '状态', '兑换账号 / 时间', '管理'], rows, 'codes-table'));
+    $('codes-list').replaceChildren(table(['记录 / 创建时间', '套餐 / 有效期', '收件邮箱 / 发送状态', '兑换状态', '兑换账号 / 时间', '管理'], rows, 'codes-table'));
     if (state.total.codes > state.codes.length) $('codes-list').append(el('p', 'field-help', `共 ${state.total.codes} 条记录，本页筛选范围为最近 ${state.codes.length} 条。`));
   }
   $('refresh-codes').addEventListener('click', () => run($('refresh-codes'), loadCodes));
@@ -399,7 +506,8 @@
     const duration = $('code-type').value === 'duration'; $('code-days-field').hidden = !duration; $('code-days').disabled = !duration; $('code-days').required = duration;
   });
   function clearGenerated() { state.generated = []; state.generatedSaved = false; $('generated-panel').hidden = true; $('generated-raw').value = ''; $('generated-summary').textContent = ''; }
-  function displayGenerated(result) {
+  function displayGenerated(result, input = {}) {
+    if (input.userId) return displayIssued(result, input);
     const codes = result.codes || [];
     state.generated = codes.filter((code) => typeof code.code === 'string' && code.code); state.generatedSaved = false;
     $('generated-panel').hidden = !state.generated.length;
@@ -536,7 +644,7 @@
   }
   $('feedback-filter-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, loadFeedback); });
   $('refresh-feedback').addEventListener('click', () => run($('refresh-feedback'), async () => { await loadFeedback(); if (state.selectedFeedback) await selectFeedback(state.selectedFeedback); }));
-  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态' })[action] || action || '操作记录'; }
+  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态' })[action] || action || '操作记录'; }
   async function loadAudit() { const data = await api('admin-audit'); state.audit = data.audit || []; state.total.audit = data.total || state.audit.length; state.pages.audit = 0; state.loaded.add('audit'); renderAudit(); }
   function renderAudit() {
     const visible = pageItems('audit', state.audit, renderAudit);

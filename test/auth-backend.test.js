@@ -7,6 +7,7 @@ import { createMailer } from '../server/auth/mailer.js';
 import { readConfig } from '../server/auth/config.js';
 import { validateFeedbackChunk } from '../server/auth/feedback.js';
 import { sanitizeDiagnostic } from '../lib/diagnostic-sanitize.js';
+import { MEMBERSHIP_PLANS, getMembershipPlan, formatMembershipPrice } from '../lib/membership-plans.js';
 
 const DAY = 86_400_000;
 const device = (label = randomUUID()) => {
@@ -18,7 +19,7 @@ const device = (label = randomUUID()) => {
 function fixture(overrides = {}) {
   let state = emptyState(), version = 1, clock = Date.parse('2026-09-20T00:00:00Z');
   let writes = 0, conflicts = 0, graphqlQueries = 0, onLogRead = null;
-  const faults = [], deliveries = [], logFiles = new Map();
+  const faults = [], deliveries = [], activationDeliveries = [], logFiles = new Map();
   const config = { ...readConfig({ AUTH_SECRET_PEPPER: 'unit-test-pepper-only-'.repeat(3), AUTH_ADMIN_EMAILS: 'admin@example.test' }), ...overrides };
   const fetchImpl = async (url, options) => {
     if (url === 'https://api.github.com/graphql') {
@@ -61,6 +62,7 @@ function fixture(overrides = {}) {
     return Response.json({ content: { sha: String(version) } });
   };
   const mailer = { provider: 'fake', configured: true, failNext: false, async send(delivery) { deliveries.push(delivery); if (this.failNext) { this.failNext = false; throw Error('mail offline'); } } };
+  mailer.sendActivation = async function (delivery) { activationDeliveries.push(delivery); if (this.failNextActivation) { this.failNextActivation = false; throw Error('private-mail-detail'); } };
   const instance = () => createAccountService({ config, mailer, now: () => clock, store: new GithubStateStore({ owner: 'fake', repo: 'private', token: 'fake', fetchImpl, delay: async () => {} }) });
   const execute = (service, action, input = {}, session, dev) => {
     const token = session?.token || '';
@@ -82,11 +84,160 @@ function fixture(overrides = {}) {
     return { ...result, dev, service };
   };
   const admin = () => login('admin@example.test', null, 'admin');
-  const adminCall = (session, action, input = {}, service = instance()) => execute(service, action, { ...input, ...(['admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code', 'admin-feedback-status'].includes(action) ? { reason: input.reason || '测试操作原因', requestId: input.requestId || randomUUID() } : {}) }, session);
+  const adminCall = (session, action, input = {}, service = instance()) => execute(service, action, { ...input, ...(['admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-send-activation', 'admin-void-code', 'admin-feedback-status'].includes(action) ? { reason: input.reason || '测试操作原因', requestId: input.requestId || randomUUID() } : {}) }, session);
   const grant = (adminSession, userSession, days = 10) => adminCall(adminSession, 'admin-membership', { userId: userSession.account.user.id, operation: 'days', days });
   const generate = async (adminSession, input = {}) => (await adminCall(adminSession, 'admin-generate-codes', { type: 'duration', days: 10, count: 1, ...input })).codes;
-  return { instance, execute, login, issue, admin, adminCall, grant, generate, deliveries, mailer, config, faults, logFiles, advance: ms => { clock += ms; }, set onLogRead(callback) { onLogRead = callback; }, get clock() { return clock; }, get state() { return state; }, get writes() { return writes; }, get conflicts() { return conflicts; }, get graphqlQueries() { return graphqlQueries; } };
+  return { instance, execute, login, issue, admin, adminCall, grant, generate, deliveries, activationDeliveries, mailer, config, faults, logFiles, advance: ms => { clock += ms; }, set onLogRead(callback) { onLogRead = callback; }, get clock() { return clock; }, get state() { return state; }, get writes() { return writes; }, get conflicts() { return conflicts; }, get graphqlQueries() { return graphqlQueries; } };
 }
+
+test('targeted plans use the authoritative catalog and bind one registered recipient without plaintext persistence', async () => {
+  const f = fixture(), admin = await f.admin(), customer = await f.login();
+  assert.deepEqual(MEMBERSHIP_PLANS.map(p => [p.id, p.days, formatMembershipPrice(p)]), [['daily', 1, '2'], ['monthly', 30, '9.9'], ['yearly', 365, '39.9']]);
+  assert.equal(getMembershipPlan('invented'), null);
+  for (const plan of MEMBERSHIP_PLANS) {
+    const [code] = await f.generate(admin, { userId: customer.account.user.id, planId: plan.id, type: 'permanent', days: 9000, priceCents: 1 });
+    assert.equal(code.type, 'duration'); assert.equal(code.days, plan.days); assert.equal(code.priceCents, plan.priceCents);
+    assert.equal(code.recipientEmail, customer.account.user.email); assert.equal(code.recipientId, customer.account.user.id);
+    assert.equal(code.status, 'unused'); assert.equal(code.delivery, null); assert.match(code.code, /^Brclio-[A-F0-9]{40}$/);
+    assert.equal(code.digest, undefined); assert.equal(code.derivationVersion, undefined);
+    assert.ok(!JSON.stringify(f.state).includes(code.code)); assert.ok(!JSON.stringify(f.state).includes(code.code.toUpperCase()));
+  }
+  assert.equal((await f.adminCall(admin, 'admin-codes', { query: customer.account.user.email })).codes.length, 3);
+  assert.equal(f.state.users[customer.account.user.id].membership.type, 'none');
+  assert.equal(f.activationDeliveries.length, 0, 'generation never sends or grants membership');
+  const before = JSON.stringify(f.state);
+  for (const [input, error] of [
+    [{ userId: 'unknown', planId: 'monthly' }, 'USER_NOT_FOUND'],
+    [{ userId: customer.account.user.id, planId: 'invalid' }, 'INVALID_PLAN'],
+    [{ userId: customer.account.user.id, planId: 'monthly', count: 2 }, 'INVALID_COUNT'],
+    [{ planId: 'monthly' }, 'USER_NOT_FOUND'],
+    [{ userId: customer.account.user.id }, 'INVALID_PLAN'],
+  ]) await assert.rejects(f.generate(admin, input), { code: error });
+  assert.equal(JSON.stringify(f.state), before);
+});
+
+test('targeted generation recovers a committed lost response with the same code and request ID', async () => {
+  const f = fixture(), admin = await f.admin(), customer = await f.login();
+  const input = { userId: customer.account.user.id, planId: 'monthly', count: 1, requestId: randomUUID() };
+  f.faults.push({ commitThenThrow: true });
+  await assert.rejects(f.adminCall(admin, 'admin-generate-codes', input), { code: 'STORAGE_WRITE_UNCERTAIN' });
+  const recovered = await f.adminCall(admin, 'admin-generate-codes', input);
+  const again = await f.adminCall(admin, 'admin-generate-codes', input);
+  assert.equal(recovered.replayed, true); assert.equal(recovered.codes[0].code, again.codes[0].code);
+  assert.equal(Object.keys(f.state.codes).length, 1); assert.ok(!JSON.stringify(f.state).includes(recovered.codes[0].code));
+  await assert.rejects(f.adminCall(admin, 'admin-generate-codes', { ...input, planId: 'yearly' }), { code: 'REQUEST_ID_REUSED' });
+});
+
+test('activation email uses only the bound recipient and redemption rejects a different account', async () => {
+  const f = fixture(), admin = await f.admin(), customer = await f.login(), other = await f.login('other@example.test');
+  const redeemBy = new Date(f.clock + DAY).toISOString();
+  const [code] = await f.generate(admin, { userId: customer.account.user.id, planId: 'monthly', redeemBy });
+  const input = { codeId: code.id, email: other.account.user.email, requestId: randomUUID() };
+  const sent = await f.adminCall(admin, 'admin-send-activation', input);
+  assert.equal(sent.sent, true); assert.equal(sent.code.delivery.status, 'sent'); assert.equal(sent.code.delivery.attemptId, undefined);
+  assert.equal(sent.code.code, undefined); assert.equal(f.activationDeliveries.length, 1);
+  assert.deepEqual(f.activationDeliveries[0], { email: customer.account.user.email, code: code.code, plan: { id: 'monthly', name: '月付', days: 30, priceCents: 990 }, redeemBy, deliveryId: `activation-${code.id}` });
+  assert.ok(!JSON.stringify(f.state).includes(code.code));
+  assert.equal((await f.adminCall(admin, 'admin-send-activation', input)).replayed, true);
+  assert.equal((await f.adminCall(admin, 'admin-send-activation', { codeId: code.id })).replayed, true);
+  assert.equal(f.activationDeliveries.length, 1);
+  await assert.rejects(f.execute(f.instance(), 'redeem', { code: code.code, requestId: randomUUID() }, other, other.dev), { code: 'ACTIVATION_RECIPIENT_MISMATCH' });
+  const redeemed = await f.execute(f.instance(), 'redeem', { code: code.code, requestId: randomUUID() }, customer, customer.dev);
+  assert.equal(redeemed.account.membership.expiresAt, new Date(f.clock + 30 * DAY).toISOString());
+  assert.equal(f.state.users[other.account.user.id].membership.type, 'none');
+  const afterRedeem = await f.adminCall(admin, 'admin-send-activation', input);
+  assert.equal(afterRedeem.sent, true); assert.equal(afterRedeem.replayed, true); assert.equal(afterRedeem.code.status, 'used');
+  f.advance(DAY + 1);
+  assert.equal((await f.adminCall(admin, 'admin-send-activation', input)).replayed, true, 'past redemption deadline still confirms the original delivery');
+  assert.equal(f.activationDeliveries.length, 1);
+});
+
+test('activation send requires admin authentication, configuration and a live targeted code', async () => {
+  const f = fixture(), admin = await f.admin(), customer = await f.login();
+  const [live] = await f.generate(admin, { userId: customer.account.user.id, planId: 'daily' });
+  await assert.rejects(f.execute(f.instance(), 'admin-send-activation', { codeId: live.id, requestId: randomUUID(), reason: 'test' }, customer, customer.dev), { code: 'FORBIDDEN' });
+  await assert.rejects(f.execute(f.instance(), 'admin-send-activation', { codeId: live.id }), { code: 'ACCOUNT_REQUIRED' });
+  f.mailer.configured = false;
+  await assert.rejects(f.adminCall(admin, 'admin-send-activation', { codeId: live.id }), { code: 'MAIL_NOT_CONFIGURED' });
+  assert.equal(f.state.codes[live.id].delivery, null);
+  f.mailer.configured = true;
+  const [generic] = await f.generate(admin);
+  await assert.rejects(f.adminCall(admin, 'admin-send-activation', { codeId: generic.id }), { code: 'ACTIVATION_NOT_TARGETED' });
+  const [voided] = await f.generate(admin, { userId: customer.account.user.id, planId: 'daily' });
+  await f.adminCall(admin, 'admin-void-code', { codeId: voided.id });
+  await assert.rejects(f.adminCall(admin, 'admin-send-activation', { codeId: voided.id }), { code: 'ACTIVATION_NOT_UNUSED' });
+  await f.execute(f.instance(), 'redeem', { code: live.code, requestId: randomUUID() }, customer, customer.dev);
+  await assert.rejects(f.adminCall(admin, 'admin-send-activation', { codeId: live.id }), { code: 'ACTIVATION_NOT_UNUSED' });
+  const [expired] = await f.generate(admin, { userId: customer.account.user.id, planId: 'daily', redeemBy: new Date(f.clock + 1).toISOString() });
+  f.advance(2);
+  await assert.rejects(f.adminCall(admin, 'admin-send-activation', { codeId: expired.id }), { code: 'ACTIVATION_EXPIRED' });
+  assert.equal(f.activationDeliveries.length, 0);
+});
+
+test('concurrent activation sends across independent services acquire only one durable mail lease', async () => {
+  const f = fixture(), admin = await f.admin(), customer = await f.login();
+  const [code] = await f.generate(admin, { userId: customer.account.user.id, planId: 'yearly' });
+  let release, began;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { began = resolve; });
+  const send = f.mailer.sendActivation;
+  f.mailer.sendActivation = async function (delivery) { await send.call(this, delivery); began(); await blocked; };
+  const first = f.adminCall(admin, 'admin-send-activation', { codeId: code.id });
+  await started;
+  await assert.rejects(f.adminCall(admin, 'admin-send-activation', { codeId: code.id }), { code: 'ACTIVATION_SEND_IN_PROGRESS' });
+  await assert.rejects(f.adminCall(admin, 'admin-void-code', { codeId: code.id }), { code: 'ACTIVATION_SEND_IN_PROGRESS' });
+  assert.equal(f.activationDeliveries.length, 1);
+  release();
+  assert.equal((await first).sent, true);
+  assert.equal((await f.adminCall(admin, 'admin-send-activation', { codeId: code.id })).replayed, true);
+  assert.equal(f.activationDeliveries.length, 1);
+});
+
+test('failed activation delivery retries the same code and provider ID without another grant', async () => {
+  const f = fixture(), admin = await f.admin(), customer = await f.login();
+  const [code] = await f.generate(admin, { userId: customer.account.user.id, planId: 'daily' });
+  const input = { codeId: code.id, requestId: randomUUID() };
+  f.mailer.failNextActivation = true;
+  await assert.rejects(f.adminCall(admin, 'admin-send-activation', input), error => error.code === 'MAIL_SEND_FAILED' && !error.message.includes('private-mail-detail'));
+  assert.equal(f.state.codes[code.id].delivery.status, 'failed');
+  assert.equal((await f.adminCall(admin, 'admin-send-activation', input)).sent, true);
+  assert.deepEqual(f.activationDeliveries[0], f.activationDeliveries[1]);
+  assert.equal(f.state.codes[code.id].delivery.attempts, 2); assert.equal(Object.keys(f.state.codes).length, 1);
+  assert.equal(f.state.users[customer.account.user.id].membership.type, 'none');
+  const [other] = await f.generate(admin, { userId: customer.account.user.id, planId: 'monthly' });
+  await assert.rejects(f.adminCall(admin, 'admin-send-activation', { ...input, codeId: other.id }), { code: 'REQUEST_ID_REUSED' });
+});
+
+test('uncertain reservation and completion writes never invent successful activation delivery', async () => {
+  for (const faultStage of ['reservation', 'completion-committed', 'completion-uncommitted']) {
+    const f = fixture(), admin = await f.admin(), customer = await f.login();
+    const [code] = await f.generate(admin, { userId: customer.account.user.id, planId: 'monthly' });
+    const input = { codeId: code.id, requestId: randomUUID() };
+    if (faultStage === 'reservation') f.faults.push({ commitThenThrow: true });
+    else {
+      const send = f.mailer.sendActivation;
+      f.mailer.sendActivation = async function (delivery) {
+        await send.call(this, delivery);
+        f.faults.push(faultStage === 'completion-committed' ? { commitThenThrow: true } : { throw: true });
+        f.mailer.sendActivation = send;
+      };
+    }
+    await assert.rejects(f.adminCall(admin, 'admin-send-activation', input), { code: faultStage === 'reservation' ? 'STORAGE_WRITE_UNCERTAIN' : 'ACTIVATION_DELIVERY_UNCONFIRMED' });
+    if (faultStage === 'completion-committed') {
+      assert.equal(f.state.codes[code.id].delivery.status, 'sent');
+      assert.equal((await f.adminCall(admin, 'admin-send-activation', input)).replayed, true);
+      assert.equal(f.activationDeliveries.length, 1);
+    } else {
+      assert.equal(f.activationDeliveries.length, faultStage === 'reservation' ? 0 : 1);
+      await assert.rejects(f.adminCall(admin, 'admin-send-activation', input), { code: 'ACTIVATION_SEND_IN_PROGRESS' });
+      f.advance(120_001);
+      assert.equal((await f.adminCall(admin, 'admin-send-activation', input)).sent, true);
+      assert.equal(f.activationDeliveries.length, faultStage === 'reservation' ? 1 : 2);
+      assert.ok(f.activationDeliveries.every(delivery => delivery.code === code.code && delivery.deliveryId === `activation-${code.id}`));
+    }
+    assert.equal(Object.keys(f.state.codes).length, 1); assert.ok(!JSON.stringify(f.state).includes(code.code));
+  }
+});
 
 test('first email verification creates user, repeated login keeps user and device identity', async () => {
   const f = fixture(), d = device('stable-mac');
@@ -455,6 +606,35 @@ test('SMTP, Resend and webhook share an OTP-first message with the complete foot
   assert.deepEqual(messages.resend.to, [delivery.email]);
   assert.deepEqual(messages.smtp.to, { address: delivery.email });
   assert.equal(messages.smtp.headers['X-Account-Delivery-ID'], delivery.deliveryId);
+});
+
+test('all mail providers use a dedicated activation template with plan, duration, recipient and redemption deadline', async () => {
+  const delivery = { email: 'recipient@example.test', code: `Brclio-${'A'.repeat(40)}`, plan: getMembershipPlan('yearly'), redeemBy: '2026-12-01T00:00:00.000Z', deliveryId: 'activation-fixture' };
+  const messages = {};
+  for (const provider of ['smtp', 'resend', 'webhook']) {
+    const mailer = createMailer({
+      AUTH_MAIL_PROVIDER: provider, AUTH_MAIL_FROM: 'sender@example.test', AUTH_MAIL_API_KEY: 'fake-api-key',
+      AUTH_SMTP_HOST: 'smtp.example.test', AUTH_SMTP_USER: 'fake-user', AUTH_SMTP_PASS: 'fake-password',
+      AUTH_MAIL_WEBHOOK_URL: 'https://mail.example.test/send', AUTH_MAIL_WEBHOOK_SECRET: 'fake-webhook-secret',
+    }, async (_url, options) => {
+      messages[provider] = JSON.parse(options.body);
+      assert.equal(options.headers['Idempotency-Key'], delivery.deliveryId);
+      assert.equal(options.redirect, 'manual');
+      return Response.json({ id: delivery.deliveryId });
+    }, { createSmtpTransport: () => ({ async sendMail(message) { messages.smtp = message; return { accepted: [delivery.email], rejected: [] }; }, close() {} }) });
+    await mailer.sendActivation(delivery);
+  }
+  for (const message of Object.values(messages)) {
+    assert.equal(message.subject, 'Brclio 小红书下载器会员激活码'); assert.equal(message.text, messages.smtp.text);
+    for (const content of [delivery.email, delivery.code, '年付 · 39.9 元', '365 天', '成功兑换', delivery.redeemBy, '备注您的账号邮箱']) assert.ok(message.text.includes(content), content);
+    assert.ok(!message.text.includes('登录验证码')); assert.ok(!message.text.includes('5 分钟'));
+  }
+  assert.deepEqual(messages.smtp.to, { address: delivery.email });
+  assert.deepEqual(messages.resend.to, [delivery.email]);
+  assert.equal(messages.webhook.template, 'membership-activation');
+  assert.equal(messages.webhook.expiresInMinutes, undefined);
+  assert.deepEqual(messages.webhook.plan, delivery.plan);
+  assert.equal(messages.webhook.redeemBy, delivery.redeemBy);
 });
 
 test('mail provider failures do not expose the complete message, OTP or credentials in errors or status', async () => {

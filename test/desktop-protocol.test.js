@@ -10,11 +10,21 @@ const rootDirectory = fileURLToPath(new URL('..', import.meta.url));
 const handler = createProtocolHandler({ rootDirectory });
 
 test('desktop protocol serves the real web entry and all first-party JS imports', async () => {
-  for (const name of ['index.html', 'app.js', 'lib/archive.js', 'lib/clipboard.js', 'style.css', 'favicon.svg', 'download.html', 'download.css', 'download.js']) {
+  for (const name of ['index.html', 'app.js', 'account-ui.js', 'lib/archive.js', 'lib/clipboard.js', 'lib/membership-plans.js', 'style.css', 'favicon.svg', 'download.html', 'download.css', 'download.js']) {
     const response = await handler(new Request(`xhs-app://local/${name}`));
     assert.equal(response.status, 200, name);
     assert.ok((await response.text()).length > 0, name);
     assert.match(response.headers.get('content-security-policy'), /script-src 'self'/);
+  }
+});
+
+test('desktop protocol serves the cropped membership QR images locally', async () => {
+  for (const name of ['wechat-pay', 'alipay', 'wechat-contact']) {
+    const response = await handler(new Request(`xhs-app://local/assets/membership/${name}.png`));
+    assert.equal(response.status, 200, name);
+    assert.equal(response.headers.get('content-type'), 'image/png');
+    const bytes = Buffer.from(await response.arrayBuffer());
+    assert.deepEqual(bytes.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
   }
 });
 

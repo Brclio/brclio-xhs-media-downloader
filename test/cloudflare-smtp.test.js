@@ -156,3 +156,15 @@ test('Cloudflare mailer keeps shared OTP template and non-SMTP providers unchang
   assert.match(calls[0].body.text, /123456/);
   assert.match(calls[0].body.text, /Not spam/);
 });
+
+test('Cloudflare native SMTP carries the activation template and stable delivery identifier', async () => {
+  const server = smtpServer();
+  const mailer = createCloudflareMailer({ AUTH_MAIL_PROVIDER: 'smtp', AUTH_SMTP_HOST: 'smtp.example.test', AUTH_SMTP_USER: 'sender@example.test', AUTH_SMTP_PASS: 'fixture-secret', AUTH_MAIL_FROM: 'Brclio <sender@example.test>' }, undefined, server);
+  const code = `Brclio-${'B'.repeat(40)}`;
+  await mailer.sendActivation({ email: 'recipient@example.test', code, plan: { id: 'daily', name: '日付', days: 1, priceCents: 200 }, redeemBy: null, deliveryId: 'activation-fixture' });
+  assert.equal(server.accepted, 1);
+  const data = server.writes[server.commands.indexOf('MESSAGE')].toString('utf8');
+  assert.match(data, /X-Account-Delivery-ID: activation-fixture/);
+  const body = Buffer.from(data.split('\r\n\r\n')[1].replace(/\r\n\.\r\n$/, ''), 'base64').toString('utf8');
+  assert.ok(body.includes(code)); assert.match(body, /日付 · 2 元/); assert.match(body, /会员时长：1 天/); assert.match(body, /不设兑换截止时间/);
+});
