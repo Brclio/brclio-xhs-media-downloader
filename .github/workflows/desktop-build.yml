@@ -84,10 +84,15 @@ jobs:
         if: runner.os == 'Windows'
         run: npx electron-builder --win --${{ matrix.arch }} --publish never
       - name: Verify packaged source, native runtime, installers, and checksums
-        run: node scripts/verify-built-installers.mjs
+        shell: bash
+        run: |
+          if [[ -n "$RELEASE_TAG" ]]; then
+            env GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" node scripts/verify-built-installers.mjs
+          else
+            node scripts/verify-built-installers.mjs
+          fi
         env:
-          GITHUB_REF_TYPE: ${{ inputs.release_tag && 'tag' || github.ref_type }}
-          GITHUB_REF_NAME: ${{ inputs.release_tag || github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
       - name: Exercise real Electron main process, bridge, and both download engines
         run: npm run desktop:verify
       - name: Verify responsive startup and credential access recovery
@@ -128,8 +133,7 @@ jobs:
           path: release-artifacts
           merge-multiple: true
       - name: Verify all platforms and publish the complete release
-        run: node scripts/publish-desktop-release.mjs
+        run: env GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" node scripts/publish-desktop-release.mjs
         env:
           GH_TOKEN: ${{ github.token }}
-          GITHUB_REF_TYPE: tag
-          GITHUB_REF_NAME: ${{ inputs.release_tag || github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
