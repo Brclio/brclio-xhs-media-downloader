@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { createNativeSmtpTransport } from '../cloudflare/smtp.js';
 import { createCloudflareMailer } from '../cloudflare/mailer.js';
 
-const options = port => ({ host: 'smtp.example.test', port, secure: port === 465, requireTLS: true, auth: { user: 'sender@example.test', pass: 'fixture-secret' }, tls: { rejectUnauthorized: true }, connectionTimeout: 100, greetingTimeout: 100, socketTimeout: 100 });
+// Successful protocol fixtures also run alongside packaging tests on shared CI
+// hosts. Keep their deadline above scheduler pauses; the stalled-reply case
+// below explicitly exercises its separate 20 ms operation timeout.
+const options = port => ({ host: 'smtp.example.test', port, secure: port === 465, requireTLS: true, auth: { user: 'sender@example.test', pass: 'fixture-secret' }, tls: { rejectUnauthorized: true }, connectionTimeout: 5_000, greetingTimeout: 5_000, socketTimeout: 5_000 });
 const message = { from: 'Brclio <sender@example.test>', to: { address: 'recipient@example.test' }, subject: '验证码', text: '正文\n.first\n.\n最后一行', headers: { 'X-Account-Delivery-ID': 'fixture-delivery' } };
 
 function smtpServer({ responseFor, fragmented = false, authChallenge = false, quitFailure = false } = {}) {

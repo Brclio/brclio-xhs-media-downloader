@@ -13,6 +13,7 @@ import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { createMacFixtureDmg } from './create-mac-fixture-dmg.mjs';
 
 const run = promisify(execFile);
 const asar = createRequire(import.meta.url)('@electron/asar');
@@ -201,7 +202,7 @@ export async function verifyPackagedMacUpdate(input) {
     await writeFile(historyPointer, historyPointerContents, { mode: 0o600 });
     const assetName = `Brclio-XHS-Downloader-${targetVersion}-mac-${process.arch}.dmg`;
     const dmg = path.join(root, assetName);
-    await command('/usr/bin/hdiutil', ['create', '-quiet', '-volname', 'Packaged Update Fixture', '-srcfolder', payload, '-format', 'UDZO', dmg]);
+    await createMacFixtureDmg({ source: payload, destination: dmg });
     const size = (await lstat(dmg)).size, sha256 = await digest(dmg);
     const repository = 'Brclio/brclio-xhs-media-downloader', tag = `v${targetVersion}`;
     const assetUrl = `https://github.com/${repository}/releases/download/${tag}/${assetName}`;

@@ -30,6 +30,9 @@ export function expectedInstallerNames(version, tag) {
 export async function verifyAsar(archive, sourceDirectory, version) {
   const require = createRequire(path.join(sourceDirectory, 'package.json'));
   const asar = require('@electron/asar');
+  // ASAR's reader splits internal directory names using the host path.sep.
+  // Normalize nested paths such as assets/membership/... before Windows reads.
+  const extract = name => asar.extractFile(archive, path.normalize(name));
   const expectedSources = [...SOURCE_FILES];
   // Historical v1.5 artifacts predate the update manager.
   try { await stat(path.join(sourceDirectory, 'desktop/update-manager.js')); expectedSources.push('desktop/update-manager.js'); }
@@ -47,27 +50,27 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     .map(name => name.replaceAll('\\', '/').replace(/^\//, ''))
     .filter(name => /\.(?:js|cjs|html|css)$/.test(name)).sort();
   assert.deepEqual(actualSources, expectedSources, 'Packaged source must contain exactly the reviewed application files');
-  const packaged = JSON.parse(asar.extractFile(archive, 'package.json').toString('utf8'));
+  const packaged = JSON.parse(extract('package.json').toString('utf8'));
   const sourcePackage = JSON.parse(await readFile(path.join(sourceDirectory, 'package.json'), 'utf8'));
   assert.equal(packaged.version, version, 'ASAR package version mismatch');
   assert.equal(packaged.name, 'brclio-xhs-media-downloader');
   assert.equal(packaged.productName, sourcePackage.productName);
   assert.equal(packaged.repository?.url, `git+https://github.com/${REPOSITORY}.git`);
   for (const name of expectedSources) {
-    assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))),
+    assert.ok(extract(name).equals(await readFile(path.join(sourceDirectory, name))),
       `Packaged source differs from release tag: ${name}`);
   }
   // Payment images must be the exact reviewed codes. Loading the purchase UI
   // alone does not establish that its packaged QR assets are present or intact.
   if (expectedSources.includes('lib/membership-plans.js')) {
     for (const name of ['assets/membership/wechat-pay.png', 'assets/membership/alipay.png', 'assets/membership/wechat-contact.png']) {
-      assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))),
+      assert.ok(extract(name).equals(await readFile(path.join(sourceDirectory, name))),
         `Packaged membership QR differs from release tag: ${name}`);
     }
   }
   if (expectedSources.includes('desktop/account-client.js')) {
     const name = 'desktop/account-config.json';
-    assert.ok(asar.extractFile(archive, name).equals(await readFile(path.join(sourceDirectory, name))), 'Packaged account endpoint differs from configured source');
+    assert.ok(extract(name).equals(await readFile(path.join(sourceDirectory, name))), 'Packaged account endpoint differs from configured source');
     const names = asar.listPackage(archive).map(name => name.replaceAll('\\', '/'));
     assert.ok(!names.some(name => /^\/(?:server|admin|test|docs)\//.test(name) || /\/\.env(?:\.|$)/.test(name)), 'Server/admin/private files must not enter desktop package');
   }

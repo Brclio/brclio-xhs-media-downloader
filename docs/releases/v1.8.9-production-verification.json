@@ -1,0 +1,516 @@
+{
+  "release": "v1.8.9",
+  "commit": "cd8a0dfc76ed3f9b670a62dbcf879a9dc79512eb",
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-09-23T16:15:37.696Z",
+  "health": {
+    "ok": true,
+    "platform": "cloudflare",
+    "version": "1.8.9",
+    "pythonBinding": true,
+    "deploymentId": "41c6ff6f-8a1d-49fa-ab3a-329ea7e44f3d"
+  },
+  "assetChecks": [
+    {
+      "file": "admin/admin.js",
+      "status": 200,
+      "contentType": "text/javascript",
+      "bytes": 58611,
+      "expectedBytes": 58611,
+      "sha256": "93602733231f89c2fd0a1df2ce60206685e4fc7fd005660351144b4af59c71e0",
+      "expectedSha256": "93602733231f89c2fd0a1df2ce60206685e4fc7fd005660351144b4af59c71e0",
+      "ok": true
+    },
+    {
+      "file": "admin/admin.css",
+      "status": 200,
+      "contentType": "text/css",
+      "bytes": 18453,
+      "expectedBytes": 18453,
+      "sha256": "70294e65efd857bd645e5df1bfb1a5a0b26bc94323d1c705537c817ff57e2fa3",
+      "expectedSha256": "70294e65efd857bd645e5df1bfb1a5a0b26bc94323d1c705537c817ff57e2fa3",
+      "ok": true
+    },
+    {
+      "file": "admin/index.html",
+      "status": 200,
+      "contentType": "text/html",
+      "bytes": 12489,
+      "expectedBytes": 12489,
+      "sha256": "52847652c13e1a3c64abf267092631757bce5141a82b1740c9234939b292ca31",
+      "expectedSha256": "52847652c13e1a3c64abf267092631757bce5141a82b1740c9234939b292ca31",
+      "ok": true
+    },
+    {
+      "file": "account-ui.js",
+      "status": 200,
+      "contentType": "application/javascript",
+      "bytes": 18973,
+      "expectedBytes": 18973,
+      "sha256": "bc9800873fd42eab63c2f11691e37b7c6f951dc90ef9dafad08e9d904075307e",
+      "expectedSha256": "bc9800873fd42eab63c2f11691e37b7c6f951dc90ef9dafad08e9d904075307e",
+      "ok": true
+    },
+    {
+      "file": "account-ui.css",
+      "status": 200,
+      "contentType": "text/css; charset=utf-8",
+      "bytes": 13413,
+      "expectedBytes": 13413,
+      "sha256": "0281377ef9bde0914896424ee0a1c4667c9dab6c279ab55d374f82eb7e10053e",
+      "expectedSha256": "0281377ef9bde0914896424ee0a1c4667c9dab6c279ab55d374f82eb7e10053e",
+      "ok": true
+    },
+    {
+      "file": "lib/membership-plans.js",
+      "status": 200,
+      "contentType": "application/javascript",
+      "bytes": 821,
+      "expectedBytes": 821,
+      "sha256": "8279f2cfd05ad67b3a7ca92278a76111f844cbf5a25756333865b7da5cf46c57",
+      "expectedSha256": "8279f2cfd05ad67b3a7ca92278a76111f844cbf5a25756333865b7da5cf46c57",
+      "ok": true
+    },
+    {
+      "file": "assets/membership/wechat-pay.png",
+      "status": 200,
+      "contentType": "image/png",
+      "bytes": 88790,
+      "expectedBytes": 88790,
+      "sha256": "ee10f6aadd594c7137b6be444cfb2c733685bd0c44366bf3cb2fcd14a0909a04",
+      "expectedSha256": "ee10f6aadd594c7137b6be444cfb2c733685bd0c44366bf3cb2fcd14a0909a04",
+      "ok": true
+    },
+    {
+      "file": "assets/membership/wechat-contact.png",
+      "status": 200,
+      "contentType": "image/png",
+      "bytes": 195721,
+      "expectedBytes": 195721,
+      "sha256": "2339efcb8f89743ff399c4ba5804472267c6ad0165dd05c2634689def0045623",
+      "expectedSha256": "2339efcb8f89743ff399c4ba5804472267c6ad0165dd05c2634689def0045623",
+      "ok": true
+    },
+    {
+      "file": "assets/membership/alipay.png",
+      "status": 200,
+      "contentType": "image/png",
+      "bytes": 187550,
+      "expectedBytes": 187550,
+      "sha256": "1b3f23f79d57aa1e29159c4434a82d2292e0505ffc3f9c27ac8ed5f8c273b817",
+      "expectedSha256": "1b3f23f79d57aa1e29159c4434a82d2292e0505ffc3f9c27ac8ed5f8c273b817",
+      "ok": true
+    },
+    {
+      "file": "download.html",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 18269,
+      "expectedBytes": 18269,
+      "sha256": "fe47d9aa7a66637761b03df93fb4ad97ffe2f3acef5b80af9051b00808e6b3e1",
+      "expectedSha256": "fe47d9aa7a66637761b03df93fb4ad97ffe2f3acef5b80af9051b00808e6b3e1",
+      "ok": true
+    },
+    {
+      "file": "changelog.html",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 96188,
+      "expectedBytes": 96188,
+      "sha256": "fd205587ccbcb5e74c60349b2283f302c7548d986bb5b6d0715cb5b18d973be1",
+      "expectedSha256": "fd205587ccbcb5e74c60349b2283f302c7548d986bb5b6d0715cb5b18d973be1",
+      "ok": true
+    }
+  ],
+  "securityChecks": [
+    {
+      "action": "admin-generate-codes",
+      "scenario": "trusted-origin-without-session",
+      "status": 401,
+      "code": "ACCOUNT_REQUIRED",
+      "ok": true
+    },
+    {
+      "action": "admin-generate-codes",
+      "scenario": "untrusted-origin",
+      "status": 403,
+      "code": "ORIGIN_FORBIDDEN",
+      "ok": true
+    },
+    {
+      "action": "admin-generate-codes",
+      "scenario": "missing-origin",
+      "status": 403,
+      "code": "ORIGIN_FORBIDDEN",
+      "ok": true
+    },
+    {
+      "action": "admin-send-activation",
+      "scenario": "trusted-origin-without-session",
+      "status": 401,
+      "code": "ACCOUNT_REQUIRED",
+      "ok": true
+    },
+    {
+      "action": "admin-send-activation",
+      "scenario": "untrusted-origin",
+      "status": 403,
+      "code": "ORIGIN_FORBIDDEN",
+      "ok": true
+    },
+    {
+      "action": "admin-send-activation",
+      "scenario": "missing-origin",
+      "status": 403,
+      "code": "ORIGIN_FORBIDDEN",
+      "ok": true
+    }
+  ],
+  "smoke": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-09-23T16:15:18.863Z",
+    "passed": 44,
+    "total": 44,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1745
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1256
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 524
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 380
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 460
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 520
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 210
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1070
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1164
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 2307
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1702
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 415
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 1126
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 396
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 330
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 544
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 323
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 211
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 204
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 202
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 502
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 896
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 216
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 244
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 781
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 885
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 445
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 507
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 341
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 333
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 376
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 1070
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 225
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 276
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 527
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 217
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 305
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 222
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 303
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 345
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 549
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 693
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 331
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 516
+      }
+    ]
+  },
+  "scope": {
+    "anonymousOnly": true,
+    "customerEmailSent": false,
+    "accountBusinessMutations": false,
+    "authenticatedIssuanceVerifiedLive": false,
+    "pythonWorkerRedeployed": false
+  },
+  "ok": true,
+  "worker": {
+    "versionId": "41c6ff6f-8a1d-49fa-ab3a-329ea7e44f3d",
+    "bindingsPreserved": true,
+    "secretNamesRetained": [
+      "AUTH_ADMIN_EMAILS",
+      "AUTH_ALLOW_INITIALIZE",
+      "AUTH_DEVICE_LIMIT",
+      "AUTH_EMAIL_HOURLY_LIMIT",
+      "AUTH_GITHUB_BRANCH",
+      "AUTH_GITHUB_OWNER",
+      "AUTH_GITHUB_PATH",
+      "AUTH_GITHUB_REPO",
+      "AUTH_GITHUB_TOKEN",
+      "AUTH_GLOBAL_HOURLY_LIMIT",
+      "AUTH_IP_HOURLY_LIMIT",
+      "AUTH_MAIL_FROM",
+      "AUTH_MAIL_PROVIDER",
+      "AUTH_SECRET_PEPPER",
+      "AUTH_SITE_ORIGIN",
+      "AUTH_SMTP_HOST",
+      "AUTH_SMTP_PASS",
+      "AUTH_SMTP_PORT",
+      "AUTH_SMTP_USER"
+    ],
+    "durableObjects": [
+      {
+        "name": "ACCOUNT_RUNTIME",
+        "type": "durable_object_namespace",
+        "class_name": "AccountRuntime",
+        "namespace_id": "d3edbdb22f164230bf5a2202edc31dc8"
+      },
+      {
+        "name": "PARSE_RUNTIME",
+        "type": "durable_object_namespace",
+        "class_name": "ParseRuntime",
+        "namespace_id": "99645981698f4c489b880998cad8f1d0"
+      }
+    ],
+    "services": [
+      {
+        "name": "PYTHON_API",
+        "type": "service",
+        "service": "brclio-xhs-python",
+        "environment": "production"
+      }
+    ],
+    "plainVariables": [
+      {
+        "name": "XHS_PARSE_FALLBACK_ORIGIN",
+        "type": "plain_text",
+        "text": "https://xhs-images-video-vercel-downloader.vercel.app"
+      }
+    ],
+    "migrationTag": "parse-runtime-v1"
+  },
+  "pages": {
+    "deployment": {
+      "id": "8c3645f1-7348-4baa-a0a8-475f65f321ea",
+      "environment": "Production",
+      "branch": "main",
+      "source": "cd8a0df",
+      "url": "https://8c3645f1.brclio-xhs-pages.pages.dev"
+    },
+    "finalDownloadMetadataRefreshPending": true
+  }
+}

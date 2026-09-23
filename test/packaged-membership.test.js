@@ -11,6 +11,24 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const require = createRequire(import.meta.url);
 const asar = require('@electron/asar');
 
+test('ASAR nested lookups use Windows directory separators on Windows', () => {
+  const { Filesystem } = require(path.join(path.dirname(require.resolve('@electron/asar')), 'filesystem.js'));
+  const original = { sep: path.sep, dirname: path.dirname, basename: path.basename };
+  // Exercise the installed ASAR reader's real Windows traversal on every OS.
+  // This is synchronous and restored before any filesystem operations resume.
+  try {
+    path.sep = path.win32.sep;
+    path.dirname = path.win32.dirname;
+    path.basename = path.win32.basename;
+    const filesystem = new Filesystem('fixture');
+    filesystem.setHeader({ files: { assets: { files: { membership: { files: {
+      'wechat-pay.png': { size: 10, offset: '0' },
+    } } } } } }, 0);
+    assert.throws(() => filesystem.getFile('assets/membership/wechat-pay.png'), /not found/);
+    assert.equal(filesystem.getFile(path.win32.normalize('assets/membership/wechat-pay.png')).size, 10);
+  } finally { Object.assign(path, original); }
+});
+
 test('packaged membership catalog and payment codes match the reviewed source bytes', async t => {
   const temporary = await mkdtemp(path.join(tmpdir(), 'brclio-packaged-membership-'));
   t.after(() => rm(temporary, { recursive: true, force: true }));
