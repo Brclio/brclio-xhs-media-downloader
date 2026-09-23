@@ -1,5 +1,7 @@
 # Brclio 小红书下载器 · 桌面版
 
+当前补丁版为 v1.8.6，继续包含 v1.8.5 的 Mac 启动、临时旧版清理和 `Brclio-` 激活码兼容修复。客户端功能与操作方式沿用 v1.8.5，本版纳入发布流水线初始化和远端版本标签核验修正。安装包、升级说明及签名限制见 [v1.8.6 版本说明](../docs/releases/v1.8.6.md)。
+
 v1.7.0 增加独立的软件账号。首次邮箱验证会创建账号，登录凭据由系统安全存储保护；小红书登录仍在单独窗口完成。默认单篇下载免费，主页批量下载需要有效会员和已授权设备。退出软件账号、会员到期或管理员撤销设备不会删除下载文件和任务记录。部署、人工发码、设备恢复与验证边界见 [账号系统说明](../docs/account-system.md) 和 [本轮测试结果](../docs/account-validation.md)。
 
 v1.8.5 改进 Mac 启动与更新恢复：先显示窗口，再异步读取钥匙串；确认新版实际启动后清理临时旧版，启动超时尝试恢复旧版。账号服务新生成的激活码使用 `Brclio-` 前缀，旧 `XHS-` 码继续可兑，均不区分大小写并忽略首尾空白。完整升级限制见 [v1.8.5 版本说明](../docs/releases/v1.8.5.md)。
@@ -89,7 +91,9 @@ npm run desktop:build:win
 
 输出在 `dist-desktop/`，文件名统一为 `Brclio-XHS-Downloader-版本号-系统-架构`：Mac 为 `.dmg` / `.zip`，Windows 为 `-setup.exe` / `-portable.exe`。例如 `Brclio-XHS-Downloader-1.8.0-mac-arm64.dmg`。Mac arm64 面向 Apple 芯片，最低 macOS 13；Intel Mac x64 由同一流程在 Intel 构建机或 CI 构建。Windows 包面向 Windows 10/11 x64。便携版同样包含完整运行环境，但任务与登录数据仍保存在当前系统用户的应用数据目录。
 
-开发者可在 GitHub Actions 中手动运行 `Desktop installers`，或推送 `v*` 标签。矩阵分别构建 Mac arm64、Mac x64、Windows x64，运行测试、真实 Electron 冒烟检查、归档源码比对和内置 Python 启动验证。推送与 package.json 一致的 `vX.Y.Z` 标签会在全部平台通过后自动发布：先合并六个安装包并复核构建提交与 SHA-256，再上传草稿，验证 GitHub 返回的文件摘要，最后将完整版本设为最新正式版。手动分支构建只上传 Actions 附件，不发布。
+开发者可在 GitHub Actions 中手动运行 `Desktop installers`，或推送 `v*` 标签。矩阵分别构建 Mac arm64、Mac x64、Windows x64，先串行初始化 Electron 运行环境，再运行测试、真实 Electron 冒烟检查、归档源码比对和内置 Python 启动验证，避免并行测试竞争解压同一运行环境。推送与 package.json 一致的 `vX.Y.Z` 标签会在全部平台通过后自动发布。手动运行未填写 `release_tag` 时只上传 Actions 附件；填写已有 `vX.Y.Z` 标签时，明确检出 `refs/tags/vX.Y.Z` 并完成同一构建与发布流程。
+
+发布前合并六个安装包并复核构建提交与 SHA-256；创建草稿前核对远端已有标签，确保其最终指向的提交与构建证据一致。上传全部附件并验证 GitHub 返回的文件摘要后，再次核对标签，确认未被移动才公开发布。不覆盖已经公开的版本，也不会因为版本标签缺失而隐式创建新标签。已有标签通过核验后，创建草稿只引用该标签，避免再次指定旧提交造成不必要的工作流写权限要求。
 
 发布包必须包含对应操作系统、CPU 架构的 Python 引擎；缺少引擎时构建失败，本机原生构建还会实际启动引擎验证，不能产出要求用户自行安装 Python 的“完整安装包”。Release 附带 `SHA256SUMS.txt` 和 `build-evidence.json`，记录各平台源码提交、归档源码比对、运行时验证与安装包摘要。
 
