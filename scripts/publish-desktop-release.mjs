@@ -108,6 +108,55 @@ export function formatReleaseNotes(notes, tag) {
 
 const compatibilityLabel = file => `Brclio 旧版自动更新兼容包 · ${file.name.replace(/^XHS-Downloader-/, '')}`;
 
+export async function verifyReleaseTag(api, { tag, sourceSha }) {
+  assert.match(tag, /^v\d+\.\d+\.\d+$/);
+  assert.match(sourceSha, /^[a-f0-9]{40}$/);
+  // Resolve the remote ref, not a similarly named branch or a local stale tag.
+  // A missing ref must fail before creating a release (or implicitly a tag).
+  const ref = await api(`git/ref/tags/${encodeURIComponent(tag)}`);
+  assert.equal(ref.ref, `refs/tags/${tag}`, 'Expected the exact existing release tag');
+  let object = ref.object;
+  const seen = new Set();
+  while (true) {
+    assert.match(object?.sha || '', /^[a-f0-9]{40}$/, 'Invalid remote tag object');
+    if (object.type === 'commit') break;
+    assert.equal(object.type, 'tag', 'Release tag must resolve to a commit');
+    assert.ok(!seen.has(object.sha) && seen.size < 8, 'Invalid annotated tag chain');
+    seen.add(object.sha);
+    const annotated = await api(`git/tags/${object.sha}`);
+    assert.equal(annotated.sha, object.sha, 'Annotated tag response changed identity');
+    object = annotated.object;
+  }
+  assert.equal(object.sha, sourceSha, 'Remote release tag must match the verified build commit');
+  return object.sha;
+}
+
+export async function prepareDraftRelease(api, { tag, sourceSha, name, body }) {
+  await verifyReleaseTag(api, { tag, sourceSha });
+  // Listing includes drafts. An existing public release remains immutable.
+  const releases = await api('releases?per_page=100');
+  const existing = releases.find(item => item.tag_name === tag);
+  if (existing) {
+    assert.equal(existing.draft, true, 'Never replace already-published release assets');
+    return existing;
+  }
+  // The tag already exists and has been checked above. Passing its old commit
+  // again as target_commitish can require workflow-write permission when the
+  // current default branch has newer workflow files, even with contents:write.
+  return api('releases', { method: 'POST', body: JSON.stringify({ tag_name: tag,
+    name, body, draft: true, prerelease: false }) });
+}
+
+export async function releaseApiError(response, { method = 'GET', endpoint, token = '' }) {
+  const body = await response.json().catch(() => ({}));
+  let message = typeof body?.message === 'string' ? body.message : '';
+  if (token) message = message.replaceAll(token, '[REDACTED]');
+  message = message.replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 300);
+  const requestId = response.headers.get('x-github-request-id');
+  const request = /^[A-Za-z0-9:-]{1,100}$/.test(requestId || '') ? ` [request ${requestId}]` : '';
+  return new Error(`GitHub ${method} ${endpoint}: HTTP ${response.status}${request}${message ? `: ${message}` : ''}`);
+}
+
 export async function publishRelease() {
   assert.equal(process.env.GITHUB_REPOSITORY, REPOSITORY);
   assert.equal(process.env.GITHUB_REF_TYPE, 'tag');
@@ -125,15 +174,10 @@ export async function publishRelease() {
       ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${process.env.GH_TOKEN}`,
         'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000)
     });
-    if (!response.ok) throw new Error(`GitHub ${options.method || 'GET'} ${endpoint}: HTTP ${response.status}`);
+    if (!response.ok) throw await releaseApiError(response, { method: options.method || 'GET', endpoint, token: process.env.GH_TOKEN });
     return response.json();
   };
-  // List also includes drafts, unlike the tag lookup endpoint.
-  const releases = await api('releases?per_page=100');
-  let release = releases.find(item => item.tag_name === tag);
-  if (release) assert.equal(release.draft, true, 'Never replace already-published release assets');
-  else release = await api('releases', { method: 'POST', body: JSON.stringify({ tag_name: tag, target_commitish: sourceSha,
-    name: releaseName, body: releaseBody, draft: true, prerelease: false }) });
+  let release = await prepareDraftRelease(api, { tag, sourceSha, name: releaseName, body: releaseBody });
   const compatibilityAssets = await createCompatibilityAssets(directory, { version: pkg.version, files });
   const publishedFiles = [...files, ...compatibilityAssets].sort((a, b) => a.name.localeCompare(b.name));
   const sums = publishedFiles.map(file => `${file.sha256}  ${file.name}`).join('\n') + '\n';
@@ -157,6 +201,8 @@ export async function publishRelease() {
     const alias = compatibilityAssets.find(file => file.name === name);
     if (alias) assert.equal(asset.label, compatibilityLabel(alias));
   }
+  // Uploads can take minutes. Refuse public publication if the remote tag moved.
+  await verifyReleaseTag(api, { tag, sourceSha });
   release = await api(`releases/${release.id}`, { method: 'PATCH', body: JSON.stringify({ draft: false, prerelease: false, make_latest: 'true', name: releaseName, body: releaseBody }) });
   assert.equal(release.draft, false);
   console.log(`Published verified release: ${release.html_url}`);

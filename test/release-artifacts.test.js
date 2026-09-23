@@ -4,10 +4,109 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { validateArtifacts, createCompatibilityAssets, formatReleaseNotes } from '../scripts/publish-desktop-release.mjs';
+import { validateArtifacts, createCompatibilityAssets, formatReleaseNotes, verifyReleaseTag, prepareDraftRelease, releaseApiError } from '../scripts/publish-desktop-release.mjs';
 
 const version = '1.7.1';
 const sourceSha = 'a'.repeat(40);
+const tag = `v${version}`;
+const draftOptions = { tag, sourceSha, name: 'Verified release', body: 'Release notes' };
+function releaseApiFixture({ object = { type: 'commit', sha: sourceSha }, ref = `refs/tags/${tag}`, annotated = {}, releases = [] } = {}) {
+  const calls = [];
+  const api = async (endpoint, options = {}) => {
+    calls.push({ endpoint, ...options });
+    if (endpoint === `git/ref/tags/${tag}`) return { ref, object };
+    if (endpoint.startsWith('git/tags/')) {
+      const sha = endpoint.slice('git/tags/'.length);
+      assert.ok(annotated[sha], `Unexpected annotated tag ${sha}`);
+      return annotated[sha];
+    }
+    if (endpoint === 'releases?per_page=100') return releases;
+    assert.equal(endpoint, 'releases');
+    assert.equal(options.method, 'POST');
+    return { id: 12, ...JSON.parse(options.body) };
+  };
+  return { api, calls };
+}
+
+test('release creates a draft only from the verified remote lightweight tag without target_commitish', async () => {
+  const f = releaseApiFixture();
+  const result = await prepareDraftRelease(f.api, draftOptions);
+  assert.deepEqual(result, { id: 12, tag_name: tag, name: draftOptions.name, body: draftOptions.body, draft: true, prerelease: false });
+  assert.deepEqual(f.calls.map(call => call.endpoint), [`git/ref/tags/${tag}`, 'releases?per_page=100', 'releases']);
+  assert.equal(Object.hasOwn(JSON.parse(f.calls.at(-1).body), 'target_commitish'), false);
+});
+
+test('release resolves annotated and nested annotated tags to the build commit', async () => {
+  const first = 'b'.repeat(40), second = 'c'.repeat(40);
+  const f = releaseApiFixture({ object: { type: 'tag', sha: first }, annotated: {
+    [first]: { sha: first, object: { type: 'tag', sha: second } },
+    [second]: { sha: second, object: { type: 'commit', sha: sourceSha } }
+  } });
+  await prepareDraftRelease(f.api, draftOptions);
+  assert.deepEqual(f.calls.map(call => call.endpoint), [`git/ref/tags/${tag}`, `git/tags/${first}`, `git/tags/${second}`, 'releases?per_page=100', 'releases']);
+});
+
+test('missing remote tags fail before any release operation or implicit tag creation', async () => {
+  const missing = Object.assign(new Error('GitHub GET tag: HTTP 404'), { status: 404 });
+  const calls = [];
+  await assert.rejects(prepareDraftRelease(async endpoint => {
+    calls.push(endpoint); throw missing;
+  }, draftOptions), error => error === missing);
+  assert.deepEqual(calls, [`git/ref/tags/${tag}`]);
+});
+
+for (const annotated of [false, true]) {
+  test(`release rejects a ${annotated ? 'annotated' : 'lightweight'} tag pointing to a different build commit`, async () => {
+    const wrong = 'd'.repeat(40), tagSha = 'b'.repeat(40);
+    const f = releaseApiFixture(annotated ? { object: { type: 'tag', sha: tagSha }, annotated: {
+      [tagSha]: { sha: tagSha, object: { type: 'commit', sha: wrong } }
+    } } : { object: { type: 'commit', sha: wrong } });
+    await assert.rejects(prepareDraftRelease(f.api, draftOptions), /Remote release tag must match/);
+    assert.ok(f.calls.every(call => !call.endpoint.startsWith('releases')));
+  });
+}
+
+test('existing drafts are checked against the remote tag and public releases remain immutable', async () => {
+  const draft = { id: 21, tag_name: tag, draft: true };
+  const f = releaseApiFixture({ releases: [draft] });
+  assert.deepEqual(await prepareDraftRelease(f.api, draftOptions), draft);
+  assert.deepEqual(f.calls.map(call => call.endpoint), [`git/ref/tags/${tag}`, 'releases?per_page=100']);
+  const published = releaseApiFixture({ releases: [{ ...draft, draft: false }] });
+  await assert.rejects(prepareDraftRelease(published.api, draftOptions), /Never replace already-published/);
+  assert.ok(published.calls.every(call => !call.method));
+});
+
+test('tag resolution rejects branches, non-commit targets, cycles, and inconsistent tag objects', async () => {
+  const annotatedSha = 'b'.repeat(40);
+  for (const [fixture, message] of [
+    [{ ref: `refs/heads/${tag}` }, /exact existing release tag/],
+    [{ object: { type: 'tree', sha: sourceSha } }, /resolve to a commit/],
+    [{ object: { type: 'commit', sha: 'invalid' } }, /Invalid remote tag object/],
+    [{ object: { type: 'tag', sha: annotatedSha }, annotated: {
+      [annotatedSha]: { sha: annotatedSha, object: { type: 'tag', sha: annotatedSha } }
+    } }, /Invalid annotated tag chain/],
+    [{ object: { type: 'tag', sha: annotatedSha }, annotated: {
+      [annotatedSha]: { sha: 'c'.repeat(40), object: { type: 'commit', sha: sourceSha } }
+    } }, /changed identity/]
+  ]) {
+    const f = releaseApiFixture(fixture);
+    await assert.rejects(verifyReleaseTag(f.api, draftOptions), message);
+    assert.ok(f.calls.every(call => !call.method));
+  }
+});
+
+test('GitHub failure diagnostics retain only a bounded message and request ID without credentials', async () => {
+  const token = 'fixture-token-not-a-real-secret';
+  const response = new Response(JSON.stringify({ message: `Denied\n${token}${'x'.repeat(500)}`, other: 'excluded-response-field' }),
+    { status: 403, headers: { 'x-github-request-id': 'ABC:123:DEF' } });
+  const error = await releaseApiError(response, { method: 'POST', endpoint: 'releases', token });
+  assert.match(error.message, /^GitHub POST releases: HTTP 403 \[request ABC:123:DEF\]: Denied \[REDACTED\]/);
+  assert.ok(!error.message.includes(token) && !error.message.includes('excluded-response-field') && !error.message.includes('\n'));
+  assert.ok(error.message.length < 400);
+  const malformed = await releaseApiError(new Response('not JSON', { status: 502 }), { endpoint: 'releases' });
+  assert.equal(malformed.message, 'GitHub GET releases: HTTP 502');
+});
+
 async function fixture(t) {
   const directory = await mkdtemp(path.join(tmpdir(), 'xhs-release-test-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
