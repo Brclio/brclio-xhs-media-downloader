@@ -52,8 +52,10 @@ export async function initializeAccountUI() {
     element('account-notice').classList.toggle('is-error', error);
   };
   const updateButtons = () => {
-    const blocked = busy || !state?.configured || state?.status === 'secure_storage_unavailable';
+    const blocked = busy || !state?.configured || ['initializing', 'secure_storage_unavailable'].includes(state?.status);
     panel.querySelectorAll('button').forEach(button => { button.disabled = blocked; });
+    element('account-refresh').disabled = busy || !state?.configured || state?.status === 'initializing';
+    element('account-refresh').textContent = state?.status === 'secure_storage_unavailable' ? '重试安全存储' : '刷新权益';
     const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
     element('account-send-code').disabled = blocked || remaining > 0;
     element('account-send-code').textContent = remaining ? `${remaining} 秒后重发` : '发送验证码';
@@ -61,12 +63,13 @@ export async function initializeAccountUI() {
   };
   const render = value => {
     if (!value) return;
+    const previousStatus = state?.status;
     state = value;
     const account = value.account;
     element('account-login-form').hidden = Boolean(value.authenticated);
     element('account-details').hidden = !value.authenticated;
     const badge = element('account-badge');
-    badge.textContent = !value.configured ? '授权服务尚未配置' : value.status === 'secure_storage_unavailable' ? '安全存储不可用'
+    badge.textContent = !value.configured ? '授权服务尚未配置' : value.status === 'initializing' ? '正在读取安全存储' : value.status === 'secure_storage_unavailable' ? '安全存储不可用'
       : value.status === 'service_unavailable' ? '服务暂时不可用' : value.status === 'checking' ? '正在验证登录'
         : value.authenticated ? membershipLabel(account) : '未登录软件账号';
     badge.classList.toggle('is-member', value.verified && Boolean(account?.membership?.active));
@@ -85,8 +88,10 @@ export async function initializeAccountUI() {
       element('account-device').textContent = '设备授权待校验';
     }
     if (!value.configured) notice('授权服务尚未配置。管理员完成部署并配置服务地址后，才能登录和使用会员功能。单篇下载仍可使用。');
+    else if (value.status === 'initializing') notice('正在读取本机加密登录信息。如 macOS 弹出钥匙串授权，请输入 Mac 登录密码；确认是本软件后可选择“始终允许”。');
     else if (value.error) notice(value.error.message, true);
     else if (value.pendingLogout) notice('已退出本机登录，服务器会话撤销等待联网重试。设备名额不会释放。');
+    else if (['initializing', 'secure_storage_unavailable'].includes(previousStatus)) notice('');
     updateButtons();
   };
   async function run(operation, successMessage) {

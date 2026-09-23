@@ -55,6 +55,12 @@ function publicCode(code) {
   const { digest: ignored, ...result } = code;
   return clone(result);
 }
+function activationCodeValue(value) {
+  const code = String(value || '').trim().toUpperCase();
+  // Keep the original XHS digest representation valid for already-issued codes.
+  if (!/^(?:BRCLIO|XHS)-[A-F0-9]{40}$/.test(code)) fail('ACTIVATION_INVALID', '激活码无效。');
+  return code;
+}
 
 export function createAccountService({ store, mailer, config, now = Date.now }) {
   const hash = (purpose, value) => digest(config.pepper, purpose, value);
@@ -275,7 +281,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
 
   async function mutateAction(request) {
     // Plaintext is returned only for the first successful generation and is never persisted.
-    const generated = request.action === 'admin-generate-codes' ? Array.from({ length: Math.min(Math.max(Number(request.input.count) || 1, 1), 100) }, () => ({ id: randomUUID(), raw: `XHS-${randomBytes(20).toString('hex').toUpperCase()}` })) : [];
+    const generated = request.action === 'admin-generate-codes' ? Array.from({ length: Math.min(Math.max(Number(request.input.count) || 1, 1), 100) }, () => ({ id: randomUUID(), raw: `Brclio-${randomBytes(20).toString('hex').toUpperCase()}` })) : [];
     return store.transaction(state => {
       const time = now();
       const { user, session } = authenticate(state, request, time, request.action.startsWith('admin-'));
@@ -283,8 +289,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       if (request.action === 'redeem') {
         if (session.client !== 'desktop') fail('DESKTOP_REQUIRED', '请在桌面客户端兑换。', 403);
         const requestId = requestIdValue(request.input.requestId);
-        const raw = String(request.input.code || '').trim().toUpperCase();
-        if (!/^XHS-[A-F0-9]{40}$/.test(raw)) fail('ACTIVATION_INVALID', '激活码无效。');
+        const raw = activationCodeValue(request.input.code);
         const codeHash = hash('activation', raw);
         const code = Object.values(state.codes).find(item => equalDigest(item.digest, codeHash));
         if (!code) fail('ACTIVATION_INVALID', '激活码无效。');
@@ -362,7 +367,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
         const days = type === 'duration' ? daysValue(request.input.days) : null;
         const redeemBy = request.input.redeemBy ? futureDate(request.input.redeemBy, time) : null;
         const codes = generated.map(({ id, raw }) => {
-          const code = { id, digest: hash('activation', raw), type, days, redeemBy, createdAt: iso(time), createdBy: user.id, status: 'unused', redeemedBy: null, redeemedAt: null };
+          const code = { id, digest: hash('activation', activationCodeValue(raw)), type, days, redeemBy, createdAt: iso(time), createdBy: user.id, status: 'unused', redeemedBy: null, redeemedAt: null };
           state.codes[id] = code;
           return { ...publicCode(code), code: raw };
         });

@@ -1,13 +1,16 @@
 import { execFile, spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
-import { constants } from 'node:fs';
-import { access, chmod, copyFile, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
+import * as nodeFs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
 import { startMacInstallProgress } from './mac-install-progress.js';
 
 const execute = promisify(execFile);
+const nativeFs = process.versions.electron ? createRequire(import.meta.url)('original-fs') : nodeFs;
+const { constants } = nativeFs;
+const { access, chmod, copyFile, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, writeFile } = nativeFs.promises;
 const APP_ID = 'cn.bornforthis.xhs-downloader';
 const fail = (code, message, cause) => { throw Object.assign(new Error(message, cause ? { cause } : undefined), { code }); };
 const contained = (parent, child) => child === parent || child.startsWith(`${parent}${path.sep}`);
@@ -27,7 +30,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const [current, staged, backup, failed, currentInode, stagedInode, infoHash,
   parentPidText, appId, version, architecture, work, result, lock] = process.argv.slice(2);
 const parentPid = Number(parentPidText);
-let ownsLock = false;
+let ownsLock = false, replacementStarted = false, candidateExecutable;
 async function exists(filename) {
   try { await fs.lstat(filename); return true; } catch (error) { if (error.code === 'ENOENT') return false; throw error; }
 }
@@ -35,9 +38,17 @@ async function inode(filename) {
   const value = await fs.lstat(filename);
   return value.dev + ':' + value.ino;
 }
-async function status(name) {
-  await fs.copyFile(path.join(work, name + '.json'), result + '.next');
+async function status(name, detail = {}) {
+  const record = JSON.parse(await fs.readFile(path.join(work, name + '.json'), 'utf8'));
+  await fs.writeFile(result + '.next', JSON.stringify({ ...record, ...detail }), { mode: 0o600 });
   await fs.rename(result + '.next', result);
+}
+async function recoveryStatus(name, detail = {}) {
+  // Journaling must never become a prerequisite for restoring the old app.
+  // The original installation error may itself be a full disk or an
+  // unwritable journal. Filesystem and process identity checks still throw.
+  try { await status(name, detail); }
+  catch (error) { console.error('Recovery journal write failed: ' + name + ' (' + (error.code || error.name) + ')'); }
 }
 function parentAlive() { try { process.kill(parentPid, 0); return true; } catch { return false; } }
 async function verify(bundle) {
@@ -53,21 +64,57 @@ async function verify(bundle) {
   const architectures = (await run('/usr/bin/lipo', ['-archs', executable], { timeout: 30000 })).stdout.trim().split(/\s+/);
   if (!architectures.includes(architecture)) throw new Error('Application architecture mismatch');
   await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', '--verbose=2', bundle], { timeout: 120000 });
+  return parsed.CFBundleExecutable;
 }
-async function rollback() {
+async function candidateProcesses() {
+  if (await inode(current) !== stagedInode) throw new Error('Installed application changed before rollback');
+  // Use the executable name from the already verified staging bundle. A
+  // damaged candidate plist must not prevent restoring the complete old app.
+  const executable = path.join(current, 'Contents/MacOS', candidateExecutable);
+  const { stdout } = await run('/bin/ps', ['-axo', 'pid=,comm='], { timeout: 10000 });
+  return stdout.split('\n').flatMap(line => {
+    const match = line.match(/^\s*(\d+)\s+(.+)$/);
+    const pid = Number(match?.[1]);
+    return match?.[2] === executable && pid > 1 && pid !== process.pid && pid !== parentPid ? [pid] : [];
+  });
+}
+async function stopCandidate() {
+  // An accepted open(1) request can leave a crashed or hung main process.
+  // Only signal processes whose executable is this exact installed bundle;
+  // never act on a PID merely supplied by a confirmation file.
+  for (const signal of ['SIGTERM', 'SIGKILL']) {
+    for (const pid of await candidateProcesses()) {
+      try { process.kill(pid, signal); } catch (error) { if (error.code !== 'ESRCH') throw error; }
+    }
+    const deadline = Date.now() + (signal === 'SIGTERM' ? 5000 : 2000);
+    while (Date.now() < deadline) {
+      if (!(await candidateProcesses()).length) return;
+      await sleep(100);
+    }
+  }
+  throw new Error('New application did not stop; rollback copy retained');
+}
+async function rollback(detail = {}) {
   try {
+    await recoveryStatus('rolling_back', detail);
+    if (await inode(backup) !== currentInode) throw new Error('Rollback application changed');
     if (await exists(current)) {
       if ((await fs.lstat(current)).isSymbolicLink() || await inode(current) !== stagedInode) {
-        await status('rollback_blocked'); return;
+        await recoveryStatus('rollback_blocked'); return;
       }
+      await stopCandidate();
+      if (await inode(current) !== stagedInode) throw new Error('Installed application changed during rollback');
       if (await exists(failed)) throw new Error('Recovery destination occupied');
       await fs.rename(current, failed);
     }
     await fs.rename(backup, current);
     if (await inode(current) !== currentInode) throw new Error('Restored application changed');
-    await status('rolled_back');
-    await run('/usr/bin/open', ['-n', current], { timeout: 30000 }).catch(() => {});
-  } catch { await status('rollback_failed'); }
+    await recoveryStatus('rolled_back', { ...detail, ...(detail.failureCode === 'MAC_UPDATE_STARTUP_TIMEOUT'
+      ? { message: '新版未能在限定时间内完成启动，已恢复旧应用并请求重新打开。' } : {}) });
+    await run('/usr/bin/open', ['-n', current], { timeout: 30000 }).catch(error => {
+      console.error('Restored application launch request failed:', error.code || error.name);
+    });
+  } catch (error) { await recoveryStatus('rollback_failed', { ...detail, failureCode: error.code || 'MAC_UPDATE_ROLLBACK', failureDetail: error.message }); }
   finally { process.exitCode = 1; }
 }
 async function main() {
@@ -94,11 +141,11 @@ async function main() {
       await status('current_changed'); process.exitCode = 1; return;
     }
     await status('validating');
-    try { if (await inode(staged) !== stagedInode) throw new Error('Staging changed'); await verify(staged); }
+    try { if (await inode(staged) !== stagedInode) throw new Error('Staging changed'); candidateExecutable = await verify(staged); }
     catch { await status('candidate_invalid'); process.exitCode = 1; return; }
     if (await exists(backup)) { await status('backup_exists'); process.exitCode = 1; return; }
     await status('replacing');
-    try { await fs.rename(current, backup); }
+    try { await fs.rename(current, backup); replacementStarted = true; }
     catch { await status('replace_failed'); process.exitCode = 1; return; }
     try {
       if (await inode(backup) !== currentInode || await exists(current)) throw new Error('Concurrent application replacement');
@@ -109,7 +156,7 @@ async function main() {
       // This helper still runs with the old bundle's Electron executable.
       // Force a new instance so LaunchServices cannot merely activate it.
       await run('/usr/bin/open', ['-n', current], { timeout: 30000 });
-    } catch { await rollback(); return; }
+    } catch (error) { await rollback({ failureCode: error.code || 'MAC_UPDATE_LAUNCH', failureDetail: error.message }); return; }
     await status('awaiting_startup');
     const expected = JSON.parse(await fs.readFile(result, 'utf8'));
     const startupDeadline = Date.now() + expected.startupTimeoutMs;
@@ -133,7 +180,12 @@ async function main() {
       }
       await sleep(100);
     }
-    await status('startup_unconfirmed');
+    await rollback({ failureCode: 'MAC_UPDATE_STARTUP_TIMEOUT' });
+  } catch (error) {
+    // Journal or startup-handshake errors after replacement must not strand
+    // the user with an unconfirmed app merely because open(1) succeeded.
+    if (replacementStarted) await rollback({ failureCode: error.code || 'MAC_UPDATE_HELPER', failureDetail: error.message });
+    else { await status('helper_failed', { failureCode: error.code || 'MAC_UPDATE_HELPER', failureDetail: error.message }); process.exitCode = 1; }
   } finally { if (ownsLock) await fs.rmdir(lock).catch(() => {}); }
 }
 main().catch(async error => {
@@ -152,6 +204,7 @@ const RESULTS = {
   awaiting_startup: '正在等待新版应用完成启动。', cleanup_pending: '新版已确认启动，正在清理临时旧版文件。',
   startup_unconfirmed: '新版启动尚未确认，临时旧版已保留供恢复。请尝试打开新版应用。',
   installed: '新版已成功启动，临时旧版文件已自动清理。',
+  rolling_back: '新版未能完成安装或启动，正在关闭新版并恢复旧应用。',
   rolled_back: '安装或启动请求失败，已恢复旧应用并请求重新打开。',
   rollback_blocked: '应用路径被其他操作修改，未覆盖该路径。旧应用备份已保留，请手动恢复。',
   rollback_failed: '自动恢复未完成；旧应用备份已保留，请手动恢复。',
@@ -279,7 +332,7 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
       status, message, version: expectedVersion, appId: expectedAppId, currentAppPath: current,
       backupPath: backup, failedAppPath: failed, lockPath, preparedAt: new Date().toISOString(),
       launchRequested: ['awaiting_startup', 'startup_unconfirmed', 'cleanup_pending', 'installed'].includes(status), signature: 'integrity-verified-not-notarization',
-      schemaVersion: 2, startupToken, startupTimeoutMs, installedIdentity: inode(stagedStat),
+      schemaVersion: 3, startupToken, startupTimeoutMs, installedIdentity: inode(stagedStat),
       stageIdentity: inode(stageStat), backupIdentity: inode(currentStat), backupInfoHash: infoHash,
       backupVersion: previousInfo.CFBundleShortVersionString
     }, null, 2), { mode: 0o600 });

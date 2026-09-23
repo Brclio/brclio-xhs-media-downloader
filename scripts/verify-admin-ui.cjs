@@ -259,7 +259,7 @@ app.whenReady().then(async () => {
   await click('#generate-form button');
   await check(`document.querySelector('#generated-raw').value.split('\\n').length === 3`, 'three actual activation codes generated');
   const raw = await evaluate(`document.querySelector('#generated-raw').value.split('\\n')[0]`);
-  assert.match(raw, /^XHS-[A-F0-9]{40}$/);
+  assert.match(raw, /^Brclio-[A-F0-9]{40}$/);
   assert.equal(JSON.stringify(state).includes(raw), false, 'persistent state never contains raw activation code');
   await click('.codes-table button');
   await fill('#dialog-reason', '测试作废未兑换激活码');

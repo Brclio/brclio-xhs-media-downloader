@@ -71,6 +71,7 @@ export async function verifyPackagedMacLaunch(appPath, { version, productName })
     // A page target can advertise its final URL before its first navigation
     // replaces the initial JS context. Wait outside that context, not within it.
     const readyExpression = `location.href.startsWith('xhs-app://local/') && document.readyState === 'complete'
+      && document.body.dataset.desktopReady === 'true'
       && typeof window.xhsDesktop?.getInfo === 'function'`;
     const smokeExpression = `(async () => {
           const info = await window.xhsDesktop.getInfo();

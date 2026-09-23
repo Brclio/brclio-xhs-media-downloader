@@ -116,7 +116,12 @@ function registerIpc() {
     catch (error) { return { ok: false, error: { code: error.code || 'SERVICE_UNAVAILABLE', message: error.message }, state: accountClient.snapshot() }; }
   };
   handle('desktop:account-state', () => accountClient.snapshot());
-  handle('desktop:account-refresh', accountAction(() => accountClient.refresh()));
+  handle('desktop:account-refresh', accountAction(async () => {
+    // Only an explicit user action retries denied Keychain access. Background
+    // entitlement checks must never keep reopening the system password dialog.
+    if (!accountClient.credentials) await accountClient.initialize();
+    return accountClient.refresh();
+  }));
   handle('desktop:account-send-code', accountAction((email) => {
     if (typeof email !== 'string' || email.length > 254) throw new Error('请输入有效邮箱。');
     return accountClient.sendCode(email);
@@ -271,7 +276,6 @@ async function boot() {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:account-update', state);
     }
   });
-  await accountClient.initialize();
   protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend,
     onDiagnostic: diagnostic,
     authorize: feature => accountClient.authorize(feature) }));
@@ -339,6 +343,17 @@ async function boot() {
     } });
   registerIpc();
   await createWindow();
+  // Show the usable shell before asking the OS to unlock saved credentials.
+  // A pending system permission is not a failed application startup: the
+  // renderer, free downloads and navigation work while account actions wait.
+  // Never make the update helper time out just because the user is away.
+  void accountClient.initialize().then(() => {
+    if (quitting) return;
+    void accountClient.refresh().catch(() => {});
+    accountRefreshTimer = setInterval(() => { void accountClient.refresh().catch(() => {}); }, 60_000);
+    accountRefreshTimer.unref();
+  }).catch(error => diagnostic('account.initialize_failed', { error }, 'warn'));
+  if (quitting || !mainWindow || mainWindow.isDestroyed()) return;
   if (process.platform === 'darwin' && app.isPackaged) {
     try {
       const rendererReady = mainWindow && !mainWindow.isDestroyed() && await mainWindow.webContents.executeJavaScript(
@@ -358,9 +373,6 @@ async function boot() {
     } catch (error) { diagnostic('update.backup_cleanup_failed', { error }, 'warn'); }
   }
   await reportPreviousMacUpdate();
-  void accountClient.refresh().catch(() => {});
-  accountRefreshTimer = setInterval(() => { void accountClient.refresh().catch(() => {}); }, 60_000);
-  accountRefreshTimer.unref();
   if (app.isPackaged) {
     updateCheckTimer = setTimeout(automaticUpdateCheck, 5000);
     updateCheckTimer.unref();
@@ -382,7 +394,7 @@ async function reportPreviousMacUpdate() {
       || path.basename(resultPath) !== 'install-result.json' || (await stat(resultPath)).size > 16000) return;
     const result = JSON.parse(await readFile(resultPath, 'utf8'));
     diagnostic('update.install_result', result, result.status === 'installed' ? 'info' : 'warn');
-    if (!['preparing', 'opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'cleanup_pending', 'cleaning'].includes(result.status)) {
+    if (!['preparing', 'opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'rolling_back', 'cleanup_pending', 'cleaning'].includes(result.status)) {
       await rm(pointer, { force: true });
       if (result.status !== 'installed') await dialog.showMessageBox(mainWindow, {
         type: 'warning', title: '上次更新未完成', message: result.message || '请重新检查更新或手动安装。',

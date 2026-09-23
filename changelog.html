@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Brclio 小红书下载器的更新记录。v1.8.4 修复检查受限时无法下载已发现更新的问题，保留下载入口和续传进度。"
+      content="Brclio 小红书下载器的更新记录。v1.8.5 修复 Mac 钥匙串等待、启动确认和临时旧版清理，激活码统一使用 Brclio 前缀并兼容旧码。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -38,9 +38,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.8.4 本地版">
+          <div class="header-status" aria-label="当前记录：v1.8.5 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.8.4 本地版</span>
+            <span>v1.8.5 本地版</span>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.8.4 让已发现的更新保持可下载，再次检查受限也能继续。原有续传、安装进度和自动重开继续保留。
+              这里记录功能增加、体验优化与问题修复。v1.8.5 先显示窗口再读取钥匙串，确认新版实际启动后清理临时旧版；新激活码统一以 Brclio 开头。
             </p>
 
             <div class="release-hero-actions">
@@ -70,8 +70,8 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.8.4</strong>
-              <small>本地版 · 2026.09.22</small>
+              <strong>v1.8.5</strong>
+              <small>本地版 · 2026.09.23</small>
             </div>
 
             <div class="summary-grid">
@@ -103,6 +103,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#mac-startup-recovery"><span>v1.8.5</span><strong>钥匙串、启动与旧版清理</strong></a>
               <a href="#known-update-download"><span>v1.8.4</span><strong>检查受限仍可继续更新</strong></a>
               <a href="#install-confirmation-update"><span>v1.8.3</span><strong>安装确认与旧客户端清理</strong></a>
               <a href="#resumable-update"><span>v1.8.2</span><strong>续传、安装进度与更新弹窗</strong></a>
@@ -140,6 +141,20 @@
           </aside>
 
           <div class="release-feed">
+            <article id="mac-startup-recovery" class="release-entry release-entry-featured">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 启动修复</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.5</span><span class="release-status">Mac / Windows</span></div><h3>窗口先打开，升级有确认</h3></div></header>
+                <p class="release-lead">改进等待钥匙串授权时的启动体验，修复临时旧版无法清理。安装助手等待新版实际就绪，再确认更新完成。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>钥匙串等待不再挡住窗口</strong>先显示主窗口，再异步读取安全存储。拒绝后保留原登录信息，可在账号页重试；系统仍缓存拒绝结果时需退出重开。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>启动成功后清理旧版</strong>核对新版窗口、页面和必要服务的启动确认，再删除对应临时备份。启动超时尝试恢复旧版；清理失败保留记录供重试。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>激活码使用 Brclio 前缀</strong>新生成的激活码以 Brclio- 开头，已发放的 XHS- 旧码继续可兑，大小写和首尾空白不影响兑换。</p></div>
+                </div>
+                <p class="release-lead">旧版首次升级仍可能需要手动打开新版，新更新器用于安装本版后的后续更新。Mac 尚无 Developer ID 签名及公证，更新后仍可能要求钥匙串授权；Windows 安装交互仍待实机验收。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.5" target="_blank" rel="noopener noreferrer">下载 v1.8.5 与查看升级说明 ↗</a><span>启动与恢复 · 2026.09.23</span></div>
+              </div>
+            </article>
             <article id="known-update-download" class="release-entry release-entry-featured">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-22"><span>09.22</span><small>2026 · 更新修复</small></time></div>
               <div class="release-card">
@@ -1272,7 +1287,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本地版记录更新至 v1.8.4（2026.09.22）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
+        <p>本地版记录更新至 v1.8.5（2026.09.23）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

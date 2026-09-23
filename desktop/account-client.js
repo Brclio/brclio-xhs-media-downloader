@@ -21,7 +21,7 @@ export class AccountClient {
     this.store = store; this.endpoint = validateAccountEndpoint(endpoint, allowInsecureDevelopment);
     this.fetchImpl = fetchImpl; this.now = now; this.onUpdate = onUpdate;
     this.credentials = null; this.account = null; this.error = null;
-    this.status = this.endpoint ? 'signed_out' : 'configuration_required';
+    this.status = this.endpoint ? 'initializing' : 'configuration_required';
     this.serverOffset = 0; this._commands = Promise.resolve();
     this.onDiagnostic = onDiagnostic;
   }
@@ -39,12 +39,20 @@ export class AccountClient {
     if (error.status >= 500 || error.status === 429) this.status = 'service_unavailable';
     this._emit();
   }
-  async initialize() {
-    try {
-      this.credentials = await this.store.load();
-      this.status = !this.endpoint ? 'configuration_required' : this.credentials.token ? 'checking' : 'signed_out';
-    } catch (error) { this.status = 'secure_storage_unavailable'; this.error = { code: error.code, message: error.message }; }
-    this._emit(); return this.snapshot();
+  initialize() {
+    if (this._initialization) return this._initialization;
+    if (this.credentials) return Promise.resolve(this.snapshot());
+    this.status = this.endpoint ? 'initializing' : 'configuration_required';
+    this.error = null;
+    this._emit();
+    this._initialization = (async () => {
+      try {
+        this.credentials = await this.store.load();
+        this.status = !this.endpoint ? 'configuration_required' : this.credentials.token ? 'checking' : 'signed_out';
+      } catch (error) { this.status = 'secure_storage_unavailable'; this.error = { code: error.code || 'SECURE_STORAGE_UNAVAILABLE', message: error.message }; }
+      this._emit(); return this.snapshot();
+    })().finally(() => { this._initialization = null; });
+    return this._initialization;
   }
   _requireStorage() {
     if (!this.credentials) throw accountError(this.error?.code || 'SECURE_STORAGE_UNAVAILABLE', this.error?.message || '系统安全存储不可用。');

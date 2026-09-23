@@ -82,6 +82,11 @@ app.on('browser-window-created', (_event, win) => {
         const update = await window.xhsDesktop.getUpdateState();
         await window.xhsDesktop.recordDiagnostic('renderer.smoke', { message: 'bridge verified' });
         const diagnostics = await window.xhsDesktop.getDiagnosticsInfo();
+        // The window now opens before the OS finishes unlocking credentials.
+        const storageDeadline = Date.now() + 10000;
+        while ((await window.xhsDesktop.getAccountState()).status === 'initializing' && Date.now() < storageDeadline) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
         const feedback = await window.xhsDesktop.submitFeedback({ title: '验证未登录反馈', description: '本地主进程接口验证，无远端上传。', category: 'other' });
         const updateMethods = ['checkForUpdates', 'downloadUpdate', 'cancelUpdateDownload', 'installUpdate', 'onUpdateState', 'onInstallConfirmation', 'respondInstallConfirmation', 'retryItem']
           .every(name => typeof window.xhsDesktop[name] === 'function');
