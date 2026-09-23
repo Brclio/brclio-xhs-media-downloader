@@ -124,7 +124,7 @@ async function fixture(t) {
     }
     await writeFile(path.join(directory, `release-proof-${label}.json`), JSON.stringify({
       version, sourceSha, platform, arch, comparedSources: 27, bundledPythonVerified: true,
-      ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning: 'adhoc' } : {}), files
+      ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning: 'adhoc', packagedMacUpdateVerified: true } : {}), files
     }));
   }
   return directory;
@@ -208,6 +208,17 @@ test('release rejects incomplete and unexpected platform assets', async t => {
 });
 
 for (const label of ['mac-arm64', 'mac-x64']) {
+  test(`release rejects ${label} without successful packaged updater acceptance`, async t => {
+    const directory = await fixture(t);
+    const proofPath = path.join(directory, `release-proof-${label}.json`);
+    const proof = JSON.parse(await readFile(proofPath, 'utf8'));
+    for (const value of [undefined, false, 'true']) {
+      if (value === undefined) delete proof.packagedMacUpdateVerified;
+      else proof.packagedMacUpdateVerified = value;
+      await writeFile(proofPath, JSON.stringify(proof));
+      await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /Packaged macOS update and automatic relaunch must be verified/);
+    }
+  });
   for (const [description, value] of [['missing', undefined], ['failed', false], ['string instead of boolean', 'true']]) {
     test(`release rejects ${label} when complete signature verification is ${description}`, async t => {
       const directory = await fixture(t);

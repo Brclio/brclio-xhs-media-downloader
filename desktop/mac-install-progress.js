@@ -12,7 +12,7 @@ ObjC.import('Foundation');
 
 function run(argv) {
   var resultPath = argv[0], readyPath = argv[1], version = argv[2];
-  var alive = true, installedAt = 0, lastUpdate = Date.now(), missingSince = 0;
+  var installedAt = 0, lastUpdate = Date.now(), missingSince = 0;
   var previous = '', terminal = false;
   var stages = { preparing: 0, opening: 1, verifying: 2, copying: 3, checking: 4,
     prepared: 5, ready: 5, waiting: 5, validating: 5, replacing: 6, launching: 7,
@@ -65,14 +65,12 @@ function run(argv) {
   closeButton.bezelStyle = $.NSBezelStyleRounded;
   closeButton.hidden = true;
   content.addSubview(closeButton);
-  ObjC.registerSubclass({ name: 'BrclioInstallProgressDelegate', superclass: 'NSObject', methods: {
-    'windowWillClose:': { types: ['void', ['id']], implementation: function () { alive = false; } },
-    'closeProgress:': { types: ['void', ['id']], implementation: function () { window.close; alive = false; } }
-  } });
-  var delegate = $.BrclioInstallProgressDelegate.alloc.init;
-  window.delegate = delegate;
-  closeButton.target = delegate;
-  closeButton.action = 'closeProgress:';
+  // Let Cocoa close the window directly, without re-entering this JXA script
+  // from a native button action or window delegate notification.
+  // Both this button and the title-bar close control use NSWindow directly.
+  closeButton.target = window;
+  closeButton.action = 'performClose:';
+  closeButton.keyEquivalent = '\u001b';
 
   function showFailure(message) {
     terminal = true;
@@ -108,27 +106,46 @@ function run(argv) {
     }
   }
 
-  function pumpEvents() {
-    var event = app.nextEventMatchingMaskUntilDateInModeDequeue($.NSEventMaskAny,
-      $.NSDate.dateWithTimeIntervalSinceNow(0.1), $.NSDefaultRunLoopMode, true);
-    if (event) app.sendEvent(event);
-    app.updateWindows;
+  function stop() {
+    app.stop(null);
+    // stop: does not itself wake nextEvent. Post a harmless application event
+    // so closing from a timer also returns from run immediately.
+    app.postEventAtStart($.NSEvent.otherEventWithTypeLocationModifierFlagsTimestampWindowNumberContextSubtypeData1Data2(
+      $.NSEventTypeApplicationDefined, $.NSMakePoint(0, 0), 0, 0, 0, null, 0, 0, 0), true);
   }
+
+  var acknowledged = false, fatalError = null, timer;
+  ObjC.registerSubclass({ name: 'BrclioInstallProgressTimer', superclass: 'NSObject', methods: {
+    'refreshProgress:': { types: ['void', ['id']], implementation: function () {
+      try {
+        if (!window.visible) { stop(); return; }
+        refresh();
+        if (installedAt && Date.now() - installedAt >= 1000) { window.close; stop(); return; }
+        if (!acknowledged) {
+          // The acknowledgement comes from inside AppKit's event loop, not
+          // merely from constructing an NSWindow that has a window number.
+          if (!app.running) return;
+          app.updateWindows;
+          var ready = JSON.stringify({ ready: true, windowNumber: Number(window.windowNumber), eventLoopRunning: Boolean(app.running) });
+          if (!$(ready).writeToFileAtomicallyEncodingError(readyPath, true, $.NSUTF8StringEncoding, null)) throw new Error('Unable to acknowledge progress window');
+          acknowledged = true;
+        }
+      } catch (error) { fatalError = error; stop(); }
+    } }
+  } });
+  var observer = $.BrclioInstallProgressTimer.alloc.init;
 
   try {
     app.finishLaunching;
     refresh();
     window.makeKeyAndOrderFront(null);
     app.activateIgnoringOtherApps(true);
-    pumpEvents();
-    var ready = JSON.stringify({ ready: true, windowNumber: Number(window.windowNumber) });
-    if (!$(ready).writeToFileAtomicallyEncodingError(readyPath, true, $.NSUTF8StringEncoding, null)) throw new Error('Unable to acknowledge progress window');
-    while (alive) {
-      refresh();
-      if (installedAt && Date.now() - installedAt >= 1000) { window.close; break; }
-      pumpEvents();
-    }
+    timer = $.NSTimer.timerWithTimeIntervalTargetSelectorUserInfoRepeats(0.1, observer, 'refreshProgress:', null, true);
+    $.NSRunLoop.mainRunLoop.addTimerForMode(timer, $.NSRunLoopCommonModes);
+    app.run;
+    if (fatalError) throw fatalError;
   } finally {
+    if (timer) timer.invalidate;
     window.orderOut(null);
     $.NSFileManager.defaultManager.removeItemAtPathError($(readyPath).stringByDeletingLastPathComponent, null);
   }
@@ -176,7 +193,7 @@ export async function startMacInstallProgress({ resultPath, version }, dependenc
       if (failure || exited || dependencies.signal?.aborted) throw failure || dependencies.signal?.reason || new Error('Progress window closed');
       try {
         const ready = JSON.parse(await readFile(readyPath, 'utf8'));
-        if (ready.ready === true && Number.isSafeInteger(ready.windowNumber) && ready.windowNumber > 0) {
+        if (ready.ready === true && ready.eventLoopRunning === true && Number.isSafeInteger(ready.windowNumber) && ready.windowNumber > 0) {
           child.unref();
           return { close };
         }

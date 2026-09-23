@@ -8,6 +8,7 @@ import { chmod, lstat, mkdir, mkdtemp, readFile, realpath, rename, rm, symlink, 
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { confirmMacUpdateStartup } from '../desktop/mac-update-cleanup.js';
+import { confirmMacUpdateStartupWithRetry } from '../desktop/startup-ready.js';
 
 // Cleanup deliberately requires POSIX ownership and private directory modes;
 // its real filesystem tests apply to macOS/Linux, never Windows ACL emulation.
@@ -97,6 +98,67 @@ check('legacy helper launching race waits for installed success before cleaning 
     await rm(f.lock, { recursive: true });
   } });
   assert.equal(result.cleaned, true, JSON.stringify(result));
+});
+
+check('a healthy startup retries after the helper releases a lock later than the first cleanup timeout', async t => {
+  const f = await fixture(t, { modern: true, status: 'awaiting_startup' });
+  await mkdir(f.lock, { mode: 0o700 });
+  let attempts = 0;
+  const result = await confirmMacUpdateStartupWithRetry(f.options, {}, { retryDelayMs: 1,
+    confirm: async options => {
+      attempts++;
+      const result = await confirmMacUpdateStartup(options, { ...f.dependencies, lockTimeoutMs: 0 });
+      if (attempts === 1) {
+        assert.equal(result.retained[0].code, 'MAC_UPDATE_LOCK_BUSY');
+        assert.equal((await lstat(f.backup)).isDirectory(), true);
+        const acknowledgement = JSON.parse(await readFile(path.join(f.work, 'startup-confirmed.json'), 'utf8'));
+        assert.equal(acknowledgement.token, f.record.startupToken);
+        // The real helper receives the acknowledgement, finishes its open
+        // request, then releases the lock; the GUI must not need a restart.
+        f.record.status = 'cleanup_pending'; await f.save();
+        await rm(f.lock, { recursive: true });
+      }
+      return result;
+    }
+  });
+  assert.equal(attempts, 2);
+  assert.equal(result.cleaned, true, JSON.stringify(result));
+  assert.equal(JSON.parse(await readFile(f.recordPath, 'utf8')).backupRemoved, true);
+  assert.equal(await readFile(f.data, 'utf8'), 'keep downloaded media');
+});
+
+check('cleanup retries are bounded and never remove a held installation lock', async t => {
+  const f = await fixture(t, { modern: true, status: 'awaiting_startup' });
+  await mkdir(f.lock, { mode: 0o700 });
+  let attempts = 0;
+  const result = await confirmMacUpdateStartupWithRetry(f.options, {}, { retryDelayMs: 1,
+    confirm: options => { attempts++; return confirmMacUpdateStartup(options, { ...f.dependencies, lockTimeoutMs: 0 }); }
+  });
+  assert.equal(attempts, 3);
+  assert.equal(result.retained[0].code, 'MAC_UPDATE_LOCK_BUSY');
+  assert.equal((await lstat(f.lock)).isDirectory(), true);
+  assert.equal((await lstat(f.backup)).isDirectory(), true);
+});
+
+check('quit cancels deferred cleanup retry and identity failures never retry', async t => {
+  for (const reason of ['quit', 'identity']) {
+    const f = await fixture(t, { modern: true, status: 'cleanup_pending' });
+    const cancel = new AbortController();
+    if (reason === 'quit') await mkdir(f.lock, { mode: 0o700 });
+    else { f.record.backupIdentity = '0:1'; await f.save(); }
+    let attempts = 0;
+    const result = await confirmMacUpdateStartupWithRetry(f.options, { signal: cancel.signal }, { retryDelayMs: 1000,
+      confirm: async options => {
+        attempts++;
+        const result = await confirmMacUpdateStartup(options, { ...f.dependencies, lockTimeoutMs: 0 });
+        if (reason === 'quit') cancel.abort();
+        return result;
+      }
+    });
+    assert.equal(attempts, 1, reason);
+    assert.equal(result.cleaned, false);
+    assert.equal((await lstat(f.backup)).isDirectory(), true);
+  }
 });
 
 for (const change of ['failed update', 'different application', 'future update', 'same backup version',

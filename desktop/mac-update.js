@@ -27,6 +27,14 @@ const { promisify } = require('node:util');
 const path = require('node:path');
 const run = promisify(execFile);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+function guiEnvironment() {
+  // This helper must stay in Node mode, but LaunchServices inherits open's
+  // environment. Leaking that mode makes an Electron GUI exit successfully
+  // without ever loading its main process, including during rollback.
+  const env = { ...process.env };
+  for (const name of ['ELECTRON_RUN_AS_NODE', 'ELECTRON_NO_ASAR', 'NODE_OPTIONS', 'NODE_PATH']) delete env[name];
+  return env;
+}
 const [current, staged, backup, failed, currentInode, stagedInode, infoHash,
   parentPidText, appId, version, architecture, work, result, lock] = process.argv.slice(2);
 const parentPid = Number(parentPidText);
@@ -111,7 +119,7 @@ async function rollback(detail = {}) {
     if (await inode(current) !== currentInode) throw new Error('Restored application changed');
     await recoveryStatus('rolled_back', { ...detail, ...(detail.failureCode === 'MAC_UPDATE_STARTUP_TIMEOUT'
       ? { message: '新版未能在限定时间内完成启动，已恢复旧应用并请求重新打开。' } : {}) });
-    await run('/usr/bin/open', ['-n', current], { timeout: 30000 }).catch(error => {
+    await run('/usr/bin/open', ['-n', current], { timeout: 30000, env: guiEnvironment() }).catch(error => {
       console.error('Restored application launch request failed:', error.code || error.name);
     });
   } catch (error) { await recoveryStatus('rollback_failed', { ...detail, failureCode: error.code || 'MAC_UPDATE_ROLLBACK', failureDetail: error.message }); }
@@ -155,7 +163,7 @@ async function main() {
       await status('launching');
       // This helper still runs with the old bundle's Electron executable.
       // Force a new instance so LaunchServices cannot merely activate it.
-      await run('/usr/bin/open', ['-n', current], { timeout: 30000 });
+      await run('/usr/bin/open', ['-n', current], { timeout: 30000, env: guiEnvironment() });
     } catch (error) { await rollback({ failureCode: error.code || 'MAC_UPDATE_LAUNCH', failureDetail: error.message }); return; }
     await status('awaiting_startup');
     const expected = JSON.parse(await fs.readFile(result, 'utf8'));

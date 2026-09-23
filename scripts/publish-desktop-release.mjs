@@ -42,6 +42,8 @@ export async function validateArtifacts(directory, { version, sourceSha }) {
         `Complete macOS code signature must be verified before release: ${target.label}`);
       assert.ok(['adhoc', 'developer-id'].includes(proof.macCodeSigning),
         `Verified macOS signing kind must be adhoc or developer-id: ${target.label}`);
+      assert.equal(proof.packagedMacUpdateVerified, true,
+        `Packaged macOS update and automatic relaunch must be verified before release: ${target.label}`);
     }
     assert.ok(Number.isInteger(proof.comparedSources) && proof.comparedSources >= 27);
     const expected = target.suffixes.map(suffix => `Brclio-XHS-Downloader-${version}-${suffix}`).sort();

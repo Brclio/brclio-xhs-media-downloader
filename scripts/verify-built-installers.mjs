@@ -8,6 +8,7 @@ import path from 'node:path';
 import { verifyAsar } from './verify-promoted-installer.mjs';
 import { PythonBackend } from '../desktop/python-backend.js';
 import { verifyPackagedMacLaunch } from './verify-packaged-mac.mjs';
+import { verifyPackagedMacUpdate } from './verify-packaged-mac-update.mjs';
 
 const root = process.cwd();
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -109,6 +110,7 @@ try {
   } finally { backend.close(); }
   if (platform === 'darwin') {
     await verifyPackagedMacLaunch(macApps[0], { version, productName: pkg.build.productName });
+    await verifyPackagedMacUpdate(macApps[0]);
     // Python and app startup must not invalidate the sealed bundle resources.
     for (const appPath of macApps) assert.equal(verifyMacSignature(appPath), macCodeSigning);
   }
@@ -120,7 +122,8 @@ try {
     files.push({ name, bytes: info.size, sha256: await digest(file) });
   }
   const proof = { version, sourceSha, sourceDirty, platform, arch, productName: pkg.build.productName, comparedSources, bundledPythonVerified: true,
-    ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning, macSignatureContainers: ['dmg', 'zip'], packagedMacLaunchVerified: true } : {}), files };
+    ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning, macSignatureContainers: ['dmg', 'zip'],
+      packagedMacLaunchVerified: true, packagedMacUpdateVerified: true } : {}), files };
   await writeFile(path.join(output, `release-proof-${label}.json`), `${JSON.stringify(proof, null, 2)}\n`);
   console.log(JSON.stringify(proof, null, 2));
 } finally {
