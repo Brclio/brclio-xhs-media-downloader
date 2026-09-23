@@ -21,14 +21,25 @@
     "desktop:prepare:mac": "python3 scripts/build-mac-python.py",
     "build:web": "node deploy/build-web.mjs",
     "desktop:verify:account": "node scripts/verify-account-storage.mjs",
-    "admin:verify": "electron scripts/verify-admin-ui.cjs"
+    "admin:verify": "electron scripts/verify-admin-ui.cjs",
+    "cloudflare:dev": "wrangler dev",
+    "cloudflare:dev:python": "uv run --directory cloudflare/python pywrangler dev --port 8788",
+    "cloudflare:check": "wrangler deploy --dry-run",
+    "cloudflare:deploy:python": "uv run --directory cloudflare/python pywrangler deploy",
+    "cloudflare:deploy": "npm run cloudflare:deploy:python && wrangler deploy && npm run cloudflare:deploy:pages",
+    "cloudflare:verify": "node scripts/verify-cloudflare.mjs",
+    "build:cloudflare": "node deploy/build-pages.mjs",
+    "cloudflare:deploy:pages": "node deploy/build-pages.mjs && wrangler pages deploy --cwd cloudflare/pages --project-name brclio-xhs-pages --branch main"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
     "electron": "44.4.3",
-    "electron-builder": "26.15.3"
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.1",
+    "miniflare": "5.20260921.0-alpha",
+    "wrangler": "4.136.2"
   },
   "main": "desktop/main.js",
   "productName": "小红书媒体下载器",

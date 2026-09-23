@@ -111,6 +111,21 @@ test('network read failure is an explicit unavailable error', async () => {
   await assert.rejects(store.read(), { code: 'STORAGE_UNAVAILABLE' });
 });
 
+test('default fetch does not receive the store as its native function receiver', async t => {
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async function (url, options) {
+    assert.equal(this, undefined, 'native Workers fetch rejects a GithubStateStore receiver');
+    assert.equal(options.redirect, 'manual');
+    calls++;
+    return url.includes('/contents/')
+      ? Response.json({ sha: 'fixture', encoding: 'base64', content: Buffer.from(JSON.stringify(emptyState())).toString('base64') })
+      : Response.json({ private: true });
+  });
+  const store = new GithubStateStore({ owner: 'owner', repo: 'data', token: 'fake' });
+  assert.equal((await store.read()).state.schemaVersion, 1);
+  assert.equal(calls, 2);
+});
+
 test('an unexpected success response without a committed blob SHA is uncertain, never confirmed', async () => {
   for (const status of [200, 202]) {
     const fetchImpl = async (url, options) => {
@@ -148,4 +163,76 @@ test('feedback log paths cannot escape their private immutable namespace', async
   const id = '12345678-1234-1234-1234-123456789012';
   assert.match(store.feedbackPartUrl(id, 63), /\/contents\/feedback\/[a-f0-9-]+\/part-063\.ndjson$/);
   for (const index of [-1, 64, '0', 0.5]) assert.throws(() => store.feedbackPartUrl(id, index), { code: 'INVALID_FEEDBACK_PART' });
+});
+
+function feedbackGraphqlFixture({ change = () => {}, branch = 'main', status = 200, invalidJson = false } = {}) {
+  const calls = [];
+  const store = new GithubStateStore({ owner: 'test-owner', repo: 'private-data', token: 'fake-private-token', branch,
+    fetchImpl: async (url, options) => {
+      calls.push({ url, ...options });
+      if (url !== 'https://api.github.com/graphql') return Response.json({ private: true });
+      if (invalidJson) return new Response('{', { status });
+      const { variables } = JSON.parse(options.body), repository = { isPrivate: true };
+      for (const name of Object.keys(variables).filter(name => name.startsWith('path'))) {
+        const index = Number(name.slice(4)), content = `第 ${index} 块\n`;
+        repository[`part${index}`] = { oid: `sha-${index}`, byteSize: Buffer.byteLength(content), isBinary: false, isTruncated: false, text: content };
+      }
+      const result = { data: { repository } };
+      change(result);
+      return Response.json(result, { status });
+    } });
+  return { store, calls };
+}
+
+const feedbackId = '12345678-1234-1234-1234-123456789012';
+
+test('all 64 feedback parts are read in four GraphQL batches with exact ordered bytes and safe variables', async () => {
+  const branch = 'branch-with-"quotes"';
+  const { store, calls } = feedbackGraphqlFixture({ branch });
+  const parts = await store.readFeedbackParts(feedbackId, 64);
+  assert.equal(parts.length, 64);
+  assert.equal(calls.length, 5, 'one privacy check plus four batches leaves room for state reads, writes and conflicts');
+  for (let index = 0; index < 64; index++) {
+    assert.deepEqual(parts[index], { content: `第 ${index} 块\n`, bytes: Buffer.byteLength(`第 ${index} 块\n`), blobSha: `sha-${index}` });
+  }
+  for (const call of calls.slice(1)) {
+    assert.equal(call.method, 'POST');
+    assert.equal(call.redirect, 'manual');
+    const { query, variables } = JSON.parse(call.body);
+    assert.equal(variables.owner, 'test-owner');
+    assert.equal(variables.repo, 'private-data');
+    assert.equal(Object.keys(variables).filter(name => name.startsWith('path')).length, 16);
+    assert.ok(!query.includes(branch), 'branch and path values are variables, never interpolated into GraphQL source');
+    assert.ok(Object.entries(variables).filter(([name]) => name.startsWith('path')).every(([, value]) => value.startsWith(`${branch}:feedback/${feedbackId}/part-`)));
+  }
+});
+
+test('batched feedback rejects missing, binary, truncated, oversized and mismatched blobs', async () => {
+  for (const [change, code] of [
+    [result => { result.data.repository.part0 = null; }, 'FEEDBACK_LOG_INCOMPLETE'],
+    [result => { delete result.data.repository.part0; }, 'STORAGE_INVALID'],
+    [result => { result.data.repository.part0.isBinary = true; }, 'STORAGE_INVALID'],
+    [result => { result.data.repository.part0.isTruncated = true; }, 'STORAGE_INVALID'],
+    [result => { result.data.repository.part0.byteSize = 262145; }, 'STORAGE_INVALID'],
+    [result => { result.data.repository.part0.byteSize++; }, 'STORAGE_INVALID'],
+    [result => { result.data.repository.part0.oid = ''; }, 'STORAGE_INVALID'],
+    [result => { result.data.repository.isPrivate = false; }, 'STORAGE_NOT_PRIVATE'],
+    [result => { result.data.repository = null; }, 'STORAGE_UNAVAILABLE'],
+    [result => { result.errors = [{ type: 'FORBIDDEN', message: 'private-error-sentinel' }]; }, 'STORAGE_UNAVAILABLE'],
+    [result => { result.errors = [{ type: 'RATE_LIMITED', message: 'private-error-sentinel' }]; }, 'STORAGE_RATE_LIMITED'],
+  ]) {
+    const { store, calls } = feedbackGraphqlFixture({ change });
+    await assert.rejects(store.readFeedbackParts(feedbackId, 64), error => error.code === code && !error.message.includes('private-error-sentinel'));
+    assert.equal(calls.length, 2, 'failed batch must prevent later batches');
+  }
+  for (const options of [{ invalidJson: true }, { status: 503 }]) {
+    await assert.rejects(feedbackGraphqlFixture(options).store.readFeedbackParts(feedbackId, 1), { code: 'STORAGE_UNAVAILABLE' });
+  }
+});
+
+test('invalid batch identifiers and counts cannot make network requests', async () => {
+  const { store, calls } = feedbackGraphqlFixture();
+  for (const count of [0, 65, -1, '16', 1.5]) await assert.rejects(store.readFeedbackParts(feedbackId, count), { code: 'INVALID_FEEDBACK_PART' });
+  await assert.rejects(store.readFeedbackParts('../../state/accounts.json', 1), { code: 'INVALID_FEEDBACK_PART' });
+  assert.equal(calls.length, 0);
 });

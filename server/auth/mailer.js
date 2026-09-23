@@ -58,7 +58,9 @@ export function createMailer(env = process.env, fetchImpl = fetch, { createSmtpT
         body = { email, code, expiresInMinutes, deliveryId, template: 'account-login', subject, text };
       }
       let response;
-      try { response = await fetchImpl(url, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10_000), headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
+      // Refuse redirects without forwarding the provider credential. Unlike
+      // redirect:error, manual is supported by both Node.js and Workers fetch.
+      try { response = await fetchImpl(url, { method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(10_000), headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
       catch { fail('MAIL_SEND_FAILED', '验证码邮件发送未确认，请稍后重新获取。', 503); }
       if (!response.ok) fail('MAIL_SEND_FAILED', '验证码邮件发送失败，请稍后重新获取。', 503);
     },

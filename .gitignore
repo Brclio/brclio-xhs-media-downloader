@@ -14,3 +14,8 @@ dist-web/
 .env.*
 !.env.example
 *.local.json
+.wrangler/
+.dev.vars
+.dev.vars.*
+cloudflare/python/.venv/
+cloudflare/python/.python-worker-build/

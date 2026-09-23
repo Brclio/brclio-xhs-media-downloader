@@ -107,16 +107,24 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
     const feedback = get(state, request.input.feedbackId, user);
     if (feedback.submittedAt) return { feedback: publicFeedback(feedback, user, true), replayed: true };
     const parts = Array(feedback.log.partCount);
-    let next = 0;
-    await Promise.all(Array.from({ length: Math.min(4, parts.length) }, async () => {
-      for (;;) {
-        const index = next++; if (index >= parts.length) return;
-        const file = await store.readFeedbackPart(feedback.id, index);
-        const actual = validateFeedbackChunk(file.content), expected = feedback.log.parts[index];
-        if (actual.sha256 !== expected.sha256 || actual.bytes !== expected.bytes) fail('FEEDBACK_LOG_MISMATCH', '已保存日志与分块清单不一致，反馈尚未提交。', 503);
-        parts[index] = file.content;
-      }
-    }));
+    const validatePart = (file, index) => {
+      const actual = validateFeedbackChunk(file.content), expected = feedback.log.parts[index];
+      if (actual.sha256 !== expected.sha256 || actual.bytes !== expected.bytes) fail('FEEDBACK_LOG_MISMATCH', '已保存日志与分块清单不一致，反馈尚未提交。', 503);
+      parts[index] = file.content;
+    };
+    if (typeof store.readFeedbackParts === 'function') {
+      const files = await store.readFeedbackParts(feedback.id, parts.length);
+      if (!Array.isArray(files) || files.length !== parts.length) fail('FEEDBACK_LOG_INCOMPLETE', '日志尚未全部上传，请使用原反馈重试。', 409);
+      files.forEach(validatePart);
+    } else {
+      let next = 0;
+      await Promise.all(Array.from({ length: Math.min(4, parts.length) }, async () => {
+        for (;;) {
+          const index = next++; if (index >= parts.length) return;
+          validatePart(await store.readFeedbackPart(feedback.id, index), index);
+        }
+      }));
+    }
     const combined = parts.join('');
     if (Buffer.byteLength(combined) !== feedback.log.totalBytes || digest(combined) !== feedback.log.sha256) fail('FEEDBACK_LOG_MISMATCH', '完整日志校验失败，反馈尚未提交。');
     const records = combined.trimEnd().split('\n').map(line => JSON.parse(line));

@@ -14,6 +14,10 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 [项目仓库](https://github.com/Brclio/brclio-xhs-media-downloader) · [下载最新版安装包](https://github.com/Brclio/brclio-xhs-media-downloader/releases/latest)
 
+已部署 **Cloudflare Pages + Workers 双引擎**，正式入口为 [xhs.download.brclio.com](https://xhs.download.brclio.com)，另有 [Pages 入口](https://brclio-xhs-pages.pages.dev)。正式域名与证书已激活，HTTPS 健康检查确认请求到达 Cloudflare。网页和图片、视频下载由 Cloudflare 承载；账号与解析使用私有 Durable Object 执行环境，账号沿用原 `AUTH_*` 配置和 GitHub 唯一业务存储。真实双引擎解析、图片字节、验证码收件、管理员登录及跨后端会话已验证；各项验收范围和正式域名回归结果见迁移记录。
+
+笔记解析先使用 Cloudflare；遇上游限制或解析失败时，仅回退到原 Vercel 的同引擎 JSON 解析接口。**目前仍保留这部分 Vercel 依赖，不能停用原项目。** Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。部署版本、核验证据、免费额度和回滚步骤见 [Cloudflare 迁移说明](docs/cloudflare-deployment.md)。已有 Secrets 时，`npm run cloudflare:deploy` 依次发布 Python、主 Worker 与 Pages；仅构建网站使用 `npm run build:cloudflare`。
+
 ## Mac / Windows 本地版与主页批量下载
 
 桌面版使用 Electron，将浏览器、Node.js 和独立 Python 引擎一起打包。**安装包的使用者不需要安装 Python、Node.js 或 Vercel CLI。** 网页版继续按原方式部署，桌面功能只在本地应用中显示。
@@ -46,7 +50,7 @@ codesign --verify --deep --strict --verbose=2 "/Applications/Brclio 小红书下
 
 签名完整性通过不代表已公证，也不能替代在受影响的那台 Mac 上实际打开验证；该远端设备仍待用户确认。
 
-这是一个可直接部署到 Vercel 的小红书公开笔记媒体下载网站。访问者只需要粘贴分享文案或链接，即可解析当前笔记中的：
+这是一个支持 Vercel 和 Cloudflare Workers 部署的小红书公开笔记媒体下载网站。访问者只需要粘贴分享文案或链接，即可解析当前笔记中的：
 
 - 无水印原图
 - 实况图片的静态原图与配对动态 MP4
@@ -118,9 +122,9 @@ codesign --verify --deep --strict --verbose=2 "/Applications/Brclio 小红书下
 └── .python-version
 ```
 
-## 直接更新现有部署
+## 更新现有 Vercel 部署
 
-部署方式不变，不需要创建第二个 Vercel 项目，也不需要把 Python 单独部署。
+继续使用 Vercel 时，部署方式不变，不需要创建第二个 Vercel 项目，也不需要把 Python 单独部署。迁移 Cloudflare 时使用 [Pages 与双 Worker 部署流程](docs/cloudflare-deployment.md)，不要套用本节 Vercel 设置。当前的笔记解析回退仍需要原 `.vercel.app` 服务；正式域名切换后也应保留其代码、部署和解析接口。
 
 将新版文件覆盖到原仓库后提交：
 
@@ -145,7 +149,9 @@ Install Command：npm ci --omit=dev --ignore-scripts
 
 ## 本地运行
 
-需要安装 Node.js、Python 和 Vercel CLI：
+Cloudflare 本地运行使用 `npm run cloudflare:dev:python` 与 `npm run cloudflare:dev`。干净检出需先运行 `uv sync --directory cloudflare/python --frozen` 和 `uv run --directory cloudflare/python pywrangler sync`，再执行 Python workerd 测试。Pages 网关联调及完整核验命令见 [Cloudflare 说明](docs/cloudflare-deployment.md#安装与本地核验)。
+
+按原 Vercel 方式运行时，需要安装 Node.js、Python 和 Vercel CLI：
 
 ```bash
 npm run dev:vercel

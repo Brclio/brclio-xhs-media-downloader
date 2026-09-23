@@ -1,0 +1,276 @@
+{
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-09-22T23:32:32.814Z",
+  "passed": 42,
+  "total": 44,
+  "ok": false,
+  "realMediaChecks": false,
+  "results": [
+    {
+      "name": "static/home",
+      "ok": true,
+      "status": 200,
+      "durationMs": 785
+    },
+    {
+      "name": "static/changelog",
+      "ok": true,
+      "status": 200,
+      "durationMs": 766
+    },
+    {
+      "name": "static/main-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 400
+    },
+    {
+      "name": "static/main-style",
+      "ok": true,
+      "status": 200,
+      "durationMs": 345
+    },
+    {
+      "name": "static/account-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 467
+    },
+    {
+      "name": "static/archive-module",
+      "ok": true,
+      "status": 200,
+      "durationMs": 354
+    },
+    {
+      "name": "static/favicon",
+      "ok": true,
+      "status": 200,
+      "durationMs": 371
+    },
+    {
+      "name": "static/admin",
+      "ok": true,
+      "status": 200,
+      "durationMs": 360
+    },
+    {
+      "name": "static/admin-trailing-slash",
+      "ok": true,
+      "status": 200,
+      "durationMs": 82
+    },
+    {
+      "name": "static/admin-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 409
+    },
+    {
+      "name": "static/admin-style",
+      "ok": true,
+      "status": 200,
+      "durationMs": 345
+    },
+    {
+      "name": "node/parse/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 885
+    },
+    {
+      "name": "node/parse/empty",
+      "ok": true,
+      "status": 400,
+      "durationMs": 337
+    },
+    {
+      "name": "node/parse/malformed",
+      "ok": false,
+      "status": 500,
+      "reason": "Expected HTTP 400.",
+      "durationMs": 314
+    },
+    {
+      "name": "node/parse/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 321
+    },
+    {
+      "name": "node/parse/input-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 415
+    },
+    {
+      "name": "node/parse/direct-image",
+      "ok": true,
+      "status": 200,
+      "durationMs": 323
+    },
+    {
+      "name": "node/image/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 853
+    },
+    {
+      "name": "node/image/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 397
+    },
+    {
+      "name": "node/video/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 792
+    },
+    {
+      "name": "node/video/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 319
+    },
+    {
+      "name": "node/image/invalid-token",
+      "ok": true,
+      "status": 400,
+      "durationMs": 460
+    },
+    {
+      "name": "node/video/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 324
+    },
+    {
+      "name": "node/video/invalid-range",
+      "ok": true,
+      "status": 400,
+      "durationMs": 338
+    },
+    {
+      "name": "node/video/oversize-range",
+      "ok": true,
+      "status": 413,
+      "durationMs": 388
+    },
+    {
+      "name": "python/parse/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 868
+    },
+    {
+      "name": "python/parse/empty",
+      "ok": true,
+      "status": 400,
+      "durationMs": 315
+    },
+    {
+      "name": "python/parse/malformed",
+      "ok": true,
+      "status": 400,
+      "durationMs": 389
+    },
+    {
+      "name": "python/parse/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 339
+    },
+    {
+      "name": "python/parse/input-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 318
+    },
+    {
+      "name": "python/parse/direct-image",
+      "ok": true,
+      "status": 200,
+      "durationMs": 391
+    },
+    {
+      "name": "python/image/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 1099
+    },
+    {
+      "name": "python/image/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 317
+    },
+    {
+      "name": "python/video/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 1206
+    },
+    {
+      "name": "python/video/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 320
+    },
+    {
+      "name": "python/image/invalid-token",
+      "ok": true,
+      "status": 400,
+      "durationMs": 365
+    },
+    {
+      "name": "python/video/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 363
+    },
+    {
+      "name": "python/video/invalid-range",
+      "ok": true,
+      "status": 400,
+      "durationMs": 319
+    },
+    {
+      "name": "python/video/oversize-range",
+      "ok": true,
+      "status": 413,
+      "durationMs": 331
+    },
+    {
+      "name": "account/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 923
+    },
+    {
+      "name": "account/content-type",
+      "ok": true,
+      "status": 415,
+      "durationMs": 327
+    },
+    {
+      "name": "account/malformed",
+      "ok": false,
+      "status": 503,
+      "reason": "Expected HTTP 400.",
+      "durationMs": 322
+    },
+    {
+      "name": "account/invalid-shape",
+      "ok": true,
+      "status": 400,
+      "durationMs": 400
+    },
+    {
+      "name": "account/body-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 608
+    }
+  ]
+}

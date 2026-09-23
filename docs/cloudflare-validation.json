@@ -1,0 +1,298 @@
+{
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-09-23T00:09:45.340Z",
+  "passed": 48,
+  "total": 48,
+  "ok": true,
+  "realMediaChecks": true,
+  "results": [
+    {
+      "name": "static/home",
+      "ok": true,
+      "status": 200,
+      "durationMs": 956
+    },
+    {
+      "name": "static/changelog",
+      "ok": true,
+      "status": 200,
+      "durationMs": 327
+    },
+    {
+      "name": "static/main-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 222
+    },
+    {
+      "name": "static/main-style",
+      "ok": true,
+      "status": 200,
+      "durationMs": 304
+    },
+    {
+      "name": "static/account-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 134
+    },
+    {
+      "name": "static/archive-module",
+      "ok": true,
+      "status": 200,
+      "durationMs": 150
+    },
+    {
+      "name": "static/favicon",
+      "ok": true,
+      "status": 200,
+      "durationMs": 238
+    },
+    {
+      "name": "static/admin",
+      "ok": true,
+      "status": 200,
+      "durationMs": 321
+    },
+    {
+      "name": "static/admin-trailing-slash",
+      "ok": true,
+      "status": 200,
+      "durationMs": 208
+    },
+    {
+      "name": "static/admin-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 201
+    },
+    {
+      "name": "static/admin-style",
+      "ok": true,
+      "status": 200,
+      "durationMs": 158
+    },
+    {
+      "name": "node/parse/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 168
+    },
+    {
+      "name": "node/parse/empty",
+      "ok": true,
+      "status": 400,
+      "durationMs": 138
+    },
+    {
+      "name": "node/parse/malformed",
+      "ok": true,
+      "status": 400,
+      "durationMs": 125
+    },
+    {
+      "name": "node/parse/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 259
+    },
+    {
+      "name": "node/parse/input-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 141
+    },
+    {
+      "name": "node/parse/direct-image",
+      "ok": true,
+      "status": 200,
+      "durationMs": 140
+    },
+    {
+      "name": "node/image/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 237
+    },
+    {
+      "name": "node/image/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 127
+    },
+    {
+      "name": "node/video/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 136
+    },
+    {
+      "name": "node/video/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 270
+    },
+    {
+      "name": "node/image/invalid-token",
+      "ok": true,
+      "status": 400,
+      "durationMs": 137
+    },
+    {
+      "name": "node/video/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 122
+    },
+    {
+      "name": "node/video/invalid-range",
+      "ok": true,
+      "status": 400,
+      "durationMs": 270
+    },
+    {
+      "name": "node/video/oversize-range",
+      "ok": true,
+      "status": 413,
+      "durationMs": 122
+    },
+    {
+      "name": "node/upstream/note",
+      "ok": true,
+      "status": 200,
+      "durationMs": 3016
+    },
+    {
+      "name": "node/upstream/image",
+      "ok": true,
+      "status": 200,
+      "durationMs": 891
+    },
+    {
+      "name": "python/parse/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 305
+    },
+    {
+      "name": "python/parse/empty",
+      "ok": true,
+      "status": 400,
+      "durationMs": 133
+    },
+    {
+      "name": "python/parse/malformed",
+      "ok": true,
+      "status": 400,
+      "durationMs": 239
+    },
+    {
+      "name": "python/parse/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 119
+    },
+    {
+      "name": "python/parse/input-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 124
+    },
+    {
+      "name": "python/parse/direct-image",
+      "ok": true,
+      "status": 200,
+      "durationMs": 125
+    },
+    {
+      "name": "python/image/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 773
+    },
+    {
+      "name": "python/image/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 129
+    },
+    {
+      "name": "python/video/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 130
+    },
+    {
+      "name": "python/video/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 173
+    },
+    {
+      "name": "python/image/invalid-token",
+      "ok": true,
+      "status": 400,
+      "durationMs": 143
+    },
+    {
+      "name": "python/video/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 135
+    },
+    {
+      "name": "python/video/invalid-range",
+      "ok": true,
+      "status": 400,
+      "durationMs": 247
+    },
+    {
+      "name": "python/video/oversize-range",
+      "ok": true,
+      "status": 413,
+      "durationMs": 127
+    },
+    {
+      "name": "python/upstream/note",
+      "ok": true,
+      "status": 200,
+      "durationMs": 2816
+    },
+    {
+      "name": "python/upstream/image",
+      "ok": true,
+      "status": 200,
+      "durationMs": 439
+    },
+    {
+      "name": "account/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 134
+    },
+    {
+      "name": "account/content-type",
+      "ok": true,
+      "status": 415,
+      "durationMs": 300
+    },
+    {
+      "name": "account/malformed",
+      "ok": true,
+      "status": 400,
+      "durationMs": 149
+    },
+    {
+      "name": "account/invalid-shape",
+      "ok": true,
+      "status": 400,
+      "durationMs": 229
+    },
+    {
+      "name": "account/body-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 148
+    }
+  ]
+}
