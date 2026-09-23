@@ -31,6 +31,14 @@ contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
     return () => ipcRenderer.removeListener('desktop:account-update', listener);
   },
   getUpdateState: () => ipcRenderer.invoke('desktop:get-update-state'),
+  getUpdateHistory: () => ipcRenderer.invoke('desktop:get-update-history'),
+  dismissUpdateHistory: (id) => ipcRenderer.invoke('desktop:dismiss-update-history', id),
+  onUpdateHistory: (callback) => {
+    if (typeof callback !== 'function') throw new TypeError('callback must be a function');
+    const listener = (_event, notice) => callback(notice);
+    ipcRenderer.on('desktop:update-history', listener);
+    return () => ipcRenderer.removeListener('desktop:update-history', listener);
+  },
   checkForUpdates: () => ipcRenderer.invoke('desktop:check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('desktop:download-update'),
   cancelUpdateDownload: () => ipcRenderer.invoke('desktop:cancel-update-download'),

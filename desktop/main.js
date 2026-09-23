@@ -1,5 +1,5 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, net, protocol, safeStorage, session, shell } from 'electron';
-import { access, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
+import { access, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -16,6 +16,7 @@ import { prepareMacUpdate } from './mac-update.js';
 import { launchWindowsUpdate } from './windows-update.js';
 import { InstallConfirmation } from './install-confirmation.js';
 import { confirmMacUpdateStartupWithRetry, hasPendingMacUpdate, waitForDesktopReady } from './startup-ready.js';
+import { MacUpdateHistory } from './mac-update-history.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -31,6 +32,7 @@ let browser;
 let manager;
 let pythonBackend;
 let updateManager;
+let updateHistory;
 let updateCheckTimer;
 let updatePeriodicTimer;
 let accountClient;
@@ -164,6 +166,8 @@ function registerIpc() {
     diagnostic(event, fields); return true;
   });
   handle('desktop:get-update-state', () => updateManager.snapshot());
+  handle('desktop:get-update-history', () => updateHistory?.snapshot() || null);
+  handle('desktop:dismiss-update-history', id => updateHistory?.dismiss(id) || null);
   handle('desktop:check-for-updates', () => updateManager.checkForUpdates());
   handle('desktop:download-update', () => updateManager.downloadUpdate());
   handle('desktop:cancel-update-download', () => updateManager.cancelUpdateDownload());
@@ -301,6 +305,14 @@ async function boot() {
     try { selectedDirectories.add(await validateDirectory(manager.snapshot().directory)); }
     catch { /* A moved/unmounted drive must be selected again before downloading. */ }
   }
+  if (process.platform === 'darwin' && app.isPackaged) {
+    updateHistory = new MacUpdateHistory({ cacheDirectory: path.join(app.getPath('userData'), 'updates'),
+      currentAppPath: path.resolve(process.execPath, '../../..'), currentVersion: app.getVersion(),
+      onUpdate(notice) {
+        if (!quitting && mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:update-history', notice);
+      }
+    });
+  }
   updateManager = new UpdateManager({ currentVersion: app.getVersion(),
     directory: path.join(app.getPath('userData'), 'updates'),
     portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR),
@@ -367,7 +379,7 @@ async function boot() {
     } catch (error) { diagnostic('update.backup_cleanup_failed', { error }, 'warn'); }
   }
   if (quitting || !mainWindow || mainWindow.isDestroyed()) return;
-  await reportPreviousMacUpdate();
+  await refreshPreviousMacUpdate();
   if (app.isPackaged) {
     updateCheckTimer = setTimeout(automaticUpdateCheck, 5000);
     updateCheckTimer.unref();
@@ -379,24 +391,12 @@ async function boot() {
 
 let lastUpdateStatus;
 let lastAutomaticCheck = 0;
-async function reportPreviousMacUpdate() {
-  if (process.platform !== 'darwin') return;
-  const directory = path.join(app.getPath('userData'), 'updates');
-  const pointer = path.join(directory, 'mac-last-install.json');
+async function refreshPreviousMacUpdate() {
   try {
-    const { resultPath } = JSON.parse(await readFile(pointer, 'utf8'));
-    if (typeof resultPath !== 'string' || !path.resolve(resultPath).startsWith(`${directory}${path.sep}`)
-      || path.basename(resultPath) !== 'install-result.json' || (await stat(resultPath)).size > 16000) return;
-    const result = JSON.parse(await readFile(resultPath, 'utf8'));
-    diagnostic('update.install_result', result, result.status === 'installed' ? 'info' : 'warn');
-    if (!['preparing', 'opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'rolling_back', 'cleanup_pending', 'cleaning'].includes(result.status)) {
-      await rm(pointer, { force: true });
-      if (result.status !== 'installed') await dialog.showMessageBox(mainWindow, {
-        type: 'warning', title: '上次更新未完成', message: result.message || '请重新检查更新或手动安装。',
-        detail: `更新结果与备份信息保存在：${resultPath}`, buttons: ['知道了']
-      });
-    }
-  } catch (error) { if (error.code !== 'ENOENT') diagnostic('update.result_unavailable', { code: error.code }, 'warn'); }
+    const notice = await updateHistory?.refresh();
+    if (notice) diagnostic('update.install_history', { status: notice.status, targetVersion: notice.targetVersion,
+      currentVersion: notice.currentVersion, recordedAt: notice.recordedAt }, 'warn');
+  } catch (error) { diagnostic('update.result_unavailable', { code: error.code || 'INVALID_HISTORY' }, 'warn'); }
 }
 function automaticUpdateCheck() {
   if (!updateManager || ['checking', 'downloading', 'downloaded', 'installing'].includes(updateManager.snapshot().status)) return;

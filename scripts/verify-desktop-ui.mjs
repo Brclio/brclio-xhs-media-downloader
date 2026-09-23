@@ -45,6 +45,9 @@ contextBridge.exposeInMainWorld('xhsDesktop', {
   getProfileState: () => invoke('getProfileState'),
   getLoginState: () => invoke('getLoginState'),
   getUpdateState: () => invoke('getUpdateState'),
+  getUpdateHistory: () => invoke('getUpdateHistory'),
+  dismissUpdateHistory: id => invoke('dismissUpdateHistory', id),
+  onUpdateHistory: callback => subscribe('ui-fixture:update-history', callback),
   checkForUpdates: () => invoke('checkForUpdates'),
   downloadUpdate: () => invoke('downloadUpdate'),
   cancelUpdateDownload: () => invoke('cancelUpdateDownload'),
@@ -92,6 +95,11 @@ app.whenReady().then(async () => {
     membership: { type: 'none', active: false }, device: { status: 'authorized' }, serverTime: '2026-09-20T12:00:00Z'
   } };
   let update = { status: 'idle', currentVersion: '1.6.0' };
+  let updateHistory = null;
+  let historyReadPending = true;
+  let resolveHistoryRead;
+  let historyDismissMode = 'success';
+  let resolveHistoryDismiss;
   let resolveFeedback;
   let feedbackMode = 'pending';
   let exportMode = 'cancel';
@@ -113,6 +121,13 @@ app.whenReady().then(async () => {
   const publishProfile = value => { profile = value; win.webContents.send('ui-fixture:profile', value); return value; };
   const publishAccount = value => { account = value; win.webContents.send('ui-fixture:account', value); return value; };
   const publishUpdate = value => { update = value; win.webContents.send('ui-fixture:update', value); return value; };
+  const publishHistory = value => { updateHistory = value; win.webContents.send('ui-fixture:update-history', value); return value; };
+  const previousInstall = {
+    id: 'fixture-previous-install', targetVersion: '1.5.9', previousVersion: '1.5.8', currentVersion: '1.6.0',
+    recordedAt: '2026-09-20T12:34:00Z', status: 'cleanup_failed',
+    outcome: '此前安装后留下的临时旧版尚未清理。',
+    action: '记录已保留，软件会在下次启动时重试清理。'
+  };
   const retainedCheckError = { code: 'RATE_LIMITED', phase: 'check', message: 'GitHub 暂时限制请求 <img src=x onerror=alert(1)>' };
   const available = () => ({
     status: 'available', currentVersion: '1.6.0', latestVersion: '1.6.1',
@@ -148,6 +163,19 @@ app.whenReady().then(async () => {
       return profile;
     }
     if (method === 'getUpdateState') return update;
+    if (method === 'getUpdateHistory') {
+      if (historyReadPending) {
+        historyReadPending = false;
+        return new Promise(resolve => { resolveHistoryRead = resolve; });
+      }
+      return updateHistory;
+    }
+    if (method === 'dismissUpdateHistory') {
+      if (historyDismissMode === 'error') throw new Error('fixture history persistence failure');
+      if (historyDismissMode === 'pending') return new Promise(resolve => { resolveHistoryDismiss = resolve; });
+      if (updateHistory?.id === value) return publishHistory(null);
+      return updateHistory;
+    }
     if (method === 'chooseDirectory') return new Promise(resolve => { resolveDirectory = resolve; });
     if (method === 'retryItem') return publishProfile({
       ...profile, status: 'downloading', failed: 0,
@@ -343,6 +371,32 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '暂停下载');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-later').textContent`), '后台下载');
   assert.match(await evaluate(`document.querySelector('#desktop-update-progress-text').textContent`), /50%/);
+  publishUpdate({ ...update, download: { receivedBytes: 46, totalBytes: 100, canResume: false } });
+  await check(`document.querySelector('#desktop-update-progress').value === 46`, 'download at the reported 46 percent');
+  await evaluate(`document.querySelector('#desktop-update-dialog-action').focus()`);
+  const liveUpdateBeforeHistory = await evaluate(`({
+    page: document.body.dataset.desktopPage, focus: document.activeElement.id,
+    progress: document.querySelector('#desktop-update-progress').value,
+    progressText: document.querySelector('#desktop-update-progress-text').textContent,
+    title: document.querySelector('#desktop-update-title').textContent,
+    dialogs: Array.from(document.querySelectorAll('dialog[open]'), dialog => dialog.id)
+  })`);
+  publishHistory(previousInstall);
+  await check(`!document.querySelector('#desktop-update-history').hidden`, 'late historical receipt is recorded while downloading');
+  assert.deepEqual(await evaluate(`({
+    page: document.body.dataset.desktopPage, focus: document.activeElement.id,
+    progress: document.querySelector('#desktop-update-progress').value,
+    progressText: document.querySelector('#desktop-update-progress-text').textContent,
+    title: document.querySelector('#desktop-update-title').textContent,
+    dialogs: Array.from(document.querySelectorAll('dialog[open]'), dialog => dialog.id)
+  })`), liveUpdateBeforeHistory, 'historical receipt never changes current download, navigation, modal or focus');
+  resolveHistoryRead(null);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-history').hidden`), false, 'late initial history read cannot replace newer event');
+  publishHistory(null);
+  await check(`document.querySelector('#desktop-update-history').hidden`, 'background history removal is nonmodal');
+  publishUpdate({ ...update, download: { receivedBytes: 512, totalBytes: 1024, canResume: false } });
+  await check(`document.querySelector('#desktop-update-progress').value === 50`, 'restore fixture download for continuation checks');
   await paint();
   const screenshot = path.join(temporary, 'desktop-ui.png');
   writeFileSync(screenshot, await captureFrame());
@@ -655,9 +709,50 @@ app.whenReady().then(async () => {
   await check(`document.querySelector('#desktop-update-dialog').open`, 'explicit recheck can reopen');
   publishUpdate({ ...available(), status: 'up-to-date', latestVersion: '1.6.0' });
   await check(`!document.querySelector('#desktop-update-dialog').open`, 'a newer check with no update closes the obsolete modal');
+  // A prior install result must stay passive with and without a version dialog.
+  win.setContentSize(1180, 980);
+  publishUpdate({ ...available(), status: 'downloading', download: { receivedBytes: 46, totalBytes: 100, canResume: false } });
+  await click('#profile-tab');
+  await evaluate(`document.querySelector('#profile-url').focus()`);
+  publishHistory(previousInstall);
+  await check(`!document.querySelector('#desktop-update-history').hidden`, 'history notice arrives outside the about page');
+  assert.equal(await evaluate(`document.body.dataset.desktopPage === 'profile' && document.activeElement.id === 'profile-url' && document.querySelectorAll('dialog[open]').length === 0`), true, 'history does not steal focus, open a modal or navigate');
+  await click('#about-tab');
+  assert.match(await evaluate(`document.querySelector('#desktop-update-history-meta').textContent`), /安装目标 v1\.5\.9.*当时版本 v1\.5\.8.*当前版本 v1\.6\.0.*2026/);
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 46);
+  const historyScreenshot = path.join(temporary, 'desktop-update-history.png');
+  writeFileSync(historyScreenshot, await captureFrame());
+  win.setContentSize(390, 844);
+  await check(`window.innerWidth === 390`, 'history notice narrow viewport');
+  await evaluate(`document.querySelector('#desktop-update-history').scrollIntoView({ block: 'center' })`);
+  assert.equal(await evaluate(`document.querySelector('#desktop-about-page').scrollWidth <= document.querySelector('#desktop-about-page').clientWidth`), true, 'history metadata fits at 390px');
+  const historyNarrowScreenshot = path.join(temporary, 'desktop-update-history-narrow.png');
+  writeFileSync(historyNarrowScreenshot, await captureFrame());
+  historyDismissMode = 'error';
+  await click('#desktop-update-history-dismiss');
+  await check(`!document.querySelector('#desktop-update-history-error').hidden && !document.querySelector('#desktop-update-history-dismiss').disabled`, 'failed acknowledgement remains visible and can retry');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-history').hidden`), false, 'failed acknowledgement keeps the receipt');
+  historyDismissMode = 'pending';
+  await click('#desktop-update-history-dismiss');
+  await check(`document.querySelector('#desktop-update-history-dismiss').disabled`, 'pending acknowledgement prevents duplicate writes');
+  publishHistory({ ...previousInstall, id: 'fixture-newer-install', targetVersion: null, previousVersion: null, recordedAt: 'invalid',
+    outcome: '历史结果 <img src=x onerror=alert(1)>', action: '保留说明 <script>alert(1)</script>' });
+  await check(`document.querySelector('#desktop-update-history-meta').textContent.startsWith('安装版本未记录')`, 'legacy receipts tolerate missing version and time');
+  resolveHistoryDismiss(null);
+  await check(`!document.querySelector('#desktop-update-history-dismiss').disabled`, 'stale acknowledgement completes');
+  assert.equal(await evaluate(`!document.querySelector('#desktop-update-history').hidden && document.querySelector('#desktop-update-history-outcome').textContent.includes('<img')`), true, 'old acknowledgement cannot dismiss a newer receipt');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-history').querySelectorAll('img, script').length`), 0, 'history values render as text');
+  historyDismissMode = 'success';
+  await click('#desktop-update-history-dismiss');
+  await check(`document.querySelector('#desktop-update-history').hidden`, 'acknowledged receipt hides without changing updater');
+  assert.equal(calls.filter(call => call.method === 'dismissUpdateHistory').at(-1).value, 'fixture-newer-install');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 46, 'acknowledgement preserves live download progress');
+  await win.loadURL('xhs-app://local/');
+  await check(`document.body.dataset.desktopReady === 'true' && document.querySelector('#desktop-update-progress').value === 46`, 'renderer reload restores live update');
+  await check(`document.querySelector('#desktop-update-history').hidden && document.querySelectorAll('dialog[open]').length === 0`, 'acknowledged history stays hidden after reload');
   const web = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false } });
   await web.loadURL('xhs-app://local/');
-  assert.equal(await web.webContents.executeJavaScript(`document.querySelector('#desktop-navigation').hidden && document.querySelector('#desktop-update-panel').hidden && !document.querySelector('#single-note-panel').hidden && !document.querySelector('#desktop-update-dialog').open && !document.querySelector('#desktop-install-confirmation').open`), true, 'web interface remains unchanged without bridge');
+  assert.equal(await web.webContents.executeJavaScript(`document.querySelector('#desktop-navigation').hidden && document.querySelector('#desktop-update-panel').hidden && document.querySelector('#desktop-update-history').hidden && !document.querySelector('#single-note-panel').hidden && !document.querySelector('#desktop-update-dialog').open && !document.querySelector('#desktop-install-confirmation').open`), true, 'web interface remains unchanged without bridge');
   const failedInitialization = new BrowserWindow({ show: false, webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false } });
   const failedInitializationId = failedInitialization.webContents.id;
   failedInitializationWindows.add(failedInitializationId);
@@ -675,7 +770,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, installationCloseOrders }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {
