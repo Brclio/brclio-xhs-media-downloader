@@ -1,0 +1,60 @@
+{
+  "version": "1.8.11",
+  "tag": "v1.8.11",
+  "sourceSha": "5cf40894c2740a6d73e9f73c74fd0307cdf8aa83",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.11",
+  "publishedAt": "2026-09-23T16:46:41Z",
+  "verifiedAt": "2026-09-23T16:47:34.909Z",
+  "assetCount": 11,
+  "builds": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "comparedSources": 47
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "comparedSources": 47
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "comparedSources": 47
+    }
+  ],
+  "updates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "asset": "Brclio-XHS-Downloader-1.8.11-mac-arm64.dmg",
+      "bytes": 139947846
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "asset": "Brclio-XHS-Downloader-1.8.11-mac-x64.dmg",
+      "bytes": 145718553
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "asset": "Brclio-XHS-Downloader-1.8.11-windows-x64-setup.exe",
+      "bytes": 124043122
+    }
+  ],
+  "compatibilityAliasesVerified": true,
+  "remoteDigestsVerified": true,
+  "workflow": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/35889755762",
+    "conclusion": "success",
+    "jobs": [
+      "mac-arm64",
+      "mac-intel",
+      "windows-x64",
+      "Publish verified installers"
+    ]
+  },
+  "anonymousUpdaterVisible": true,
+  "updaterSourceMatchesPreviousRelease": "v1.8.8"
+}
