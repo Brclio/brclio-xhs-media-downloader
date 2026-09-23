@@ -2,6 +2,11 @@ name: Desktop installers
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to rebuild and publish (leave empty for a build only)
+        required: false
+        type: string
   push:
     tags: ['v*', 'desktop-v*']
 
@@ -9,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: desktop-release-${{ github.ref }}
+  group: desktop-release-${{ inputs.release_tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -31,7 +36,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     steps:
+      - name: Validate requested release tag
+        if: inputs.release_tag != ''
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: '[[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]'
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -41,6 +54,10 @@ jobs:
           python-version: '3.13'
           architecture: ${{ matrix.arch }}
       - run: npm ci
+      # Electron 44 downloads its runtime lazily. Parallel native tests must
+      # never both extract into node_modules/electron/dist at the same time.
+      - name: Initialize Electron before concurrent native tests
+        run: node -e "require('electron')"
       - run: npm run test:node
       - name: Verify native Mac replacement and rollback in temporary signed apps
         if: runner.os != 'Windows'
@@ -68,6 +85,9 @@ jobs:
         run: npx electron-builder --win --${{ matrix.arch }} --publish never
       - name: Verify packaged source, native runtime, installers, and checksums
         run: node scripts/verify-built-installers.mjs
+        env:
+          GITHUB_REF_TYPE: ${{ inputs.release_tag && 'tag' || github.ref_type }}
+          GITHUB_REF_NAME: ${{ inputs.release_tag || github.ref_name }}
       - name: Exercise real Electron main process, bridge, and both download engines
         run: npm run desktop:verify
       - name: Verify responsive startup and credential access recovery
@@ -89,7 +109,7 @@ jobs:
 
   release:
     name: Publish verified installers
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -97,6 +117,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -109,3 +131,5 @@ jobs:
         run: node scripts/publish-desktop-release.mjs
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REF_TYPE: tag
+          GITHUB_REF_NAME: ${{ inputs.release_tag || github.ref_name }}
