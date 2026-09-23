@@ -6,6 +6,7 @@ import path from 'node:path';
 // functions separately and traces their server-side imports.
 export const PUBLIC_FILES = [
   'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css',
+  'download.html', 'download.css', 'download.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css',
   'lib/archive.js', 'lib/clipboard.js', 'lib/media-tracks.js', 'assets', 'admin'

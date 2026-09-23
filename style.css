@@ -1463,6 +1463,10 @@ footer > p {
 }
 
 @media (max-width: 900px) {
+  body:not(.is-desktop) .header-status {
+    display: none;
+  }
+
   .hero {
     grid-template-columns: 1fr;
     gap: 40px;
@@ -1577,6 +1581,23 @@ footer > p {
 
   .header-status {
     display: none;
+  }
+
+  body:not(.is-desktop) .app-header {
+    height: auto;
+  }
+
+  body:not(.is-desktop) .app-header-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 12px;
+    padding-top: 8px;
+  }
+
+  body:not(.is-desktop) .app-header-actions,
+  body:not(.is-desktop) .app-navigation {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .hero {

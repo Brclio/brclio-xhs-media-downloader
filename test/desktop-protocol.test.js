@@ -10,7 +10,7 @@ const rootDirectory = fileURLToPath(new URL('..', import.meta.url));
 const handler = createProtocolHandler({ rootDirectory });
 
 test('desktop protocol serves the real web entry and all first-party JS imports', async () => {
-  for (const name of ['index.html', 'app.js', 'lib/archive.js', 'lib/clipboard.js', 'style.css', 'favicon.svg']) {
+  for (const name of ['index.html', 'app.js', 'lib/archive.js', 'lib/clipboard.js', 'style.css', 'favicon.svg', 'download.html', 'download.css', 'download.js']) {
     const response = await handler(new Request(`xhs-app://local/${name}`));
     assert.equal(response.status, 200, name);
     assert.ok((await response.text()).length > 0, name);

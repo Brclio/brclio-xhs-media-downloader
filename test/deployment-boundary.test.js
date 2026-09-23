@@ -22,10 +22,15 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
     await mkdir(path.dirname(path.join(root, name)), { recursive: true });
     await writeFile(path.join(root, name), 'private');
   }
+  await mkdir(path.join(root, 'assets/downloads'), { recursive: true });
+  await writeFile(path.join(root, 'assets/downloads/hero.webp'), 'public-image');
   const out = await buildWeb(root);
   const files = (await readdir(out, { recursive: true })).map(name => name.replaceAll('\\', '/'));
   assert.ok(files.includes('admin/index.html'));
   assert.ok(files.includes('lib/archive.js'));
+  for (const name of ['download.html', 'download.css', 'download.js', 'assets/downloads/hero.webp']) {
+    assert.ok(files.includes(name), `download page asset is public: ${name}`);
+  }
   assert.ok(!files.some(name => /server|desktop\/|\.env|README|test\//.test(name)));
   assert.ok(!files.some(name => /feedback\/|state\/|diagnostic-sanitize/.test(name)), 'private business files and server privacy logic never become static URLs');
   assert.equal(await readFile(path.join(out, 'app.js'), 'utf8'), 'public');
@@ -39,4 +44,6 @@ test('desktop package excludes account backend and admin source', async () => {
   assert.ok(pkg.build.files.includes('desktop/account-config.json'));
   assert.ok(!pkg.build.files.includes('api/account.js'), 'feedback API stays server-only');
   assert.ok(pkg.build.files.includes('lib/**/*.js'), 'shared diagnostic sanitization is packaged with the desktop logger');
+  assert.ok(pkg.build.files.includes('download.html'), 'local changelog navigation can open the download page');
+  assert.ok(pkg.build.files.includes('download.js'));
 });

@@ -8,6 +8,7 @@ import videoHandler from '../api/video.js';
 export const APP_URL = 'xhs-app://local';
 const STATIC_FILES = new Set([
   'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css',
+  'download.html', 'download.css', 'download.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'lib/archive.js', 'lib/clipboard.js', 'lib/media-tracks.js'
 ]);
