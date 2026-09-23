@@ -78,10 +78,28 @@ async function snapshot(win) {
   return win.webContents.executeJavaScript(`(async () => ({
     state: await window.xhsDesktop.getAccountState(),
     ready: document.body.dataset.desktopReady === 'true',
-    buttons: [...document.querySelectorAll('#software-account button')].map(button => ({ id: button.id, disabled: button.disabled })),
+    // Account operations must wait for secure storage. The membership dialog
+    // only browses prices or navigates to login; its controls have separate guards.
+    buttons: [...document.querySelectorAll('#software-account button')]
+      .filter(button => !button.closest('#membership-dialog') && button.id !== 'account-open-membership')
+      .map(button => ({ id: button.id, disabled: button.disabled })),
+    membership: {
+      browseDisabled: document.querySelector('#account-open-membership')?.disabled,
+      paymentHidden: document.querySelector('#membership-payment')?.hidden,
+      emailHidden: document.querySelector('#membership-email-row')?.hidden,
+      copyDisabled: document.querySelector('#membership-copy-email')?.disabled,
+      loginGuidanceHidden: document.querySelector('#membership-login-guidance')?.hidden
+    },
     retryLabel: document.querySelector('#account-refresh')?.textContent,
     nodeAvailable: typeof require === 'function'
   }))()`);
+}
+
+function assertSignedOutMembershipGuard(value) {
+  assert.deepEqual(value.membership, {
+    browseDisabled: false, paymentHidden: true, emailHidden: true,
+    copyDisabled: true, loginGuidanceHidden: false,
+  }, 'Users can view plans and login guidance, but payment codes and email copying require their verified account');
 }
 
 async function singleNoteCheck(win) {
@@ -147,7 +165,11 @@ app.on('browser-window-created', (_event, win) => {
         return value.ready && value.buttons.length && value.state.status === 'initializing' ? value : null;
       }, 'ready renderer with pending secure storage');
       assert.equal(loading.nodeAvailable, false);
+      assert.deepEqual(loading.buttons.map(button => button.id).sort(), [
+        'account-login', 'account-logout', 'account-redeem', 'account-refresh', 'account-send-code',
+      ], 'The guard covers every existing account operation');
       assert.ok(loading.buttons.every(button => button.disabled), 'Every account operation is disabled during startup');
+      assertSignedOutMembershipGuard(loading);
       await singleNoteCheck(win);
       assert.equal(loadCalls, 1, 'Using free features must not repeat the storage prompt');
 
@@ -159,6 +181,7 @@ app.on('browser-window-created', (_event, win) => {
       assert.equal(denied.retryLabel, '重试安全存储');
       assert.equal(denied.buttons.find(button => button.id === 'account-refresh')?.disabled, false);
       assert.ok(denied.buttons.filter(button => button.id !== 'account-refresh').every(button => button.disabled));
+      assertSignedOutMembershipGuard(denied);
       await singleNoteCheck(win);
       await delay(200);
       assert.equal(loadCalls, 1, 'A denied load must not automatically re-prompt');
@@ -168,6 +191,7 @@ app.on('browser-window-created', (_event, win) => {
       const retrying = await snapshot(win);
       assert.equal(retrying.state.status, 'initializing');
       assert.ok(retrying.buttons.every(button => button.disabled));
+      assertSignedOutMembershipGuard(retrying);
       // Exercise rapid IPC retries too; AccountClient must share one pending load.
       await win.webContents.executeJavaScript(`window.__storageRetry = Promise.all([
         window.xhsDesktop.refreshAccount(), window.xhsDesktop.refreshAccount()
@@ -187,6 +211,7 @@ app.on('browser-window-created', (_event, win) => {
         return value.state.status === 'signed_out' && value.buttons.every(button => !button.disabled) ? value : null;
       }, 'recovered account controls');
       assert.equal(recovered.state.error, null);
+      assertSignedOutMembershipGuard(recovered);
       await win.webContents.executeJavaScript('window.xhsDesktop.refreshAccount()');
       assert.equal(loadCalls, 2, 'Ordinary refresh must reuse loaded credentials');
       assert.equal(networkAttempts, 0, 'The test must not contact external services');
@@ -194,6 +219,7 @@ app.on('browser-window-created', (_event, win) => {
       clearTimeout(watchdog);
       console.log(JSON.stringify({ smoke: 'startup-storage-passed', visibleBeforeStorage: true,
         responsiveWhilePending: true, controlsGuarded: true, deniedStateRecoverable: true,
+        signedOutMembershipGuarded: true,
         explicitRetryDeduplicated: true, singleNoteEngines: ['node', 'python'], loadCalls, networkAttempts, blockedBrowserRequests,
         rendererReadyDelayMs, lateRendererConfirmed: true, reloadRecovered: true, readinessCancelled: true,
         nativeKeychainTested: false }));
