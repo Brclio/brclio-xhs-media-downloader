@@ -49,7 +49,7 @@ function images(count) {
   }));
 }
 
-function renderer({ desktop, secure = true, write, queryPermission } = {}) {
+function renderer({ desktop, secure = true, write, queryPermission, appSource = source } = {}) {
   const nodes = new Map([...html.matchAll(/\bid="([^"]+)"/g)].map((match) => [match[1], element()]));
   const calls = { writes: [], permissionQueries: 0, conversions: 0 };
   const timers = new Map();
@@ -95,7 +95,8 @@ function renderer({ desktop, secure = true, write, queryPermission } = {}) {
   });
   // Execute the actual page, including its selection UI and asynchronous write
   // queue. Stub only image conversion: network decoding is a separate concern.
-  vm.runInContext(source.replace(/^import[\s\S]*?;\n/gm, "") + `
+  const normalizedSource = appSource.replace(/\r\n?/g, "\n");
+  vm.runInContext(normalizedSource.replace(/^import[\s\S]*?;\n/gm, "") + `
     clipboardPngBlob = pngFixture;
     globalThis.renderer = { state, copyImages, updateSelectionUI };
   `, context, { filename: "app.js" });
@@ -116,6 +117,29 @@ function renderer({ desktop, secure = true, write, queryPermission } = {}) {
     }
   };
 }
+
+test("Windows CRLF checkout executes the real desktop and browser copy paths", async () => {
+  const appSource = source.replace(/\r\n?/g, "\n").replace(/\n/g, "\r\n");
+  assert.match(appSource, /\r\n/);
+  let nativeCopies = 0;
+  const desktopPage = renderer({
+    appSource,
+    desktop: { async copyImages(payload) {
+      nativeCopies += 1;
+      return { ok: true, count: payload.images.length, kind: "files" };
+    } }
+  });
+  await desktopPage.copy(images(2));
+  assert.equal(nativeCopies, 1);
+  assert.equal(desktopPage.calls.writes.length, 0);
+  assert.match(desktopPage.node("toast").textContent, /已复制 2 个独立图片文件/);
+
+  const browserPage = renderer({ appSource });
+  await browserPage.copy(images(2));
+  assert.equal(browserPage.calls.writes.length, 1);
+  assert.equal(browserPage.calls.conversions, 2);
+  assert.match(browserPage.node("toast").textContent, /浏览器已接收/);
+});
 
 test("desktop copies original URLs natively even without browser clipboard support", async () => {
   let progress;
