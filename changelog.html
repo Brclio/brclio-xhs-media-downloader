@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Brclio 小红书下载器的更新记录。v1.8.11 新增客户端开通会员：日付 2 元、月付 9.9 元、年付 39.9 元，付款备注邮箱，后台核实后发送激活码。"
+      content="Brclio 小红书下载器的更新记录。v1.8.12 改进客户端多图复制：使用系统剪贴板一次复制独立原图，保留内容与顺序，可在支持多文件粘贴的应用中一次粘贴。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -39,9 +39,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.8.11 本地版">
+          <div class="header-status" aria-label="当前记录：v1.8.12 本地版">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.8.11 本地版</span>
+            <span>v1.8.12 本地版</span>
           </div>
         </div>
       </div>
@@ -54,7 +54,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.8.11 新增客户端开通会员：选择套餐、扫码付款并备注邮箱，核实收款后通过邮件接收激活码。
+              这里记录功能增加、体验优化与问题修复。v1.8.12 改进客户端多图复制：勾选原图后一次复制，保留独立文件与顺序，可在支持多文件粘贴的应用中一次粘贴。
             </p>
 
             <div class="release-hero-actions">
@@ -71,7 +71,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>DESKTOP EDITION</span>
-              <strong>v1.8.11</strong>
+              <strong>v1.8.12</strong>
               <small>本地版 · 2026.09.24</small>
             </div>
 
@@ -104,6 +104,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#native-clipboard-update"><span>v1.8.12</span><strong>原生多图复制与粘贴</strong></a>
               <a href="#membership-purchase-update"><span>v1.8.11</span><strong>开通会员与邮箱发码</strong></a>
               <a href="#historical-update-notice"><span>v1.8.8</span><strong>历史安装提示不打断下载</strong></a>
               <a href="#mac-update-relaunch"><span>v1.8.7</span><strong>Mac 重开与清理恢复</strong></a>
@@ -146,6 +147,20 @@
           </aside>
 
           <div class="release-feed">
+            <article id="native-clipboard-update" class="release-entry release-entry-featured">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-24"><span>09.24</span><small>2026 · 多图复制</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.12</span><span class="release-status">Mac / Windows</span></div><h3>多张原图，一次复制、一次粘贴</h3></div></header>
+                <p class="release-lead">客户端使用系统剪贴板，将勾选的图片作为独立原图文件一次复制，保留内容与原笔记顺序。可粘贴到 Finder、Windows 资源管理器或支持多图片、多文件粘贴的应用。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>客户端原生复制</strong>多图复制不再因 Chrome / Chromium 的网页限制而禁用。常规单张 PNG / JPEG 继续使用图片剪贴板，其他格式和大像素原图自动改为文件复制，并明确提示。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>全部准备好，再一次写入</strong>复制过程显示进度，一次最多 50 张、单张 30 MiB、总量 120 MiB。失败不会只提交部分图片；当前原图退出客户端后仍可粘贴。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>10 张真实图片核对通过</strong>Mac 实际笔记验收完成一次点击复制、一次系统粘贴，独立接收窗口显示全部 10 张原图，内容摘要与顺序逐张一致。接收应用仍需支持多图片或多文件粘贴。</p></div>
+                </div>
+                <p class="release-lead">网页端保留浏览器复制与兼容提示；实况动态 MP4 继续使用下载入口。原有单篇下载、主页任务、账号与会员和自动更新功能保持。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.12" target="_blank" rel="noopener noreferrer">查看 v1.8.12 安装包与验收范围 ↗</a><span>原生多图复制 · 2026.09.24</span></div>
+              </div>
+            </article>
             <article id="membership-purchase-update" class="release-entry release-entry-featured">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-24"><span>09.24</span><small>2026 · 会员开通</small></time></div>
               <div class="release-card">
@@ -1350,7 +1365,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本地版记录更新至 v1.8.11（2026.09.24）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
+        <p>本地版记录更新至 v1.8.12（2026.09.24）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

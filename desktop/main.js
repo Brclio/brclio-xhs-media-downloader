@@ -17,6 +17,8 @@ import { launchWindowsUpdate } from './windows-update.js';
 import { InstallConfirmation } from './install-confirmation.js';
 import { confirmMacUpdateStartupWithRetry, hasPendingMacUpdate, waitForDesktopReady } from './startup-ready.js';
 import { MacUpdateHistory } from './mac-update-history.js';
+import { NativeImageClipboard } from './image-clipboard.js';
+import { writeImageFiles, writeSingleImage } from './native-clipboard.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -39,6 +41,7 @@ let accountClient;
 let diagnostics;
 let feedbackClient;
 let accountRefreshTimer;
+let imageClipboard;
 let quitting = false;
 let shutdownComplete = false;
 const installConfirmation = new InstallConfirmation();
@@ -114,6 +117,7 @@ function openLocalPreview(url) {
 }
 
 function registerIpc() {
+  handle('desktop:copy-images', input => imageClipboard.copy(input));
   const accountAction = (callback) => async (...args) => {
     try { return { ok: true, result: await callback(...args), state: accountClient.snapshot() }; }
     catch (error) { return { ok: false, error: { code: error.code || 'SERVICE_UNAVAILABLE', message: error.message }, state: accountClient.snapshot() }; }
@@ -146,7 +150,7 @@ function registerIpc() {
     const { text, ...info } = await diagnostics.snapshot(diagnosticContext()); return info;
   });
   handle('desktop:copy-diagnostics', async () => {
-    const log = await diagnostics.snapshot(diagnosticContext()); clipboard.writeText(log.text);
+    const log = await diagnostics.snapshot(diagnosticContext()); await clipboard.writeText(log.text);
     return { ok: true, bytes: log.totalBytes, message: '已复制当前完整诊断日志。' };
   });
   handle('desktop:export-diagnostics', async () => {
@@ -279,6 +283,15 @@ async function boot() {
     onDiagnostic: diagnostic,
     onUpdate(state) {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:account-update', state);
+    }
+  });
+  imageClipboard = new NativeImageClipboard({
+    directory: path.join(app.getPath('userData'), 'clipboard-images'),
+    fetchImpl: createElectronUpdateFetch(net),
+    writeFiles: writeImageFiles, writeImage: writeSingleImage,
+    authorize: feature => accountClient.authorize(feature),
+    onProgress(progress) {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:clipboard-progress', progress);
     }
   });
   protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend,

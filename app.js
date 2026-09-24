@@ -10,6 +10,7 @@ import {
 } from "./lib/clipboard.js";
 import { initializeDesktopUI } from "./desktop-ui.js";
 import { inspectVideoBlob } from "./lib/media-tracks.js";
+import { imageDimensionsFromHeader, validateImageDimensions } from "./lib/image-dimensions.js";
 
 const state = {
   title: "小红书图片",
@@ -27,8 +28,8 @@ const state = {
 };
 
 const MAX_CLIPBOARD_IMAGES = 12;
+const MAX_DESKTOP_CLIPBOARD_IMAGES = 50;
 const MAX_CLIPBOARD_SOURCE_BYTES = 30 * 1024 * 1024;
-const MAX_CLIPBOARD_PIXELS = 20_000_000;
 const MAX_CLIPBOARD_TOTAL_BYTES = 120 * 1024 * 1024;
 const CLIPBOARD_IMAGE_TIMEOUT_MS = 20_000;
 const CLIPBOARD_WRITE_TIMEOUT_MS = 30_000;
@@ -538,7 +539,12 @@ async function fetchImageBlob(
   throw new Error(await readApiError(response));
 }
 
+function hasDesktopImageClipboard() {
+  return typeof window.xhsDesktop?.copyImages === "function";
+}
+
 function imageClipboardCapabilityError() {
+  if (hasDesktopImageClipboard()) return "";
   if (!window.isSecureContext) {
     return "图片未复制：请通过 HTTPS 或 localhost 打开页面后重试。";
   }
@@ -597,101 +603,6 @@ function raceWithAbort(promise, signal, onLateResolve) {
       }
     );
   });
-}
-
-function validateImageDimensions(width, height) {
-  if (
-    !Number.isInteger(width) ||
-    !Number.isInteger(height) ||
-    width <= 0 ||
-    height <= 0 ||
-    height > Math.floor(MAX_CLIPBOARD_PIXELS / width)
-  ) {
-    throw new Error("单张图片像素过大，无法安全写入剪贴板，请下载原图。");
-  }
-}
-
-function imageDimensionsFromHeader(bytes) {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const has = (offset, values) =>
-    offset + values.length <= bytes.length &&
-    values.every((value, index) => bytes[offset + index] === value);
-
-  if (has(0, [0x89, 0x50, 0x4e, 0x47]) && bytes.length >= 24) {
-    return { width: view.getUint32(16), height: view.getUint32(20) };
-  }
-
-  if (
-    bytes.length >= 10 &&
-    (has(0, [0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
-      has(0, [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]))
-  ) {
-    return { width: view.getUint16(6, true), height: view.getUint16(8, true) };
-  }
-
-  if (has(0, [0xff, 0xd8])) {
-    const startOfFrameMarkers = new Set([
-      0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7,
-      0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf
-    ]);
-    let offset = 2;
-    while (offset + 8 < bytes.length) {
-      while (offset < bytes.length && bytes[offset] !== 0xff) offset += 1;
-      while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
-      if (offset >= bytes.length) break;
-      const marker = bytes[offset];
-      offset += 1;
-      if (marker === 0xd8 || marker === 0xd9 || marker === 0x01) continue;
-      if (offset + 2 > bytes.length) break;
-      const segmentLength = view.getUint16(offset);
-      if (segmentLength < 2 || offset + segmentLength > bytes.length) break;
-      if (startOfFrameMarkers.has(marker) && segmentLength >= 7) {
-        return {
-          width: view.getUint16(offset + 5),
-          height: view.getUint16(offset + 3)
-        };
-      }
-      offset += segmentLength;
-    }
-  }
-
-  if (
-    bytes.length >= 30 &&
-    has(0, [0x52, 0x49, 0x46, 0x46]) &&
-    has(8, [0x57, 0x45, 0x42, 0x50])
-  ) {
-    if (has(12, [0x56, 0x50, 0x38, 0x58])) {
-      return {
-        width: 1 + bytes[24] + (bytes[25] << 8) + (bytes[26] << 16),
-        height: 1 + bytes[27] + (bytes[28] << 8) + (bytes[29] << 16)
-      };
-    }
-    if (has(12, [0x56, 0x50, 0x38, 0x4c]) && bytes[20] === 0x2f) {
-      return {
-        width: 1 + (((bytes[22] & 0x3f) << 8) | bytes[21]),
-        height: 1 + (((bytes[24] & 0x0f) << 10) | (bytes[23] << 2) | ((bytes[22] & 0xc0) >> 6))
-      };
-    }
-    if (has(12, [0x56, 0x50, 0x38, 0x20]) && has(23, [0x9d, 0x01, 0x2a])) {
-      return {
-        width: view.getUint16(26, true) & 0x3fff,
-        height: view.getUint16(28, true) & 0x3fff
-      };
-    }
-  }
-
-  // AVIF / HEIF 的 ispe 属性在解码前就能提供画布尺寸。
-  for (let offset = 4; offset + 16 <= bytes.length; offset += 1) {
-    if (has(offset, [0x69, 0x73, 0x70, 0x65])) {
-      const boxSize = view.getUint32(offset - 4);
-      if (boxSize < 20) continue;
-      const width = view.getUint32(offset + 8);
-      const height = view.getUint32(offset + 12);
-      if (width && height) return { width, height };
-    }
-  }
-
-  return null;
 }
 
 async function inspectImageDimensions(blob, signal) {
@@ -894,7 +805,34 @@ function createQueuedClipboardTasks(images) {
   };
 }
 
+async function writeDesktopImagesToClipboard(images) {
+  setProgress(0, images.length, "正在准备复制原图");
+  let unsubscribe;
+  try {
+    if (typeof window.xhsDesktop.onClipboardProgress === "function") {
+      unsubscribe = window.xhsDesktop.onClipboardProgress((progress) => {
+        setProgress(
+          progress.completed,
+          progress.total,
+          progress.phase === "writing" ? "正在写入系统剪贴板" : "正在准备复制原图"
+        );
+      });
+    }
+    const result = await window.xhsDesktop.copyImages({
+      images: images.map((image) => ({ url: image.url, index: image.index })),
+      title: state.title
+    });
+    if (result?.ok !== true || result.count !== images.length) {
+      throw new Error("客户端未确认全部图片已复制，请重试。");
+    }
+    return result;
+  } finally {
+    if (typeof unsubscribe === "function") unsubscribe();
+  }
+}
+
 async function writeImagesToClipboard(images) {
+  if (hasDesktopImageClipboard()) return writeDesktopImagesToClipboard(images);
   const capabilityError = imageClipboardCapabilityError();
   if (capabilityError) throw new Error(capabilityError);
 
@@ -971,9 +909,13 @@ function imageClipboardErrorMessage(error, imageCount = 1, failureKind = null) {
 async function copyImages(images, trigger) {
   if (state.busy || images.length === 0) return;
 
-  if (images.length > MAX_CLIPBOARD_IMAGES) {
+  const desktopClipboard = hasDesktopImageClipboard();
+  const imageLimit = desktopClipboard ? MAX_DESKTOP_CLIPBOARD_IMAGES : MAX_CLIPBOARD_IMAGES;
+  if (images.length > imageLimit) {
     showToast(
-      `为避免浏览器内存过高，一次最多复制 ${MAX_CLIPBOARD_IMAGES} 张图片。请减少勾选数量，或直接下载 ZIP。`,
+      desktopClipboard
+        ? `客户端一次最多复制 ${imageLimit} 张图片。请减少勾选数量，或直接下载 ZIP。`
+        : `为避免浏览器内存过高，一次最多复制 ${imageLimit} 张图片。请减少勾选数量，或直接下载 ZIP。`,
       "error",
       7200
     );
@@ -995,8 +937,14 @@ async function copyImages(images, trigger) {
   updateSelectionUI();
 
   try {
-    await writeImagesToClipboard(images);
-    if (images.length === 1) {
+    const result = await writeImagesToClipboard(images);
+    if (desktopClipboard && result.kind === "files") {
+      showToast(
+        `已复制 ${images.length} 个独立图片文件，可粘贴到支持${images.length > 1 ? "多张" : ""}图片或文件的应用中。`,
+        "success",
+        7200
+      );
+    } else if (images.length === 1) {
       showToast("图片已写入剪贴板，可以直接粘贴。", "success");
     } else {
       state.multipleClipboardItemsSupported = true;
@@ -1007,6 +955,16 @@ async function copyImages(images, trigger) {
       );
     }
   } catch (error) {
+    if (desktopClipboard) {
+      const message = String(error?.message || "客户端无法写入系统剪贴板")
+        .replace(/^Error invoking remote method 'desktop:copy-images': Error: /, "");
+      showToast(
+        `图片未复制：${message} 可重试或下载原图。`,
+        "error",
+        7200
+      );
+      return;
+    }
     const failureKind = await resolvedClipboardWriteFailureKind(
       error,
       images.length
@@ -1575,6 +1533,7 @@ function updateSelectionUI() {
     (image) => state.selected.has(image.index) && image.liveVideo?.url
   ).length;
   const multipleItemsBlocked =
+    !hasDesktopImageClipboard() &&
     state.multipleClipboardItemsSupported === false && selectedCount > 1;
   elements.selectAllButton.textContent = allSelected ? "取消全选" : "全部选择";
   elements.copySelectedImagesButton.textContent = multipleItemsBlocked

@@ -9,7 +9,7 @@ export const PUBLIC_FILES = [
   'download.html', 'download.css', 'download.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css',
-  'lib/archive.js', 'lib/clipboard.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'assets', 'admin'
+  'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'assets', 'admin'
 ];
 
 export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.url))) {

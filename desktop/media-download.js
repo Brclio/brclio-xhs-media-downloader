@@ -158,6 +158,7 @@ function detectImageType(bytes) {
 }
 
 export async function downloadMedia({ root, directory, asset, fetchImpl, signal, beforeRequest, onDiagnostic = () => {}, maxBytes = 2 * 1024 ** 3, timeoutMs = 10 * 60 * 1000 }) {
+  const sizeLimit = maxBytes === 2 * 1024 ** 3 ? '2 GiB' : `${Math.round(maxBytes / 1024 ** 2 * 10) / 10} MiB`;
   const diagnostic = (event, fields) => { try { onDiagnostic(event, { kind: asset.kind, assetKey: asset.key, ...fields }); } catch { /* Diagnostics never interrupt saving. */ } };
   const validate = asset.kind === "image" ? isXhsImageUrl : isXhsVideoUrl;
   let url = normalizeImageUrl(asset.url);
@@ -199,7 +200,7 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
     if (!allowed) throw new Error(`媒体响应类型异常（${contentType || "未知"}），未保存。`);
     const lengthHeader = response.headers.get("content-length");
     const declared = lengthHeader === null ? null : Number(lengthHeader);
-    if (declared !== null && (!Number.isSafeInteger(declared) || declared <= 0 || declared > maxBytes)) throw new Error("媒体文件大小无效或超过 2 GiB 限制。");
+    if (declared !== null && (!Number.isSafeInteger(declared) || declared <= 0 || declared > maxBytes)) throw new Error(`媒体文件大小无效或超过 ${sizeLimit} 限制。`);
     if (!response.body) throw new Error("媒体响应为空。");
     await assertSafeDirectory(root, directory);
     temporary = path.join(directory, `.${asset.key}.${randomUUID()}.part`);
@@ -213,7 +214,7 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
       const chunk = await reader.read();
       if (chunk.done) break;
       bytes += chunk.value.byteLength;
-      if (bytes > maxBytes) throw new Error("媒体文件超过 2 GiB 限制。");
+      if (bytes > maxBytes) throw new Error(`媒体文件超过 ${sizeLimit} 限制。`);
       if (prefix.length < 64) prefix = Buffer.concat([prefix, Buffer.from(chunk.value).subarray(0, 64 - prefix.length)]);
       hash.update(chunk.value);
       await handle.writeFile(chunk.value);

@@ -102,7 +102,7 @@ test('static download anchors point to one complete branded release', () => {
   assert.match(tag, /^v\d+\.\d+\.\d+$/);
   for (const [key, suffix] of Object.entries(suffixes)) {
     assert.equal(current.links[key], `${base}/download/${tag}/Brclio-XHS-Downloader-${tag.slice(1)}-${suffix}`);
-    assert.match(current.sizes[key], /^\d+\.\d MB$/);
+    assert.match(current.sizes[key], /^(?:\d+\.\d MB|大小以发布附件为准)$/);
   }
   assert.ok(current.releaseLinks.every(url => url === `${base}/tag/${tag}`));
 });

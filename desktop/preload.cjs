@@ -1,6 +1,13 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
+  copyImages: (input) => ipcRenderer.invoke('desktop:copy-images', input),
+  onClipboardProgress: (callback) => {
+    if (typeof callback !== 'function') throw new TypeError('callback must be a function');
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on('desktop:clipboard-progress', listener);
+    return () => ipcRenderer.removeListener('desktop:clipboard-progress', listener);
+  },
   getDiagnosticsInfo: () => ipcRenderer.invoke('desktop:diagnostics-info'),
   copyDiagnostics: () => ipcRenderer.invoke('desktop:copy-diagnostics'),
   exportDiagnostics: () => ipcRenderer.invoke('desktop:export-diagnostics'),

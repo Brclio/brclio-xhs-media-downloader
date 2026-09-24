@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "1.8.11",
+  "version": "1.8.12",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页版与 Mac / Windows 本地版，支持主页批量下载和自定义间隔",
@@ -11,6 +11,7 @@
     "test:python": "python3 -m unittest discover -s test -p 'test_python_*.py'",
     "desktop:dev": "electron .",
     "desktop:verify": "electron scripts/verify-desktop.mjs",
+    "desktop:verify:clipboard": "electron scripts/verify-native-clipboard.mjs",
     "desktop:verify:startup": "electron scripts/verify-startup-storage.mjs --use-mock-keychain",
     "desktop:prepare": "python3 scripts/build-python.py",
     "desktop:prepare:windows": "python scripts/build-windows-python.py",
