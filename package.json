@@ -59,6 +59,7 @@
       "package.json",
       "index.html",
       "changelog.html",
+      "changelog.js",
       "download.html",
       "*.css",
       "*.svg",
