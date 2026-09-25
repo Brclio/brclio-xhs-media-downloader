@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Brclio 小红书下载器的更新记录。v1.8.13 改进客户端多图复制：使用系统剪贴板一次复制独立原图，保留内容与顺序，可在支持多文件粘贴的应用中一次粘贴。"
+      content="查看 Brclio 小红书下载器的网页版与 Mac / Windows 客户端更新记录，按平台、版本和关键词查找功能、修复与升级说明。记录整理至 2026 年 9 月 25 日，最新正式客户端为 v1.8.13。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -39,9 +39,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="当前记录：v1.8.13 本地版">
+          <div class="header-status" aria-label="记录整理至 2026 年 9 月 25 日">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>v1.8.13 本地版</span>
+            <span>更新至 2026.09.25</span>
           </div>
         </div>
       </div>
@@ -54,48 +54,69 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              这里记录功能增加、体验优化与问题修复。v1.8.13 改进客户端多图复制：勾选原图后一次复制，保留独立文件与顺序，可在支持多文件粘贴的应用中一次粘贴。
+              从网页单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。先选你使用的平台，再找到关心的版本与变化。
             </p>
 
             <div class="release-hero-actions">
-              <a class="button button-primary" href="/">开始使用下载工具 <span aria-hidden="true">↗</span></a>
+              <a class="button button-primary" href="#release-tools">查看最近更新 <span aria-hidden="true">↓</span></a>
               <a
                 class="button button-secondary"
-                href="https://github.com/Brclio/brclio-xhs-media-downloader/commits/main/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >查看 GitHub 原始记录 <span aria-hidden="true">↗</span></a>
+                href="/download.html"
+              >下载客户端 <span aria-hidden="true">↗</span></a>
             </div>
           </div>
 
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
-              <span>DESKTOP EDITION</span>
+              <span>最新正式客户端 · DESKTOP</span>
               <strong>v1.8.13</strong>
-              <small>本地版 · 2026.09.25</small>
+              <small>发布于 2026.09.25 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
-                <strong>Mac</strong>
-                <span>macOS 本地版</span>
+                <strong>Web</strong>
+                <span>浏览器单篇下载</span>
               </div>
               <div class="summary-stat">
-                <strong>Win</strong>
-                <span>Windows 本地版</span>
+                <strong>App</strong>
+                <span>客户端主页批量</span>
               </div>
               <div class="summary-stat">
-                <strong>2</strong>
-                <span>内置下载引擎</span>
+                <strong>07.30</strong>
+                <span>首条更新 · 2026</span>
               </div>
               <div class="summary-stat">
-                <strong>10s</strong>
-                <span>另加 0–3 秒随机等待</span>
+                <strong>09.25</strong>
+                <span>最近整理 · 2026</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> Mac / Windows 安装包内置运行环境，无需另装 Python 或 Node.js。主页批量下载默认需要有效会员与已授权设备。</p>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 近期网页更新按日期记录，客户端按版本发布；早期网页编号保留。原生多图复制与主页批量下载属于客户端功能。</p>
+            <a class="release-summary-link" href="#native-clipboard-update">阅读 v1.8.13 更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
+        </section>
+
+        <section id="release-tools" class="release-tools" aria-labelledby="release-tools-title">
+          <div class="release-tools-heading">
+            <span class="section-label">FIND AN UPDATE / 查找更新</span>
+            <h2 id="release-tools-title">找到你关心的那次更新。</h2>
+            <p>按使用平台筛选，或搜索版本、功能与问题。共用的功能会出现在两个平台下。</p>
+          </div>
+          <div class="release-controls" hidden>
+            <div class="release-filters" role="group" aria-label="按使用平台筛选">
+              <button type="button" data-release-filter="all" aria-pressed="true" aria-controls="release-feed">全部更新</button>
+              <button type="button" data-release-filter="web" aria-pressed="false" aria-controls="release-feed">网页版</button>
+              <button type="button" data-release-filter="desktop" aria-pressed="false" aria-controls="release-feed">客户端</button>
+            </div>
+            <div class="release-search">
+              <label for="release-query">版本或关键词</label>
+              <input id="release-query" type="search" placeholder="试试 v1.8.13、实况、更新" autocomplete="off" aria-controls="release-feed" />
+              <button id="release-reset" type="button" disabled>清除筛选</button>
+            </div>
+            <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
+          </div>
+          <noscript><p>下方已完整展示所有记录，可使用快速定位或浏览器页面查找。</p></noscript>
         </section>
 
         <section class="release-ledger" aria-labelledby="ledger-title">
@@ -105,11 +126,14 @@
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
               <a href="#native-clipboard-update"><span>v1.8.13</span><strong>原生多图复制与粘贴</strong></a>
+              <a href="#website-release-sync"><span>09.25</span><strong>官网同步与复制说明</strong></a>
               <a href="#membership-purchase-update"><span>v1.8.11</span><strong>开通会员与邮箱发码</strong></a>
+              <a href="#download-page-update"><span>09.23</span><strong>软件下载与安装指南</strong></a>
               <a href="#historical-update-notice"><span>v1.8.8</span><strong>历史安装提示不打断下载</strong></a>
               <a href="#mac-update-relaunch"><span>v1.8.7</span><strong>Mac 重开与清理恢复</strong></a>
               <a href="#verified-release-patch"><span>v1.8.6</span><strong>修复汇总与发布核验</strong></a>
               <a href="#mac-startup-recovery"><span>v1.8.5</span><strong>钥匙串、启动与旧版清理</strong></a>
+              <a href="#cloudflare-web-update"><span>09.23</span><strong>网页服务迁移</strong></a>
               <a href="#known-update-download"><span>v1.8.4</span><strong>检查受限仍可继续更新</strong></a>
               <a href="#install-confirmation-update"><span>v1.8.3</span><strong>安装确认与旧客户端清理</strong></a>
               <a href="#resumable-update"><span>v1.8.2</span><strong>续传、安装进度与更新弹窗</strong></a>
@@ -119,8 +143,8 @@
               <a href="#account-membership-update"><span>v1.7.0</span><strong>账号与会员授权</strong></a>
               <a href="#app-name-update"><span>v1.6.3</span><strong>统一应用名称</strong></a>
               <a href="#design-credit-update"><span>v1.6.2</span><strong>Brclio 设计署名</strong></a>
-              <a href="#desktop-1-6-update"><span>v1.6</span><strong>重试与应用更新</strong></a>
-              <a href="#desktop-1-5-update"><span>v1.5</span><strong>本地版与主页下载</strong></a>
+              <a href="#desktop-1-6-update"><span>v1.6.1</span><strong>重试与应用更新</strong></a>
+              <a href="#desktop-1-5-update"><span>v1.5.0</span><strong>本地版与主页下载</strong></a>
               <a href="#mobile-counter-update"><span>MOBILE</span><strong>手机统计优化</strong></a>
               <a href="#glass-counter-update"><span>GLASS</span><strong>液态玻璃浮层</strong></a>
               <a href="#visit-counter-update"><span>PV</span><strong>网站访问统计</strong></a>
@@ -142,12 +166,13 @@
             </nav>
 
             <p class="release-index-note">
-              本地版使用功能记录日期；历史提交使用 Git 作者时间，统一按 Asia/Shanghai（UTC+08:00）展示。
+              近期正式版使用发布日期，网页与历史记录使用对应提交日期，均为北京时间。未发布的构建在后续正式版中单独说明。
             </p>
           </aside>
 
-          <div class="release-feed">
-            <article id="native-clipboard-update" class="release-entry release-entry-featured">
+          <div id="release-feed" class="release-feed">
+            <p class="release-empty" hidden>没有找到匹配的更新。试试更短的关键词，或点击“清除筛选”查看全部记录。</p>
+            <article id="native-clipboard-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-25"><span>09.25</span><small>2026 · 多图复制</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.13</span><span class="release-status">Mac / Windows</span></div><h3>多张原图，一次复制、一次粘贴</h3></div></header>
@@ -155,28 +180,56 @@
                 <div class="change-list">
                   <div class="change-item"><span aria-hidden="true">01</span><p><strong>客户端原生复制</strong>多图复制不再因 Chrome / Chromium 的网页限制而禁用。常规单张 PNG / JPEG 继续使用图片剪贴板，其他格式和大像素原图自动改为文件复制，并明确提示。</p></div>
                   <div class="change-item"><span aria-hidden="true">02</span><p><strong>全部准备好，再一次写入</strong>复制过程显示进度，一次最多 50 张、单张 30 MiB、总量 120 MiB。失败不会只提交部分图片；当前原图退出客户端后仍可粘贴。</p></div>
-                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>10 张真实图片核对通过</strong>Mac 实际笔记验收完成一次点击复制、一次系统粘贴，独立接收窗口显示全部 10 张原图，内容摘要与顺序逐张一致。接收应用仍需支持多图片或多文件粘贴。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>按笔记顺序保留原图</strong>多张图片保留为独立文件，按原笔记序号命名，不拼成长图、不转成压缩包。接收应用需支持多图片或多文件粘贴；部分输入框可能只接收一张。</p></div>
                 </div>
-                <p class="release-lead">网页端保留浏览器复制与兼容提示；实况动态 MP4 继续使用下载入口。原有单篇下载、主页任务、账号与会员和自动更新功能保持。</p>
+                <p class="release-lead">实况笔记只复制静态原图，动态 MP4 继续通过下载入口保存。Mac v1.8.3–v1.8.6 请用完整 DMG 手动覆盖；较新版本可在“关于软件”检查更新，具体步骤见本版说明。</p>
+                <p class="release-card-note"><strong>版本衔接</strong>v1.8.12 未发布安装包，原生多图复制功能随 v1.8.13 正式发布。<a href="https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v1.8.12.md" target="_blank" rel="noopener noreferrer">查看未发布构建说明 ↗</a></p>
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.13" target="_blank" rel="noopener noreferrer">查看 v1.8.13 安装包与验收范围 ↗</a><span>原生多图复制 · 2026.09.25</span></div>
               </div>
             </article>
-            <article id="membership-purchase-update" class="release-entry release-entry-featured">
+            <article id="website-release-sync" class="release-entry" data-release-platforms="web">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-25"><span>09.25</span><small>2026 · 网页更新</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-blue">官网同步</span><span class="release-status">网页版</span></div><h3>官网与安装包，版本信息同步</h3></div></header>
+                <p class="release-lead">软件下载页与更新记录同步到正式客户端 v1.8.13。先看清适用平台，再选择对应的安装包。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>下载版本一致</strong>Mac Apple 芯片、Mac Intel、Windows 安装版与便携版统一指向 v1.8.13，展示对应文件大小、发布日期与版本说明。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>网页复制能力说明</strong>浏览器内仍使用网页剪贴板，部分浏览器无法一次复制多张图片，可用批量下载保存。系统剪贴板一次复制独立原图属于客户端功能。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>升级前找到说明</strong>软件下载页提供系统要求、Mac 手动覆盖步骤与常见问题，旧版用户可先查看适合自己的升级方式。</p></div>
+                </div>
+                <div class="release-card-footer"><a href="/download.html">选择适合电脑的安装包 ↗</a><span>官网同步 · 2026.09.25</span></div>
+              </div>
+            </article>
+            <article id="membership-purchase-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-24"><span>09.24</span><small>2026 · 会员开通</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.11</span><span class="release-status">Mac / Windows</span></div><h3>选择会员套餐，激活码发到邮箱</h3></div></header>
                 <p class="release-lead">“账号与会员”新增“开通会员”入口。日付 2 元 / 1 天、月付 9.9 元 / 30 天、年付 39.9 元 / 365 天，支持微信与支付宝扫码付款，按次购买，不自动续费。</p>
                 <div class="change-list">
                   <div class="change-item"><span aria-hidden="true">01</span><p><strong>付款务必备注软件账号邮箱</strong>登录后可直接复制邮箱，核实收款后激活码发送至该邮箱。收到邮件后在客户端兑换，会员从兑换时生效；已有未到期时长会员会顺延。</p></div>
-                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>按邮箱生成，核对后发送</strong>管理员查找已注册邮箱、选择套餐并生成激活码，预览邮箱、套餐与有效期，再点击发送。会员天数与可选的兑换截止时间分别展示，指定邮箱的激活码仅限对应账号兑换。</p></div>
-                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>发送有记录，失败可重试</strong>后台可查看发送状态，刷新后仍能从原记录继续发送；重试使用同一激活码，已确认发送不会重复提交。旧激活码与批量生成功能继续兼容。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>激活码与软件账号对应</strong>发往指定邮箱的激活码仅限对应软件账号兑换。会员使用天数与激活码的兑换截止时间分别展示，兑换前可以核对。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>发码记录可追踪</strong>管理后台记录邮件发送状态，失败后可用原激活码重试。旧激活码继续兼容；实际收到邮件后，回到客户端兑换即可。</p></div>
                 </div>
-                <p class="release-lead">收款码与客服好友码分别展示，均已裁切保留二维码与必要白边。付款后等待人工核实，邮件未到请检查垃圾邮件；付款本身不会直接激活会员。</p>
+                <p class="release-lead">付款后需要人工核实，邮件未到请检查垃圾邮件；忘记备注邮箱时，可通过客服提供付款记录与软件账号邮箱。付款本身不会直接激活会员。</p>
                 <p class="release-lead">Mac v1.8.3–v1.8.6 请使用完整 DMG：等待现有安装结束，退出旧版后覆盖，再从安装位置手动打开。v1.8.7 / v1.8.8 可使用应用内更新。原有下载、任务记录与更新恢复功能继续保留。</p>
+                <p class="release-card-note"><strong>版本衔接</strong>v1.8.9、v1.8.10 的构建检查未全部通过，均未发布安装包；会员开通功能随 v1.8.11 正式发布。<a href="https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v1.8.9.md" target="_blank" rel="noopener noreferrer">v1.8.9 说明 ↗</a> · <a href="https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v1.8.10.md" target="_blank" rel="noopener noreferrer">v1.8.10 说明 ↗</a></p>
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.11" target="_blank" rel="noopener noreferrer">查看 v1.8.11 安装包与升级步骤 ↗</a><span>会员开通 · 2026.09.24</span></div>
               </div>
             </article>
-            <article id="historical-update-notice" class="release-entry release-entry-featured">
+            <article id="download-page-update" class="release-entry" data-release-platforms="web">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 网页更新</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-blue">新增入口</span><span class="release-status">网页版</span></div><h3>软件下载与安装说明，现在集中在一页</h3></div></header>
+                <p class="release-lead">新增独立软件下载页，把安装包、系统要求、使用步骤与常见问题放在一起，网页导航也能直接进入。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>按电脑选择安装包</strong>区分 Mac Apple 芯片与 Intel 芯片，提供 Windows 安装版与便携版。页面按系统给出提示，Mac 芯片类型由你核对选择。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>首次使用有步骤</strong>从安装客户端、登录软件账号，到授权小红书浏览器会话与建立主页任务，逐步说明；同时解释两类账号与会员用途。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>版本查询失败仍能下载</strong>页面会核对最新正式版的完整安装包；暂时查不到新版本时，保留已确认的下载入口。</p></div>
+                </div>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/8c67d75" target="_blank" rel="noopener noreferrer">查看这次页面更新 ↗</a><span>功能记录 · 2026.09.23</span></div>
+              </div>
+            </article>
+            <article id="historical-update-notice" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 更新提示</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.8</span><span class="release-status">Mac / Windows</span></div><h3>上次安装的提示，不再打断这次下载</h3></div></header>
@@ -190,7 +243,7 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.8" target="_blank" rel="noopener noreferrer">查看 v1.8.8 安装包与升级步骤 ↗</a><span>历史提示 · 2026.09.23</span></div>
               </div>
             </article>
-            <article id="mac-update-relaunch" class="release-entry release-entry-featured">
+            <article id="mac-update-relaunch" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 更新修复</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.7</span><span class="release-status">Mac / Windows</span></div><h3>升级后正常打开，慢启动也能确认</h3></div></header>
@@ -204,7 +257,7 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.7" target="_blank" rel="noopener noreferrer">下载 v1.8.7 与查看升级步骤 ↗</a><span>启动与清理 · 2026.09.23</span></div>
               </div>
             </article>
-            <article id="verified-release-patch" class="release-entry release-entry-featured">
+            <article id="verified-release-patch" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 补丁版</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.6</span><span class="release-status">Mac / Windows</span></div><h3>汇总修复，核对每份安装包</h3></div></header>
@@ -219,7 +272,7 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.6" target="_blank" rel="noopener noreferrer">下载 v1.8.6 与查看补丁说明 ↗</a><span>修复与发布 · 2026.09.23</span></div>
               </div>
             </article>
-            <article id="mac-startup-recovery" class="release-entry release-entry-featured">
+            <article id="mac-startup-recovery" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 启动修复</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.5</span><span class="release-status">Mac / Windows</span></div><h3>窗口先打开，升级有确认</h3></div></header>
@@ -233,7 +286,20 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.5" target="_blank" rel="noopener noreferrer">下载 v1.8.5 与查看升级说明 ↗</a><span>启动与恢复 · 2026.09.23</span></div>
               </div>
             </article>
-            <article id="known-update-download" class="release-entry release-entry-featured">
+            <article id="cloudflare-web-update" class="release-entry" data-release-platforms="web">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-23"><span>09.23</span><small>2026 · 网页更新</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-blue">服务更新</span><span class="release-status">网页版</span></div><h3>网页服务迁移，熟悉的网址继续使用</h3></div></header>
+                <p class="release-lead">网页与媒体下载迁移至 Cloudflare，继续使用原官网地址。笔记链接的粘贴、解析和保存流程延续原有用法。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>原有下载方式继续使用</strong>保留电脑长链、手机分享短链、Node.js 与 Python 双引擎，以及图片、视频和实况内容入口。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>保留解析回退</strong>原生笔记解析遇到上游限制或失败时，可交给原 Vercel 服务的同一引擎继续解析；图片与视频下载由 Cloudflare 处理。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>账号与客户端继续衔接</strong>沿用原账号服务与数据，客户端主页批量仍在本机运行，无需仅为托管迁移重新安装。</p></div>
+                </div>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/commit/6481338" target="_blank" rel="noopener noreferrer">查看这次服务更新 ↗</a><span>服务记录 · 2026.09.23</span></div>
+              </div>
+            </article>
+            <article id="known-update-download" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-22"><span>09.22</span><small>2026 · 更新修复</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.4</span><span class="release-status">Mac / Windows</span></div><h3>已发现的更新，继续下载</h3></div></header>
@@ -246,7 +312,7 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.4" target="_blank" rel="noopener noreferrer">下载 v1.8.4 与查看验证说明 ↗</a><span>更新修复 · 2026.09.22</span></div>
               </div>
             </article>
-            <article id="install-confirmation-update" class="release-entry release-entry-featured">
+            <article id="install-confirmation-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-22"><span>09.22</span><small>2026 · 体验修正</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.3</span><span class="release-status">Mac / Windows</span></div><h3>确认更清楚，升级不留旧备份</h3></div></header>
@@ -259,7 +325,7 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.3" target="_blank" rel="noopener noreferrer">下载 v1.8.3 与查看验证说明 ↗</a><span>安装体验 · 2026.09.22</span></div>
               </div>
             </article>
-            <article id="resumable-update" class="release-entry release-entry-featured">
+            <article id="resumable-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-22"><span>09.22</span><small>2026 · 体验版</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.2</span><span class="release-status">Mac / Windows</span></div><h3>下载接着来，安装看得见</h3></div></header>
@@ -272,7 +338,7 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.2" target="_blank" rel="noopener noreferrer">下载 v1.8.2 与查看验证说明 ↗</a><span>应用更新 · 2026.09.22</span></div>
               </div>
             </article>
-            <article id="branded-downloads-update" class="release-entry release-entry-featured">
+            <article id="branded-downloads-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-21"><span>09.21</span><small>2026 · 优化版</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.1</span><span class="release-status">Mac / Windows</span></div><h3>更清楚地下载安装，也更方便地找到我们</h3></div></header>
@@ -285,7 +351,7 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.1" target="_blank" rel="noopener noreferrer">下载 v1.8.1 与查看验证说明 ↗</a><span>发布与邮件 · 2026.09.21</span></div>
               </div>
             </article>
-            <article id="desktop-feedback-update" class="release-entry release-entry-featured">
+            <article id="desktop-feedback-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-21"><span>09.21</span><small>2026 · 功能版</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.0</span><span class="release-status">Mac / Windows</span></div><h3>分开每个工作页面，让问题有记录可查</h3></div></header>
@@ -299,7 +365,7 @@
                 <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.0" target="_blank" rel="noopener noreferrer">查看安装包与验证范围 ↗</a><span>桌面体验 · 2026.09.21</span></div>
               </div>
             </article>
-            <article id="mac-signature-update" class="release-entry release-entry-featured">
+            <article id="mac-signature-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20"><span>09.20</span><small>2026 · 修复版</small></time>
@@ -322,7 +388,7 @@
               </div>
             </article>
 
-            <article id="account-membership-update" class="release-entry">
+            <article id="account-membership-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20"><span>09.20</span><small>2026 · 本地版</small></time>
@@ -347,7 +413,7 @@
               </div>
             </article>
 
-            <article id="app-name-update" class="release-entry">
+            <article id="app-name-update" class="release-entry" data-release-platforms="web desktop">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20"><span>09.20</span><small>2026 · 本地版</small></time>
@@ -355,7 +421,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges"><span class="release-badge release-badge-yellow">v1.6.3</span><span class="release-status">Mac / Windows</span></div>
+                    <div class="release-badges"><span class="release-badge release-badge-yellow">v1.6.3</span><span class="release-status">网页版 / 客户端</span></div>
                     <h3>统一应用名称：Brclio 小红书下载器</h3>
                   </div>
                 </header>
@@ -365,7 +431,7 @@
               </div>
             </article>
 
-            <article id="design-credit-update" class="release-entry">
+            <article id="design-credit-update" class="release-entry" data-release-platforms="web desktop">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20"><span>09.20</span><small>2026 · 本地版</small></time>
@@ -373,7 +439,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges"><span class="release-badge release-badge-yellow">v1.6.2</span><span class="release-status">Mac / Windows</span></div>
+                    <div class="release-badges"><span class="release-badge release-badge-yellow">v1.6.2</span><span class="release-status">网页版 / 客户端</span></div>
                     <h3>统一 Brclio 设计署名与版权链接</h3>
                   </div>
                 </header>
@@ -383,7 +449,7 @@
               </div>
             </article>
 
-            <article id="desktop-1-6-update" class="release-entry">
+            <article id="desktop-1-6-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20"><span>09.20</span><small>2026 · 本地版</small></time>
@@ -406,7 +472,7 @@
               </div>
             </article>
 
-            <article id="desktop-1-5-update" class="release-entry">
+            <article id="desktop-1-5-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-20">
@@ -458,7 +524,7 @@
               </div>
             </article>
 
-            <article id="mobile-counter-update" class="release-entry">
+            <article id="mobile-counter-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-05T23:17:52+08:00">
@@ -469,7 +535,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">MOBILE</span>
                       <span class="release-status">已提交</span>
                     </div>
@@ -503,7 +569,7 @@
               </div>
             </article>
 
-            <article id="glass-counter-update" class="release-entry">
+            <article id="glass-counter-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-05T23:02:16+08:00">
@@ -514,7 +580,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-blue">GLASS</span>
                       <span class="release-status">已提交</span>
                     </div>
@@ -544,7 +610,7 @@
               </div>
             </article>
 
-            <article id="visit-counter-update" class="release-entry">
+            <article id="visit-counter-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-09-05T22:41:58+08:00">
@@ -555,7 +621,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">PV</span>
                       <span class="release-status">已提交</span>
                     </div>
@@ -589,7 +655,7 @@
               </div>
             </article>
 
-            <article id="vercel-dev-update" class="release-entry">
+            <article id="vercel-dev-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-25T14:47:20+08:00">
@@ -600,7 +666,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-red">DEV</span>
                       <span class="release-status">已提交</span>
                     </div>
@@ -626,7 +692,7 @@
               </div>
             </article>
 
-            <article id="changelog-follow-update" class="release-entry">
+            <article id="changelog-follow-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-25T14:40:32+08:00">
@@ -637,7 +703,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-blue">DOCS</span>
                       <span class="release-status">已提交</span>
                     </div>
@@ -663,7 +729,7 @@
               </div>
             </article>
 
-            <article id="follow-tip-update" class="release-entry">
+            <article id="follow-tip-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-25T14:28:35+08:00">
@@ -675,7 +741,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">FOLLOW</span>
                       <span class="release-status">体验优化 · 已提交</span>
                     </div>
@@ -720,7 +786,7 @@
               </div>
             </article>
 
-            <article id="creator-support-update" class="release-entry">
+            <article id="creator-support-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-24T22:00:07+08:00">
@@ -731,7 +797,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">SUPPORT</span>
                       <span class="release-status">已提交</span>
                     </div>
@@ -761,7 +827,7 @@
               </div>
             </article>
 
-            <article id="live-photo-update" class="release-entry">
+            <article id="live-photo-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-24T20:26:55+08:00">
@@ -773,7 +839,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-red">v1.4</span>
                       <span class="release-status">功能增加 · 已提交</span>
                     </div>
@@ -816,7 +882,7 @@
               </div>
             </article>
 
-            <article id="clipboard-compat-update" class="release-entry">
+            <article id="clipboard-compat-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-23T16:35:03+08:00">
@@ -828,7 +894,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-red">FIX</span>
                       <span class="release-status">兼容修复 · 已提交</span>
                     </div>
@@ -871,7 +937,7 @@
               </div>
             </article>
 
-            <article id="mobile-share-update" class="release-entry">
+            <article id="mobile-share-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-23T15:54:56+08:00">
@@ -883,7 +949,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">FEATURE</span>
                       <span class="release-status">功能增加 · 已提交</span>
                     </div>
@@ -922,7 +988,7 @@
               </div>
             </article>
 
-            <article id="brand-update" class="release-entry">
+            <article id="brand-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-23T15:34:02+08:00">
@@ -934,7 +1000,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">BRAND</span>
                       <span class="release-status">视觉识别 · 已提交</span>
                     </div>
@@ -965,7 +1031,7 @@
               </div>
             </article>
 
-            <article id="clipboard-update" class="release-entry">
+            <article id="clipboard-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-23T15:27:07+08:00">
@@ -977,7 +1043,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">FEATURE</span>
                       <span class="release-status">功能增加 · 已提交</span>
                     </div>
@@ -1016,7 +1082,7 @@
               </div>
             </article>
 
-            <article id="workspace-update" class="release-entry">
+            <article id="workspace-update" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-23T14:45:43+08:00">
@@ -1028,7 +1094,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">FEATURE</span>
                       <span class="release-status">已提交</span>
                     </div>
@@ -1063,7 +1129,7 @@
               </div>
             </article>
 
-            <article id="ui-refresh" class="release-entry">
+            <article id="ui-refresh" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-08-23T14:09:49+08:00">
@@ -1075,7 +1141,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-blue">UI REFRESH</span>
                       <span class="release-status">已提交</span>
                     </div>
@@ -1116,7 +1182,7 @@
               </div>
             </article>
 
-            <article id="version-1-3" class="release-entry">
+            <article id="version-1-3" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-07-31T23:00:03+08:00">
@@ -1128,7 +1194,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-red">v1.3</span>
                       <span class="release-status">功能增加</span>
                     </div>
@@ -1169,7 +1235,7 @@
               </div>
             </article>
 
-            <article id="version-1-2" class="release-entry">
+            <article id="version-1-2" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-07-31T10:06:56+08:00">
@@ -1181,7 +1247,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-blue">v1.2</span>
                       <span class="release-status">功能增加</span>
                     </div>
@@ -1222,7 +1288,7 @@
               </div>
             </article>
 
-            <article id="version-1-1" class="release-entry">
+            <article id="version-1-1" class="release-entry" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-07-31T08:22:58+08:00">
@@ -1234,7 +1300,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-yellow">v1.1</span>
                       <span class="release-status">解析修复</span>
                     </div>
@@ -1275,7 +1341,7 @@
               </div>
             </article>
 
-            <article id="first-release" class="release-entry release-entry-last">
+            <article id="first-release" class="release-entry release-entry-last" data-release-platforms="web">
               <div class="release-entry-rail">
                 <span class="release-dot" aria-hidden="true"></span>
                 <time datetime="2026-07-30T23:34:17+08:00">
@@ -1287,7 +1353,7 @@
               <div class="release-card">
                 <header class="release-card-heading">
                   <div>
-                    <div class="release-badges">
+                    <div class="release-badges"><span class="release-status">网页版</span>
                       <span class="release-badge release-badge-dark">v1.0</span>
                       <span class="release-status">首次提交</span>
                     </div>
@@ -1339,15 +1405,15 @@
           <div class="source-facts">
             <div class="source-fact">
               <span>01</span>
-              <p><strong>时间</strong>本地版新增内容使用功能记录日期；历史提交来自 Git author date，并统一换算为北京时间。</p>
+              <p><strong>时间</strong>近期正式版按 GitHub 发布日期记录，网页与历史记录按对应提交日期记录，统一使用北京时间。</p>
             </div>
             <div class="source-fact">
               <span>02</span>
-              <p><strong>版本</strong>本地版对应当前 package 版本；历史版本来自相应提交中的 package 与 README。</p>
+              <p><strong>版本</strong>客户端正式版链接到安装包与升级说明。未发布的构建单独标注；早期网页版本保留当时的编号。</p>
             </div>
             <div class="source-fact">
               <span>03</span>
-              <p><strong>内容</strong>根据实际代码差异归纳；一次提交不自动等同于一次正式上线。</p>
+              <p><strong>内容</strong>根据版本说明、实际变更与发布记录整理。历史记录反映当时的功能；下载当前版本请前往软件下载页。</p>
             </div>
           </div>
 
@@ -1365,7 +1431,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>本地版记录更新至 v1.8.13（2026.09.25）；历史 Git 记录保留至 e93e02a，核对日期为 2026.09.06。</p>
+        <p>网页版与客户端记录整理至 2026.09.25 · 最新正式客户端 v1.8.13。</p>
         <div class="footer-credits">
           <a
             class="design-credit"
@@ -1408,6 +1474,7 @@
 
     <!-- © 2026 Brclio · Brclio/brclio-design-system · CC BY-NC-SA 4.0 -->
     <section class="design-system-signature" aria-hidden="true">brclio-design-system</section>
+    <script defer src="/changelog.js"></script>
     <script defer src="/visit-counter.js"></script>
   </body>
 </html>

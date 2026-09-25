@@ -5,7 +5,7 @@ import path from 'node:path';
 // Only this allowlist becomes public static content. Vercel builds /api
 // functions separately and traces their server-side imports.
 export const PUBLIC_FILES = [
-  'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css',
+  'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css', 'changelog.js',
   'download.html', 'download.css', 'download.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css',
