@@ -1,0 +1,54 @@
+{
+  "release": "v1.8.14",
+  "commit": "620288fbaf387193b218a23b5480119877b26fdd",
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-09-26T02:20:03.653Z",
+  "checks": [
+    {
+      "file": "download.html",
+      "status": 200,
+      "bytes": 18411,
+      "sha256": "823727a1d8bc8fc8376c036c9bae150be41a9ab8ae2da36a5e6d3d66b16894d3",
+      "localBytesMatch": true
+    },
+    {
+      "file": "download.js",
+      "status": 200,
+      "bytes": 5564,
+      "sha256": "7a88e3323147d734812c8467d99b6eb9b64cf6d8f591effef35fac507850c491",
+      "localBytesMatch": true
+    },
+    {
+      "file": "changelog.html",
+      "status": 200,
+      "bytes": 111096,
+      "sha256": "dde35dd1fc0b73e8b708e3ca3bb6cb503e33d9078d5be954b41d9f9d00b43aac",
+      "localBytesMatch": true
+    },
+    {
+      "file": "changelog.js",
+      "status": 200,
+      "bytes": 4344,
+      "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+      "localBytesMatch": true
+    }
+  ],
+  "downloadLinks": [
+    {
+      "platform": "mac-arm64",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.14/Brclio-XHS-1.8.14-mac-arm64.dmg"
+    },
+    {
+      "platform": "mac-x64",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.14/Brclio-XHS-1.8.14-mac-x64.dmg"
+    },
+    {
+      "platform": "windows-setup",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.14/Brclio-XHS-1.8.14-windows-x64-setup.exe"
+    },
+    {
+      "platform": "windows-portable",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.14/Brclio-XHS-1.8.14-windows-x64-portable.exe"
+    }
+  ]
+}
