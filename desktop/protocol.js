@@ -9,6 +9,7 @@ export const APP_URL = 'xhs-app://local';
 const STATIC_FILES = new Set([
   'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css', 'changelog.js',
   'download.html', 'download.css', 'download.js',
+  'product.html', 'product.css', 'product.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js'
 ]);

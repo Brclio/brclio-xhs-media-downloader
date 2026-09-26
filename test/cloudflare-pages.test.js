@@ -48,7 +48,7 @@ test('gateway leaves binary ranges, admin redirects and security headers untouch
 test('route manifest invokes only API and admin paths and static fallback never calls APP', async () => {
   const routes = JSON.parse(await readFile(new URL('../cloudflare/pages/_routes.json', import.meta.url), 'utf8'));
   assert.deepEqual(routes, { version: 1, include: ['/api/*', '/admin*'], exclude: [] });
-  for (const urlPath of ['/', '/app.js', '/style.css', '/changelog', '/download', '/download.html', '/download.css', '/download.js', '/assets/downloads/hero.webp', '/assets/example.png']) {
+  for (const urlPath of ['/', '/app.js', '/style.css', '/changelog', '/download', '/download.html', '/download.css', '/download.js', '/product', '/product.html', '/product.css', '/product.js', '/assets/downloads/hero.webp', '/assets/example.png']) {
     const request = new Request(`https://xhs.example.test${urlPath}`);
     const result = new Response('static');
     assert.equal(await gateway.fetch(request, {
@@ -82,6 +82,7 @@ test('Pages build uses the public allowlist, removes stale files and includes on
     assert.ok(entries.includes('_routes.json'));
     assert.ok(entries.includes('index.html'));
     for (const name of ['download.html', 'download.css', 'download.js']) assert.ok(entries.includes(name));
+    for (const name of ['product.html', 'product.css', 'product.js']) assert.ok(entries.includes(name));
     assert.equal(await readFile(path.join(output, 'assets/downloads/hero.webp'), 'utf8'), 'public-image');
     for (const forbidden of ['.env', 'wrangler.jsonc', 'stale-secret.txt', 'api', 'server', 'desktop']) assert.ok(!entries.includes(forbidden));
     assert.equal(await readFile(path.join(output, '_worker.js'), 'utf8'), await readFile(new URL('../cloudflare/pages/_worker.js', import.meta.url), 'utf8'));

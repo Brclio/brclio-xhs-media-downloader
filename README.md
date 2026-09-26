@@ -26,6 +26,8 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 [项目仓库](https://github.com/Brclio/brclio-xhs-media-downloader) · [下载最新版安装包](https://github.com/Brclio/brclio-xhs-media-downloader/releases/latest)
 
+产品介绍页位于 [`product.html`](product.html)，可从下载工具顶部的「产品介绍」打开，适合录屏介绍功能。该页面与配套资源随网站、Cloudflare Pages 和桌面安装包一同构建。 点击右上角「演示模式」可逐幕讲解，使用左右方向键或空格切换，Esc 退出；也可用 `product.html?present=1` 直接进入。支持可选全屏，1920×1080 画幅下六幕完整展示。页面内界面与素材为功能示意，实际下载请进入下载工具。
+
 已部署 **Cloudflare Pages + Workers 双引擎**，正式入口为 [xhs.download.brclio.com](https://xhs.download.brclio.com)，另有 [Pages 入口](https://brclio-xhs-pages.pages.dev)。正式域名与证书已激活，HTTPS 健康检查确认请求到达 Cloudflare。网页和图片、视频下载由 Cloudflare 承载；账号与解析使用私有 Durable Object 执行环境，账号沿用原 `AUTH_*` 配置和 GitHub 唯一业务存储。真实双引擎解析、图片字节、验证码收件、管理员登录及跨后端会话已验证；各项验收范围和正式域名回归结果见迁移记录。
 
 笔记解析先使用 Cloudflare；遇上游限制或解析失败时，仅回退到原 Vercel 的同引擎 JSON 解析接口。**目前仍保留这部分 Vercel 依赖，不能停用原项目。** Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。部署版本、核验证据、免费额度和回滚步骤见 [Cloudflare 迁移说明](docs/cloudflare-deployment.md)。已有 Secrets 时，`npm run cloudflare:deploy` 依次发布 Python、主 Worker 与 Pages；仅构建网站使用 `npm run build:cloudflare`。

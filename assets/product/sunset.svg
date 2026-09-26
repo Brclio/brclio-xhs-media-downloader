@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="400" y1="0" x2="400" y2="720" gradientUnits="userSpaceOnUse"><stop stop-color="#AA4C34"/><stop offset=".4" stop-color="#DF8E52"/><stop offset=".75" stop-color="#E8B877"/><stop offset="1" stop-color="#EDD09D"/></linearGradient>
+    <linearGradient id="sun" x1="489" y1="229" x2="489" y2="495" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE6AD"/><stop offset="1" stop-color="#F5CA83"/></linearGradient>
+    <linearGradient id="dune1" x1="400" y1="530" x2="400" y2="810" gradientUnits="userSpaceOnUse"><stop stop-color="#B8663B"/><stop offset="1" stop-color="#88402F"/></linearGradient>
+    <linearGradient id="dune2" x1="380" y1="696" x2="520" y2="965" gradientUnits="userSpaceOnUse"><stop stop-color="#C77C48"/><stop offset=".42" stop-color="#AE5B35"/><stop offset="1" stop-color="#843D2D"/></linearGradient>
+    <linearGradient id="dune3" x1="220" y1="809" x2="260" y2="1030" gradientUnits="userSpaceOnUse"><stop stop-color="#693629"/><stop offset="1" stop-color="#3C2724"/></linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(490 355) scale(285)" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE6AC" stop-opacity=".25"/><stop offset="1" stop-color="#FFE6AC" stop-opacity="0"/></radialGradient>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".09"/></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light"/></filter>
+    <filter id="haze"><feGaussianBlur stdDeviation="12"/></filter>
+  </defs>
+  <g filter="url(#grain)">
+    <path fill="url(#sky)" d="M0 0h800v1000H0z"/>
+    <path fill="url(#glow)" d="M0 0h800v750H0z"/>
+    <circle cx="493" cy="361" r="128" fill="url(#sun)"/>
+    <path fill="#C98251" fill-opacity=".5" d="M0 534c86-17 169-21 246-6 110 21 201-31 300-21 78 8 150-24 254-12v223H0z"/>
+    <path fill="#C28759" fill-opacity=".7" d="M0 568c130 9 199-56 309-25 112 33 154 42 249 16 85-23 154-4 242-6v155H0z"/>
+    <path fill="#F3C48B" fill-opacity=".18" filter="url(#haze)" d="M0 509h800v35H0z"/>
+    <path fill="url(#dune1)" d="M0 628c87-53 148-71 248-56 122 17 230 93 331 78 90-13 142-72 221-95v445H0z"/>
+    <path fill="#824330" fill-opacity=".6" d="M0 633c88-58 147-76 248-60-84 12-127 66-167 112-24 28-52 55-81 66z"/>
+    <path fill="#DA9656" d="M0 774c93-18 189-76 297-96 142-27 229 7 307 40 77 33 131 47 196 51v231H0z"/>
+    <path fill="url(#dune2)" d="M0 780c99-30 191-77 302-97 138-24 223 8 302 40-134-17-213 24-286 90-79 72-192 122-318 134z"/>
+    <path fill="#9C4D2D" d="M604 723c77 29 131 46 196 52v225H132c152-78 236-85 334-143 62-37 102-89 138-134z"/>
+    <path fill="#F2B570" fill-opacity=".5" d="M0 774c93-18 189-76 297-96 142-27 229 7 307 40 77 33 131 47 196 51v5c-75-5-127-23-198-50-119-46-192-58-303-41C181 702 96 752 0 779z"/>
+    <path fill="url(#dune3)" d="M0 843c73-1 139 17 217 59 97 52 166 62 283 98H0z"/>
+    <path fill="#AD673E" fill-opacity=".72" d="M0 839c73 1 141 16 220 59 107 56 179 67 280 102-161-40-230-69-298-103C124 858 64 846 0 845z"/>
+    <path fill="#6F3628" d="M800 864c-119 10-178 79-293 136h293z"/>
+    <g stroke="#E5A065" stroke-opacity=".16" stroke-width="1.4"><path d="M48 794c90-31 143-57 236-71M60 805c94-32 136-58 231-73M77 815c90-32 128-57 220-75M90 826c89-33 127-60 215-77M108 836c91-35 118-57 205-76M127 847c94-38 118-59 198-77M145 857c94-42 116-60 192-79M163 866c96-40 119-66 188-78"/></g>
+    <g stroke="#F0BF7B" stroke-opacity=".09"><path d="M608 770c67 20 128 33 192 35m-208-19c72 22 138 37 208 40m-226-20c81 27 152 44 226 46m-245-26c78 29 146 45 245 49"/></g>
+  </g>
+</svg>
