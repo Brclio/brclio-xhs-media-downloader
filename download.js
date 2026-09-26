@@ -81,7 +81,7 @@
 
       // Promote a complete set atomically, never mixing versions or guessing URLs.
       const assets = Object.entries(assetSuffixes).map(([key, suffix]) => {
-        const name = `Brclio-XHS-Downloader-${version}-${suffix}`;
+        const name = `Brclio-XHS-${version}-${suffix}`;
         const expectedURL = `${releaseBase}/download/${tag}/${name}`;
         const matches = release.assets.filter(item => item.name === name);
         const asset = matches[0];

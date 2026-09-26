@@ -37,7 +37,8 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   // Historical v1.5 artifacts predate the update manager.
   try { await stat(path.join(sourceDirectory, 'desktop/update-manager.js')); expectedSources.push('desktop/update-manager.js'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
-  for (const name of ['account-ui.js', 'account-ui.css', 'download.html', 'download.css', 'download.js', 'desktop/account-client.js',
+  for (const name of ['account-ui.js', 'account-ui.css', 'download.html', 'download.css', 'download.js',
+    'changelog.js', 'product.html', 'product.css', 'product.js', 'desktop/account-client.js',
     'desktop/account-storage.js', 'lib/membership-policy.js', 'desktop/diagnostic-log.js',
     'desktop/feedback-client.js', 'desktop/mac-update.js', 'desktop/mac-install-progress.js',
     'desktop/windows-update.js', 'desktop/install-confirmation.js', 'desktop/mac-update-cleanup.js',

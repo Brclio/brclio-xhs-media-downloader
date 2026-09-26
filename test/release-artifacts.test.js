@@ -117,7 +117,7 @@ async function fixture(t) {
   ]) {
     const files = [];
     for (const suffix of suffixes) {
-      const name = `Brclio-XHS-Downloader-${version}-${suffix}`;
+      const name = `Brclio-XHS-${version}-${suffix}`;
       const data = Buffer.from(`test artifact ${name}`);
       await writeFile(path.join(directory, name), data);
       files.push({ name, bytes: data.length, sha256: createHash('sha256').update(data).digest('hex') });
@@ -189,7 +189,7 @@ test('release formatting removes only the leading title and resolves relative do
 
 test('release rejects modified installer bytes before upload', async t => {
   const directory = await fixture(t);
-  const name = path.join(directory, `Brclio-XHS-Downloader-${version}-mac-arm64.dmg`);
+  const name = path.join(directory, `Brclio-XHS-${version}-mac-arm64.dmg`);
   const original = await readFile(name);
   original[0] ^= 1;
   await writeFile(name, original);
@@ -203,7 +203,7 @@ test('release rejects a build from a different source revision', async t => {
 
 test('release rejects incomplete and unexpected platform assets', async t => {
   const directory = await fixture(t);
-  await rm(path.join(directory, `Brclio-XHS-Downloader-${version}-windows-x64-setup.exe`));
+  await rm(path.join(directory, `Brclio-XHS-${version}-windows-x64-setup.exe`));
   await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /three verified/);
 });
 

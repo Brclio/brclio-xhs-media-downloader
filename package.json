@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "1.8.13",
+  "version": "1.8.14",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页版与 Mac / Windows 本地版，支持主页批量下载和自定义间隔",
@@ -100,7 +100,7 @@
         "dmg",
         "zip"
       ],
-      "artifactName": "Brclio-XHS-Downloader-${version}-mac-${arch}.${ext}",
+      "artifactName": "Brclio-XHS-${version}-mac-${arch}.${ext}",
       "extendInfo": {
         "NSDownloadsFolderUsageDescription": "保存您选择下载的小红书图片和视频。",
         "NSDocumentsFolderUsageDescription": "将图片和视频保存到您选择的文件夹。"
@@ -119,10 +119,10 @@
       "runAfterFinish": true,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
-      "artifactName": "Brclio-XHS-Downloader-${version}-windows-${arch}-setup.${ext}"
+      "artifactName": "Brclio-XHS-${version}-windows-${arch}-setup.${ext}"
     },
     "portable": {
-      "artifactName": "Brclio-XHS-Downloader-${version}-windows-${arch}-portable.${ext}"
+      "artifactName": "Brclio-XHS-${version}-windows-${arch}-portable.${ext}"
     },
     "toolsets": {
       "nsis": "1.2.1"

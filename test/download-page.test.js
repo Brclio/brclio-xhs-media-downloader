@@ -56,7 +56,7 @@ function release(version = '1.9.0') {
     draft: false, prerelease: false, tag_name: tag, html_url: `${base}/tag/${tag}`,
     published_at: '2026-09-24T01:02:03Z',
     assets: Object.values(suffixes).map((suffix, index) => {
-      const name = `Brclio-XHS-Downloader-${version}-${suffix}`;
+      const name = `Brclio-XHS-${version}-${suffix}`;
       return { name, state: 'uploaded', size: 140000000 + index * 1000000, browser_download_url: `${base}/download/${tag}/${name}` };
     }),
   };
@@ -101,7 +101,7 @@ test('static download anchors point to one complete branded release', () => {
   const tag = current.versions[0];
   assert.match(tag, /^v\d+\.\d+\.\d+$/);
   for (const [key, suffix] of Object.entries(suffixes)) {
-    assert.equal(current.links[key], `${base}/download/${tag}/Brclio-XHS-Downloader-${tag.slice(1)}-${suffix}`);
+    assert.equal(current.links[key], `${base}/download/${tag}/Brclio-XHS-${tag.slice(1)}-${suffix}`);
     assert.match(current.sizes[key], /^(?:\d+\.\d MB|大小以发布附件为准)$/);
   }
   assert.ok(current.releaseLinks.every(url => url === `${base}/tag/${tag}`));
@@ -111,7 +111,7 @@ test('verified latest release updates every asset, size, version and release lin
   const page = await runPage();
   const current = snapshot(page.document);
   for (const [index, [key, suffix]] of Object.entries(suffixes).entries()) {
-    assert.equal(current.links[key], `${base}/download/v1.9.0/Brclio-XHS-Downloader-1.9.0-${suffix}`);
+    assert.equal(current.links[key], `${base}/download/v1.9.0/Brclio-XHS-1.9.0-${suffix}`);
     assert.equal(current.sizes[key], `${(140 + index).toFixed(1)} MB`);
   }
   assert.ok(current.versions.every(version => version === 'v1.9.0'));

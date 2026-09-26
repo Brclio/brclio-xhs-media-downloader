@@ -109,7 +109,7 @@ jobs:
         run: npm run desktop:verify:account
       - uses: actions/upload-artifact@v4
         with:
-          name: Brclio-XHS-Downloader-${{ matrix.label }}
+          name: Brclio-XHS-${{ matrix.label }}
           retention-days: 14
           if-no-files-found: error
           path: |
@@ -135,7 +135,7 @@ jobs:
           node-version: 22
       - uses: actions/download-artifact@v4
         with:
-          pattern: Brclio-XHS-Downloader-*
+          pattern: Brclio-XHS-*
           path: release-artifacts
           merge-multiple: true
       - name: Verify all platforms and publish the complete release

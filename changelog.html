@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版与 Mac / Windows 客户端更新记录，按平台、版本和关键词查找功能、修复与升级说明。记录整理至 2026 年 9 月 25 日，最新正式客户端为 v1.8.13。"
+      content="查看 Brclio 小红书下载器的网页版与 Mac / Windows 客户端更新记录，按平台、版本和关键词查找功能、修复与升级说明。记录整理至 2026 年 9 月 26 日，最新正式客户端为 v1.8.14。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -69,8 +69,8 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>最新正式客户端 · DESKTOP</span>
-              <strong>v1.8.13</strong>
-              <small>发布于 2026.09.25 · Mac / Windows</small>
+              <strong>v1.8.14</strong>
+              <small>发布于 2026.09.26 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
@@ -87,13 +87,13 @@
                 <span>首条更新 · 2026</span>
               </div>
               <div class="summary-stat">
-                <strong>09.25</strong>
+                <strong>09.26</strong>
                 <span>最近整理 · 2026</span>
               </div>
             </div>
 
             <p class="summary-note"><span aria-hidden="true">✦</span> 近期网页更新按日期记录，客户端按版本发布；早期网页编号保留。原生多图复制与主页批量下载属于客户端功能。</p>
-            <a class="release-summary-link" href="#native-clipboard-update">阅读 v1.8.13 更新说明 <span aria-hidden="true">↗</span></a>
+            <a class="release-summary-link" href="#installer-name-update">阅读 v1.8.14 更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -111,7 +111,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v1.8.13、实况、更新" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v1.8.14、实况、更新" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -125,6 +125,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#installer-name-update"><span>v1.8.14</span><strong>简化安装包名称</strong></a>
               <a href="#native-clipboard-update"><span>v1.8.13</span><strong>原生多图复制与粘贴</strong></a>
               <a href="#website-release-sync"><span>09.25</span><strong>官网同步与复制说明</strong></a>
               <a href="#membership-purchase-update"><span>v1.8.11</span><strong>开通会员与邮箱发码</strong></a>
@@ -172,7 +173,19 @@
 
           <div id="release-feed" class="release-feed">
             <p class="release-empty" hidden>没有找到匹配的更新。试试更短的关键词，或点击“清除筛选”查看全部记录。</p>
-            <article id="native-clipboard-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+            <article id="installer-name-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-26"><span>09.26</span><small>2026 · 安装包名称</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.14</span><span class="release-status">Mac / Windows</span></div><h3>安装包名称，更简洁</h3></div></header>
+                <p class="release-lead">Mac 与 Windows 主安装包去掉 Downloader，统一使用 Brclio-XHS-版本号-系统-架构。官网下载和新版应用内更新同步使用新名称。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>所有主安装包统一命名</strong>Mac 的 DMG / ZIP、Windows 的安装版 / 便携版均使用新名称，按系统与芯片选择即可。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>旧版继续升级</strong>保留专供旧版自动更新的兼容附件，账号、任务记录与已下载文件继续沿用。</p></div>
+                </div>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.14" target="_blank" rel="noopener noreferrer">查看 v1.8.14 安装包与升级说明 ↗</a><span>安装包命名 · 2026.09.26</span></div>
+              </div>
+            </article>
+            <article id="native-clipboard-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-25"><span>09.25</span><small>2026 · 多图复制</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.13</span><span class="release-status">Mac / Windows</span></div><h3>多张原图，一次复制、一次粘贴</h3></div></header>
@@ -1431,7 +1444,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.09.25 · 最新正式客户端 v1.8.13。</p>
+        <p>网页版与客户端记录整理至 2026.09.26 · 最新正式客户端 v1.8.14。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

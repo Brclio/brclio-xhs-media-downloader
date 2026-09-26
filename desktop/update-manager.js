@@ -121,8 +121,8 @@ export function compareVersions(left, right) {
 
 export function installerName(version, platform, arch) {
   versionParts(version);
-  if (platform === 'darwin' && ['arm64', 'x64'].includes(arch)) return `Brclio-XHS-Downloader-${version}-mac-${arch}.dmg`;
-  if (platform === 'win32' && arch === 'x64') return `Brclio-XHS-Downloader-${version}-windows-x64-setup.exe`;
+  if (platform === 'darwin' && ['arm64', 'x64'].includes(arch)) return `Brclio-XHS-${version}-mac-${arch}.dmg`;
+  if (platform === 'win32' && arch === 'x64') return `Brclio-XHS-${version}-windows-x64-setup.exe`;
   fail('UNSUPPORTED_PLATFORM', '当前系统或处理器没有可用的更新安装包。');
 }
 
@@ -166,10 +166,11 @@ export function parseRelease(release, { currentVersion, platform, arch }) {
   if (compareVersions(version, currentVersion) <= 0) return { metadata, candidate: null };
   if (!Array.isArray(release.assets) || release.assets.length > 1000) fail('INVALID_ASSET', '发布附件列表无效。');
   const preferredName = installerName(version, platform, arch);
-  // Older releases only contain the original filename. A present branded
-  // asset must pass all checks; a malformed or duplicate one never falls back.
-  const name = release.assets.some(asset => asset?.name === preferredName)
-    ? preferredName : preferredName.replace(/^Brclio-/, '');
+  // Keep both historical filenames readable. The first present name must pass
+  // all checks; a malformed or duplicate asset never falls back to an older name.
+  const names = [preferredName, preferredName.replace(/^Brclio-XHS-/, 'Brclio-XHS-Downloader-'),
+    preferredName.replace(/^Brclio-XHS-/, 'XHS-Downloader-')];
+  const name = names.find(name => release.assets.some(asset => asset?.name === name)) || preferredName;
   const asset = releaseAsset(uniqueAsset(release.assets, name), name, release.tag_name, MAX_INSTALLER_BYTES);
   let sha256 = null;
   let manifest = null;

@@ -21,7 +21,7 @@ async function digest(file) {
 export async function validateArtifacts(directory, { version, sourceSha }) {
   assert.match(version, /^\d+\.\d+\.\d+$/);
   assert.match(sourceSha, /^[a-f0-9]{40}$/);
-  const allowedNames = TARGETS.flatMap(target => [`release-proof-${target.label}.json`, ...target.suffixes.map(suffix => `Brclio-XHS-Downloader-${version}-${suffix}`)]).sort();
+  const allowedNames = TARGETS.flatMap(target => [`release-proof-${target.label}.json`, ...target.suffixes.map(suffix => `Brclio-XHS-${version}-${suffix}`)]).sort();
   assert.deepEqual((await readdir(directory)).sort(), allowedNames, 'Expected exactly three verified platform artifacts');
   const files = [];
   const evidence = [];
@@ -48,7 +48,7 @@ export async function validateArtifacts(directory, { version, sourceSha }) {
         `Packaged update history and acknowledgement must be verified before release: ${target.label}`);
     }
     assert.ok(Number.isInteger(proof.comparedSources) && proof.comparedSources >= 27);
-    const expected = target.suffixes.map(suffix => `Brclio-XHS-Downloader-${version}-${suffix}`).sort();
+    const expected = target.suffixes.map(suffix => `Brclio-XHS-${version}-${suffix}`).sort();
     assert.deepEqual(proof.files.map(file => file.name).sort(), expected);
     for (const file of proof.files) {
       assert.match(file.sha256, /^[a-f0-9]{64}$/);
@@ -63,13 +63,13 @@ export async function validateArtifacts(directory, { version, sourceSha }) {
   return { files: files.sort((a, b) => a.name.localeCompare(b.name)), evidence };
 }
 
-// Shipped clients through v1.8.0 require these exact legacy names. Keep
+// Shipped clients through v1.8.13 accept these exact legacy names. Keep
 // byte-identical aliases until those clients no longer need to update directly.
 export async function createCompatibilityAssets(directory, { version, files }) {
   assert.match(version, /^\d+\.\d+\.\d+$/);
   const aliases = [];
   for (const suffix of ['mac-arm64.dmg', 'mac-x64.dmg', 'windows-x64-setup.exe']) {
-    const sourceName = `Brclio-XHS-Downloader-${version}-${suffix}`;
+    const sourceName = `Brclio-XHS-${version}-${suffix}`;
     const matches = files.filter(file => file.name === sourceName);
     assert.equal(matches.length, 1, `Missing unique compatibility source: ${sourceName}`);
     const file = matches[0];
@@ -77,7 +77,7 @@ export async function createCompatibilityAssets(directory, { version, files }) {
     const info = await lstat(source);
     assert.ok(info.isFile() && info.size === file.bytes && file.bytes > 0);
     assert.equal(await digest(source), file.sha256, `Compatibility source checksum mismatch: ${sourceName}`);
-    const name = sourceName.replace(/^Brclio-/, '');
+    const name = `XHS-Downloader-${version}-${suffix}`;
     const destination = path.join(directory, name);
     await copyFile(source, destination, constants.COPYFILE_EXCL);
     assert.equal(await digest(destination), file.sha256);

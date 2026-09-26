@@ -24,8 +24,8 @@ const label = platform === 'darwin' ? `mac-${arch}` : 'windows-x64';
 // installed app that may itself live in the default packaging directory.
 const output = path.resolve(root, process.argv[2] || pkg.build.directories.output);
 const names = platform === 'darwin'
-  ? ['dmg', 'zip'].map(ext => `Brclio-XHS-Downloader-${version}-${label}.${ext}`)
-  : ['setup', 'portable'].map(kind => `Brclio-XHS-Downloader-${version}-${label}-${kind}.exe`);
+  ? ['dmg', 'zip'].map(ext => `Brclio-XHS-${version}-${label}.${ext}`)
+  : ['setup', 'portable'].map(kind => `Brclio-XHS-${version}-${label}-${kind}.exe`);
 const command = (file, args) => execFileSync(file, args, { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, timeout: 120000 });
 const digest = async file => {
   const hash = createHash('sha256');

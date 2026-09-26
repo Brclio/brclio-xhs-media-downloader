@@ -200,7 +200,7 @@ export async function verifyPackagedMacUpdate(input) {
     const historyPointerContents = JSON.stringify({ resultPath: historyPath });
     await writeFile(historyPath, historyReceipt, { mode: 0o600 });
     await writeFile(historyPointer, historyPointerContents, { mode: 0o600 });
-    const assetName = `Brclio-XHS-Downloader-${targetVersion}-mac-${process.arch}.dmg`;
+    const assetName = `Brclio-XHS-${targetVersion}-mac-${process.arch}.dmg`;
     const dmg = path.join(root, assetName);
     await createMacFixtureDmg({ source: payload, destination: dmg });
     const size = (await lstat(dmg)).size, sha256 = await digest(dmg);

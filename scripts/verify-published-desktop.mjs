@@ -18,6 +18,7 @@ const TARGETS = [
   { platform: 'win32', arch: 'x64', job: 'windows-x64', suffixes: ['windows-x64-setup.exe', 'windows-x64-portable.exe'] }
 ];
 const SMALL_LIMIT = 1024 * 1024;
+const LEGACY_VERSION = '1.8.13';
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 
 async function api(endpoint, { paginate = false } = {}) {
@@ -122,21 +123,38 @@ async function verifyWorkflow(runId, expectedSourceSha) {
   return { url: run.html_url, conclusion: run.conclusion, jobs: jobs.map(job => job.name), nativeClipboardVerified: true };
 }
 
+async function loadLegacyUpdater() {
+  const tag = `v${LEGACY_VERSION}`;
+  const options = { cwd: fileURLToPath(new URL('../', import.meta.url)), encoding: 'utf8', timeout: 30000,
+    maxBuffer: SMALL_LIMIT };
+  const { stdout } = await promisify(execFile)('git', ['rev-parse', `${tag}^{commit}`], options);
+  const sourceSha = stdout.trim();
+  await verifyReleaseTag(api, { tag, sourceSha });
+  const { stdout: source } = await promisify(execFile)('git', ['show', `${sourceSha}:desktop/update-manager.js`], options);
+  // This shipped module imports only node: built-ins. Import its exact source
+  // without replacing the working-tree updater or writing an executable file.
+  const updater = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+  assert.equal(typeof updater.parseRelease, 'function');
+  assert.equal(typeof updater.checksumFromManifest, 'function');
+  return { version: LEGACY_VERSION, tag, sourceSha, updater };
+}
+
 export async function verifyPublishedDesktop({ version, expectedSourceSha, runId, currentVersion = '1.8.11', output }) {
   assert.match(version, /^\d+\.\d+\.\d+$/);
   assert.match(currentVersion, /^\d+\.\d+\.\d+$/);
   assert.match(expectedSourceSha, /^[a-f0-9]{40}$/);
   if (runId !== undefined) assert.match(runId, /^\d+$/);
   const tag = `v${version}`;
-  const brandedNames = TARGETS.flatMap(target => target.suffixes.map(suffix => `Brclio-XHS-Downloader-${version}-${suffix}`));
-  const aliasNames = TARGETS.map(({ platform, arch }) => installerName(version, platform, arch).replace(/^Brclio-/, ''));
+  const brandedNames = TARGETS.flatMap(target => target.suffixes.map(suffix => `Brclio-XHS-${version}-${suffix}`));
+  const aliasNames = TARGETS.map(target => `XHS-Downloader-${version}-${target.suffixes[0]}`);
   const installerNames = [...brandedNames, ...aliasNames];
   const names = [...installerNames, 'SHA256SUMS.txt', 'build-evidence.json'];
-  const [resolvedSha, release, latest, anonymousBytes, workflow] = await Promise.all([
+  const [resolvedSha, release, latest, anonymousBytes, workflow, legacy] = await Promise.all([
     verifyReleaseTag(api, { tag, sourceSha: expectedSourceSha }),
     api(`releases/tags/${tag}`), api('releases/latest'),
     smallDocument(LATEST_RELEASE_URL),
-    runId === undefined ? undefined : verifyWorkflow(runId, expectedSourceSha)
+    runId === undefined ? undefined : verifyWorkflow(runId, expectedSourceSha),
+    loadLegacyUpdater()
   ]);
   const anonymous = JSON.parse(anonymousBytes.toString('utf8'));
   for (const value of [release, latest, anonymous]) verifyRelease(value, { tag, names });
@@ -180,13 +198,13 @@ export async function verifyPublishedDesktop({ version, expectedSourceSha, runId
       }
       assert.ok(['adhoc', 'developer-id'].includes(build.macCodeSigning));
     }
-    assert.deepEqual(build.files.map(file => file.name).sort(), target.suffixes.map(suffix => `Brclio-XHS-Downloader-${version}-${suffix}`).sort());
+    assert.deepEqual(build.files.map(file => file.name).sort(), target.suffixes.map(suffix => `Brclio-XHS-${version}-${suffix}`).sort());
     for (const file of build.files) proofFiles.set(file.name, file);
     return { platform: build.platform, arch: build.arch, comparedSources: build.comparedSources, sourceDirty: false };
   });
   assert.deepEqual(evidence.compatibilityAssets.map(file => file.name).sort(), [...aliasNames].sort());
   for (const file of evidence.compatibilityAssets) {
-    assert.equal(file.sourceName, `Brclio-${file.name}`);
+    assert.equal(file.sourceName, file.name.replace(/^XHS-Downloader-/, 'Brclio-XHS-'));
     const original = proofFiles.get(file.sourceName);
     assert.ok(original, 'Compatibility alias has no original');
     assert.equal(file.bytes, original.bytes);
@@ -210,6 +228,20 @@ export async function verifyPublishedDesktop({ version, expectedSourceSha, runId
     assert.equal(candidate.sha256, sums.get(name));
     return { platform, arch, fromVersion: currentVersion, asset: candidate.name, bytes: candidate.size };
   });
+  const legacyUpdates = TARGETS.map(({ platform, arch }, index) => {
+    const { metadata, candidate } = legacy.updater.parseRelease(anonymous,
+      { currentVersion: legacy.version, platform, arch });
+    const name = aliasNames[index];
+    assert.equal(metadata.latestVersion, version);
+    assert.equal(candidate?.version, version, `The shipped ${legacy.tag} updater must find this release`);
+    assert.equal(candidate.name, name, `The shipped ${legacy.tag} updater must select the compatibility asset`);
+    assert.equal(candidate.url, byName.get(name).browser_download_url);
+    assert.equal(candidate.size, byName.get(name).size);
+    assert.equal(candidate.sha256, sums.get(name));
+    assert.equal(legacy.updater.checksumFromManifest(documents[0].toString('utf8'), name), candidate.sha256);
+    return { platform, arch, fromVersion: legacy.version, asset: candidate.name, bytes: candidate.size,
+      sha256: candidate.sha256, manifestChecksumVerified: true };
+  });
   // HEAD follows the public installer links without consuming large bodies.
   const probes = [];
   for (let offset = 0; offset < installerNames.length; offset += 3) {
@@ -218,7 +250,8 @@ export async function verifyPublishedDesktop({ version, expectedSourceSha, runId
   const report = {
     version, tag, sourceSha: resolvedSha, url: release.html_url,
     publishedAt: release.published_at, verifiedAt: new Date().toISOString(), assetCount: release.assets.length,
-    builds, updates, compatibilityAliasesVerified: true, remoteDigestsVerified: true,
+    builds, updates, legacyUpdater: { version: legacy.version, tag: legacy.tag, sourceSha: legacy.sourceSha },
+    legacyUpdates, compatibilityAliasesVerified: true, remoteDigestsVerified: true,
     publicManifestsVerified: true, anonymousUpdaterVisible: true, publicInstallerProbes: probes,
     ...(workflow ? { workflow } : {})
   };
