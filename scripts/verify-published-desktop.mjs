@@ -162,6 +162,7 @@ export async function verifyPublishedDesktop({ version, expectedSourceSha, runId
     loadLegacyUpdater()
   ]);
   const anonymous = JSON.parse(anonymousBytes.toString('utf8'));
+  if (expectedWorkflowSha !== expectedSourceSha) assert.equal(workflow?.event, 'workflow_dispatch');
   for (const value of [release, latest, anonymous]) verifyRelease(value, { tag, names });
   assert.equal(latest.id, release.id, 'Authenticated latest release differs');
   assert.equal(anonymous.id, release.id, 'Anonymous updater does not see this release');
