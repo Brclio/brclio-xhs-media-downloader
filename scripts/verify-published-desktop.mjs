@@ -1,6 +1,6 @@
 // Read-only post-publication audit. No installer downloads or GitHub mutations.
 // node scripts/verify-published-desktop.mjs VERSION SOURCE_SHA [RUN_ID]
-//   [--current-version 1.8.11] [--output docs/releases/vVERSION-publication-verification.json]
+//   [--current-version 1.8.11] [--workflow-sha SHA] [--output docs/releases/vVERSION-publication-verification.json]
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -120,7 +120,8 @@ async function verifyWorkflow(runId, expectedSourceSha) {
       assert.equal(step?.conclusion, 'success', `Native clipboard was not verified on ${job.name}`);
     }
   }
-  return { url: run.html_url, conclusion: run.conclusion, jobs: jobs.map(job => job.name), nativeClipboardVerified: true };
+  return { url: run.html_url, workflowSha: run.head_sha, event: run.event,
+    conclusion: run.conclusion, jobs: jobs.map(job => job.name), nativeClipboardVerified: true };
 }
 
 async function loadLegacyUpdater() {
@@ -139,10 +140,14 @@ async function loadLegacyUpdater() {
   return { version: LEGACY_VERSION, tag, sourceSha, updater };
 }
 
-export async function verifyPublishedDesktop({ version, expectedSourceSha, runId, currentVersion = '1.8.11', output }) {
+export async function verifyPublishedDesktop({ version, expectedSourceSha, runId, expectedWorkflowSha = expectedSourceSha, currentVersion = '1.8.11', output }) {
   assert.match(version, /^\d+\.\d+\.\d+$/);
   assert.match(currentVersion, /^\d+\.\d+\.\d+$/);
   assert.match(expectedSourceSha, /^[a-f0-9]{40}$/);
+  // workflow_dispatch can run a newer CI definition while checking out an
+  // immutable release tag. Verify both explicitly; build proofs still require
+  // expectedSourceSha for every platform and the release tag.
+  assert.match(expectedWorkflowSha, /^[a-f0-9]{40}$/);
   if (runId !== undefined) assert.match(runId, /^\d+$/);
   const tag = `v${version}`;
   const brandedNames = TARGETS.flatMap(target => target.suffixes.map(suffix => `Brclio-XHS-${version}-${suffix}`));
@@ -153,7 +158,7 @@ export async function verifyPublishedDesktop({ version, expectedSourceSha, runId
     verifyReleaseTag(api, { tag, sourceSha: expectedSourceSha }),
     api(`releases/tags/${tag}`), api('releases/latest'),
     smallDocument(LATEST_RELEASE_URL),
-    runId === undefined ? undefined : verifyWorkflow(runId, expectedSourceSha),
+    runId === undefined ? undefined : verifyWorkflow(runId, expectedWorkflowSha),
     loadLegacyUpdater()
   ]);
   const anonymous = JSON.parse(anonymousBytes.toString('utf8'));
@@ -270,9 +275,9 @@ function argumentsFrom(argv) {
   const options = {};
   for (let index = 0; index < argv.length; index++) {
     const value = argv[index];
-    if (value === '--output' || value === '--current-version') {
+    if (value === '--output' || value === '--current-version' || value === '--workflow-sha') {
       assert.ok(argv[index + 1] && !argv[index + 1].startsWith('--'), `Missing value for ${value}`);
-      const key = value === '--output' ? 'output' : 'currentVersion';
+      const key = { '--output': 'output', '--current-version': 'currentVersion', '--workflow-sha': 'expectedWorkflowSha' }[value];
       assert.equal(options[key], undefined, `Duplicate option: ${value}`);
       options[key] = argv[++index];
     } else {
@@ -281,7 +286,7 @@ function argumentsFrom(argv) {
     }
   }
   assert.ok(positional.length === 2 || positional.length === 3,
-    'Usage: node scripts/verify-published-desktop.mjs VERSION SOURCE_SHA [RUN_ID] [--output PATH] [--current-version VERSION]');
+    'Usage: node scripts/verify-published-desktop.mjs VERSION SOURCE_SHA [RUN_ID] [--output PATH] [--current-version VERSION] [--workflow-sha SHA]');
   return { version: positional[0], expectedSourceSha: positional[1], runId: positional[2], ...options };
 }
 
