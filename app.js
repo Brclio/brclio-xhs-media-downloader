@@ -1992,6 +1992,35 @@ elements.downloadVideoButton.addEventListener("click", downloadCurrentVideo);
 elements.downloadZipButton.addEventListener("click", downloadSelectedZip);
 
 void initializeDesktopUI({
+  onCopyNoteLink(text, trigger) {
+    if (state.busy) {
+      showToast("单篇下载正在处理，请完成后再复制链接。", "error");
+      return;
+    }
+    return copyTextAction({ text, trigger, label: "笔记链接", successMessage: "失败笔记链接已复制" });
+  },
+  onOpenNote(url) {
+    if (state.busy) {
+      showToast("单篇下载正在处理，请完成后再打开另一篇笔记。", "error");
+      return false;
+    }
+    elements.textarea.value = url;
+    state.title = "小红书图片";
+    state.content = "";
+    state.noteId = "";
+    state.sourceUrl = "";
+    state.images = [];
+    state.videos = [];
+    state.selected.clear();
+    state.strategy = "";
+    elements.imageGrid.replaceChildren();
+    renderVideo();
+    elements.resultSection.hidden = true;
+    elements.emptyState.hidden = false;
+    updateSelectionUI();
+    showToast("已填入失败笔记链接，点击「开始解析」后即可下载。", "success");
+    return true;
+  },
   onInfo(info) {
     if (info.pythonAvailable !== false) return;
     const pythonInput = elements.engineInputs.find((input) => input.value === "python");

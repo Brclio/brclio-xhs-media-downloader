@@ -78,6 +78,7 @@ app.whenReady().then(async () => {
   const failedInitializationWindows = new Set();
   ipcMain.on('ui-fixture:desktop-ready', event => readyEvents.set(event.sender.id, (readyEvents.get(event.sender.id) || 0) + 1));
   const failedId = (126).toString(16).padStart(24, '0');
+  const failedUrl = `https://www.xiaohongshu.com/explore/${failedId}?xsec_token=fixture%2Btoken%2Fsignature%3D&xsec_source=pc_user&source=web_profile`;
   const fixtureTitle = '测试笔记 <img src=x onerror=alert(1)>';
   let profile = {
     status: 'completed', profileUrl: 'https://www.xiaohongshu.com/user/profile/5e413a430000000001000f4c',
@@ -85,6 +86,7 @@ app.whenReady().then(async () => {
     discovered: 135, completed: 134, skipped: 0, failed: 1, discoveryComplete: true,
     items: Array.from({ length: 135 }, (_, index) => ({
       id: (index + 1).toString(16).padStart(24, '0'), sequence: index + 1,
+      url: index === 125 ? failedUrl : `https://www.xiaohongshu.com/explore/${(index + 1).toString(16).padStart(24, '0')}`,
       title: index === 125 ? fixtureTitle : `测试笔记 ${index + 1}`,
       directoryName: `${String(index + 1).padStart(3, '0')}-测试笔记`,
       status: index === 125 ? 'failed' : 'completed', error: index === 125 ? '测试网络错误，请稍后重试。' : ''
@@ -287,12 +289,110 @@ app.whenReady().then(async () => {
   assert.match(await evaluate(`document.querySelector('#profile-items li:first-child .profile-item-directory').textContent`), /126-测试笔记/);
   await click('#profile-items-failed');
   await check(`document.querySelector('#profile-items').children.length === 1`, 'failure filter');
+  const copyFailedLink = '#profile-items button[data-copy-note-url]';
+  const openFailedLink = '#profile-items button[data-open-note-url]';
+  assert.deepEqual(await evaluate(`({
+    text: document.querySelector('#profile-items .profile-item-url').textContent,
+    copy: document.querySelector(${JSON.stringify(copyFailedLink)}).dataset.copyNoteUrl,
+    open: document.querySelector(${JSON.stringify(openFailedLink)}).dataset.openNoteUrl
+  })`), { text: failedUrl, copy: failedUrl, open: failedUrl }, 'failed links preserve all signature parameters in visible text and actions');
+  // Exercise the actual renderer copy and parse flows without touching the
+  // system clipboard or issuing a network request.
+  await evaluate(`(() => {
+    const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    const originalExecCommand = document.execCommand, originalFetch = window.fetch;
+    window.fixtureRecovery = { mode: 'success', copied: [], fallback: [], parsed: [] };
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: {
+      writeText: async text => {
+        fixtureRecovery.copied.push(text);
+        if (fixtureRecovery.mode !== 'success') throw new DOMException('Fixture clipboard denied', 'NotAllowedError');
+      }
+    } });
+    document.execCommand = command => {
+      if (command !== 'copy') throw new Error('Unexpected fixture command');
+      fixtureRecovery.fallback.push(document.activeElement.value);
+      return fixtureRecovery.mode === 'fallback';
+    };
+    window.fetch = (url, options) => {
+      if (!['/api/parse', '/api/python_parse'].includes(url)) return originalFetch(url, options);
+      fixtureRecovery.parsed.push(JSON.parse(options.body).text);
+      return new Promise(resolve => { fixtureRecovery.resolveParse = () => resolve(new Response(JSON.stringify({
+        success: true, title: '此前解析的笔记', content: '此前解析的正文', images: [], videos: []
+      }), { status: 200, headers: { 'content-type': 'application/json' } })); });
+    };
+    fixtureRecovery.restore = () => {
+      if (clipboardDescriptor) Object.defineProperty(navigator, 'clipboard', clipboardDescriptor);
+      else delete navigator.clipboard;
+      document.execCommand = originalExecCommand;
+      window.fetch = originalFetch;
+    };
+  })()`);
+  for (const mode of ['success', 'fallback', 'denied']) {
+    await evaluate(`fixtureRecovery.mode = ${JSON.stringify(mode)}`);
+    await click(copyFailedLink);
+    await check(`!document.querySelector(${JSON.stringify(copyFailedLink)}).hasAttribute('aria-busy') &&
+      document.querySelector(${JSON.stringify(mode === 'denied' ? '#alert-toast' : '#toast')}).textContent.includes(${JSON.stringify(mode === 'denied' ? '剪贴板权限' : '链接已复制')})`, `${mode}: failed-link copy reports its outcome`);
+    assert.equal(await evaluate('fixtureRecovery.copied.at(-1)'), failedUrl, `${mode}: clipboard receives the complete signed URL`);
+    if (mode !== 'success') assert.equal(await evaluate('fixtureRecovery.fallback.at(-1)'), failedUrl, `${mode}: fallback receives the complete signed URL`);
+  }
+  await click('#single-note-tab');
+  await evaluate(`document.querySelector('#share-text').value = '此前输入的笔记链接'`);
+  await click('#parse-button');
+  await check(`typeof fixtureRecovery.resolveParse === 'function' && document.querySelector('#parse-button').disabled`, 'single-note parser is genuinely busy');
+  await click('#profile-tab');
+  await click(openFailedLink);
+  assert.equal(await evaluate(`document.body.dataset.desktopPage === 'profile' && document.querySelector('#share-text').value === '此前输入的笔记链接'`), true, 'busy single-note work cannot be replaced or navigated away from');
+  assert.match(await evaluate(`document.querySelector('#alert-toast').textContent`), /单篇下载正在处理/);
+  const busyCopyCount = await evaluate('fixtureRecovery.copied.length');
+  await click(copyFailedLink);
+  assert.equal(await evaluate('fixtureRecovery.copied.length'), busyCopyCount, 'busy single-note work prevents a competing clipboard action');
+  await evaluate('fixtureRecovery.resolveParse()');
+  await check(`!document.querySelector('#parse-button').disabled && !document.querySelector('#result-section').hidden`, 'previous single-note result is available before recovery');
+  await click(openFailedLink);
+  assert.equal(await evaluate(`document.body.dataset.desktopPage === 'single' && document.activeElement.id === 'share-text' && document.querySelector('#result-section').hidden && !document.querySelector('#empty-state').hidden`), true, 'recovery focuses single-note input and hides stale results');
+  assert.equal(await evaluate(`document.querySelector('#share-text').value`), failedUrl, 'single-note recovery receives the complete signed URL');
+  assert.equal(await evaluate('fixtureRecovery.parsed.length'), 1, 'recovery waits for an explicit parse action');
+  await click('#profile-tab');
+  const refreshedFailedUrl = `${failedUrl}&refresh_token=renewed%2Bsignature%3D`;
+  publishProfile({ ...profile, items: profile.items.map(item => item.id === failedId ? { ...item, url: refreshedFailedUrl } : item) });
+  await check(`document.querySelector('#profile-items .profile-item-url').textContent === ${JSON.stringify(refreshedFailedUrl)}`, 'a URL-only profile update refreshes the visible link');
+  assert.deepEqual(await evaluate(`[
+    document.querySelector(${JSON.stringify(copyFailedLink)}).dataset.copyNoteUrl,
+    document.querySelector(${JSON.stringify(openFailedLink)}).dataset.openNoteUrl
+  ]`), [refreshedFailedUrl, refreshedFailedUrl], 'URL-only updates refresh both recovery actions');
+  await evaluate(`for (const toast of document.querySelectorAll('#toast, #alert-toast')) toast.classList.remove('toast-visible')`);
+  const failureScreenshots = {};
+  for (const [name, width, height] of [['desktop', 1180, 980], ['narrow', 390, 760]]) {
+    win.setSize(width, height);
+    await paint();
+    await evaluate(`document.querySelector('#profile-items-details').scrollIntoView({ block: 'end' })`);
+    assert.equal(await evaluate(`(() => {
+      const row = document.querySelector('#profile-items li');
+      return row.scrollWidth <= row.clientWidth && document.documentElement.scrollWidth <= innerWidth;
+    })()`), true, `${name}: full signed failure links wrap without horizontal overflow`);
+    const file = path.join(temporary, `desktop-failed-links-${name}.png`);
+    writeFileSync(file, await captureFrame());
+    failureScreenshots[name] = file;
+  }
+  win.setSize(1180, 980);
+  await paint();
   await click('#profile-items button[data-retry-id]');
   await check(`document.querySelector('#profile-status').textContent === '正在下载'`, 'single retry enters active queue');
   assert.deepEqual(calls.find(call => call.method === 'retryItem'), { method: 'retryItem', value: failedId });
   publishProfile({ ...profile, status: 'waiting', failed: 1, nextRequestAt: Date.now() + 10000,
     items: profile.items.map(item => item.id === failedId ? { ...item, status: 'failed', error: '测试请求失败' } : item) });
   await check(`document.querySelector('#profile-items button[data-retry-id]')?.disabled === true`, 'retry disabled during active queue');
+  assert.equal(await evaluate(`!document.querySelector(${JSON.stringify(copyFailedLink)}).disabled && !document.querySelector(${JSON.stringify(openFailedLink)}).disabled`), true, 'active batch queue keeps failure recovery actions available');
+  await evaluate(`fixtureRecovery.mode = 'success'`);
+  await click(copyFailedLink);
+  await check(`!document.querySelector(${JSON.stringify(copyFailedLink)}).hasAttribute('aria-busy') && document.querySelector('#toast').textContent.includes('链接已复制')`, 'active batch queue permits signed-link copying');
+  assert.equal(await evaluate('fixtureRecovery.copied.at(-1)'), refreshedFailedUrl);
+  await click(openFailedLink);
+  assert.equal(await evaluate(`document.body.dataset.desktopPage === 'single' && document.querySelector('#share-text').value === ${JSON.stringify(refreshedFailedUrl)} && document.activeElement.id === 'share-text'`), true, 'active batch queue permits single-note recovery');
+  assert.equal(profile.status, 'waiting', 'single-note recovery leaves the background batch queue active');
+  assert.equal(await evaluate('fixtureRecovery.parsed.length'), 1, 'background recovery also waits for explicit parsing');
+  await evaluate('fixtureRecovery.restore()');
+  await click('#profile-tab');
   assert.equal(await evaluate(`document.querySelector('#profile-retry').hidden`), false, 'bulk retry remains discoverable');
   assert.equal(await evaluate(`document.querySelector('#profile-retry').disabled`), true);
   assert.match(await evaluate(`document.querySelector('#profile-items-hint').textContent`), /先暂停/);
@@ -770,7 +870,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

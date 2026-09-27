@@ -679,10 +679,36 @@
   background: rgba(43, 127, 216, 0.06);
 }
 
+.profile-item-retry:focus-visible {
+  outline: 2px solid var(--blue-deep);
+  outline-offset: 2px;
+}
+
 .profile-item-retry:disabled {
   border-color: var(--line-strong);
   color: var(--ink-faint);
   cursor: not-allowed;
+}
+
+.profile-item-recovery {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.profile-item-url {
+  margin: 0;
+  color: var(--ink-light);
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.profile-item-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
 }
 
 .profile-item-directory {

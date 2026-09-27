@@ -46,7 +46,7 @@ function validProfileUrl(value) {
 
 // The bridge is only present in the packaged desktop window. The web interface
 // keeps its original single-note behavior and never invokes desktop APIs.
-export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
+export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, onOpenNote } = {}) {
   delete document.body.dataset.desktopReady;
   const bridge = window.xhsDesktop;
   if (!bridge) return;
@@ -790,8 +790,9 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     ui.itemsAll.setAttribute("aria-pressed", String(itemFilter === "all"));
     ui.itemsFailed.setAttribute("aria-pressed", String(itemFilter === "failed"));
     ui.itemsHint.textContent = RUNNING_STATUSES.has(snapshot.status) && failedCount > 0
-      ? "失败笔记优先显示。请先暂停任务，再单篇重试或重试全部失败。"
-      : "失败笔记优先显示，编号与文件夹顺序不变。";
+      ? "失败笔记可复制链接或转到单篇下载；在批量任务中重试前，请先暂停任务。"
+      : failedCount > 0 ? "失败笔记可复制链接、转到单篇下载或重试，编号与文件夹顺序不变。"
+        : "失败笔记优先显示，编号与文件夹顺序不变。";
     const filtered = items.map((item, index) => ({ ...item, sequence: count(item.sequence) || index + 1 }))
       .filter((item) => itemFilter !== "failed" || item.status === "failed")
       .sort((a, b) => Number(b.status === "failed") - Number(a.status === "failed") || a.sequence - b.sequence);
@@ -801,7 +802,7 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
     ui.showMore.hidden = visible.length >= filtered.length;
     ui.showMore.textContent = `显示更多记录（还有 ${Math.max(0, filtered.length - visible.length)} 篇）`;
     // Do not replace the list while only the waiting countdown changes.
-    const key = JSON.stringify(visible.map(({ id, title, status, error, sequence, directoryName }) => [id, title, status, error, sequence, directoryName]));
+    const key = JSON.stringify(visible.map(({ id, url, title, status, error, sequence, directoryName }) => [id, url, title, status, error, sequence, directoryName]));
     if (key === renderedItemsKey) return;
     renderedItemsKey = key;
     const fragment = document.createDocumentFragment();
@@ -839,6 +840,36 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
         error.className = "profile-item-error";
         error.textContent = String(item.error);
         row.append(error);
+      }
+      if (item.status === "failed") {
+        const noteUrl = String(item.url || (/^[a-f0-9]{24}$/i.test(item.id)
+          ? `https://www.xiaohongshu.com/explore/${item.id}` : ""));
+        if (noteUrl) {
+          const recovery = document.createElement("div");
+          recovery.className = "profile-item-recovery";
+          const link = document.createElement("p");
+          link.className = "profile-item-url";
+          link.textContent = noteUrl;
+          const linkActions = document.createElement("div");
+          linkActions.className = "profile-item-link-actions";
+          const copy = document.createElement("button");
+          copy.type = "button";
+          copy.className = "profile-item-retry";
+          copy.dataset.copyNoteUrl = noteUrl;
+          copy.textContent = "复制链接";
+          copy.disabled = typeof onCopyNoteLink !== "function";
+          copy.setAttribute("aria-label", `复制第 ${item.sequence} 篇失败笔记的链接`);
+          const open = document.createElement("button");
+          open.type = "button";
+          open.className = "profile-item-retry";
+          open.dataset.openNoteUrl = noteUrl;
+          open.textContent = "去单篇下载";
+          open.disabled = typeof onOpenNote !== "function";
+          open.setAttribute("aria-label", `将第 ${item.sequence} 篇失败笔记转到单篇下载`);
+          linkActions.append(copy, open);
+          recovery.append(link, linkActions);
+          row.append(recovery);
+        }
       }
       fragment.append(row);
     }
@@ -927,9 +958,18 @@ export async function initializeDesktopUI({ onInfo = () => {} } = {}) {
   ui.cancel.addEventListener("click", () => perform(() => bridge.cancelProfile()));
   ui.retry.addEventListener("click", () => perform(() => bridge.retryFailed()));
   ui.items.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-retry-id]");
+    const button = event.target.closest("button");
     if (!button || button.disabled || !ui.items.contains(button)) return;
-    void perform(() => bridge.retryItem(button.dataset.retryId));
+    if (button.dataset.copyNoteUrl) {
+      void onCopyNoteLink(button.dataset.copyNoteUrl, button);
+    } else if (button.dataset.openNoteUrl) {
+      if (onOpenNote(button.dataset.openNoteUrl) === false) return;
+      selectTab(ui.singleTab);
+      element("share-text").focus();
+      ui.singlePanel.scrollTop = 0;
+    } else if (button.dataset.retryId) {
+      void perform(() => bridge.retryItem(button.dataset.retryId));
+    }
   });
   ui.openDirectory.addEventListener("click", () => perform(() => bridge.openDirectory()));
   for (const [button, filter] of [[ui.itemsAll, "all"], [ui.itemsFailed, "failed"]]) {

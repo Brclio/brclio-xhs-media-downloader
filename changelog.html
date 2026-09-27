@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版与 Mac / Windows 客户端更新记录，按平台、版本和关键词查找功能、修复与升级说明。记录整理至 2026 年 9 月 26 日，最新正式客户端为 v1.8.14。"
+      content="查看 Brclio 小红书下载器的网页版与 Mac / Windows 客户端更新记录，按平台、版本和关键词查找功能、修复与升级说明。记录整理至 2026 年 9 月 27 日，最新正式客户端为 v1.8.15。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -39,9 +39,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="记录整理至 2026 年 9 月 26 日">
+          <div class="header-status" aria-label="记录整理至 2026 年 9 月 27 日">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>更新至 2026.09.26</span>
+            <span>更新至 2026.09.27</span>
           </div>
         </div>
       </div>
@@ -69,8 +69,8 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>最新正式客户端 · DESKTOP</span>
-              <strong>v1.8.14</strong>
-              <small>发布于 2026.09.26 · Mac / Windows</small>
+              <strong>v1.8.15</strong>
+              <small>发布于 2026.09.27 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
@@ -87,13 +87,13 @@
                 <span>首条更新 · 2026</span>
               </div>
               <div class="summary-stat">
-                <strong>09.26</strong>
+                <strong>09.27</strong>
                 <span>最近整理 · 2026</span>
               </div>
             </div>
 
             <p class="summary-note"><span aria-hidden="true">✦</span> 近期网页更新按日期记录，客户端按版本发布；早期网页编号保留。原生多图复制与主页批量下载属于客户端功能。</p>
-            <a class="release-summary-link" href="#installer-name-update">阅读 v1.8.14 更新说明 <span aria-hidden="true">↗</span></a>
+            <a class="release-summary-link" href="#failed-note-recovery-update">阅读 v1.8.15 更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -111,7 +111,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v1.8.14、实况、更新" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v1.8.15、失败、复制" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -125,6 +125,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#failed-note-recovery-update"><span>v1.8.15</span><strong>失败链接复制与单篇下载</strong></a>
               <a href="#installer-name-update"><span>v1.8.14</span><strong>简化安装包名称</strong></a>
               <a href="#native-clipboard-update"><span>v1.8.13</span><strong>原生多图复制与粘贴</strong></a>
               <a href="#website-release-sync"><span>09.25</span><strong>官网同步与复制说明</strong></a>
@@ -173,7 +174,20 @@
 
           <div id="release-feed" class="release-feed">
             <p class="release-empty" hidden>没有找到匹配的更新。试试更短的关键词，或点击“清除筛选”查看全部记录。</p>
-            <article id="installer-name-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+            <article id="failed-note-recovery-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-27"><span>09.27</span><small>2026 · 失败笔记处理</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.15</span><span class="release-status">Mac / Windows</span></div><h3>失败笔记，可复制链接、转到单篇下载</h3></div></header>
+                <p class="release-lead">主页批量下载出现失败笔记时，任务记录会展示完整笔记链接，并提供“复制链接”和“去单篇下载”按钮，方便继续处理。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>完整链接，一键复制</strong>失败记录保留笔记链接及其参数，点击“复制链接”即可复制，便于稍后使用。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>转到单篇，自动填入</strong>点击“去单篇下载”切换到单篇下载并填入链接，再点击“开始解析”继续下载。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>保留批量重试</strong>失败笔记仍可在原任务中重试，编号与文件夹顺序不变；任务进行中可复制链接或转到单篇下载，批量重试前需先暂停任务。</p></div>
+                </div>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.15" target="_blank" rel="noopener noreferrer">查看 v1.8.15 安装包与升级说明 ↗</a><span>失败笔记处理 · 2026.09.27</span></div>
+              </div>
+            </article>
+            <article id="installer-name-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-26"><span>09.26</span><small>2026 · 安装包名称</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.14</span><span class="release-status">Mac / Windows</span></div><h3>安装包名称，更简洁</h3></div></header>
