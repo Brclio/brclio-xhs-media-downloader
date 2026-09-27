@@ -19,3 +19,11 @@ dist-web/
 .dev.vars.*
 cloudflare/python/.venv/
 cloudflare/python/.python-worker-build/
+dist-android/
+android/.gradle/
+android/.idea/
+android/**/build/
+android/local.properties
+android/*.iml
+*.jks
+*.keystore

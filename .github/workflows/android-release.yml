@@ -1,0 +1,120 @@
+name: Android signed release
+
+on:
+  push:
+    tags: ['android-v*']
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing Android tag to build and publish (for example android-v1.0.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-${{ inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate Android-only tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: '[[ "$RELEASE_TAG" =~ ^android-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]'
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 35
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Restore the stable Android signing key
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+          ANDROID_RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          import { androidVersion } from './scripts/publish-android-release.mjs';
+          const source = readFileSync('android/app/build.gradle', 'utf8');
+          assert.equal(source.match(/versionName\s+'([^']+)'/)?.[1], androidVersion(process.env.ANDROID_RELEASE_TAG));
+          assert.match((process.env.ANDROID_SIGNING_CERT_SHA256 || '').replace(/:/g, ''), /^[a-fA-F0-9]{64}$/);
+          const encoded = (process.env.ANDROID_SIGNING_KEYSTORE_BASE64 || '').replace(/\s/g, '');
+          assert.match(encoded, /^[A-Za-z0-9+/]+={0,2}$/, 'Missing Android signing key secret');
+          const key = Buffer.from(encoded, 'base64');
+          assert.ok(key.length > 0 && key.toString('base64') === encoded, 'Invalid signing key encoding');
+          writeFileSync(join(process.env.RUNNER_TEMP, 'brclio-android-release.keystore'), key, { mode: 0o600 });
+          NODE
+      - name: Test, lint, build and verify the signed APK
+        run: npm run android:build:release
+        env:
+          ANDROID_SIGNING_STORE_FILE: ${{ runner.temp }}/brclio-android-release.keystore
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+      - name: Upload verified release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            dist-android/*-release.apk
+            dist-android/*-release.apk.sha256
+            dist-android/SHA256SUMS.txt
+            dist-android/android-update.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-release-checks-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            android/app/build/reports/tests/
+            android/app/build/reports/lint-results-*.html
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Remove temporary signing key
+        if: always()
+        run: node -e "require('node:fs').rmSync(require('node:path').join(process.env.RUNNER_TEMP, 'brclio-android-release.keystore'), { force:true })"
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: Android-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist-android
+      - name: Verify uploaded bytes and publish without changing desktop Latest
+        run: node scripts/publish-android-release.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ANDROID_RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}

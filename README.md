@@ -36,6 +36,14 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 笔记解析先使用 Cloudflare；遇上游限制或解析失败时，仅回退到原 Vercel 的同引擎 JSON 解析接口。**目前仍保留这部分 Vercel 依赖，不能停用原项目。** Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。部署版本、核验证据、免费额度和回滚步骤见 [Cloudflare 迁移说明](docs/cloudflare-deployment.md)。已有 Secrets 时，`npm run cloudflare:deploy` 依次发布 Python、主 Worker 与 Pages；仅构建网站使用 `npm run build:cloudflare`。
 
+## Android 客户端
+
+新增独立 Android 客户端工程，面向 Android 8.0 及以上，聚焦单篇笔记的原图、实况、视频、文案、ZIP、图片复制与系统分享。可粘贴分享文案，也可从其他应用分享文字进入；文件由 Android 系统文件选择器保存。解析沿用在线服务，安装者无需 Python 或 Node.js。当前不包含主页批量、小红书登录、软件账号或会员功能。
+
+前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 独立编号为 `1.0.0`，使用固定签名支持后续覆盖升级。
+
+开发者配置 JDK 与 Android SDK 后运行 `npm run android:build` 生成 debug APK。构建、正式签名、安装与设备验证说明见 [Android 客户端说明](android/README.md)。Mac / Windows 保持原版本与更新通道。
+
 ## Mac / Windows 本地版与主页批量下载
 
 桌面版使用 Electron，将浏览器、Node.js 和独立 Python 引擎一起打包。**安装包的使用者不需要安装 Python、Node.js 或 Vercel CLI。** 网页版继续按原方式部署，桌面功能只在本地应用中显示。

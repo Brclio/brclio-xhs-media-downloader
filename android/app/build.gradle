@@ -1,0 +1,73 @@
+plugins {
+    id 'com.android.application'
+}
+
+def signingKeys = ['ANDROID_SIGNING_STORE_FILE', 'ANDROID_SIGNING_STORE_PASSWORD',
+                   'ANDROID_SIGNING_KEY_ALIAS', 'ANDROID_SIGNING_KEY_PASSWORD']
+def signingValues = signingKeys.collectEntries { [(it): System.getenv(it)] }
+def hasReleaseSigning = signingValues.values().every { it != null && !it.isBlank() }
+
+android {
+    namespace 'com.brclio.xhs'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+
+    defaultConfig {
+        applicationId 'com.brclio.xhs'
+        minSdk 26
+        targetSdk 35
+        versionCode 10000
+        versionName '1.0.0'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile rootProject.file(signingValues.ANDROID_SIGNING_STORE_FILE)
+                storePassword signingValues.ANDROID_SIGNING_STORE_PASSWORD
+                keyAlias signingValues.ANDROID_SIGNING_KEY_ALIAS
+                keyPassword signingValues.ANDROID_SIGNING_KEY_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            if (hasReleaseSigning) signingConfig signingConfigs.release
+        }
+    }
+
+    lint {
+        abortOnError true
+    }
+}
+
+// Never silently produce an unsigned or debug-signed artifact labelled release.
+gradle.taskGraph.whenReady { graph ->
+    def needsSigning = graph.allTasks.any {
+        it.project == project && it.name in ['packageRelease', 'signReleaseBundle', 'assembleRelease', 'bundleRelease']
+    }
+    if (needsSigning && !hasReleaseSigning) {
+        throw new GradleException('Release signing requires all four ANDROID_SIGNING_* environment variables. See android/README.md.')
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'androidx.core:core:1.15.0'
+    testImplementation 'junit:junit:4.13.2'
+}

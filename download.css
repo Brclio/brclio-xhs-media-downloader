@@ -1,4 +1,4 @@
-/* Brclio Design System landing template, adapted for the desktop download page.
+/* Brclio Design System landing template, adapted for the client download page.
    © 2026 Brclio · CC BY-NC-SA 4.0 */
 :root {
   --_brclio-ds: "brclio-v1";
@@ -107,6 +107,20 @@ h2 { font: 900 clamp(27px, 3vw, 40px)/1.5 var(--serif); letter-spacing: -.035em;
 .download-notice a { display: inline-block; margin-left: 10px; }
 .release-status { margin-top: 15px; color: var(--ink-faint); font-size: 10px; }
 .release-status a { margin-left: 6px; }
+.android-download { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .6fr); gap: 0 clamp(32px, 5vw, 70px); margin-top: 36px; padding: clamp(26px, 3vw, 38px); border: 1px solid #d7d8d1; border-radius: 10px; background: var(--cream); scroll-margin-top: 110px; }
+.android-download.is-platform { background: #f3f5f1; }
+.android-copy .card-heading { justify-content: flex-start; gap: 15px; margin-bottom: 18px; }
+.android-copy h3 { font: 600 30px/1.3 var(--display); }
+.android-copy h3 span { margin-left: 8px; font: 600 14px/1.5 var(--sans); }
+.android-features { margin-top: 13px; color: var(--ink-light); font-size: 12px; line-height: 1.9; }
+.android-scope { margin-top: 12px; color: var(--ink-faint); font-size: 11px; }
+.android-actions { align-self: center; min-width: 0; }
+.android-actions .download-button { margin-top: 22px; }
+.android-release-date { margin-top: 8px; color: var(--ink-faint); font-size: 10px; }
+.android-help-links { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; color: var(--blue-deep); font-size: 10px; }
+.android-help-links a { display: inline-flex; align-items: center; min-height: 32px; text-decoration: none; }
+.android-help-links a:hover { text-decoration: underline; }
+.android-status { grid-column: 1 / -1; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); }
 .archive-section { background: #173e6b; color: var(--cream); padding: clamp(76px, 8vw, 108px) 0; }
 .archive-layout { display: grid; grid-template-columns: .65fr 1fr; align-items: center; gap: clamp(48px, 8vw, 110px); }
 .archive-copy .eyebrow { color: #c0d3e7; }
@@ -250,6 +264,11 @@ h2 { font: 900 clamp(27px, 3vw, 40px)/1.5 var(--serif); letter-spacing: -.035em;
   .release-info { padding-top: 25px; }
   .release-badge { padding: 6px 9px; font-size: 9px; gap: 6px; }
   .release-info p { font-size: 8px; }
+  .android-download { grid-template-columns: 1fr; gap: 25px; padding: 27px; scroll-margin-top: 135px; }
+  .android-copy h3 { font-size: 28px; }
+  .android-copy h3 span { font-size: 13px; }
+  .android-actions .download-button { margin-top: 18px; }
+  .android-status { margin-top: 0; }
   .platform-hint { font-size: 11px; }
   .download-card { display: block; padding: 27px; }
   .card-heading { margin-bottom: 18px; }
