@@ -1,0 +1,83 @@
+{
+  "release": "v1.8.15",
+  "commit": "4e4c856a07c7a27242f9ce01a16b7ad72581e87b",
+  "origin": "https://xhs.download.brclio.com",
+  "deployment": "https://9f2856eb.brclio-xhs-pages.pages.dev",
+  "checkedAt": "2026-09-27T08:55:12.204Z",
+  "checks": [
+    {
+      "file": "download.html",
+      "status": 200,
+      "bytes": 18411,
+      "sha256": "0481395b1302894db461168a5ee8e470b330b2ae0280f1f824e495469853dff6",
+      "localBytesMatch": true
+    },
+    {
+      "file": "download.js",
+      "status": 200,
+      "bytes": 5564,
+      "sha256": "7a88e3323147d734812c8467d99b6eb9b64cf6d8f591effef35fac507850c491",
+      "localBytesMatch": true
+    },
+    {
+      "file": "changelog.html",
+      "status": 200,
+      "bytes": 113228,
+      "sha256": "dfd4e5da0d6afe3ecfb63438be1b137cfa2c59af2124fab86382ced3b202c2f6",
+      "localBytesMatch": true
+    },
+    {
+      "file": "changelog.js",
+      "status": 200,
+      "bytes": 4344,
+      "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+      "localBytesMatch": true
+    },
+    {
+      "file": "app.js",
+      "status": 200,
+      "bytes": 66824,
+      "sha256": "3fd279a359b3db07634aed55c6c471fcc54163cd08a1ff75bbbed5db707984aa",
+      "localBytesMatch": true
+    },
+    {
+      "file": "desktop-ui.js",
+      "status": 200,
+      "bytes": 64057,
+      "sha256": "ff8f96bb5608655840ede3d36d47537123105075f2c7b9d8ca6f32078601fb15",
+      "localBytesMatch": true
+    },
+    {
+      "file": "desktop-ui.css",
+      "status": 200,
+      "bytes": 44704,
+      "sha256": "cdf647401ed421167b86ed388d85e1b46ce3d30b2392781323a9fd0f3e48070c",
+      "localBytesMatch": true
+    }
+  ],
+  "downloadLinks": [
+    {
+      "platform": "mac-arm64",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.15/Brclio-XHS-1.8.15-mac-arm64.dmg"
+    },
+    {
+      "platform": "mac-x64",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.15/Brclio-XHS-1.8.15-mac-x64.dmg"
+    },
+    {
+      "platform": "windows-setup",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.15/Brclio-XHS-1.8.15-windows-x64-setup.exe"
+    },
+    {
+      "platform": "windows-portable",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.15/Brclio-XHS-1.8.15-windows-x64-portable.exe"
+    }
+  ],
+  "anonymousHealth": {
+    "checkedAt": "2026-09-27T08:55:04.461Z",
+    "passed": 44,
+    "total": 44,
+    "ok": true,
+    "realMediaChecks": false
+  }
+}
