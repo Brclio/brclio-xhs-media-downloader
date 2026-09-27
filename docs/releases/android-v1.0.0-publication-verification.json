@@ -1,0 +1,182 @@
+{
+  "version": "1.0.0",
+  "tag": "android-v1.0.0",
+  "sourceCommit": "c2609b6a51af685fde4f5d25d2b663fc959f554b",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.0",
+  "publishedAt": "2026-09-27T23:45:17Z",
+  "verifiedAt": "2026-09-27T23:53:49.276570+00:00",
+  "releaseBuild": {
+    "schemaVersion": 1,
+    "platform": "android",
+    "version": "1.0.0",
+    "versionCode": 10000,
+    "applicationId": "com.brclio.xhs",
+    "minSdk": 26,
+    "signingCertificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b",
+    "sourceCommit": "c2609b6a51af685fde4f5d25d2b663fc959f554b",
+    "sourceDirty": false,
+    "builtAt": "2026-09-27T23:45:00.985Z",
+    "apk": {
+      "name": "Brclio-XHS-Android-1.0.0-release.apk",
+      "bytes": 1788742,
+      "sha256": "48ab5120759817867ee91073547bf414f9c10f341b85dc8dc799d7325577ccd3"
+    }
+  },
+  "ci": {
+    "releaseRun": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36359646237",
+    "build": "success",
+    "publish": "success",
+    "debugRun": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36359642244",
+    "debug": "success"
+  },
+  "assetsVerified": [
+    "Brclio-XHS-Android-1.0.0-release.apk",
+    "Brclio-XHS-Android-1.0.0-release.apk.sha256",
+    "SHA256SUMS.txt",
+    "android-update.json"
+  ],
+  "verification": {
+    "publicApkSha256Matches": true,
+    "apkV2SignatureVerified": true,
+    "packageVersionAndMinSdkVerified": true,
+    "desktopLatest": "v1.8.15",
+    "nodeTestsPassed": 599,
+    "nodeTestsSkipped": 7,
+    "pythonTestsPassed": 21,
+    "androidJavaTestsPassed": 17,
+    "androidLintErrors": 0,
+    "androidLintWarnings": 6
+  },
+  "website": {
+    "origin": "https://xhs.download.brclio.com",
+    "deployment": "https://187c39de.brclio-xhs-pages.pages.dev",
+    "files": [
+      {
+        "file": "download.html",
+        "status": 200,
+        "bytes": 22625,
+        "sha256": "cc29b7a031e7163752743205f272521a442100c2bf29be9d711e4865a2945305",
+        "localBytesMatch": true
+      },
+      {
+        "file": "download.css",
+        "status": 200,
+        "bytes": 23506,
+        "sha256": "618ddb84b1e3edfa7f429a1cb982a8b4d610a6e8c11371490e9f8a42066e6726",
+        "localBytesMatch": true
+      },
+      {
+        "file": "download.js",
+        "status": 200,
+        "bytes": 9796,
+        "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+        "localBytesMatch": true
+      }
+    ],
+    "browser": {
+      "ok": true,
+      "target": "https://xhs.download.brclio.com/download.html",
+      "verifiedAt": "2026-09-27T23:47:00.558Z",
+      "rendered": {
+        "androidStatus": "已核对安卓正式版 v1.0.0，APK 与 SHA-256 校验文件均已上传。",
+        "desktopStatus": "已核对最新正式版 v1.8.15，安装包由 GitHub Releases 提供。查看最新发布 ↗",
+        "apk": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.0/Brclio-XHS-Android-1.0.0-release.apk",
+        "checksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.0/Brclio-XHS-Android-1.0.0-release.apk.sha256",
+        "androidVersions": [
+          "v1.0.0"
+        ],
+        "desktopVersions": [
+          "v1.8.15"
+        ],
+        "releaseLinks": [
+          "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.0",
+          "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.0"
+        ],
+        "date": "安卓发布于 2026.09.28",
+        "size": "1.8 MB",
+        "recommendation": true,
+        "desktopRecommended": false,
+        "heroTarget": "#android-download",
+        "hint": "你正在使用 Android 安卓设备。请下载下方安卓 APK（Android 8.0 或更新版本），支持单篇笔记保存。",
+        "faq": "07安卓 APK 如何安装和更新？+使用安卓手机下载 APK，打开后按系统提示安装。如系统要求允许当前浏览器或「文件」应用安装未知来源应用，请先确认文件来自本页链接的官方 GitHub Releases，再按该应用的安装提示操作。安装后粘贴笔记链接，或从小红书的系统分享菜单选择 Brclio。保存时选择文件位置，再到系统「文件」应用查看；处理期间请保持客户端打开。实况保存为 JPG＋MP4 素材，不会自动合成为相册实况。安卓客户端启动时会检查新版，也可在「软件更新」中手动检查。发现新版后，由你确认下载安装包；校验通过后，再点击安装并在系统安装器中确认。检查更新不会自动下载安装。也可从本页下载新版 APK 覆盖安装。安卓与桌面版分别维护版本号；安卓当前不提供主页批量下载。查看安卓发布说明 ↗"
+      },
+      "viewports": [
+        {
+          "viewport": 390,
+          "page": 390,
+          "card": {
+            "left": 20,
+            "right": 370
+          }
+        },
+        {
+          "viewport": 768,
+          "page": 768,
+          "card": {
+            "left": 32,
+            "right": 736
+          }
+        },
+        {
+          "viewport": 1366,
+          "page": 1366,
+          "card": {
+            "left": 63,
+            "right": 1303
+          }
+        }
+      ],
+      "pageErrors": [],
+      "consoleErrors": [],
+      "metadata": [
+        {
+          "url": "https://api.github.com/repos/Brclio/brclio-xhs-media-downloader/releases/latest",
+          "status": 200
+        },
+        {
+          "url": "https://api.github.com/repos/Brclio/brclio-xhs-media-downloader/releases?per_page=100",
+          "status": 200
+        }
+      ],
+      "screenshots": "/tmp/brclio-android-download-production"
+    },
+    "health": {
+      "ok": true,
+      "passed": 44,
+      "total": 44,
+      "realMediaChecks": false
+    }
+  },
+  "emulatorUpdate": {
+    "androidApi": 35,
+    "abi": "arm64-v8a",
+    "fromVersion": "0.9.0",
+    "fromVersionCode": 9000,
+    "fromBuild": "unpublished test fixture signed by the official release key",
+    "toVersion": "1.0.0",
+    "toVersionCode": 10000,
+    "discoveredPublicRelease": true,
+    "cancelAndRetryDownload": true,
+    "networkTimeoutDisplayed": true,
+    "hostNetworkProxyUsedForGitHubAssets": true,
+    "downloadVerifiedByNativeUpdater": true,
+    "unknownSourcesPermissionFlow": true,
+    "permissionReturnDidNotAutoInstall": true,
+    "cancelAndRetrySystemInstaller": true,
+    "systemInstallerConfirmedUpgrade": true,
+    "installedApkExactlyMatchesPublicRelease": true,
+    "relaunchReportsLatest": true,
+    "publishedAppShareIntentAndRealNoteParse": {
+      "sharedLink": "https://xhslink.cn/o/2KYMK6MAHx9",
+      "autoParse": false,
+      "engine": "node",
+      "imageCount": 6
+    }
+  },
+  "notVerified": [
+    "Physical Android devices",
+    "Android 8 and manufacturer-specific systems",
+    "Real video and Live Photo downloads end-to-end in this validation run",
+    "Pasting multiple images into an external app"
+  ]
+}
