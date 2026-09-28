@@ -1,0 +1,619 @@
+{
+  "release": "v1.8.17",
+  "androidRelease": "android-v1.0.1",
+  "checkedAt": "2026-09-28T10:57:38.130Z",
+  "sourceCommit": "4014f463a6a63463f34fc1cc904075c0b1640be0",
+  "websiteCommit": "deae3d4ed624fed921756c7b0e90449f6ed2a213",
+  "productionOrigin": "https://xhs.download.brclio.com",
+  "deploymentUrl": "https://ea5d30c3.brclio-xhs-pages.pages.dev",
+  "workerDeployment": {
+    "sourceCommit": "90b22cb26a71713ef60a9e542dd2c2639e328b0f",
+    "functionalCodeMatchesRelease": true,
+    "health": {
+      "ok": true,
+      "platform": "cloudflare",
+      "version": "1.8.17",
+      "pythonBinding": true,
+      "deploymentId": "059fd66d-dafa-4b05-91f1-fa51d420197d"
+    }
+  },
+  "assets": [
+    {
+      "file": "index.html",
+      "url": "https://xhs.download.brclio.com/",
+      "status": 200,
+      "bytes": 50494,
+      "sha256": "2def466378aad45b36b6d6ed47256aade7d2dc7c9c340063b391d85e6cec1479",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "download.html",
+      "url": "https://xhs.download.brclio.com/download.html",
+      "status": 200,
+      "bytes": 22605,
+      "sha256": "e0af01ae16906cfc6ce67b43c9a96c5a688aa348d929e454523060bb852a883c",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "download.js",
+      "url": "https://xhs.download.brclio.com/download.js",
+      "status": 200,
+      "bytes": 9796,
+      "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "changelog.html",
+      "url": "https://xhs.download.brclio.com/changelog.html",
+      "status": 200,
+      "bytes": 117889,
+      "sha256": "035221e94035cfc98a21dcd6bd6d9c5f2ca6c0d96abc3d685636ca223cbbfd91",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "app.js",
+      "url": "https://xhs.download.brclio.com/app.js",
+      "status": 200,
+      "bytes": 66824,
+      "sha256": "3fd279a359b3db07634aed55c6c471fcc54163cd08a1ff75bbbed5db707984aa",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "style.css",
+      "url": "https://xhs.download.brclio.com/style.css",
+      "status": 200,
+      "bytes": 33158,
+      "sha256": "77cd5ce8dba993e141c61cd6f2a4fec4e10746741e2775b5cd529f4fff8673d1",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "account-ui.js",
+      "url": "https://xhs.download.brclio.com/account-ui.js",
+      "status": 200,
+      "bytes": 18973,
+      "sha256": "bc9800873fd42eab63c2f11691e37b7c6f951dc90ef9dafad08e9d904075307e",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "admin/index.html",
+      "url": "https://xhs.download.brclio.com/admin/",
+      "status": 200,
+      "bytes": 12474,
+      "sha256": "c20e08ec798e6551b7ea33f5dff5bfaa5ecc8f7533a5567b9bbf4b260cb35569",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "admin/admin.js",
+      "url": "https://xhs.download.brclio.com/admin/admin.js",
+      "status": 200,
+      "bytes": 64894,
+      "sha256": "5ced199531648a9398cd10f5f19cea322b13d8b3d699ac1cd69c3553cc826ca0",
+      "matchesBuiltSource": true
+    },
+    {
+      "file": "admin/admin.css",
+      "url": "https://xhs.download.brclio.com/admin/admin.css",
+      "status": 200,
+      "bytes": 19235,
+      "sha256": "8b55895beb794c128c50e63e7c430018e37efe66fee3487a6335e47471fee91f",
+      "matchesBuiltSource": true
+    }
+  ],
+  "browser": {
+    "ok": true,
+    "checkedAt": "2026-09-28T10:56:51.788Z",
+    "requestedUrl": "https://xhs.download.brclio.com/download.html",
+    "expectedDesktopVersion": "1.8.17",
+    "expectedAndroidVersion": "1.0.1",
+    "source": "deae3d4",
+    "network": "existing local HTTP proxy",
+    "browser": {
+      "electron": "44.4.3",
+      "chromium": "152.0.7977.130"
+    },
+    "viewports": [
+      {
+        "url": "https://xhs.download.brclio.com/download",
+        "title": "软件下载 · Brclio 小红书下载器",
+        "innerWidth": 1280,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "documentHeight": 4614,
+        "desktopVersions": [
+          "v1.8.17"
+        ],
+        "desktopLinks": [
+          {
+            "key": "mac-arm64",
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.17/Brclio-XHS-1.8.17-mac-arm64.dmg",
+            "text": "下载 Mac 版",
+            "width": 324.890625
+          },
+          {
+            "key": "mac-x64",
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.17/Brclio-XHS-1.8.17-mac-x64.dmg",
+            "text": "下载 Intel 版",
+            "width": 323.890625
+          },
+          {
+            "key": "windows-setup",
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.17/Brclio-XHS-1.8.17-windows-x64-setup.exe",
+            "text": "下载 Windows 版",
+            "width": 323.890625
+          },
+          {
+            "key": "windows-portable",
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.17/Brclio-XHS-1.8.17-windows-x64-portable.exe",
+            "text": "Windows 便携版 123.8 MB ↗",
+            "width": 157.328125
+          }
+        ],
+        "androidVersions": [
+          "v1.0.1"
+        ],
+        "androidUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.1/Brclio-XHS-Android-1.0.1-release.apk",
+        "androidChecksumUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.1/Brclio-XHS-Android-1.0.1-release.apk.sha256",
+        "desktopStatus": "已核对最新正式版 v1.8.17，安装包由 GitHub Releases 提供。查看最新发布 ↗",
+        "androidStatus": "已核对安卓正式版 v1.0.1，APK 与 SHA-256 校验文件均已上传。",
+        "failedImages": []
+      },
+      {
+        "url": "https://xhs.download.brclio.com/download",
+        "title": "软件下载 · Brclio 小红书下载器",
+        "innerWidth": 390,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "documentHeight": 5963,
+        "desktopVersions": [
+          "v1.8.17"
+        ],
+        "desktopLinks": [
+          {
+            "key": "mac-arm64",
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.17/Brclio-XHS-1.8.17-mac-arm64.dmg",
+            "text": "下载 Mac 版",
+            "width": 294
+          },
+          {
+            "key": "mac-x64",
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.17/Brclio-XHS-1.8.17-mac-x64.dmg",
+            "text": "下载 Intel 版",
+            "width": 294
+          },
+          {
+            "key": "windows-setup",
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.17/Brclio-XHS-1.8.17-windows-x64-setup.exe",
+            "text": "下载 Windows 版",
+            "width": 294
+          },
+          {
+            "key": "windows-portable",
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.17/Brclio-XHS-1.8.17-windows-x64-portable.exe",
+            "text": "Windows 便携版 123.8 MB ↗",
+            "width": 157.328125
+          }
+        ],
+        "androidVersions": [
+          "v1.0.1"
+        ],
+        "androidUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.1/Brclio-XHS-Android-1.0.1-release.apk",
+        "androidChecksumUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.1/Brclio-XHS-Android-1.0.1-release.apk.sha256",
+        "desktopStatus": "已核对最新正式版 v1.8.17，安装包由 GitHub Releases 提供。查看最新发布 ↗",
+        "androidStatus": "已核对安卓正式版 v1.0.1，APK 与 SHA-256 校验文件均已上传。",
+        "failedImages": []
+      }
+    ],
+    "consoleErrors": [],
+    "runtimeErrors": [],
+    "httpErrors": [],
+    "fontsReady": true,
+    "criticalRequestFailures": [],
+    "initialAttempts": {
+      "explanation": "Initial timeouts came from awaiting DevTools Runtime.enable before first navigation; one retry corrected proxy URL syntax. A completed browser run then treated external-font cache misses as critical despite all DOM/layout checks passing; final criteria retain these font events as noncritical warnings."
+    },
+    "networkWarningSummary": [
+      {
+        "host": "fonts.gstatic.com",
+        "resourceType": "font",
+        "error": "net::ERR_CACHE_MISS",
+        "count": 29,
+        "critical": false
+      }
+    ],
+    "screenshotsCaptured": 4
+  },
+  "feedbackRoutes": [
+    {
+      "action": "feedback-reply",
+      "status": 400,
+      "errorCode": "INVALID_FEEDBACK",
+      "confirmedNewValidator": true
+    },
+    {
+      "action": "admin-feedback-reply",
+      "status": 400,
+      "errorCode": "INVALID_FEEDBACK",
+      "confirmedNewValidator": true
+    }
+  ],
+  "feedbackAccessChecks": {
+    "reportGeneratedAt": "2026-09-28T10:39:46.919Z",
+    "requestTimestampRecorded": false,
+    "timestampNote": "reportGeneratedAt is the report generation time. Exact request times were not recorded; the results below were observed during the preceding read-only production check.",
+    "origin": "https://xhs.download.brclio.com",
+    "sourceCommit": "4014f463a6a63463f34fc1cc904075c0b1640be0",
+    "source": "Observed tool output from four read-only POST requests to /api/account; no repeated calls were made to generate this report.",
+    "results": [
+      {
+        "action": "feedback-mine",
+        "method": "POST",
+        "path": "/api/account",
+        "input": {},
+        "authenticated": false,
+        "originHeader": "https://xhs.download.brclio.com",
+        "status": 401,
+        "errorCode": "ACCOUNT_REQUIRED",
+        "cacheControl": "no-store",
+        "responseDataKeys": [
+          "ok",
+          "error",
+          "serverTime"
+        ]
+      },
+      {
+        "action": "feedback-detail",
+        "method": "POST",
+        "path": "/api/account",
+        "input": {},
+        "authenticated": false,
+        "originHeader": "https://xhs.download.brclio.com",
+        "status": 401,
+        "errorCode": "ACCOUNT_REQUIRED",
+        "cacheControl": "no-store",
+        "responseDataKeys": [
+          "ok",
+          "error",
+          "serverTime"
+        ]
+      },
+      {
+        "action": "admin-feedback-detail",
+        "method": "POST",
+        "path": "/api/account",
+        "input": {},
+        "authenticated": false,
+        "originHeader": "https://xhs.download.brclio.com",
+        "status": 401,
+        "errorCode": "ACCOUNT_REQUIRED",
+        "cacheControl": "no-store",
+        "responseDataKeys": [
+          "ok",
+          "error",
+          "serverTime"
+        ]
+      },
+      {
+        "check": "untrusted-admin-origin",
+        "action": "admin-feedback-detail",
+        "method": "POST",
+        "path": "/api/account",
+        "input": {},
+        "authenticated": false,
+        "originHeader": "https://example.invalid",
+        "status": 403,
+        "errorCode": "ORIGIN_FORBIDDEN"
+      }
+    ],
+    "interpretation": {
+      "accessBoundariesObserved": true,
+      "storageReadCompatibility": "The deployed read action calls store.read before authentication. The observed ACCOUNT_REQUIRED responses show these requests reached authentication without a storage-read or state-schema error. No business records or remaining capacity were inspected.",
+      "authenticatedProductionConversationTest": false,
+      "productionMessagesSent": 0,
+      "verificationEmailsSent": 0,
+      "deploymentOrRepositoryModified": false
+    }
+  },
+  "prePublicationChecks": {
+    "nodePassed": 626,
+    "nodeSkipped": 7,
+    "nodeFailed": 0,
+    "pythonPassed": 21,
+    "feedbackRenderer": "passed",
+    "adminRenderer": "passed",
+    "desktopRenderer": "passed",
+    "workflow": {
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36410442025",
+      "workflowSha": "4014f463a6a63463f34fc1cc904075c0b1640be0",
+      "event": "push",
+      "conclusion": "success",
+      "jobs": [
+        "windows-x64",
+        "mac-arm64",
+        "mac-intel",
+        "Publish verified installers"
+      ],
+      "nativeClipboardVerified": true
+    }
+  },
+  "smoke": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-09-28T10:49:38.389Z",
+    "passed": 44,
+    "total": 44,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 698
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 270
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 202
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 191
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 288
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 192
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 185
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 482
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 295
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 230
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 207
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 324
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 303
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 306
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 296
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 529
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 292
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 189
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 192
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 188
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 182
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 182
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 190
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 193
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 266
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 767
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 316
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 874
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 325
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 305
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 386
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 748
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 195
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 190
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 199
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 239
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 184
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 191
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 193
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 305
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 299
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 312
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 384
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 311
+      }
+    ]
+  },
+  "validationLimits": {
+    "authenticatedProductionConversationTest": false,
+    "productionMessagesSent": 0,
+    "verificationEmailsSent": 0,
+    "realMediaChecks": false
+  },
+  "publicationEvidence": "v1.8.17-publication-verification.json"
+}
