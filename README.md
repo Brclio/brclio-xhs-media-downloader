@@ -1,8 +1,8 @@
 # Brclio 小红书下载器
 
-v1.8.16 与 Android v1.0.1 新增「iPhone 小红书无水印下载快捷指令」福利入口，网页版、Mac、Windows 和 Android 均可点击访问或复制完整链接，方便在 iPhone 上添加使用。详见 [桌面版说明](docs/releases/v1.8.16.md) 与 [Android 版说明](docs/releases/android-v1.0.1.md)。
+v1.8.16 与 Android v1.0.1 在 Mac、Windows 和 Android 客户端中新增「iPhone 小红书无水印下载快捷指令」福利入口，可点击访问或复制完整链接，方便在 iPhone 上添加使用。详见 [桌面版说明](docs/releases/v1.8.16.md) 与 [Android 版说明](docs/releases/android-v1.0.1.md)。
 
-[打开 iPhone 小红书无水印下载快捷指令](https://www.icloud.com/shortcuts/70ff1d35911f43c5be308e1f692ea530)。在电脑或 Android 上可复制链接，发送到自己的 iPhone 后打开。
+请在 Mac、Windows 或 Android 客户端内打开福利入口，复制快捷指令链接后可发送到自己的 iPhone 使用。
 
 v1.8.15 为主页批量失败记录增加完整链接展示、「复制链接」和「去单篇下载」。转入单篇后自动填入链接，点击「开始解析」即可继续下载；原有批量进度与重试功能保留。详见 [v1.8.15 版本说明](docs/releases/v1.8.15.md)。
 

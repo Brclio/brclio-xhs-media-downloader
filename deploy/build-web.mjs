@@ -1,4 +1,4 @@
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -7,7 +7,6 @@ import path from 'node:path';
 export const PUBLIC_FILES = [
   'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css', 'changelog.js',
   'download.html', 'download.css', 'download.js',
-  'ios-shortcut.css', 'ios-shortcut.js',
   'product.html', 'product.css', 'product.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css',
@@ -19,8 +18,18 @@ export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.u
   await rm(output, { recursive: true, force: true });
   await mkdir(output, { recursive: true });
   for (const name of PUBLIC_FILES) {
-    await mkdir(path.dirname(path.join(output, name)), { recursive: true });
-    await cp(path.join(root, name), path.join(output, name), { recursive: true, dereference: false });
+    const destination = path.join(output, name);
+    await mkdir(path.dirname(destination), { recursive: true });
+    if (name.endsWith('.html')) {
+      // Electron packages the original pages. Public deployments omit client-only
+      // benefits entirely, including their links and supporting resource tags.
+      const html = (await readFile(path.join(root, name), 'utf8'))
+        .replace(/^[ \t]*<!-- desktop-only:start -->[\s\S]*?<!-- desktop-only:end -->\r?\n?/gm, '');
+      if (html.includes('<!-- desktop-only:')) throw new Error(`Unmatched desktop-only block in ${name}`);
+      await writeFile(destination, html);
+    } else {
+      await cp(path.join(root, name), destination, { recursive: true, dereference: false });
+    }
   }
   return output;
 }

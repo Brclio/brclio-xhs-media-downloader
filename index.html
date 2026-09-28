@@ -13,7 +13,9 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/style.css" />
+    <!-- desktop-only:start -->
     <link rel="stylesheet" href="/ios-shortcut.css" />
+    <!-- desktop-only:end -->
     <link rel="stylesheet" href="/visit-counter.css" />
     <link rel="stylesheet" href="/support.css" />
     <link rel="stylesheet" href="/desktop-ui.css" />
@@ -361,6 +363,7 @@
           </div>
         </section>
 
+        <!-- desktop-only:start -->
         <aside id="ios-shortcut" class="ios-shortcut" data-ios-shortcut aria-labelledby="ios-shortcut-title">
           <div class="ios-shortcut-copy">
             <span class="ios-shortcut-badge">送你一个福利 · iPhone</span>
@@ -374,6 +377,7 @@
           </div>
           <p class="ios-shortcut-status" data-shortcut-status role="status" aria-live="polite"></p>
         </aside>
+        <!-- desktop-only:end -->
 
         <section id="empty-state" class="empty-state" aria-labelledby="empty-title">
           <div class="empty-state-copy">
@@ -795,6 +799,8 @@
     <script type="module" src="/app.js"></script>
     <script type="module" src="/account-ui.js"></script>
     <script defer src="/visit-counter.js"></script>
+    <!-- desktop-only:start -->
     <script src="/ios-shortcut.js" defer></script>
+    <!-- desktop-only:end -->
   </body>
 </html>

@@ -15,7 +15,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Caveat:wght@600;700&family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./download.css">
   <script src="./download.js" defer></script>
+  <!-- desktop-only:start -->
   <link rel="stylesheet" href="./ios-shortcut.css">
+  <!-- desktop-only:end -->
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -122,6 +124,7 @@
       </div>
     </section>
 
+    <!-- desktop-only:start -->
     <div class="container">
         <aside id="ios-shortcut" class="ios-shortcut" data-ios-shortcut aria-labelledby="ios-shortcut-title">
           <div class="ios-shortcut-copy">
@@ -137,6 +140,7 @@
           <p class="ios-shortcut-status" data-shortcut-status role="status" aria-live="polite"></p>
         </aside>
     </div>
+    <!-- desktop-only:end -->
 
     <section class="archive-section" aria-labelledby="archive-title">
       <div class="container archive-layout">
@@ -182,6 +186,8 @@
     <section class="closing-section"><div class="container closing-layout"><div><span class="closing-note">Keep what inspires you.</span><h2>下一次喜欢，就好好保存。</h2></div><a class="closing-link" href="#downloads">选择你的版本 <span aria-hidden="true">↗</span></a></div></section>
   </main>
   <footer class="site-footer container"><div><a class="footer-brand" href="./">Brclio<span>小红书下载器</span></a><p>写代码，教编程，做产品。</p></div><div class="footer-links"><a href="https://github.com/Brclio/brclio-design-system" target="_blank" rel="noopener noreferrer">Brclio Design System ↗</a><span>© 2026 Brclio · 设计遵循 CC BY-NC-SA 4.0</span></div></footer>
+  <!-- desktop-only:start -->
   <script src="./ios-shortcut.js" defer></script>
+  <!-- desktop-only:end -->
 </body>
 </html>

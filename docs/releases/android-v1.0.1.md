@@ -4,11 +4,11 @@
 
 ## 本次更新
 
-- 新增「iPhone 小红书无水印下载快捷指令」福利入口，与网页版、Mac、Windows 客户端同步展示。
+- 新增「iPhone 小红书无水印下载快捷指令」福利入口，与 Mac、Windows 客户端同步展示。
 - 可点击访问 iCloud 快捷指令页面，也可复制完整链接，发送到自己的 iPhone 后打开并添加。
 - Android 的单篇解析、原图、实况、视频、文案、ZIP、系统保存与分享继续使用原有入口。
 
-[打开 iPhone 小红书无水印下载快捷指令](https://www.icloud.com/shortcuts/70ff1d35911f43c5be308e1f692ea530)。快捷指令供 iPhone 使用，Android 客户端提供访问与复制链接功能。
+快捷指令供 iPhone 使用。请在 Android 客户端的福利入口访问页面或复制链接，再发送到自己的 iPhone。
 
 ## 在线更新
 

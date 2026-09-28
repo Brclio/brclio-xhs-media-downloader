@@ -15,7 +15,9 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
       await writeFile(path.join(target, 'index.html'), 'public');
     } else {
       await mkdir(path.dirname(target), { recursive: true });
-      await writeFile(target, 'public');
+      await writeFile(target, ['index.html', 'download.html'].includes(name)
+        ? await readFile(new URL(`../${name}`, import.meta.url), 'utf8')
+        : 'public');
     }
   }
   for (const name of ['.env', 'server/auth/config.js', 'server/auth/feedback.js', 'lib/diagnostic-sanitize.js', 'desktop/main.js', 'desktop/diagnostic-log.js', 'desktop/feedback-client.js', 'feedback/private-user/part-000.ndjson', 'state/accounts.json', 'test/example.js', 'README.md']) {
@@ -44,6 +46,14 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   }
   assert.ok(!files.some(name => /server|desktop\/|\.env|README|test\//.test(name)));
   assert.ok(!files.some(name => /feedback\/|state\/|diagnostic-sanitize/.test(name)), 'private business files and server privacy logic never become static URLs');
+  assert.ok(!files.some(name => name.startsWith('ios-shortcut.')), 'shortcut resources are client-only');
+  for (const name of ['index.html', 'download.html']) {
+    const published = await readFile(path.join(out, name), 'utf8');
+    const desktop = await readFile(path.join(root, name), 'utf8');
+    assert.doesNotMatch(published, /data-ios-shortcut|ios-shortcut\.(?:css|js)|icloud\.com\/shortcuts\//, `${name} must not publish the client benefit`);
+    assert.match(desktop, /data-ios-shortcut/, `${name} retains the packaged client benefit`);
+    assert.match(desktop, /icloud\.com\/shortcuts\//, `${name} retains the client shortcut URL`);
+  }
   assert.equal(await readFile(path.join(out, 'app.js'), 'utf8'), 'public');
 });
 

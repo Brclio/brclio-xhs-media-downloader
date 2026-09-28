@@ -206,8 +206,9 @@ for (const navigator of [
 ]) {
   test(`mobile browser receives no desktop platform recommendation: ${navigator.platform}`, async () => {
     const page = await runPage({ navigator });
-    assert.match(page.document.querySelector('#platform-hint').textContent, /iPhone.*快捷指令/);
-    assert.equal(page.document.querySelector('#hero-download').href, '#ios-shortcut');
+    assert.match(page.document.querySelector('#platform-hint').textContent, /移动设备/);
+    assert.doesNotMatch(page.document.querySelector('#platform-hint').textContent, /快捷指令/);
+    assert.equal(page.document.querySelector('#hero-download').href, '#downloads');
     assert.ok(page.document.querySelectorAll('[data-platform]').every(card => !card.classList.contains('is-platform')));
   });
 }
