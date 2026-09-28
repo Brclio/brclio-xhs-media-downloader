@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash, generateKeyPairSync, sign } from 'node:crypto';
+import { createHash, generateKeyPairSync, sign, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { build } from 'esbuild';
@@ -104,6 +104,28 @@ test('real SQLite Durable Object preserves auth, full feedback and targeted acti
   assert.equal(calls.filter(call => call.method === 'PUT').length, 1);
 
   const adminHeaders = { Origin: origin, Cookie: `__Host-xhs-admin=${token}` };
+  const desktopCall = (action, input) => {
+    const timestamp = Date.now(), nonce = randomUUID();
+    const signature = sign(null, Buffer.from(`${action}\n${timestamp}\n${nonce}\n${JSON.stringify(input)}\n${desktopToken}`), privateKey).toString('base64');
+    return call({ action, input, proof: { timestamp, nonce, signature } }, { Authorization: `Bearer ${desktopToken}` });
+  };
+  const adminReplyInput = { feedbackId, requestId: randomUUID(), content: '  请重试后告诉我们结果。\n保留原文 member@example.test <img src=x>  ' };
+  const adminReply = await call({ action: 'admin-feedback-reply', input: adminReplyInput }, adminHeaders);
+  assert.equal(adminReply.status, 200, JSON.stringify(await adminReply.clone().json()));
+  const userDetail = await desktopCall('feedback-detail', { feedbackId });
+  assert.equal(userDetail.status, 200);
+  assert.equal((await userDetail.json()).messages[0].content, adminReplyInput.content);
+  const userReplyInput = { feedbackId, requestId: randomUUID(), content: `  用户补充原文\n${'回复内容'.repeat(1800)}  ` };
+  const userReply = await desktopCall('feedback-reply', userReplyInput);
+  assert.equal(userReply.status, 200, JSON.stringify(await userReply.clone().json()));
+  const userReplay = await desktopCall('feedback-reply', userReplyInput);
+  assert.equal(userReplay.status, 200);
+  assert.equal((await userReplay.json()).replayed, true);
+  const adminDetail = await call({ action: 'admin-feedback-detail', input: { feedbackId } }, adminHeaders);
+  assert.equal(adminDetail.status, 200);
+  assert.deepEqual((await adminDetail.json()).messages.map(message => [message.authorRole, message.content]), [['admin', adminReplyInput.content], ['user', userReplyInput.content]]);
+  assert.deepEqual(state.feedback[feedbackId].messages.map(message => message.content), [adminReplyInput.content, userReplyInput.content], 'both complete original messages reached GitHub storage through the Workers runtime');
+  assert.equal(deliveries.length, 0, 'conversation replies do not send unsolicited emails');
   const issueInput = { userId: 'desktop', planId: 'monthly', count: 1, reason: '测试已核实月付付款', requestId: 'fixture-issue-membership-123' };
   const issued = await call({ action: 'admin-generate-codes', input: issueInput }, adminHeaders);
   assert.equal(issued.status, 200);

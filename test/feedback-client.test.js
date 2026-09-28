@@ -101,3 +101,61 @@ test('switching accounts while collecting a log never submits it under the new u
   };
   assert.equal((await f.create().submit(input)).error.code, 'SESSION_CHANGED'); assert.equal(f.calls.length, 0);
 });
+
+test('question originals retain leading whitespace, line breaks, and literal markup through upload', async t => {
+  const f = await fixture(t);
+  const original = { ...input, title: '  视频没有声音  ', description: '  操作步骤：保存视频。\n<p>音轨没有播放。</p>\n  ' };
+  const result = await f.create().submit(original); assert.equal(result.ok, true);
+  const sent = f.calls.find(call => call.action === 'feedback-begin').input;
+  assert.equal(sent.title, original.title); assert.equal(sent.description, original.description);
+  assert.equal(f.state.feedback[result.feedbackId].title, original.title);
+  assert.equal(f.state.feedback[result.feedbackId].description, original.description);
+});
+
+test('conversation methods use current nonmember identity and preserve exact reply payload on retries', async t => {
+  const f = await fixture(t), client = f.create();
+  const seen = [];
+  let fail = true;
+  f.accountClient.feedbackRequest = async (action, value, userId) => {
+    seen.push({ action, value: structuredClone(value), userId });
+    if (action === 'feedback-reply' && fail) { fail = false; throw Object.assign(new Error('response lost'), { code: 'SERVICE_UNAVAILABLE' }); }
+    return { ok: true, action };
+  };
+  await client.list(); await client.detail('feedback-id');
+  const reply = { feedbackId: 'feedback-id', content: '  原文\n<script>不执行</script>  ', requestId: 'original-request-id' };
+  await assert.rejects(client.reply(reply), { code: 'SERVICE_UNAVAILABLE' });
+  await client.reply(reply);
+  assert.deepEqual(seen.map(value => value.action), ['feedback-mine', 'feedback-detail', 'feedback-reply', 'feedback-reply']);
+  assert.ok(seen.every(value => value.userId === 'user'));
+  assert.deepEqual(seen[2], seen[3]); assert.deepEqual(seen[2].value, reply);
+  assert.throws(() => client.reply({ ...reply, content: ' \n ' }), { code: 'INVALID_FEEDBACK_REPLY' });
+  assert.throws(() => client.reply({ ...reply, content: 'x'.repeat(8001) }), { code: 'INVALID_FEEDBACK_REPLY' });
+  f.accountClient.snapshot = () => ({ authenticated: false });
+  assert.throws(() => client.list(), { code: 'UNAUTHENTICATED' });
+  assert.throws(() => client.detail('feedback-id'), { code: 'UNAUTHENTICATED' });
+  assert.throws(() => client.reply(reply), { code: 'UNAUTHENTICATED' });
+  assert.equal(seen.length, 4);
+});
+
+test('an account switch during initial refresh never sends the prior question as the new user', async t => {
+  const f = await fixture(t);
+  f.accountClient.refresh = async () => {
+    f.accountClient.snapshot = () => ({ authenticated: true, account: { user: { id: 'other-user' } } });
+  };
+  assert.equal((await f.create().submit(input)).error.code, 'SESSION_CHANGED');
+  assert.equal(f.calls.length, 0);
+});
+
+test('a new account cannot join the previous account\'s in-flight feedback submission', async t => {
+  const f = await fixture(t), client = f.create();
+  let release, entered;
+  const started = new Promise(resolve => { entered = resolve; });
+  f.accountClient.refresh = async () => { entered(); await new Promise(resolve => { release = resolve; }); };
+  const pending = client.submit(input); await started;
+  f.accountClient.snapshot = () => ({ authenticated: true, account: { user: { id: 'other-user' } } });
+  const replacement = client.submit(input);
+  assert.notEqual(pending, replacement);
+  assert.equal((await replacement).error.code, 'SESSION_CHANGED');
+  release(); assert.equal((await pending).error.code, 'SESSION_CHANGED');
+  assert.equal(f.calls.length, 0);
+});

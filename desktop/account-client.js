@@ -155,11 +155,31 @@ export class AccountClient {
     } catch (error) { this.status = 'authorization_denied'; this._recordError(error); throw error; }
   }
   async feedbackRequest(action, input, expectedUserId) {
-    if (!['feedback-begin', 'feedback-upload-part', 'feedback-finalize'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效反馈操作。', 400);
+    if (!['feedback-begin', 'feedback-upload-part', 'feedback-finalize', 'feedback-mine', 'feedback-detail', 'feedback-reply'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效反馈操作。', 400);
     const token = this.credentials?.token;
     if (!token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请切回原账号再提交反馈。', 401);
-    const result = await this._request(action, input, { token });
-    if (this.credentials?.token !== token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '反馈上传期间账号发生变化，请切回原账号重试。', 401);
+    let result;
+    try { result = await this._request(action, input, { token }); }
+    catch (error) {
+      if (EXPIRED_SESSION_CODES.has(error.code)) {
+        const invalidated = await this._command(async () => {
+          // A delayed revoked response must never clear a replacement login.
+          if (this.credentials?.token !== token || this.account?.user?.id !== expectedUserId) return false;
+          const next = { ...this.credentials, token: null };
+          this.credentials = next; this.account = null; this.status = 'signed_out';
+          this.error = { code: error.code, message: error.message }; this._emit();
+          try { await this.store.save(next); }
+          catch (storageError) {
+            this.error = { code: storageError.code || 'SECURE_STORAGE_UNAVAILABLE', message: storageError.message || '无法保存退出状态，请重新登录。' };
+            this._emit(); throw storageError;
+          }
+          return true;
+        });
+        if (!invalidated) throw accountError('SESSION_CHANGED', '反馈操作期间账号发生变化，请切回原账号重试。', 401);
+      }
+      throw error;
+    }
+    if (this.credentials?.token !== token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '反馈操作期间账号发生变化，请切回原账号重试。', 401);
     return result;
   }
   redeem(code) {

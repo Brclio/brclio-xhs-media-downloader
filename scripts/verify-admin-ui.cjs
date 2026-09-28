@@ -64,16 +64,18 @@ app.whenReady().then(async () => {
   const date = new Date(now).toISOString();
   const digest = value => createHash('sha256').update(value).digest('hex');
   const feedbackId = '12345678-1234-1234-1234-123456789012';
+  const userReply = '  补充说明：\n视频仍然没有声音。<script>window.fixtureXss = true</script>\n  ';
   const logParts = [0, 1].map(part => Array.from({ length: 100 }, (_, index) => JSON.stringify({ at: date, level: 'info', event: 'download.fixture', details: { sequence: part * 100 + index, message: '保留完整诊断记录' } })).join('\n') + '\n');
   const logContent = logParts.join('');
   const logFiles = new Map(logParts.map((content, index) => [`feedback/${feedbackId}/part-${String(index).padStart(3, '0')}.ndjson`, content]));
   state.feedback[feedbackId] = {
     id: feedbackId, userId: 'u1', title: '<img src=x onerror=alert(1)> 下载问题', description: '完整问题说明：视频下载后检查本地播放。', category: 'audio', appVersion: '1.7.3', platform: 'darwin', arch: 'arm64',
     status: 'new', createdAt: date, updatedAt: date, submittedAt: date,
+    messages: [{ id: 'fixture-user-reply', authorRole: 'user', authorId: 'u1', content: userReply, createdAt: date }],
     log: { partCount: 2, totalBytes: Buffer.byteLength(logContent), sha256: digest(logContent), firstTimestamp: date, lastTimestamp: date, truncated: true, parts: logParts.map(content => ({ bytes: Buffer.byteLength(content), sha256: digest(content) })) },
   };
   const incompleteId = '12345678-1234-1234-1234-123456789013';
-  state.feedback[incompleteId] = { ...state.feedback[feedbackId], id: incompleteId, title: '尚未上传完的反馈', status: 'uploading', submittedAt: null };
+  state.feedback[incompleteId] = { ...state.feedback[feedbackId], id: incompleteId, title: '尚未上传完的反馈', status: 'uploading', submittedAt: null, messages: [] };
   state.users.u1 = {
     id: 'u1', email: 'student@example.test', role: 'user', createdAt: date,
     membership: { type: 'none', startsAt: null, expiresAt: null },
@@ -132,6 +134,9 @@ app.whenReady().then(async () => {
   const service = createAccountService({ store, mailer, config, now: () => now });
   let handler;
   const calls = [];
+  let failNextFeedbackReply = false;
+  let holdNextFeedbackReply = null;
+  let holdNextFeedbackDetail = null;
   const tlsOptions = { key: fs.readFileSync(keyFile), cert: fs.readFileSync(certificateFile) };
   // Delete test TLS material as soon as Node has loaded it into memory.
   fs.rmSync(keyFile);
@@ -145,7 +150,19 @@ app.whenReady().then(async () => {
           req.body = JSON.parse(text);
           calls.push(req.body);
           res.status = code => { res.statusCode = code; return res; };
-          res.json = body => res.end(JSON.stringify(body));
+          res.json = async body => {
+            if (body.ok && req.body.action === 'admin-feedback-reply') {
+              if (failNextFeedbackReply) {
+                failNextFeedbackReply = false; res.statusCode = 503;
+                return res.end(JSON.stringify({ ok: false, error: { message: 'Fixture reply result unavailable' } }));
+              }
+              if (holdNextFeedbackReply) { const pending = holdNextFeedbackReply; holdNextFeedbackReply = null; await pending; }
+            }
+            if (body.ok && req.body.action === 'admin-feedback-detail' && holdNextFeedbackDetail) {
+              const pending = holdNextFeedbackDetail; holdNextFeedbackDetail = null; await pending;
+            }
+            res.end(JSON.stringify(body));
+          };
           await handler(req, res);
         } catch {
           res.statusCode = 500;
@@ -197,6 +214,10 @@ app.whenReady().then(async () => {
     document.querySelector(${JSON.stringify(selector)}).value=${JSON.stringify(value)};
     document.querySelector(${JSON.stringify(selector)}).dispatchEvent(new Event('change', { bubbles: true }));
   `);
+  async function waitFor(predicate, label) {
+    for (let attempt = 0; attempt < 100; attempt += 1) { if (predicate()) return; await pause(20); }
+    assert.ok(predicate(), label);
+  }
   async function member(operation, reason, days) {
     await change('#membership-operation', operation);
     if (days !== undefined) await fill('#membership-days', String(days));
@@ -337,9 +358,57 @@ app.whenReady().then(async () => {
   await check(`document.querySelectorAll('.feedback-list-item').length === 2`, 'complete and incomplete feedback visible');
   await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('尚未上传')).click()`);
   await check(`document.querySelector('.feedback-log-section button')?.disabled`, 'incomplete feedback cannot be copied or downloaded');
+  assert.equal(await evaluate(`document.querySelector('.feedback-reply-form button').disabled`), true, 'incomplete feedback cannot receive replies');
   await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('下载问题')).click()`);
   await check(`document.querySelector('#feedback-detail h2')?.textContent.includes('下载问题') && document.querySelector('.feedback-log-section button')?.disabled === false`, 'feedback description loaded');
   assert.equal(await evaluate(`document.querySelector('#feedback-detail img') !== null`), false, 'feedback renders user text safely');
+  assert.equal(await evaluate(`document.querySelector('.feedback-message-user .feedback-message-content').textContent`), userReply, 'user reply keeps whitespace and markup as raw text');
+  assert.equal(await evaluate(`document.querySelector('.feedback-conversation script') !== null || window.fixtureXss === true`), false, 'reply markup never executes');
+  const adminReply = '  请先更新后重新下载。\n<img src=x onerror="window.fixtureXss=true">\n如果仍然无声，请继续回复。  ';
+  await fill('#feedback-reply-content', adminReply);
+  await evaluate(`document.querySelector('#feedback-reply-content').dispatchEvent(new Event('input', { bubbles: true }))`);
+  await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('尚未上传')).click()`);
+  await check(`document.querySelector('.feedback-reply-form button')?.disabled`, 'switch away from drafted reply');
+  await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('下载问题')).click()`);
+  await check(`document.querySelector('#feedback-reply-content')?.value === ${JSON.stringify(adminReply)}`, 'draft survives switching feedback');
+  failNextFeedbackReply = true;
+  await click('.feedback-reply-form button');
+  await check(`document.querySelector('#notice .notice-actions button') && !document.querySelector('.feedback-reply-form button').disabled`, 'uncertain reply offers safe retry');
+  assert.equal(await evaluate(`document.querySelector('#action-dialog').open`), false, 'reply sends directly without generic confirmation');
+  assert.equal(await evaluate(`document.querySelector('#feedback-reply-content').value`), adminReply, 'failed reply preserves full draft');
+  assert.equal(state.feedback[feedbackId].messages.at(-1).content, adminReply, 'GitHub state retains exact admin reply despite lost response');
+  assert.equal(state.feedback[feedbackId].messages.length, 2);
+  await click('#notice .notice-actions button');
+  await check(`document.querySelectorAll('.feedback-message-admin').length === 1 && document.querySelector('#feedback-reply-content').value === ''`, 'confirmed retry clears draft and renders reply');
+  const replyAttempts = calls.filter(call => call.action === 'admin-feedback-reply');
+  assert.equal(replyAttempts.length, 2);
+  assert.equal(replyAttempts[0].input.requestId, replyAttempts[1].input.requestId, 'retry reuses reply request ID');
+  assert.equal(replyAttempts[0].input.content, adminReply, 'HTTP payload retains original whitespace');
+  assert.equal(state.feedback[feedbackId].messages.length, 2, 'replayed reply never appends another message');
+  assert.equal(await evaluate(`document.querySelector('.feedback-message-admin .feedback-message-content').textContent`), adminReply);
+  assert.equal(await evaluate(`document.querySelector('.feedback-conversation img') !== null || window.fixtureXss === true`), false, 'admin reply markup stays inert');
+  assert.equal(await evaluate(`document.querySelector('.feedback-status-form').parentElement.textContent.includes('undefined')`), false, 'reply audit does not become a status transition');
+  await new Promise(resolve => { win.webContents.once('did-finish-load', resolve); win.reload(); });
+  await check(`!document.querySelector('#workspace').hidden`, 'admin session remains valid after reply reload');
+  await click('#tab-feedback');
+  await check(`document.querySelectorAll('.feedback-list-item').length === 2`, 'feedback list reloads');
+  await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('下载问题')).click()`);
+  await check(`document.querySelectorAll('.feedback-message').length === 2`, 'complete conversation survives page reload');
+  assert.equal(await evaluate(`document.querySelector('.feedback-message-admin .feedback-message-content').textContent`), adminReply);
+  assert.equal(await evaluate(`document.querySelector('.feedback-reply-summary').textContent.includes('2 条回复')`), true, 'list exposes current reply count');
+  let releaseReply;
+  holdNextFeedbackReply = new Promise(resolve => { releaseReply = resolve; });
+  const secondReply = '正在继续核查，稍后可以在这里补充结果。';
+  await fill('#feedback-reply-content', secondReply); await click('.feedback-reply-form button');
+  await waitFor(() => state.feedback[feedbackId].messages.length === 3, 'delayed reply reaches the GitHub state');
+  await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('尚未上传')).click()`);
+  await check(`document.querySelector('#feedback-detail h2')?.textContent.includes('尚未上传')`, 'another feedback can be selected during reply submission');
+  releaseReply();
+  await check(`document.querySelector('#notice').textContent.includes('回复已发送')`, 'delayed reply completes');
+  await pause(100);
+  assert.equal(await evaluate(`document.querySelector('#feedback-detail h2').textContent.includes('尚未上传')`), true, 'reply completion does not switch the selected feedback');
+  await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('下载问题')).click()`);
+  await check(`document.querySelectorAll('.feedback-message').length === 3 && document.querySelector('#feedback-reply-content').value === ''`, 'returning to replied feedback shows confirmed conversation');
   await click('.feedback-log-section button');
   await check(`document.querySelector('.feedback-log-preview')?.hidden === false`, 'complete log preview loaded');
   assert.equal(await evaluate(`document.querySelector('.feedback-log-preview').textContent`), logContent, 'every retained row is visible');
@@ -348,6 +417,7 @@ app.whenReady().then(async () => {
   await check(`window.fixtureCopiedReport?.includes('完整脱敏日志')`, 'one action copies report');
   const copied = await evaluate('window.fixtureCopiedReport');
   assert.ok(copied.includes(state.feedback[feedbackId].description));
+  assert.ok(copied.includes(userReply) && copied.includes(adminReply) && copied.includes(secondReply), 'full report includes both sides of the entire conversation');
   assert.ok(copied.endsWith(logContent), 'copied report includes entire NDJSON, not a preview');
   for (const [position, extension] of [[3, 'ndjson'], [4, 'txt']]) {
     const download = new Promise((resolve, reject) => win.webContents.session.once('will-download', (event, item) => {
@@ -373,7 +443,11 @@ app.whenReady().then(async () => {
   fs.writeFileSync(path.join(screenshots, 'feedback.png'), (await win.webContents.capturePage()).toPNG());
   win.setContentSize(560, 1000); await pause(80);
   assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'feedback page fits narrow display');
+  await evaluate(`document.querySelector('.feedback-conversation').scrollIntoView({ block: 'start' })`);
   fs.writeFileSync(path.join(screenshots, 'feedback-narrow.png'), (await win.webContents.capturePage()).toPNG());
+  win.setContentSize(360, 1000); await pause(80);
+  assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'conversation and reply composer fit a phone width');
+  fs.writeFileSync(path.join(screenshots, 'feedback-phone.png'), (await win.webContents.capturePage()).toPNG());
   win.setContentSize(1280, 1000);
   await click('#tab-status');
   await check(`document.querySelector('#status-content').textContent.includes('连接或认证失败')`, 'configured but unavailable SMTP is visibly unsuccessful');
@@ -383,8 +457,15 @@ app.whenReady().then(async () => {
     await click('#dismiss-codes');
     await click('#dialog-confirm');
   }
+  await click('#tab-feedback');
+  let releaseDetail;
+  holdNextFeedbackDetail = new Promise(resolve => { releaseDetail = resolve; });
+  const previousDetails = calls.filter(call => call.action === 'admin-feedback-detail').length;
+  await click('#refresh-feedback');
+  await waitFor(() => calls.filter(call => call.action === 'admin-feedback-detail').length > previousDetails, 'detail refresh is in flight before logout');
   await click('#logout');
   await check(`document.querySelector('#workspace').hidden`, 'actual logout');
+  releaseDetail(); await pause(100);
   assert.equal(await evaluate(`document.querySelector('#feedback-detail').textContent`), '', 'logout clears retained feedback and logs from the document');
   assert.equal(await evaluate(`document.querySelector('#issue-preview').textContent.includes('student@example.test')`), false, 'logout clears targeted customer details');
   assert.equal(Object.values(state.sessions).filter(session => session.client === 'admin').every(session => session.revokedAt), true);

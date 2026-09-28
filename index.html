@@ -120,7 +120,23 @@
         <section id="desktop-account-page" class="desktop-page" role="tabpanel" aria-labelledby="account-tab" tabindex="0" hidden><div id="desktop-account-mount"></div></section>
 
         <section id="desktop-feedback-page" class="desktop-page" role="tabpanel" aria-labelledby="feedback-tab" tabindex="0" hidden>
-          <header class="desktop-page-heading"><div><span class="section-label">FEEDBACK / 一起改进</span><h1>把问题告诉我们。</h1><p>描述你遇到的情况，应用会自动附带已脱敏的运行日志。</p></div><span class="desktop-pill">无需会员</span></header>
+          <header class="desktop-page-heading"><div><span class="section-label">FEEDBACK / 一起改进</span><h1>把问题告诉我们。</h1><p>提交问题后，可在「我的反馈」查看管理员的回答并继续回复。</p></div><span class="desktop-pill">无需会员</span></header>
+          <section class="desktop-feedback-inbox" aria-labelledby="desktop-feedback-inbox-title">
+            <div class="desktop-feedback-inbox-heading"><div><h2 id="desktop-feedback-inbox-title">我的反馈</h2><p class="desktop-field-help">只显示当前软件账号提交的问题。</p></div><button id="desktop-feedback-refresh" class="button button-secondary" type="button">刷新反馈</button></div>
+            <p id="desktop-feedback-list-status" class="desktop-field-help" role="status" aria-live="polite">登录后可查看自己的反馈和回复。</p>
+            <div class="desktop-feedback-conversations">
+              <div id="desktop-feedback-list" class="desktop-feedback-list" aria-label="我的反馈列表"></div>
+              <section id="desktop-feedback-detail" class="desktop-feedback-detail" aria-labelledby="desktop-feedback-detail-title" hidden>
+                <div class="desktop-feedback-thread-heading"><h3 id="desktop-feedback-detail-title"></h3><button id="desktop-feedback-thread-refresh" class="desktop-text-button" type="button">刷新对话</button></div>
+                <p id="desktop-feedback-detail-meta" class="desktop-field-help"></p>
+                <article class="desktop-feedback-message desktop-feedback-question"><p class="desktop-feedback-message-meta">我 · 问题原文</p><p id="desktop-feedback-question" class="desktop-feedback-message-content"></p></article>
+                <div id="desktop-feedback-messages" class="desktop-feedback-messages" aria-label="反馈对话"></div>
+                <p id="desktop-feedback-thread-status" class="desktop-field-help" role="status" aria-live="polite"></p>
+                <form id="desktop-feedback-reply-form" class="desktop-feedback-form"><label for="desktop-feedback-reply">继续回复<textarea id="desktop-feedback-reply" rows="4" maxlength="8000" placeholder="补充问题细节，或回复管理员的建议。" required></textarea></label><div class="desktop-feedback-submit-row"><button id="desktop-feedback-reply-submit" class="button button-primary" type="submit">发送回复 ↗</button><span id="desktop-feedback-reply-hint" class="desktop-field-help">最多 8000 字</span></div></form>
+              </section>
+            </div>
+          </section>
+          <h2 class="desktop-feedback-new-title">提交新问题</h2>
           <div class="desktop-feedback-layout">
             <form id="desktop-feedback-form" class="desktop-feedback-form">
               <label>问题类型<select id="desktop-feedback-category"><option value="download">下载与任务</option><option value="audio">视频声音问题</option><option value="account">账号与会员</option><option value="update">安装与更新</option><option value="other">功能建议 / 其他问题</option></select></label>
@@ -128,7 +144,7 @@
               <label>详细描述<textarea id="desktop-feedback-description" rows="8" maxlength="8000" minlength="10" placeholder="你做了什么？原本期待怎样的结果？实际发生了什么？如果有提示，请把提示文字一起填写。" required></textarea></label>
               <p class="desktop-field-help">请勿在描述中填写密码、验证码、小红书 Cookie 或其他敏感内容。</p>
               <div id="desktop-feedback-account-hint" class="desktop-feedback-account-hint"><span>提交反馈需要登录软件账号，无需开通会员。</span><button id="desktop-feedback-login" type="button">前往登录 ↗</button></div>
-              <div class="desktop-feedback-submit-row"><button id="desktop-feedback-submit" class="button button-primary" type="submit">提交反馈与日志 ↗</button><span id="desktop-feedback-request-hint" class="desktop-field-help">提交后会显示反馈编号</span></div>
+              <div class="desktop-feedback-submit-row"><button id="desktop-feedback-submit" class="button button-primary" type="submit">提交反馈与日志 ↗</button><span id="desktop-feedback-request-hint" class="desktop-field-help">提交后可查看并继续回复</span></div>
               <div id="desktop-feedback-progress-wrap" class="desktop-feedback-progress-wrap" hidden><progress id="desktop-feedback-progress" max="100" aria-label="反馈上传进度"></progress><p id="desktop-feedback-progress-text" role="status" aria-live="polite"></p></div>
               <p id="desktop-feedback-result" class="desktop-feedback-result" role="status" aria-live="polite" hidden></p>
             </form>

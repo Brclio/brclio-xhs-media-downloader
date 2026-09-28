@@ -949,6 +949,35 @@ body.is-desktop #single-note-panel .media-section-heading h3 { font-size: 1.1rem
 body.is-desktop #single-note-panel .image-grid { gap: 17px; }
 body.is-desktop #single-note-panel .image-card { border-width: 1px; border-radius: 9px; box-shadow: none; }
 /* Feedback page and diagnostics summary. */
+body.is-desktop .desktop-feedback-inbox { max-width: 1100px; margin-bottom: 32px; padding-bottom: 30px; border-bottom: 1px solid var(--line); }
+body.is-desktop .desktop-feedback-inbox-heading, body.is-desktop .desktop-feedback-thread-heading { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+body.is-desktop .desktop-feedback-inbox h2, body.is-desktop .desktop-feedback-new-title { margin: 0 0 10px; font-family: var(--font-serif); font-size: 1.2rem; }
+body.is-desktop .desktop-feedback-new-title { margin-bottom: 20px; }
+body.is-desktop .desktop-feedback-conversations { display: grid; grid-template-columns: minmax(190px, .65fr) minmax(0, 1.35fr); gap: clamp(20px, 3vw, 34px); margin-top: 18px; align-items: start; }
+body.is-desktop .desktop-feedback-list { display: grid; gap: 0; min-width: 0; max-height: 610px; overflow-y: auto; }
+body.is-desktop .desktop-feedback-list-item { display: grid; gap: 6px; width: 100%; padding: 15px 12px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; color: var(--ink); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+body.is-desktop .desktop-feedback-list-item strong { font-size: .82rem; font-weight: 600; }
+body.is-desktop .desktop-feedback-list-item span { color: var(--ink-light); font-size: .7rem; line-height: 1.75; }
+body.is-desktop .desktop-feedback-list-item:hover { background: #f6f1e5; }
+body.is-desktop .desktop-feedback-list-item[aria-current="true"] { background: #edf4fb; color: var(--blue-deep); }
+body.is-desktop .desktop-feedback-list-item:focus-visible, body.is-desktop .desktop-feedback-form textarea:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+body.is-desktop .desktop-feedback-detail { min-width: 0; }
+body.is-desktop .desktop-feedback-detail h3 { margin: 0; font-family: var(--font-serif); font-size: 1.08rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+body.is-desktop .desktop-feedback-detail > .desktop-field-help { margin: 8px 0 15px; overflow-wrap: anywhere; }
+body.is-desktop .desktop-feedback-thread-heading button { flex-shrink: 0; }
+body.is-desktop .desktop-feedback-messages { display: grid; gap: 12px; margin: 12px 0; }
+body.is-desktop .desktop-feedback-message { min-width: 0; margin: 0; padding: 16px; border-radius: 6px; background: #f6f1e5; }
+body.is-desktop .desktop-feedback-message[data-role="admin"] { background: #edf4fb; }
+body.is-desktop .desktop-feedback-message-meta { margin: 0 0 7px; color: var(--ink-light); font-size: .7rem; }
+body.is-desktop .desktop-feedback-message-content { margin: 0; color: var(--ink); font-size: .81rem; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
+body.is-desktop #desktop-feedback-reply-form { margin-top: 20px; gap: 12px; }
+body.is-desktop #desktop-feedback-reply { min-height: 115px; }
+body.is-desktop #desktop-feedback-reply[readonly] { background: #f6f1e5; }
+body.is-desktop #desktop-feedback-thread-status[data-status="error"], body.is-desktop #desktop-feedback-list-status[data-status="error"] { color: var(--red-deep); }
+@media (max-width: 900px) {
+  body.is-desktop .desktop-feedback-conversations { grid-template-columns: minmax(0, 1fr); }
+  body.is-desktop .desktop-feedback-list { max-height: 260px; }
+}
 body.is-desktop .desktop-feedback-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(255px, .85fr); gap: 35px; align-items: start; max-width: 1100px; }
 body.is-desktop .desktop-feedback-form { display: grid; gap: 18px; min-width: 0; }
 body.is-desktop .desktop-feedback-form label { display: grid; gap: 7px; font-size: .79rem; font-weight: 600; }

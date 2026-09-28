@@ -3,7 +3,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { admin: null, users: [], codes: [], audit: [], feedback: [], selectedFeedback: null, feedbackDetail: null, feedbackHistory: [], feedbackLog: null, selectedId: null, user: null, history: [], pendingDevices: [], generated: [], generatedSaved: false, tab: 'users', serverTime: null, loaded: new Set(), requestIds: new Map(), pendingMutation: null, mutating: false, pages: { users: 0, codes: 0, audit: 0, feedback: 0 }, total: {} };
+  const state = { admin: null, users: [], codes: [], audit: [], feedback: [], selectedFeedback: null, feedbackDetail: null, feedbackHistory: [], feedbackMessages: [], feedbackDrafts: new Map(), feedbackLog: null, selectedId: null, user: null, history: [], pendingDevices: [], generated: [], generatedSaved: false, tab: 'users', serverTime: null, loaded: new Set(), requestIds: new Map(), pendingMutation: null, mutating: false, pages: { users: 0, codes: 0, audit: 0, feedback: 0 }, total: {} };
   const PAGE_SIZE = 20;
   const issue = { recipients: [], code: null, reason: '', searchRequest: 0 };
   let dialogResolve = null;
@@ -97,6 +97,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     return items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   }
   async function api(action, input = {}) {
+    const epoch = feedbackSessionEpoch;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 55000);
     try {
@@ -106,10 +107,10 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
         const error = new Error(body?.error?.message || `服务暂时不可用（HTTP ${response.status}），请稍后重试。`);
         error.code = body?.error?.code || 'SERVICE_UNAVAILABLE';
         error.uncertain = !body || response.status >= 500 || response.status === 429;
-        if (response.status === 401 && state.admin) { resetSession(); tell('登录已失效，请重新验证邮箱。', 'error'); }
+        if (response.status === 401 && state.admin && epoch === feedbackSessionEpoch) { resetSession(); tell('登录已失效，请重新验证邮箱。', 'error'); }
         throw error;
       }
-      if (body.serverTime) state.serverTime = body.serverTime;
+      if (body.serverTime && epoch === feedbackSessionEpoch) state.serverTime = body.serverTime;
       return body;
     } catch (error) {
       if (error.name === 'AbortError' || error instanceof TypeError) {
@@ -122,6 +123,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   }
   // Keep uncertain operations in memory with the same requestId; do not retry under a fresh ID.
   async function mutate(action, input) {
+    const epoch = feedbackSessionEpoch;
     const key = JSON.stringify([action, input]);
     if (state.mutating) throw new Error('已有管理操作正在提交，请等待结果。');
     if (state.pendingMutation && state.pendingMutation.key !== key) throw new Error('上次操作的结果仍未确认。请先点击“重试原操作”核对结果，再发起其他修改。');
@@ -130,21 +132,25 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     state.mutating = true;
     try {
       const result = await api(action, { ...input, requestId });
+      if (epoch !== feedbackSessionEpoch || !state.admin) throw new Error('管理会话已结束。');
       state.requestIds.delete(key);
       state.pendingMutation = null;
       return result;
     } catch (error) {
-      if (!error.uncertain) { state.requestIds.delete(key); state.pendingMutation = null; }
+      if (epoch !== feedbackSessionEpoch || !state.admin) throw error;
+      if (!error.uncertain) { if (action !== 'admin-feedback-reply') state.requestIds.delete(key); state.pendingMutation = null; }
       else state.pendingMutation = { action, input: { ...input }, key };
       throw error;
-    } finally { state.mutating = false; }
+    } finally { if (epoch === feedbackSessionEpoch) state.mutating = false; }
   }
   async function run(target, action) {
+    const epoch = feedbackSessionEpoch;
     if (target?.dataset.busy === 'true') return;
     const wasDisabled = target?.disabled;
     if (target) { target.disabled = true; target.dataset.busy = 'true'; }
     try { return await action(); }
     catch (error) {
+      if (epoch !== feedbackSessionEpoch) return;
       tell(error.message || '操作失败，请重试。', 'error');
       if (state.pendingMutation) {
         const retry = button('重试原操作', 'button-secondary button-small', async () => {
@@ -152,6 +158,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
           if (!pending) return;
           const result = await mutate(pending.action, pending.input);
           state.loaded.delete('audit');
+          if (pending.action === 'admin-feedback-reply') return finishFeedbackReply(pending.input, result);
           if (pending.action === 'admin-generate-codes') displayGenerated(result, pending.input);
           else if (pending.action === 'admin-send-activation') displaySent(result);
           else tell('原操作已确认完成，未重复增加权益或重复生成记录。', 'success');
@@ -197,7 +204,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     $('issue-query').value = ''; $('issue-reason').value = ''; $('issue-deadline').value = '';
     renderRecipients(); renderIssuePreview();
     feedbackSessionEpoch += 1; feedbackRequest += 1;
-    state.feedback = []; state.selectedFeedback = null; state.feedbackDetail = null; state.feedbackHistory = []; state.feedbackLog = null;
+    state.feedback = []; state.selectedFeedback = null; state.feedbackDetail = null; state.feedbackHistory = []; state.feedbackMessages = []; state.feedbackDrafts.clear(); state.feedbackLog = null; state.mutating = false;
     $('workspace').hidden = true; $('login-panel').hidden = false; $('logout').hidden = true; $('admin-email').textContent = '';
     ['users-list', 'user-detail', 'codes-list', 'audit-list', 'status-content', 'feedback-list', 'feedback-detail'].forEach((id) => $(id).replaceChildren());
   }
@@ -565,16 +572,82 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       item.className = 'user-item feedback-list-item';
       item.setAttribute('aria-current', String(state.selectedFeedback === feedback.id));
       item.append(el('strong', '', feedback.title), badge(feedbackStatus(feedback.status), feedback.status === 'uploading' ? 'badge-danger' : feedback.status === 'resolved' ? 'badge-gold' : ''), el('span', 'small-text', `${feedback.email} · ${fmt(feedback.createdAt)}`));
+      if (feedback.replyCount) item.append(el('span', 'small-text feedback-reply-summary', `${feedback.replyCount} 条回复 · ${feedback.lastMessageRole === 'admin' ? '管理员' : '用户'} ${fmt(feedback.lastMessageAt)}`));
       list.append(item);
     }
   }
   async function selectFeedback(id) {
     const request = ++feedbackRequest, epoch = feedbackSessionEpoch;
-    const result = await api('admin-feedback-detail', { feedbackId: id });
+    if (state.selectedFeedback !== id) {
+      state.feedbackLog = null; state.feedbackDetail = null; state.feedbackHistory = []; state.feedbackMessages = [];
+      state.selectedFeedback = id; renderFeedbackList(); empty($('feedback-detail'), '正在读取反馈与对话…');
+    }
+    let result;
+    try { result = await api('admin-feedback-detail', { feedbackId: id }); }
+    catch (error) { if (request !== feedbackRequest || epoch !== feedbackSessionEpoch || !state.admin) return; throw error; }
     if (request !== feedbackRequest || epoch !== feedbackSessionEpoch || !state.admin) return;
-    if (state.selectedFeedback !== id) state.feedbackLog = null;
-    state.selectedFeedback = id; state.feedbackDetail = result.feedback; state.feedbackHistory = result.history || [];
+    state.selectedFeedback = id; state.feedbackDetail = result.feedback; state.feedbackHistory = result.history || []; state.feedbackMessages = result.messages || [];
     renderFeedbackList(); renderFeedbackDetail();
+  }
+  function feedbackDraft(id) {
+    if (!state.feedbackDrafts.has(id)) state.feedbackDrafts.set(id, { content: '', sending: false });
+    return state.feedbackDrafts.get(id);
+  }
+  async function finishFeedbackReply(input, result) {
+    const epoch = feedbackSessionEpoch, draft = feedbackDraft(input.feedbackId);
+    if (draft.content === input.content) draft.content = '';
+    draft.sending = false;
+    state.loaded.delete('audit');
+    if (state.selectedFeedback === input.feedbackId && state.feedbackDetail?.id === input.feedbackId) {
+      // Show the confirmed message immediately, even if a subsequent refresh fails.
+      state.feedbackDetail = result.feedback;
+      if (result.message && !state.feedbackMessages.some(message => message.id === result.message.id)) state.feedbackMessages.push(result.message);
+      renderFeedbackDetail();
+    }
+    tell('回复已发送，用户可以在自己的反馈中查看并继续回复。', 'success');
+    try {
+      await loadFeedback();
+      if (epoch === feedbackSessionEpoch && state.admin && state.selectedFeedback === input.feedbackId) await selectFeedback(input.feedbackId);
+    } catch {
+      if (epoch === feedbackSessionEpoch && state.admin) tell('回复已发送；最新对话暂未刷新，请点击“刷新反馈”查看。', 'success');
+    }
+  }
+  function renderFeedbackConversation(feedback, messages) {
+    const section = el('section', 'detail-section feedback-conversation');
+    section.append(el('h3', '', '对话记录'), el('p', 'field-help', '回复会显示在提交用户的反馈中，双方可以继续补充。'));
+    const list = el('ol', 'feedback-messages'); list.setAttribute('aria-label', '反馈对话记录'); list.setAttribute('aria-live', 'polite');
+    for (const message of messages) {
+      const item = el('li', `feedback-message feedback-message-${message.authorRole === 'admin' ? 'admin' : 'user'}`);
+      const meta = el('div', 'feedback-message-meta'), time = el('time', '', fmt(message.createdAt)); time.dateTime = message.createdAt;
+      meta.append(el('strong', '', message.authorRole === 'admin' ? '管理员回复' : '用户回复'), time);
+      item.append(meta, el('p', 'feedback-message-content', message.content)); list.append(item);
+    }
+    section.append(messages.length ? list : el('p', 'empty-inline', '暂无回复。可以在下方直接回复用户。'));
+    const draft = feedbackDraft(feedback.id), form = el('form', 'feedback-reply-form'), label = el('label', '', '回复用户'), input = el('textarea');
+    input.id = 'feedback-reply-content'; input.name = 'content'; input.rows = 5; input.maxLength = 8000; input.required = true;
+    input.placeholder = '填写处理建议，或请用户补充问题细节'; input.value = draft.content; input.disabled = !feedback.submittedAt || draft.sending;
+    input.addEventListener('input', () => { draft.content = input.value; }); label.append(input);
+    const send = el('button', 'button', draft.sending ? '正在发送…' : '发送回复'); send.type = 'submit'; send.disabled = !feedback.submittedAt || draft.sending;
+    const help = el('p', 'field-help', feedback.submittedAt ? '最多 8,000 字。发送失败会保留草稿；重试相同内容不会重复发送。' : '请等待用户完成反馈提交后再回复。');
+    form.append(label, help, send);
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!form.reportValidity() || draft.sending) return;
+      draft.content = input.value;
+      if (!draft.content.trim()) { input.setCustomValidity('请填写回复内容。'); input.reportValidity(); input.setCustomValidity(''); return; }
+      const payload = { feedbackId: feedback.id, content: draft.content }, epoch = feedbackSessionEpoch;
+      run(send, async () => {
+        draft.sending = true; input.disabled = true;
+        try { const result = await mutate('admin-feedback-reply', payload); await finishFeedbackReply(payload, result); }
+        finally {
+          if (epoch === feedbackSessionEpoch && state.admin) {
+            draft.sending = false; input.disabled = false;
+            if (state.selectedFeedback === feedback.id && state.feedbackDetail?.id === feedback.id && $('feedback-reply-content') !== input) renderFeedbackDetail();
+          }
+        }
+      });
+    });
+    section.append(form); return section;
   }
   async function sha256(content) {
     const value = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
@@ -600,8 +673,9 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     if (progress) progress.textContent = `完整日志已校验 · ${bytesLabel(feedback.log.totalBytes)} · ${feedback.log.partCount} 个分块`;
     return content;
   }
-  function feedbackReport(feedback, content) {
-    return [`Brclio 小红书下载器 · 问题反馈`, `反馈编号：${feedback.id}`, `用户：${feedback.email} / ${feedback.userId}`, `标题：${feedback.title}`, `状态：${feedbackStatus(feedback.status)}`, `分类：${feedbackCategory(feedback.category)}`, `版本与系统：${feedback.appVersion} / ${platformName(feedback.platform)} ${feedback.arch || ''}`, `提交时间：${fmt(feedback.submittedAt)}`, `日志范围：${fmt(feedback.log.firstTimestamp)} 至 ${fmt(feedback.log.lastTimestamp)}`, `日志大小：${feedback.log.totalBytes} 字节`, `日志 SHA-256：${feedback.log.sha256}`, `较早日志已轮换：${feedback.log.truncated ? '是' : '否'}`, '', '问题说明', feedback.description, '', '完整脱敏日志（NDJSON）', content].join('\n');
+  function feedbackReport(feedback, content, messages) {
+    const conversation = messages.flatMap(message => ['', `${message.authorRole === 'admin' ? '管理员回复' : '用户回复'} · ${message.createdAt} · ${message.id}`, message.content]);
+    return [`Brclio 小红书下载器 · 问题反馈`, `反馈编号：${feedback.id}`, `用户：${feedback.email} / ${feedback.userId}`, `标题：${feedback.title}`, `状态：${feedbackStatus(feedback.status)}`, `分类：${feedbackCategory(feedback.category)}`, `版本与系统：${feedback.appVersion} / ${platformName(feedback.platform)} ${feedback.arch || ''}`, `提交时间：${fmt(feedback.submittedAt)}`, `日志范围：${fmt(feedback.log.firstTimestamp)} 至 ${fmt(feedback.log.lastTimestamp)}`, `日志大小：${feedback.log.totalBytes} 字节`, `日志 SHA-256：${feedback.log.sha256}`, `较早日志已轮换：${feedback.log.truncated ? '是' : '否'}`, '', '问题说明', feedback.description, '', '对话记录', ...conversation, '', '完整脱敏日志（NDJSON）', content].join('\n');
   }
   function downloadFeedbackLog(feedback, content, extension) {
     const text = extension === 'txt' ? content.trimEnd().split('\n').map(line => { const item = JSON.parse(line); return `${item.at} [${item.level}] ${item.event}${item.message ? ` — ${item.message}` : ''}${item.details === undefined ? '' : `\n${JSON.stringify(item.details)}`}`; }).join('\n') + '\n' : content;
@@ -609,18 +683,19 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     const link = el('a'); link.href = url; link.download = `brclio-feedback-${feedback.id}.${extension}`; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   function renderFeedbackDetail() {
-    const feedback = state.feedbackDetail, container = $('feedback-detail');
+    const feedback = state.feedbackDetail, messages = [...state.feedbackMessages], container = $('feedback-detail');
     container.replaceChildren(); if (!feedback) return;
     const heading = el('div', 'panel-heading'); heading.append(el('h2', '', feedback.title), badge(feedbackStatus(feedback.status), feedback.status === 'uploading' ? 'badge-danger' : ''));
     container.append(heading, facts([['提交账号', feedback.email], ['用户 ID', feedback.userId], ['反馈编号', feedback.id], ['问题分类', feedbackCategory(feedback.category)], ['版本 / 系统', `${feedback.appVersion} / ${platformName(feedback.platform)} ${feedback.arch || ''}`], ['创建时间', fmt(feedback.createdAt)], ['提交时间', fmt(feedback.submittedAt)]]));
     const description = el('section', 'detail-section'); description.append(el('h3', '', '问题说明'), el('p', 'feedback-description', feedback.description)); container.append(description);
+    container.append(renderFeedbackConversation(feedback, messages));
     const logs = el('section', 'detail-section feedback-log-section'), progress = el('p', 'field-help');
     logs.append(el('h3', '', '完整使用日志'), facts([['保留范围', `${fmt(feedback.log.firstTimestamp)} 至 ${fmt(feedback.log.lastTimestamp)}`], ['日志大小', `${bytesLabel(feedback.log.totalBytes)} / ${feedback.log.partCount} 个分块`], ['较早日志', feedback.log.truncated ? '已按客户端保留上限轮换' : '本次保留范围未截断']]));
     const actions = el('div', 'button-row'), preview = el('pre', 'feedback-log-preview'); preview.hidden = true; preview.tabIndex = 0; preview.setAttribute('aria-label', '完整脱敏使用日志');
     const show = button('查看完整日志', 'button-secondary', async () => { const content = await readFeedbackLogs(feedback, progress); preview.textContent = content; preview.hidden = false; });
     const copy = button('复制反馈与完整日志', '', async () => {
-      const content = await readFeedbackLogs(feedback, progress), report = feedbackReport(feedback, content);
-      try { await navigator.clipboard.writeText(report); tell('已复制问题说明、账号、处理状态与完整脱敏日志。', 'success'); }
+      const content = await readFeedbackLogs(feedback, progress), report = feedbackReport(feedback, content, messages);
+      try { await navigator.clipboard.writeText(report); tell('已复制问题说明、完整对话、账号、处理状态与完整脱敏日志。', 'success'); }
       catch { const fallback = el('textarea', 'feedback-copy-fallback'); fallback.readOnly = true; fallback.value = report; fallback.setAttribute('aria-label', '完整反馈报告，请手动复制'); logs.append(fallback); fallback.focus(); fallback.select(); throw new Error('浏览器未允许自动复制，已选中完整报告，请手动复制。'); }
     });
     const ndjson = button('下载日志 NDJSON', 'button-secondary', async () => downloadFeedbackLog(feedback, await readFeedbackLogs(feedback, progress), 'ndjson'));
@@ -639,12 +714,13 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       state.loaded.delete('audit'); await loadFeedback(); await selectFeedback(feedback.id); tell('反馈处理状态已保存，并记录操作说明。', 'success');
     }); });
     management.append(el('h3', '', '处理进度'), form);
-    if (state.feedbackHistory.length) management.append(table(['时间', '管理员', '处理说明'], state.feedbackHistory.map(entry => [fmt(entry.at), entry.actorEmail, `${feedbackStatus(entry.before?.status)} → ${feedbackStatus(entry.after?.status)}\n${entry.reason}`])));
+    const statusHistory = state.feedbackHistory.filter(entry => entry.action === 'admin-feedback-status');
+    if (statusHistory.length) management.append(table(['时间', '管理员', '处理说明'], statusHistory.map(entry => [fmt(entry.at), entry.actorEmail, `${feedbackStatus(entry.before?.status)} → ${feedbackStatus(entry.after?.status)}\n${entry.reason}`])));
     container.append(management);
   }
   $('feedback-filter-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, loadFeedback); });
   $('refresh-feedback').addEventListener('click', () => run($('refresh-feedback'), async () => { await loadFeedback(); if (state.selectedFeedback) await selectFeedback(state.selectedFeedback); }));
-  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态' })[action] || action || '操作记录'; }
+  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态', 'admin-feedback-reply': '回复问题反馈', 'feedback-reply': '用户回复反馈' })[action] || action || '操作记录'; }
   async function loadAudit() { const data = await api('admin-audit'); state.audit = data.audit || []; state.total.audit = data.total || state.audit.length; state.pages.audit = 0; state.loaded.add('audit'); renderAudit(); }
   function renderAudit() {
     const visible = pageItems('audit', state.audit, renderAudit);

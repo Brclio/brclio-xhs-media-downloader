@@ -240,7 +240,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     }
     document.body.dataset.desktopPage = currentPage;
     if (currentPage === "about") element("desktop-update-announcement").hidden = true;
-    if (currentPage === "feedback") void loadDiagnostics();
+    if (currentPage === "feedback") { void loadDiagnostics(); void loadFeedbackList(); }
     if (focus) tab.focus();
     if (compactNavigation.matches) tab.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
@@ -288,6 +288,20 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   let accountRevision = 0;
   let feedbackStatus = "idle";
   const feedbackSupported = typeof bridge.submitFeedback === "function";
+  const conversationsSupported = ["listFeedback", "getFeedbackDetail", "replyFeedback"].every(method => typeof bridge[method] === "function");
+  let feedbackIdentityRevision = 0;
+  let feedbackSubmissionRevision = null;
+  let feedbackListRequest = 0;
+  let feedbackDetailRequest = 0;
+  let feedbackListBusy = false;
+  let feedbackDetailBusy = false;
+  let feedbackReplyBusy = false;
+  let selectedFeedbackId = "";
+  let feedbackDetailReady = false;
+  let currentFeedbackThread = null;
+  const feedbackDrafts = new Map();
+  const feedbackUserId = () => softwareAccount?.authenticated ? softwareAccount.account?.user?.id || "" : "";
+  const feedbackStatusText = (value) => ({ uploading: "日志上传中", new: "待处理", in_progress: "处理中", resolved: "已解决", closed: "已关闭" }[value] || "已提交");
   const dateText = (value) => {
     if (!value) return "—";
     const date = new Date(value);
@@ -298,7 +312,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     return `${system}${desktopInfo.arch ? ` · ${desktopInfo.arch}` : ""}${desktopInfo.version ? ` · v${desktopInfo.version}` : ""}`;
   };
   function renderFeedbackControls() {
-    const authenticated = softwareAccount?.authenticated === true;
+    const authenticated = Boolean(feedbackUserId());
     element("desktop-feedback-account-hint").hidden = authenticated;
     element("desktop-feedback-submit").disabled = feedbackBusy || !authenticated || !feedbackSupported;
     element("desktop-feedback-submit").textContent = feedbackBusy ? "正在提交…" : "提交反馈与日志 ↗";
@@ -307,10 +321,21 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     element("desktop-diagnostics-export").disabled = diagnosticsOperation || typeof bridge.exportDiagnostics !== "function";
     element("desktop-diagnostics-refresh").disabled = diagnosticsPending || typeof bridge.getDiagnosticsInfo !== "function";
     if (!feedbackSupported) element("desktop-feedback-request-hint").textContent = "当前运行环境暂不支持在线反馈";
+    element("desktop-feedback-refresh").disabled = !authenticated || !conversationsSupported || feedbackListBusy;
+    element("desktop-feedback-refresh").textContent = feedbackListBusy ? "正在刷新…" : "刷新反馈";
+    element("desktop-feedback-thread-refresh").disabled = !authenticated || feedbackDetailBusy;
+    const pending = feedbackDrafts.get(selectedFeedbackId)?.pending;
+    element("desktop-feedback-reply").disabled = !authenticated || !feedbackDetailReady || feedbackReplyBusy;
+    element("desktop-feedback-reply").readOnly = Boolean(pending);
+    element("desktop-feedback-reply-submit").disabled = !authenticated || !feedbackDetailReady || feedbackReplyBusy;
+    element("desktop-feedback-reply-submit").textContent = feedbackReplyBusy ? "正在发送…" : pending ? "重试这条回复 ↗" : "发送回复 ↗";
+    element("desktop-feedback-reply-hint").textContent = pending ? "保留了原文；重试会确认同一条回复，不会重复发送。" : "最多 8000 字";
   }
   function renderSoftwareAccount(next) {
     if (!next || typeof next !== "object") return;
+    const previousUserId = feedbackUserId();
     softwareAccount = next;
+    if (previousUserId !== feedbackUserId()) resetFeedbackIdentity();
     const account = next.account;
     element("desktop-account-summary").textContent = next.authenticated ? account?.user?.email || "已登录软件账号" : "登录软件账号";
     const membership = account?.membership;
@@ -318,6 +343,98 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
       : !next.verified ? "授权状态待刷新" : membership?.type === "permanent" ? "永久会员"
         : membership?.active ? "有效期会员" : membership?.type === "duration" ? "会员已到期" : "普通用户";
     renderFeedbackControls();
+    if (previousUserId !== feedbackUserId() && currentPage === "feedback") void loadFeedbackList();
+  }
+  function feedbackNotice(id, message, error = false) {
+    const node = element(id); node.textContent = message; node.dataset.status = error ? "error" : "idle";
+  }
+  function resetFeedbackIdentity() {
+    feedbackIdentityRevision += 1; feedbackListRequest += 1; feedbackDetailRequest += 1;
+    feedbackListBusy = false; feedbackDetailBusy = false; feedbackReplyBusy = false; feedbackBusy = false;
+    feedbackSubmissionRevision = null; selectedFeedbackId = ""; feedbackDetailReady = false; currentFeedbackThread = null; feedbackDrafts.clear();
+    element("desktop-feedback-list").replaceChildren();
+    element("desktop-feedback-detail").hidden = true;
+    for (const id of ["desktop-feedback-detail-title", "desktop-feedback-detail-meta", "desktop-feedback-question", "desktop-feedback-thread-status"]) element(id).textContent = "";
+    element("desktop-feedback-messages").replaceChildren();
+    for (const id of ["desktop-feedback-title", "desktop-feedback-description", "desktop-feedback-reply"]) element(id).value = "";
+    element("desktop-feedback-result").hidden = true; element("desktop-feedback-result").textContent = "";
+    element("desktop-feedback-progress-wrap").hidden = true; element("desktop-feedback-progress-text").textContent = "";
+    feedbackNotice("desktop-feedback-list-status", feedbackUserId() ? "点击刷新反馈查看对话。" : "登录后可查看自己的反馈和回复。");
+  }
+  function renderFeedbackList(feedbacks) {
+    const fragment = document.createDocumentFragment();
+    for (const feedback of feedbacks) {
+      const button = document.createElement("button"); button.type = "button"; button.className = "desktop-feedback-list-item";
+      button.dataset.feedbackId = feedback.id; button.setAttribute("aria-current", String(feedback.id === selectedFeedbackId));
+      const title = document.createElement("strong"); title.textContent = feedback.title || "未命名反馈";
+      const summary = document.createElement("span");
+      summary.textContent = `${feedbackStatusText(feedback.status)} · ${count(feedback.replyCount)} 条回复${feedback.lastMessageRole === "admin" ? " · 管理员已回复" : ""}\n${dateText(feedback.lastMessageAt || feedback.createdAt)}`;
+      button.append(title, summary); button.addEventListener("click", () => void loadFeedbackDetail(feedback.id)); fragment.append(button);
+    }
+    element("desktop-feedback-list").replaceChildren(fragment);
+  }
+  async function loadFeedbackList({ selectFirst = true } = {}) {
+    if (!feedbackUserId()) return;
+    if (!conversationsSupported) { feedbackNotice("desktop-feedback-list-status", "当前版本暂不支持反馈对话，请更新软件。"); return; }
+    const identity = feedbackIdentityRevision, request = ++feedbackListRequest;
+    feedbackListBusy = true; renderFeedbackControls();
+    feedbackNotice("desktop-feedback-list-status", "正在读取我的反馈…");
+    try {
+      const result = await bridge.listFeedback();
+      if (identity !== feedbackIdentityRevision || request !== feedbackListRequest) return;
+      if (result?.ok === false || !Array.isArray(result?.feedbacks)) throw new Error(result?.error?.message || "暂时无法读取反馈列表。");
+      renderFeedbackList(result.feedbacks);
+      feedbackNotice("desktop-feedback-list-status", result.feedbacks.length ? `共 ${count(result.total ?? result.feedbacks.length)} 条反馈` : "还没有反馈，遇到问题可在下方提交。");
+      if (selectFirst && !selectedFeedbackId && result.feedbacks.length) void loadFeedbackDetail(result.feedbacks[0].id);
+    } catch (error) {
+      if (identity === feedbackIdentityRevision && request === feedbackListRequest) feedbackNotice("desktop-feedback-list-status", error?.message || "读取失败，请刷新重试。", true);
+    } finally {
+      if (identity === feedbackIdentityRevision && request === feedbackListRequest) { feedbackListBusy = false; renderFeedbackControls(); }
+    }
+  }
+  function renderFeedbackThread(result) {
+    currentFeedbackThread = result;
+    const feedback = result.feedback;
+    element("desktop-feedback-detail-title").textContent = feedback.title || "反馈对话";
+    element("desktop-feedback-detail-meta").textContent = `${feedbackStatusText(feedback.status)} · ${dateText(feedback.createdAt)} · ${feedback.id}`;
+    element("desktop-feedback-question").textContent = feedback.description || "";
+    const fragment = document.createDocumentFragment();
+    for (const message of result.messages) {
+      const article = document.createElement("article"); article.className = "desktop-feedback-message"; article.dataset.role = message.authorRole; article.dataset.messageId = message.id;
+      const meta = document.createElement("p"); meta.className = "desktop-feedback-message-meta"; meta.textContent = `${message.authorRole === "admin" ? "管理员" : "我"} · ${dateText(message.createdAt)}`;
+      const content = document.createElement("p"); content.className = "desktop-feedback-message-content"; content.textContent = message.content;
+      article.append(meta, content); fragment.append(article);
+    }
+    element("desktop-feedback-messages").replaceChildren(fragment);
+    feedbackDetailReady = Boolean(feedback.submittedAt) && feedback.status !== "uploading";
+    feedbackNotice("desktop-feedback-thread-status", !feedbackDetailReady ? "原问题的日志尚未上传完成，请使用相同内容重新提交以继续上传。"
+      : !result.messages.length ? "暂时还没有回复，可以在下方补充问题。" : "");
+  }
+  async function loadFeedbackDetail(feedbackId) {
+    if (!feedbackUserId() || !conversationsSupported || !feedbackId) return;
+    const identity = feedbackIdentityRevision, request = ++feedbackDetailRequest;
+    if (selectedFeedbackId !== feedbackId) {
+      selectedFeedbackId = feedbackId; feedbackDetailReady = false; currentFeedbackThread = null;
+      element("desktop-feedback-detail-title").textContent = "正在读取对话…";
+      element("desktop-feedback-detail-meta").textContent = ""; element("desktop-feedback-question").textContent = "";
+      element("desktop-feedback-messages").replaceChildren();
+      element("desktop-feedback-reply").value = feedbackDrafts.get(feedbackId)?.content || "";
+    }
+    element("desktop-feedback-detail").hidden = false;
+    for (const button of element("desktop-feedback-list").children) button.setAttribute("aria-current", String(button.dataset.feedbackId === feedbackId));
+    feedbackDetailBusy = true; renderFeedbackControls(); feedbackNotice("desktop-feedback-thread-status", "正在刷新对话…");
+    try {
+      const result = await bridge.getFeedbackDetail(feedbackId);
+      if (identity !== feedbackIdentityRevision || request !== feedbackDetailRequest) return;
+      if (result?.ok === false || result?.feedback?.id !== feedbackId || !Array.isArray(result?.messages)) throw new Error(result?.error?.message || "暂时无法读取反馈对话。");
+      renderFeedbackThread(result);
+      return true;
+    } catch (error) {
+      if (identity === feedbackIdentityRevision && request === feedbackDetailRequest) feedbackNotice("desktop-feedback-thread-status", error?.message || "读取失败，请刷新重试。", true);
+      return false;
+    } finally {
+      if (identity === feedbackIdentityRevision && request === feedbackDetailRequest) { feedbackDetailBusy = false; renderFeedbackControls(); }
+    }
   }
   async function loadDiagnostics() {
     if (diagnosticsPending) return;
@@ -368,7 +485,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     element("desktop-feedback-progress").setAttribute("aria-valuetext", element("desktop-feedback-progress-text").textContent);
     if (feedbackStatus === "submitted") {
       const result = element("desktop-feedback-result"); result.hidden = false; result.dataset.status = "success";
-      result.textContent = `反馈已提交${next.feedbackId ? `，编号 ${next.feedbackId}` : ""}。请保留编号，便于后续沟通。`;
+      result.textContent = `反馈已提交${next.feedbackId ? `，编号 ${next.feedbackId}` : ""}。可在「我的反馈」查看回答并继续回复。`;
     } else if (feedbackStatus === "error") {
       const result = element("desktop-feedback-result"); result.hidden = false; result.dataset.status = "error";
       result.textContent = next.error?.message || next.message || "反馈未能确认提交，请保留描述并重试。";
@@ -377,26 +494,74 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   element("desktop-diagnostics-refresh").addEventListener("click", () => void loadDiagnostics());
   element("desktop-diagnostics-copy").addEventListener("click", () => void diagnosticsAction("copyDiagnostics"));
   element("desktop-diagnostics-export").addEventListener("click", () => void diagnosticsAction("exportDiagnostics"));
+  element("desktop-feedback-refresh").addEventListener("click", () => {
+    void loadFeedbackList(); if (selectedFeedbackId) void loadFeedbackDetail(selectedFeedbackId);
+  });
+  element("desktop-feedback-thread-refresh").addEventListener("click", () => void loadFeedbackDetail(selectedFeedbackId));
+  element("desktop-feedback-reply").addEventListener("input", () => {
+    if (!selectedFeedbackId || feedbackDrafts.get(selectedFeedbackId)?.pending) return;
+    feedbackDrafts.set(selectedFeedbackId, { content: element("desktop-feedback-reply").value });
+  });
+  element("desktop-feedback-reply-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (feedbackReplyBusy || !feedbackUserId() || !feedbackDetailReady || !selectedFeedbackId || !conversationsSupported) return;
+    const identity = feedbackIdentityRevision, feedbackId = selectedFeedbackId;
+    const draft = feedbackDrafts.get(feedbackId) || { content: element("desktop-feedback-reply").value };
+    if (!draft.content.trim() || draft.content.length > 8000) { feedbackNotice("desktop-feedback-thread-status", "回复内容需为 1–8000 字。", true); return; }
+    if (!draft.pending) draft.pending = { feedbackId, content: draft.content, requestId: crypto.randomUUID() };
+    feedbackDrafts.set(feedbackId, draft); feedbackReplyBusy = true; renderFeedbackControls();
+    feedbackNotice("desktop-feedback-thread-status", "正在保存回复…");
+    try {
+      const result = await bridge.replyFeedback(draft.pending);
+      if (identity !== feedbackIdentityRevision) return;
+      if (result?.ok === false || !result?.message?.id) throw new Error(result?.error?.message || "回复尚未确认保存，请重试。");
+      feedbackDrafts.delete(feedbackId);
+      if (selectedFeedbackId === feedbackId) {
+        element("desktop-feedback-reply").value = "";
+        if (currentFeedbackThread?.feedback.id === feedbackId) {
+          const messages = currentFeedbackThread.messages.filter(message => message.id !== result.message.id);
+          renderFeedbackThread({ feedback: result.feedback || currentFeedbackThread.feedback, messages: [...messages, result.message] });
+        }
+        const refreshed = await loadFeedbackDetail(feedbackId);
+        if (refreshed === false && identity === feedbackIdentityRevision && selectedFeedbackId === feedbackId) feedbackNotice("desktop-feedback-thread-status", "回复已保存，但对话刷新失败。请稍后刷新对话查看最新进展。", true);
+      }
+      void loadFeedbackList({ selectFirst: false });
+    } catch (error) {
+      if (identity === feedbackIdentityRevision && selectedFeedbackId === feedbackId) feedbackNotice("desktop-feedback-thread-status", `${error?.message || "回复尚未确认保存。"} 原文已保留，请重试这条回复。`, true);
+    } finally {
+      if (identity === feedbackIdentityRevision) { feedbackReplyBusy = false; renderFeedbackControls(); }
+    }
+  });
   element("desktop-feedback-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (feedbackBusy || !element("desktop-feedback-form").reportValidity()) return;
     if (!softwareAccount?.authenticated) { navigate("account"); return; }
     if (!feedbackSupported) return;
-    const input = { title: element("desktop-feedback-title").value.trim(), description: element("desktop-feedback-description").value.trim(), category: element("desktop-feedback-category").value };
-    if (input.title.length < 3 || input.description.length < 10) {
+    const input = { title: element("desktop-feedback-title").value, description: element("desktop-feedback-description").value, category: element("desktop-feedback-category").value };
+    if (input.title.trim().length < 3 || input.description.trim().length < 10) {
       renderFeedbackState({ status: "error", message: "标题至少 3 个字，详细描述至少 10 个字。" }); return;
     }
+    const identity = feedbackIdentityRevision;
+    feedbackSubmissionRevision = identity;
     feedbackBusy = true; renderFeedbackControls(); element("desktop-feedback-result").hidden = true;
     renderFeedbackState({ status: "collecting" });
     try {
       const result = await bridge.submitFeedback(input);
+      if (identity !== feedbackIdentityRevision) return;
       if (!result?.ok) throw new Error(result?.error?.message || "反馈未能确认提交，请重试。");
       renderFeedbackState({ status: "submitted", feedbackId: result.feedbackId });
-    } catch (error) { renderFeedbackState({ status: "error", message: error?.message }); }
-    finally { feedbackBusy = false; renderFeedbackControls(); }
+      if (conversationsSupported && result.feedbackId) {
+        void loadFeedbackList({ selectFirst: false });
+        await loadFeedbackDetail(result.feedbackId);
+        if (identity === feedbackIdentityRevision) element("desktop-feedback-detail").scrollIntoView({ block: "nearest" });
+      }
+    } catch (error) { if (identity === feedbackIdentityRevision) renderFeedbackState({ status: "error", message: error?.message }); }
+    finally { if (identity === feedbackIdentityRevision) { feedbackBusy = false; feedbackSubmissionRevision = null; renderFeedbackControls(); } }
   });
   if (typeof bridge.onFeedbackState === "function") {
-    const cleanup = bridge.onFeedbackState(renderFeedbackState);
+    const cleanup = bridge.onFeedbackState(next => {
+      if (feedbackBusy && feedbackSubmissionRevision === feedbackIdentityRevision && (!next?.userId || next.userId === feedbackUserId())) renderFeedbackState(next);
+    });
     if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
   }
   if (typeof bridge.onAccountUpdate === "function") {

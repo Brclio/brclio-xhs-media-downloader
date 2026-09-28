@@ -156,6 +156,15 @@ dialog::backdrop { background: rgba(26,26,46,.4); }
 .feedback-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: clamp(20px, 3vw, 40px); }
 .feedback-list-item { text-align: left; }
 .feedback-description { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.feedback-messages { display: grid; gap: 12px; margin: 20px 0; padding: 0; list-style: none; }
+.feedback-message { min-width: 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 7px; background: #faf6eb; }
+.feedback-message-admin { background: #faf5dc; border-color: #d8c786; }
+.feedback-message-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 18px; font-size: .78rem; }
+.feedback-message-meta time { color: var(--muted); }
+.feedback-message-content { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; font-size: .88rem; }
+.feedback-reply-form { display: grid; gap: 10px; margin-top: 20px; }
+.feedback-reply-form textarea { min-height: 125px; }
+.feedback-reply-form .button { justify-self: start; }
 .feedback-log-section .button-row { margin-block: 18px 12px; }
 .feedback-log-preview { max-height: 480px; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: .72rem; }
 .feedback-status-form { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin-block: 15px 20px; }

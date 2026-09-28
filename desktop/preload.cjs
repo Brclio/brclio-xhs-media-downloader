@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
   exportDiagnostics: () => ipcRenderer.invoke('desktop:export-diagnostics'),
   submitFeedback: (input) => ipcRenderer.invoke('desktop:submit-feedback', input),
   getFeedbackState: () => ipcRenderer.invoke('desktop:feedback-state'),
+  listFeedback: () => ipcRenderer.invoke('desktop:feedback-list'),
+  getFeedbackDetail: (feedbackId) => ipcRenderer.invoke('desktop:feedback-detail', feedbackId),
+  replyFeedback: (input) => ipcRenderer.invoke('desktop:feedback-reply', input),
   recordDiagnostic: (event, fields) => ipcRenderer.invoke('desktop:record-diagnostic', event, fields),
   onNavigate: (callback) => {
     if (typeof callback !== 'function') throw new TypeError('callback must be a function');

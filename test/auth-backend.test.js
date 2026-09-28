@@ -55,6 +55,7 @@ function fixture(overrides = {}) {
     const body = JSON.parse(options.body);
     if (body.sha !== String(version)) { conflicts += 1; return Response.json({}, { status: 409 }); }
     const fault = faults.shift();
+    if (fault?.concurrent) { fault.concurrent(state); version += 1; }
     if (fault?.throw) throw Error('unavailable');
     if (fault?.status) return Response.json({}, { status: fault.status });
     state = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8')); version += 1; writes += 1;
@@ -1021,11 +1022,12 @@ test('feedback supports 64 whole-line chunks within 8 MiB and snapshot header do
   assert.equal(f.graphqlQueries, 4, 'finalization retrieves 64 files with four external calls');
 });
 
-test('tampered stored log prevents finalization and administrative download; metadata notes are sanitized', async () => {
+test('tampered stored logs are rejected while authored problem text remains exact', async () => {
   const f = fixture(), admin = await f.admin(), user = await f.login(), snapshot = feedbackInput(f);
   snapshot.input.description = '联系邮箱 private@example.test；Cookie: a1=never-store-this';
   const submitted = await submitFeedback(f, user, snapshot), feedbackId = submitted.feedback.id;
-  assert.ok(!JSON.stringify(f.state).includes('never-store-this')); assert.ok(!submitted.feedback.description.includes('private@example.test'));
+  assert.equal(submitted.feedback.description, snapshot.input.description);
+  assert.equal(f.state.feedback[feedbackId].description, snapshot.input.description);
   const file = [...f.logFiles.keys()][0];
   f.logFiles.set(file, f.logFiles.get(file).replace('app.started', 'app.changed'));
   await assert.rejects(f.adminCall(admin, 'admin-feedback-part', { feedbackId, index: 0 }), { code: 'FEEDBACK_LOG_MISMATCH' });
@@ -1074,4 +1076,178 @@ test('feedback administrator status failures and uncertain responses preserve on
   const retry = await f.adminCall(admin, 'admin-feedback-status', input);
   assert.equal(retry.replayed, true); assert.equal(retry.feedback.status, 'resolved');
   assert.equal(f.state.audit.filter(a => a.targetId === feedback.id).length, 1);
+});
+
+test('feedback conversations preserve complete original text and expose only public message fields', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login(), snapshot = feedbackInput(f);
+  snapshot.input.title = '  标题 <b>原文</b>  ';
+  snapshot.input.description = ' \t最初说明\r\n联系 private@example.test\nCookie: example-original-text  ';
+  const { feedback } = await submitFeedback(f, user, snapshot), feedbackId = feedback.id;
+  assert.equal(feedback.title, snapshot.input.title); assert.equal(feedback.description, snapshot.input.description);
+  assert.equal(feedback.replyCount, 0); assert.equal(feedback.lastMessageRole, 'user');
+  assert.equal(feedback.lastMessageAt, feedback.submittedAt);
+  const adminText = '  管理员答复\r\n请查看 <script>example</script>\nhttps://example.test/?xsec_token=original-value  ';
+  const first = await f.adminCall(admin, 'admin-feedback-reply', { feedbackId, content: adminText, requestId: randomUUID() });
+  f.advance(1);
+  const userText = '\t用户补充\n\n邮箱 me@example.test\n' + '完整内容'.repeat(1800) + '  ';
+  const second = await feedbackCall(f, user, 'feedback-reply', { feedbackId, content: userText, requestId: randomUUID() });
+  const detail = await feedbackCall(f, user, 'feedback-detail', { feedbackId });
+  const adminDetail = await f.adminCall(admin, 'admin-feedback-detail', { feedbackId });
+  assert.deepEqual(detail.messages, adminDetail.messages);
+  assert.deepEqual(detail.messages.map(m => m.content), [adminText, userText]);
+  assert.deepEqual(detail.messages.map(m => m.authorRole), ['admin', 'user']);
+  assert.deepEqual(detail.messages.map(m => m.authorId), [admin.account.user.id, user.account.user.id]);
+  for (const message of detail.messages) assert.deepEqual(Object.keys(message).sort(), ['authorId', 'authorRole', 'content', 'createdAt', 'id']);
+  assert.equal(first.message.content, adminText); assert.equal(second.message.content, userText);
+  assert.equal(detail.feedback.status, 'new'); assert.equal(detail.feedback.replyCount, 2);
+  assert.equal(detail.feedback.lastMessageAt, second.message.createdAt); assert.equal(detail.feedback.lastMessageRole, 'user');
+  assert.equal(detail.history, undefined); assert.deepEqual(adminDetail.history, []);
+  assert.deepEqual(f.state.feedback[feedbackId].messages.map(m => m.content), [adminText, userText]);
+  const listed = (await feedbackCall(f, user, 'feedback-mine', {})).feedbacks[0];
+  assert.equal(listed.replyCount, 2); assert.equal(listed.messages, undefined);
+  assert.equal(JSON.stringify(detail).includes('requestKey'), false); assert.equal(JSON.stringify(detail).includes('inputHash'), false);
+});
+
+test('legacy sanitized pending feedback resumes its original snapshot without weakening new raw-text idempotency', async () => {
+  const f = fixture(), user = await f.login(), snapshot = feedbackInput(f);
+  snapshot.input.title = '  旧版本待上传的问题  ';
+  snapshot.input.description = '  请联系 old@example.test\n目录 /Users/example/Downloads  ';
+  const begun = await feedbackCall(f, user, 'feedback-begin', snapshot.input), stored = f.state.feedback[begun.feedback.id];
+  const legacyInput = { title: sanitizeDiagnostic(snapshot.input.title.trim()), description: sanitizeDiagnostic(snapshot.input.description.trim()), category: 'other', appVersion: snapshot.input.appVersion, platform: snapshot.input.platform, arch: '', log: snapshot.input.log };
+  stored.title = legacyInput.title; stored.description = legacyInput.description;
+  stored.inputHash = createHmac('sha256', f.config.pepper).update(`feedback-input\0${JSON.stringify(legacyInput)}`).digest('hex');
+  delete stored.originalTextVersion; delete stored.messages;
+  const writes = f.writes, retried = await feedbackCall(f, user, 'feedback-begin', snapshot.input);
+  assert.equal(retried.replayed, true); assert.equal(retried.feedback.id, begun.feedback.id); assert.equal(f.writes, writes);
+  assert.equal(retried.feedback.description, legacyInput.description);
+  const submitted = await submitFeedback(f, user, snapshot);
+  assert.equal(submitted.feedback.status, 'new'); assert.equal(submitted.feedback.id, begun.feedback.id);
+  assert.equal(submitted.feedback.title, legacyInput.title); assert.equal(submitted.feedback.description, legacyInput.description);
+  f.advance(60001);
+  const rawSnapshot = feedbackInput(f); rawSnapshot.input.description = '请联系 new@example.test';
+  await feedbackCall(f, user, 'feedback-begin', rawSnapshot.input);
+  await assert.rejects(feedbackCall(f, user, 'feedback-begin', { ...rawSnapshot.input, description: '请联系 changed@example.test' }), { code: 'REQUEST_ID_REUSED' });
+  assert.equal(Object.keys(f.state.feedback).length, 2);
+});
+
+test('reply CAS retries reauthenticate the latest session state after a concurrent revocation', async () => {
+  const f = fixture(), user = await f.login();
+  const { feedback } = await submitFeedback(f, user), feedbackId = feedback.id;
+  f.faults.push({ status: 409, concurrent(state) {
+    for (const session of Object.values(state.sessions)) if (session.userId === user.account.user.id) session.revokedAt = new Date(f.clock).toISOString();
+  } });
+  await assert.rejects(feedbackCall(f, user, 'feedback-reply', { feedbackId, content: '并发撤销后的回复不得保存', requestId: randomUUID() }), { code: 'SESSION_REVOKED' });
+  assert.equal(f.state.feedback[feedbackId].messages.length, 0);
+});
+
+test('only the submitting user or an authenticated administrator can read and reply, including on retries', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login(), other = await f.login('other@example.test');
+  const { feedback } = await submitFeedback(f, user), feedbackId = feedback.id;
+  const input = { feedbackId, content: '当前反馈的回复', requestId: randomUUID() };
+  for (const action of ['feedback-detail', 'feedback-reply']) {
+    await assert.rejects(f.execute(f.instance(), action, input), { code: 'ACCOUNT_REQUIRED' });
+    await assert.rejects(feedbackCall(f, other, action, input), { code: 'FEEDBACK_NOT_FOUND' });
+  }
+  await assert.rejects(feedbackCall(f, user, 'admin-feedback-reply', input), { code: 'FORBIDDEN' });
+  await assert.rejects(f.adminCall(admin, 'feedback-reply', input), { code: 'DESKTOP_REQUIRED' });
+  const sent = await feedbackCall(f, user, 'feedback-reply', input);
+  await f.execute(f.instance(), 'logout', {}, user, user.dev);
+  await assert.rejects(feedbackCall(f, user, 'feedback-reply', input), { code: 'SESSION_REVOKED' });
+  await assert.rejects(feedbackCall(f, user, 'feedback-detail', { feedbackId }), { code: 'SESSION_REVOKED' });
+  const adminInput = { ...input, requestId: randomUUID() };
+  await f.adminCall(admin, 'admin-feedback-reply', adminInput);
+  await f.execute(f.instance(), 'logout', {}, admin);
+  await assert.rejects(f.adminCall(admin, 'admin-feedback-reply', adminInput), { code: 'SESSION_REVOKED' });
+  assert.equal(f.state.feedback[feedbackId].messages[0].id, sent.message.id);
+  assert.equal(f.state.feedback[feedbackId].messages.length, 2);
+});
+
+test('replies require submitted feedback and bounded nonempty text while rejecting unsafe identifiers', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login(), snapshot = feedbackInput(f);
+  const begun = await feedbackCall(f, user, 'feedback-begin', snapshot.input), feedbackId = begun.feedback.id;
+  const input = { feedbackId, content: '尚未完成日志上传', requestId: randomUUID() };
+  await assert.rejects(feedbackCall(f, user, 'feedback-reply', input), { code: 'FEEDBACK_NOT_SUBMITTED' });
+  await assert.rejects(f.adminCall(admin, 'admin-feedback-reply', input), { code: 'FEEDBACK_NOT_SUBMITTED' });
+  await submitFeedback(f, user, snapshot);
+  for (const content of ['', ' \n\t', '中'.repeat(8001), null, 42, {}]) await assert.rejects(feedbackCall(f, user, 'feedback-reply', { ...input, content }), { code: 'INVALID_FEEDBACK' });
+  for (const id of ['__proto__', 'constructor', 'toString', '../state/accounts.json', ['__proto__'], null]) {
+    await assert.rejects(feedbackCall(f, user, 'feedback-detail', { feedbackId: id }), { code: 'FEEDBACK_NOT_FOUND' });
+    await assert.rejects(feedbackCall(f, user, 'feedback-reply', { ...input, feedbackId: id }), { code: 'FEEDBACK_NOT_FOUND' });
+  }
+  for (const requestId of ['__proto__', '', 'a'.repeat(101), null]) await assert.rejects(feedbackCall(f, user, 'feedback-reply', { ...input, requestId }), { code: 'INVALID_REQUEST_ID' });
+  const reply = await feedbackCall(f, user, 'feedback-reply', { ...input, content: '中'.repeat(8000) });
+  assert.equal(reply.message.content.length, 8000); assert.equal(f.state.feedback[feedbackId].messages.length, 1);
+  await f.adminCall(admin, 'admin-feedback-status', { feedbackId, status: 'closed' });
+  const followup = await feedbackCall(f, user, 'feedback-reply', { ...input, requestId: randomUUID() });
+  assert.equal(followup.feedback.status, 'closed', 'reply does not implicitly reopen or change handling status');
+});
+
+test('concurrent conversation appends keep both messages and duplicate retries append exactly once', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login();
+  const { feedback } = await submitFeedback(f, user), feedbackId = feedback.id;
+  const input = { feedbackId, content: '同一条回复\n保留原文', requestId: randomUUID() };
+  const duplicates = await Promise.all([1, 2].map(() => feedbackCall(f, user, 'feedback-reply', input)));
+  assert.equal(duplicates.filter(r => r.replayed).length, 1); assert.equal(duplicates[0].message.id, duplicates[1].message.id);
+  const results = await Promise.all([
+    feedbackCall(f, user, 'feedback-reply', { feedbackId, content: '并发用户回复', requestId: randomUUID() }),
+    f.adminCall(admin, 'admin-feedback-reply', { feedbackId, content: '并发管理员回复', requestId: randomUUID() }),
+  ]);
+  assert.equal(f.state.feedback[feedbackId].messages.length, 3); assert.ok(f.conflicts > 0);
+  assert.ok(results.every(r => !r.replayed));
+  assert.deepEqual(new Set(f.state.feedback[feedbackId].messages.map(m => m.content)), new Set([input.content, '并发用户回复', '并发管理员回复']));
+  const before = f.writes;
+  await assert.rejects(feedbackCall(f, user, 'feedback-reply', { ...input, content: `${input.content} ` }), { code: 'REQUEST_ID_REUSED' });
+  f.advance(60001);
+  const another = await submitFeedback(f, user);
+  await assert.rejects(feedbackCall(f, user, 'feedback-reply', { ...input, feedbackId: another.feedback.id }), { code: 'REQUEST_ID_REUSED' });
+  assert.equal(f.state.feedback[another.feedback.id].messages.length, 0);
+  assert.ok(f.writes > before, 'only the separately submitted feedback was written');
+});
+
+test('reply failures and uncertain writes retain a single immutable message through original-ID recovery', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login();
+  const { feedback } = await submitFeedback(f, user), feedbackId = feedback.id;
+  for (const [action, send] of [
+    ['feedback-reply', input => feedbackCall(f, user, 'feedback-reply', input)],
+    ['admin-feedback-reply', input => f.adminCall(admin, 'admin-feedback-reply', input)],
+  ]) {
+    const input = { feedbackId, content: `原文 ${action}\n未确认前保留`, requestId: randomUUID() }, before = f.state.feedback[feedbackId].messages.length;
+    f.faults.push({ status: 429 });
+    await assert.rejects(send(input), { code: 'STORAGE_RATE_LIMITED' });
+    assert.equal(f.state.feedback[feedbackId].messages.length, before);
+    f.faults.push({ commitThenThrow: true });
+    await assert.rejects(send(input), { code: 'STORAGE_WRITE_UNCERTAIN' });
+    assert.equal(f.state.feedback[feedbackId].messages.length, before + 1);
+    const writes = f.writes, recovered = await send(input);
+    assert.equal(recovered.replayed, true); assert.equal(recovered.message.content, input.content);
+    assert.equal(f.writes, writes); assert.equal(f.state.feedback[feedbackId].messages.length, before + 1);
+  }
+});
+
+test('legacy feedback has an empty conversation and full messages are never dropped when storage is full', async () => {
+  const f = fixture(), user = await f.login();
+  const { feedback } = await submitFeedback(f, user), feedbackId = feedback.id;
+  delete f.state.feedback[feedbackId].messages; delete f.state.feedbackReplyRateLimits;
+  const writes = f.writes, old = await feedbackCall(f, user, 'feedback-detail', { feedbackId });
+  assert.deepEqual(old.messages, []); assert.equal(old.feedback.replyCount, 0); assert.equal(f.writes, writes);
+  const sent = await feedbackCall(f, user, 'feedback-reply', { feedbackId, content: '旧反馈追加的完整回复', requestId: randomUUID() });
+  const padding = { testPadding: '' }; f.state.audit.push(padding);
+  padding.testPadding = 'a'.repeat(900000 - Buffer.byteLength(JSON.stringify(f.state)) - 100);
+  await assert.rejects(feedbackCall(f, user, 'feedback-reply', { feedbackId, content: '中'.repeat(100), requestId: randomUUID() }), { code: 'STORAGE_CAPACITY' });
+  assert.deepEqual(f.state.feedback[feedbackId].messages.map(m => m.id), [sent.message.id]);
+  assert.equal((await feedbackCall(f, user, 'feedback-detail', { feedbackId })).messages[0].content, sent.message.content);
+});
+
+test('reply rate limits persist across instances and retries do not consume another quota slot', async () => {
+  const f = fixture(), user = await f.login();
+  const { feedback } = await submitFeedback(f, user), feedbackId = feedback.id;
+  const first = { feedbackId, content: '第一条回复', requestId: randomUUID() };
+  await feedbackCall(f, user, 'feedback-reply', first);
+  for (let i = 1; i < 20; i++) await feedbackCall(f, user, 'feedback-reply', { ...first, content: `回复 ${i}`, requestId: randomUUID() });
+  await assert.rejects(feedbackCall(f, user, 'feedback-reply', { ...first, requestId: randomUUID() }), { code: 'FEEDBACK_REPLY_RATE_LIMITED' });
+  assert.equal((await feedbackCall(f, user, 'feedback-reply', first)).replayed, true);
+  assert.equal(Object.values(f.state.feedbackReplyRateLimits)[0].length, 20);
+  f.advance(3_600_001);
+  await feedbackCall(f, user, 'feedback-reply', { ...first, requestId: randomUUID() });
+  assert.equal(f.state.feedback[feedbackId].messages.length, 21);
 });

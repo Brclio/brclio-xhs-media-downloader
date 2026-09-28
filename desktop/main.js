@@ -164,6 +164,9 @@ function registerIpc() {
   });
   handle('desktop:submit-feedback', input => feedbackClient.submit(input));
   handle('desktop:feedback-state', () => feedbackClient.snapshot());
+  handle('desktop:feedback-list', () => feedbackClient.list());
+  handle('desktop:feedback-detail', feedbackId => feedbackClient.detail(feedbackId));
+  handle('desktop:feedback-reply', input => feedbackClient.reply(input));
   handle('desktop:record-diagnostic', (event, fields) => {
     if (typeof event !== 'string' || !/^(renderer|single|navigation)\.[a-z0-9_.-]{1,100}$/i.test(event)
       || Buffer.byteLength(JSON.stringify(fields || {})) > 24000) return false;

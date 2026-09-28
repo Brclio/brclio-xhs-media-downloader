@@ -37,13 +37,25 @@ test('HTTP desktop proof and bearer pass only to service while browser cookies r
 });
 
 test('every admin-prefixed endpoint requires trusted origin before service access', async () => {
-  for (const action of ['admin-users', 'admin-user', 'admin-membership', 'admin-unbind', 'admin-codes', 'admin-generate-codes', 'admin-send-activation', 'admin-void-code', 'admin-audit', 'admin-status', 'admin-feedback', 'admin-feedback-detail', 'admin-feedback-part', 'admin-feedback-status']) {
+  for (const action of ['admin-users', 'admin-user', 'admin-membership', 'admin-unbind', 'admin-codes', 'admin-generate-codes', 'admin-send-activation', 'admin-void-code', 'admin-audit', 'admin-status', 'admin-feedback', 'admin-feedback-detail', 'admin-feedback-part', 'admin-feedback-status', 'admin-feedback-reply']) {
     const rejected = await request({ body: { action, input: {} } });
     assert.equal(rejected.code, 403, action);
     assert.equal(rejected.calls.length, 0);
   }
   const cross = await request({ body: { action: 'admin-unbind', input: {} }, headers: { origin, 'sec-fetch-site': 'cross-site' } });
   assert.equal(cross.code, 403);
+});
+
+test('reply HTTP envelopes admit full Chinese and escaped text with authentication headers intact', async () => {
+  for (const action of ['feedback-reply', 'admin-feedback-reply']) {
+    for (const content of ['中'.repeat(8000), '\u0000'.repeat(8000)]) {
+      const input = { feedbackId: '12345678-1234-1234-1234-123456789012', requestId: '12345678-1234-1234-1234-123456789013', content };
+      const result = await request({ body: JSON.stringify({ action, input }), headers: { origin, ...(action.startsWith('admin-') ? { cookie: `${ADMIN_COOKIE}=${token}` } : { authorization: `Bearer ${token}` }) } });
+      assert.equal(result.code, 200); assert.equal(result.calls[0].input.content, content); assert.equal(result.calls[0].token, token);
+    }
+    const oversized = await request({ body: { action, input: { content: 'a'.repeat(49152) } }, headers: { origin } });
+    assert.equal(oversized.code, 413); assert.equal(oversized.calls.length, 0);
+  }
 });
 
 test('HTTP admits bounded feedback manifests and full log chunks without widening ordinary action limits', async () => {

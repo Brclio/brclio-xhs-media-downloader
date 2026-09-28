@@ -19,7 +19,7 @@ function bodyValue(req) {
       body = JSON.parse(body);
     }
     if (!body || typeof body !== 'object' || Array.isArray(body)) fail('INVALID_REQUEST', '请求格式无效。');
-    const limit = body.action === 'feedback-upload-part' ? FEEDBACK_BODY_BYTES : body.action === 'feedback-begin' ? 49_152 : MAX_BODY_BYTES;
+    const limit = body.action === 'feedback-upload-part' ? FEEDBACK_BODY_BYTES : ['feedback-begin', 'feedback-reply', 'admin-feedback-reply'].includes(body.action) ? 49_152 : MAX_BODY_BYTES;
     if (Buffer.byteLength(JSON.stringify(body)) > limit || Number(header(req, 'content-length')) > limit) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
     return body;
   } catch (error) {

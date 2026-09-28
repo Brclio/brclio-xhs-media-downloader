@@ -34,24 +34,28 @@ export class FeedbackClient {
     throw last;
   }
   submit(input) {
-    if (this.operation) return this.operation;
+    const userId = this.accountClient.snapshot().account?.user?.id;
+    if (this.operation) return this.operationUserId === userId ? this.operation
+      : Promise.resolve({ ok: false, error: { code: 'SESSION_CHANGED', message: '上一个账号的反馈正在结束，请稍后重试。' } });
+    this.operationUserId = userId;
     this.stopping = false;
-    this.operation = this.run(input).finally(() => { this.operation = null; });
+    this.operation = this.run(input).finally(() => { this.operation = null; this.operationUserId = null; });
     return this.operation;
   }
   async run(input) {
     try {
       if (!input || typeof input !== 'object') throw accountError('INVALID_FEEDBACK', '请填写问题描述。', 400);
-      const title = String(input.title || '').trim(), description = String(input.description || '').trim();
+      const title = String(input.title || ''), description = String(input.description || '');
       const category = ['download', 'audio', 'update', 'account', 'other'].includes(input.category) ? input.category : 'other';
-      if (!title || title.length > 120 || description.length < 5 || description.length > 8000) throw accountError('INVALID_FEEDBACK', '标题最多 120 字，问题描述需为 5–8000 字。', 400);
+      if (!title.trim() || title.length > 120 || description.trim().length < 5 || description.length > 8000) throw accountError('INVALID_FEEDBACK', '标题最多 120 字，问题描述需为 5–8000 字。', 400);
       await this.accountClient.refresh();
       const account = this.accountClient.snapshot();
       if (!account.authenticated || !account.account?.user?.id) throw accountError('UNAUTHENTICATED', '请先登录软件账号再提交反馈；未登录也可以复制或导出日志。', 401);
       const userId = account.account.user.id;
+      if (this.operationUserId && this.operationUserId !== userId) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请重新提交反馈。', 401);
       const key = hash(JSON.stringify({ userId, title, description, category }));
       const filename = path.join(this.directory, `${key}.json`);
-      this.emit({ status: 'collecting', progress: 0, uploadedBytes: 0, totalBytes: 0, error: null, message: '正在准备完整诊断日志…' });
+      this.emit({ status: 'collecting', userId, feedbackId: null, progress: 0, uploadedBytes: 0, totalBytes: 0, error: null, message: '正在准备完整诊断日志…' });
       let pending;
       try {
         const file = await lstat(filename);
@@ -96,6 +100,19 @@ export class FeedbackClient {
       this.emit({ status: 'error', error: safe, message: safe.message });
       return { ok: false, error: safe };
     }
+  }
+  conversationRequest(action, input = {}) {
+    const account = this.accountClient.snapshot();
+    if (!account.authenticated || !account.account?.user?.id) throw accountError('UNAUTHENTICATED', '请先登录软件账号再查看或回复反馈。', 401);
+    return this.accountClient.feedbackRequest(action, input, account.account.user.id);
+  }
+  list() { return this.conversationRequest('feedback-mine'); }
+  detail(feedbackId) { return this.conversationRequest('feedback-detail', { feedbackId }); }
+  reply(input) {
+    if (!input || typeof input.content !== 'string' || !input.content.trim() || input.content.length > 8000) {
+      throw accountError('INVALID_FEEDBACK_REPLY', '回复内容需为 1–8000 字。', 400);
+    }
+    return this.conversationRequest('feedback-reply', { feedbackId: input.feedbackId, content: input.content, requestId: input.requestId });
   }
   async shutdown() { this.stopping = true; await this.operation; }
 }

@@ -447,7 +447,7 @@ test('denied item/retry-all commands preserve previous failure records', async t
 });
 
 test('feedback requests capture the original signed identity and reject success after account switches in flight', async t => {
-  for (const action of ['feedback-begin', 'feedback-upload-part', 'feedback-finalize']) {
+  for (const action of ['feedback-begin', 'feedback-upload-part', 'feedback-finalize', 'feedback-mine', 'feedback-detail', 'feedback-reply']) {
     await t.test(action, async t => {
       const f = await fixture(t); await f.login();
       const originalToken = (await f.store.load()).token;
@@ -489,6 +489,71 @@ test('feedback identity and action guards reject before sending log content or a
   assert.equal(f.requests.length, 0);
   await f.login(); const before = f.requests.length;
   await assert.rejects(f.client.feedbackRequest('feedback-begin', secretFixture, 'user-2'), { code: 'SESSION_CHANGED' });
+  for (const action of ['feedback-mine', 'feedback-detail', 'feedback-reply']) {
+    await assert.rejects(f.client.feedbackRequest(action, secretFixture, 'user-2'), { code: 'SESSION_CHANGED' });
+  }
   await assert.rejects(f.client.feedbackRequest('admin-feedback-part', secretFixture, 'user-1'), { code: 'UNKNOWN_ACTION' });
   assert.equal(f.requests.length, before);
+});
+
+test('feedback conversation expiry clears the current session, persists logout, and preserves device keys', async t => {
+  for (const action of ['feedback-mine', 'feedback-detail', 'feedback-reply']) {
+    await t.test(action, async t => {
+      const updates = [], f = await fixture(t, { onUpdate: state => updates.push(state) }); await f.login();
+      const original = await f.store.load(); f.sessions.delete(original.token);
+      await assert.rejects(f.client.feedbackRequest(action, { feedbackId: 'feedback-id' }, 'user-1'), { code: 'SESSION_REVOKED' });
+      assert.equal(f.client.snapshot().authenticated, false);
+      assert.equal(f.client.snapshot().account, null); assert.equal(f.client.snapshot().status, 'signed_out');
+      assert.equal(updates.at(-1).authenticated, false); assert.equal(updates.at(-1).account, null);
+      const saved = await f.store.load(); assert.equal(saved.token, null);
+      assert.equal(saved.privateKey, original.privateKey); assert.equal(saved.publicKey, original.publicKey);
+      const requests = f.requests.length;
+      await assert.rejects(f.client.feedbackRequest(action, {}, 'user-1'), { code: 'SESSION_CHANGED' });
+      assert.equal(f.requests.length, requests, 'revoked session is not sent again');
+    });
+  }
+});
+
+test('delayed feedback expiry cannot invalidate a newer login while waiting for serialized account commands', async t => {
+  for (const action of ['feedback-mine', 'feedback-detail', 'feedback-reply']) {
+    await t.test(action, async t => {
+      const f = await fixture(t); await f.login();
+      const original = await f.store.load(), originalFetch = f.client.fetchImpl;
+      f.sessions.delete(original.token);
+      let replyEntered, releaseReply, loginEntered, releaseLogin;
+      const replyStarted = new Promise(resolve => { replyEntered = resolve; });
+      const replyGate = new Promise(resolve => { releaseReply = resolve; });
+      const loginStarted = new Promise(resolve => { loginEntered = resolve; });
+      const loginGate = new Promise(resolve => { releaseLogin = resolve; });
+      f.client.fetchImpl = async (url, init) => {
+        const body = JSON.parse(init.body), response = await originalFetch(url, init);
+        if (body.action === action) { replyEntered(); await replyGate; }
+        if (body.action === 'verify-code') { loginEntered(); await loginGate; }
+        return response;
+      };
+      const response = f.client.feedbackRequest(action, {}, 'user-1'); await replyStarted;
+      const rejection = assert.rejects(response, { code: 'SESSION_CHANGED' });
+      const login = f.login(); await loginStarted;
+      releaseReply(); // Expiry waits behind the replacement login's queued command.
+      releaseLogin(); await login; await rejection;
+      const saved = await f.store.load(); assert.ok(saved.token); assert.notEqual(saved.token, original.token);
+      assert.equal(f.client.snapshot().authenticated, true); assert.equal(f.client.snapshot().status, 'ready');
+      assert.equal(f.client.snapshot().account.user.id, 'user-1');
+      assert.equal(saved.privateKey, original.privateKey);
+    });
+  }
+});
+
+test('failed persistence after feedback expiry still clears in-memory session and reports storage failure', async t => {
+  const updates = [], f = await fixture(t, { onUpdate: state => updates.push(state) }); await f.login();
+  const original = await f.store.load(); f.sessions.delete(original.token);
+  f.store.save = async () => { throw Object.assign(new Error('Cannot save cleared session'), { code: 'SECURE_STORAGE_UNAVAILABLE' }); };
+  await assert.rejects(f.client.feedbackRequest('feedback-mine', {}, 'user-1'), { code: 'SECURE_STORAGE_UNAVAILABLE' });
+  const current = f.client.snapshot();
+  assert.equal(current.authenticated, false); assert.equal(current.account, null); assert.equal(current.status, 'signed_out');
+  assert.equal(current.error.code, 'SECURE_STORAGE_UNAVAILABLE'); assert.equal(updates.at(-1).error.code, 'SECURE_STORAGE_UNAVAILABLE');
+  assert.equal(f.client.credentials.privateKey, original.privateKey);
+  const requests = f.requests.length;
+  await assert.rejects(f.client.feedbackRequest('feedback-mine', {}, 'user-1'), { code: 'SESSION_CHANGED' });
+  assert.equal(f.requests.length, requests);
 });

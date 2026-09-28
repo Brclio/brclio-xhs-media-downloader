@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 9 月 28 日，桌面 v1.8.16 与 Android v1.0.1 新增 iPhone 小红书无水印下载快捷指令福利入口。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 9 月 28 日，桌面 v1.8.17 支持管理员与用户在问题反馈中双向回复，完整对话原文保存至 GitHub 私有仓库。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -54,7 +54,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。Mac、Windows 和 Android 客户端新增 iPhone 快捷指令福利入口，可在客户端内访问或复制链接。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。桌面客户端支持问题反馈双向回复，可查看管理员答复并继续交流。
             </p>
 
             <div class="release-hero-actions">
@@ -69,7 +69,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v1.8.16</strong>
+              <strong>v1.8.17</strong>
               <small>2026.09.28 · Mac / Windows</small>
             </div>
 
@@ -92,8 +92,8 @@
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> iPhone 小红书无水印下载快捷指令作为客户端福利，在 Mac、Windows 和 Android 中展示；可在客户端内访问，也可复制链接到 iPhone 使用。</p>
-            <a class="release-summary-link" href="#ios-shortcut-update">阅读快捷指令福利更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 管理员在后台直接答复，用户在“我的反馈”中查看并继续回复；问题与对话原文保存在 GitHub 私有仓库。</p>
+            <a class="release-summary-link" href="#feedback-conversation-update">阅读反馈对话更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -111,7 +111,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v1.8.16、Android、快捷指令" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v1.8.17、反馈、Android" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -125,6 +125,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#feedback-conversation-update"><span>v1.8.17</span><strong>问题反馈双向回复</strong></a>
               <a href="#ios-shortcut-update"><span>09.28</span><strong>iPhone 快捷指令福利</strong></a>
               <a href="#failed-note-recovery-update"><span>v1.8.15</span><strong>失败链接复制与单篇下载</strong></a>
               <a href="#installer-name-update"><span>v1.8.14</span><strong>简化安装包名称</strong></a>
@@ -175,7 +176,21 @@
 
           <div id="release-feed" class="release-feed">
             <p class="release-empty" hidden>没有找到匹配的更新。试试更短的关键词，或点击“清除筛选”查看全部记录。</p>
-            <article id="ios-shortcut-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+            <article id="feedback-conversation-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-28"><span>09.28</span><small>2026 · 反馈对话</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.17</span><span class="release-status">Mac / Windows · 管理后台</span></div><h3>问题反馈，可以直接查看答复、继续回复</h3></div></header>
+                <p class="release-lead">管理员在后台直接答复，提交问题的用户在客户端“我的反馈”中查看完整对话，并在同一问题中继续补充。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>同一问题，持续交流</strong>查看自己的反馈、处理状态与回复数量，打开详情阅读全部答复；刷新后获取最新消息。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>原文完整保存</strong>新问题与双方回复保留换行、空格和完整文字，存入现有 GitHub 私有业务仓库；诊断日志继续脱敏。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>重试不重复发送</strong>网络失败时保留原文，同一请求重试不会重复追加消息。每次查看和回复都核对身份，用户只能访问自己的问题。</p></div>
+                </div>
+                <p class="release-card-note"><strong>旧反馈继续交流</strong>每条回复最多 8000 字符，回复不会自动改变处理状态。旧版本已脱敏保存的文字无法恢复为原文。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.17" target="_blank" rel="noopener noreferrer">查看 v1.8.17 安装包与升级说明 ↗</a><span>反馈对话 · 2026.09.28</span></div>
+              </div>
+            </article>
+            <article id="ios-shortcut-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-28"><span>09.28</span><small>2026 · 快捷指令福利</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.16</span><span class="release-badge release-badge-blue">Android v1.0.1</span><span class="release-status">Mac / Windows / Android</span></div><h3>客户端新增 iPhone 小红书无水印下载快捷指令福利</h3></div></header>
@@ -1472,7 +1487,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.09.28 · 桌面 v1.8.16 · Android v1.0.1。</p>
+        <p>网页版与客户端记录整理至 2026.09.28 · 桌面 v1.8.17 · Android v1.0.1。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

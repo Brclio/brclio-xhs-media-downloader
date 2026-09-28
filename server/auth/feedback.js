@@ -6,6 +6,7 @@ export const FEEDBACK_MAX_BYTES = 8 * 1024 * 1024;
 export const FEEDBACK_PART_BYTES = 256 * 1024;
 export const FEEDBACK_MAX_PARTS = 64;
 export const FEEDBACK_PART_INTERVAL_MS = 2000;
+export const FEEDBACK_REPLY_MAX_CHARS = 8000;
 const DAY = 86_400_000;
 const digest = value => createHash('sha256').update(value).digest('hex');
 const iso = value => new Date(value).toISOString();
@@ -19,6 +20,11 @@ function requestId(value) {
 function text(value, min, max, label) {
   if (typeof value !== 'string' || value.trim().length < min || value.length > max) fail('INVALID_FEEDBACK', `${label}长度不符合要求。`);
   return String(sanitizeDiagnostic(value.trim()));
+}
+// Authored conversations are original source text. Only diagnostic records are sanitized.
+function originalText(value, min, max, label) {
+  if (typeof value !== 'string' || value.trim().length < min || value.length > max) fail('INVALID_FEEDBACK', `${label}长度不符合要求。`);
+  return value;
 }
 function manifest(input) {
   if (!input || !Number.isInteger(input.partCount) || input.partCount < 1 || input.partCount > FEEDBACK_MAX_PARTS || !Array.isArray(input.parts) || input.parts.length !== input.partCount) fail('INVALID_FEEDBACK_LOG', '日志分块数量无效。');
@@ -46,13 +52,19 @@ export function validateFeedbackChunk(content) {
 }
 function publicFeedback(feedback, user, full = false) {
   const { parts, ...log } = feedback.log;
-  return { id: feedback.id, userId: feedback.userId, email: user?.email || '', title: feedback.title, description: full ? feedback.description : feedback.description.slice(0, 200), category: feedback.category || 'other', appVersion: feedback.appVersion, platform: feedback.platform, arch: feedback.arch || '', status: feedback.status, createdAt: feedback.createdAt, updatedAt: feedback.updatedAt, submittedAt: feedback.submittedAt || null, log: full ? { ...log, parts: structuredClone(parts) } : log };
+  const messages = feedback.messages || [], last = messages.at(-1);
+  return { id: feedback.id, userId: feedback.userId, email: user?.email || '', title: feedback.title, description: full ? feedback.description : feedback.description.slice(0, 200), category: feedback.category || 'other', appVersion: feedback.appVersion, platform: feedback.platform, arch: feedback.arch || '', status: feedback.status, createdAt: feedback.createdAt, updatedAt: feedback.updatedAt, submittedAt: feedback.submittedAt || null, replyCount: messages.length, lastMessageAt: last?.createdAt || feedback.submittedAt || feedback.createdAt, lastMessageRole: last?.authorRole || 'user', log: full ? { ...log, parts: structuredClone(parts) } : log };
+}
+function publicMessage(message) {
+  const { id, authorRole, authorId, content, createdAt } = message;
+  return { id, authorRole, authorId, content, createdAt };
 }
 
 /** Log blobs are immutable; only a verified atomic state transition makes a feedback submitted. */
 export function createFeedbackService({ store, now, authenticate, hash, operation, audit }) {
   const ensure = state => { state.feedback ||= {}; state.feedbackRateLimits ||= {}; };
   function get(state, id, user, admin = false) {
+    if (typeof id !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id)) fail('FEEDBACK_NOT_FOUND', '没有找到该反馈。', 404);
     const feedback = own(state.feedback || {}, id);
     if (!feedback || (!admin && feedback.userId !== user.id)) fail('FEEDBACK_NOT_FOUND', '没有找到该反馈。', 404);
     return feedback;
@@ -64,7 +76,7 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
   }
   async function begin(request) {
     const input = request.input;
-    const clean = { title: text(input.title, 1, 120, '问题标题'), description: text(input.description, 5, 8000, '问题说明'), category: input.category || 'other', appVersion: text(input.appVersion, 1, 50, '应用版本'), platform: input.platform, arch: input.arch || '', log: manifest(input.log) };
+    const clean = { title: originalText(input.title, 1, 120, '问题标题'), description: originalText(input.description, 5, 8000, '问题说明'), category: input.category || 'other', appVersion: text(input.appVersion, 1, 50, '应用版本'), platform: input.platform, arch: input.arch || '', log: manifest(input.log) };
     if (!['darwin', 'win32'].includes(clean.platform)) fail('INVALID_FEEDBACK', '反馈设备系统无效。');
     if (!['download', 'audio', 'update', 'account', 'other'].includes(clean.category) || !['', 'arm64', 'x64', 'ia32'].includes(clean.arch)) fail('INVALID_FEEDBACK', '反馈分类或设备架构无效。');
     const id = randomUUID(), key = requestId(input.requestId);
@@ -75,7 +87,10 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
       const inputHash = hash('feedback-input', JSON.stringify(clean));
       const prior = Object.values(state.feedback).find(item => item.requestKey === requestKey);
       if (prior) {
-        if (prior.inputHash !== inputHash) fail('REQUEST_ID_REUSED', '该反馈请求编号已对应其他内容，请保留原快照重试。', 409);
+        // Before originalTextVersion 1, begin sanitized authored text before hashing.
+        // Keep old pending snapshots resumable, without weakening exact matching for new records.
+        const legacyHash = prior.originalTextVersion === undefined ? hash('feedback-input', JSON.stringify({ ...clean, title: text(input.title, 1, 120, '问题标题'), description: text(input.description, 5, 8000, '问题说明') })) : null;
+        if (prior.inputHash !== inputHash && prior.inputHash !== legacyHash) fail('REQUEST_ID_REUSED', '该反馈请求编号已对应其他内容，请保留原快照重试。', 409);
         return { changed: false, value: { feedback: publicFeedback(prior, user, true), replayed: true, upload: { partBytes: FEEDBACK_PART_BYTES, maxBytes: FEEDBACK_MAX_BYTES, minPartIntervalMs: FEEDBACK_PART_INTERVAL_MS, partsReceived: [] } } };
       }
       for (const [rateKey, values] of Object.entries(state.feedbackRateLimits)) {
@@ -86,7 +101,7 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
       if (userTimes.length >= 3 || globalTimes.filter(at => at > time - 3_600_000).length >= 20) fail('FEEDBACK_RATE_LIMITED', '反馈提交次数已达上限，请稍后再试；已有反馈可以继续上传。', 429);
       if (globalTimes.some(at => time - at < 60_000)) fail('FEEDBACK_RATE_LIMITED', '反馈服务正在处理其他提交，请 60 秒后重试。', 429);
       (state.feedbackRateLimits[userKey] ||= []).push(time); (state.feedbackRateLimits.global ||= []).push(time);
-      const feedback = { id, userId: user.id, ...clean, requestKey, inputHash, status: 'uploading', createdAt: iso(time), updatedAt: iso(time), submittedAt: null };
+      const feedback = { id, userId: user.id, ...clean, requestKey, inputHash, originalTextVersion: 1, messages: [], status: 'uploading', createdAt: iso(time), updatedAt: iso(time), submittedAt: null };
       state.feedback[id] = feedback;
       return { value: { feedback: publicFeedback(feedback, user, true), replayed: false, upload: { partBytes: FEEDBACK_PART_BYTES, maxBytes: FEEDBACK_MAX_BYTES, minPartIntervalMs: FEEDBACK_PART_INTERVAL_MS, partsReceived: [] } } };
     });
@@ -158,16 +173,49 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
       });
     });
   }
+  async function reply(request) {
+    const admin = request.action === 'admin-feedback-reply';
+    const content = originalText(request.input.content, 1, FEEDBACK_REPLY_MAX_CHARS, '回复内容');
+    const key = requestId(request.input.requestId), id = randomUUID();
+    return store.transaction(state => {
+      const time = now(), { user } = admin ? authenticate(state, request, time, true) : checkOwner(state, request, time);
+      const feedback = get(state, request.input.feedbackId, user, admin);
+      if (!feedback.submittedAt) fail('FEEDBACK_NOT_SUBMITTED', '该反馈日志尚未上传完成，不能回复。', 409);
+      const authorRole = admin ? 'admin' : 'user';
+      const requestKey = hash('feedback-reply-request', `${authorRole}:${user.id}:${key}`);
+      const inputHash = hash('feedback-reply-input', JSON.stringify({ feedbackId: feedback.id, content }));
+      // The key is scoped to the author across threads, so accidental reuse cannot send a second message.
+      for (const item of Object.values(state.feedback || {})) {
+        const prior = (item.messages || []).find(message => message.requestKey === requestKey);
+        if (!prior) continue;
+        if (prior.inputHash !== inputHash) fail('REQUEST_ID_REUSED', '该回复请求编号已对应其他内容，请保留原文重试。', 409);
+        return { changed: false, value: { feedback: publicFeedback(feedback, state.users[feedback.userId], true), message: publicMessage(prior), replayed: true } };
+      }
+      state.feedbackReplyRateLimits ||= {};
+      for (const [rateKey, values] of Object.entries(state.feedbackReplyRateLimits)) {
+        state.feedbackReplyRateLimits[rateKey] = values.filter(at => at > time - DAY);
+        if (!state.feedbackReplyRateLimits[rateKey].length) delete state.feedbackReplyRateLimits[rateKey];
+      }
+      const userKey = hash('feedback-reply-user-rate', `${authorRole}:${user.id}`);
+      const times = own(state.feedbackReplyRateLimits, userKey) || [];
+      if (times.length >= (admin ? 500 : 100) || times.filter(at => at > time - 3_600_000).length >= (admin ? 100 : 20)) fail('FEEDBACK_REPLY_RATE_LIMITED', '回复次数已达上限，请稍后再试。已发送的原文可继续重试确认。', 429);
+      (state.feedbackReplyRateLimits[userKey] ||= []).push(time);
+      const message = { id, authorRole, authorId: user.id, content, createdAt: iso(time), requestKey, inputHash };
+      (feedback.messages ||= []).push(message);
+      feedback.updatedAt = iso(time);
+      return { value: { feedback: publicFeedback(feedback, state.users[feedback.userId], true), message: publicMessage(message), replayed: false } };
+    });
+  }
   async function read(request) {
     const { state } = await store.read(), time = now(), admin = request.action.startsWith('admin-');
     const { user } = admin ? authenticate(state, request, time, true) : checkOwner(state, request, time);
     if (request.action === 'feedback-mine' || request.action === 'admin-feedback') {
       const query = String(request.input.query || '').trim().toLowerCase(), status = String(request.input.status || '');
-      const feedbacks = Object.values(state.feedback || {}).filter(f => (admin || f.userId === user.id) && (!status || f.status === status) && (!query || [f.id, f.userId, state.users[f.userId]?.email, f.title].some(v => String(v || '').toLowerCase().includes(query)))).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const feedbacks = Object.values(state.feedback || {}).filter(f => (admin || f.userId === user.id) && (!status || f.status === status) && (!query || [f.id, f.userId, state.users[f.userId]?.email, f.title].some(v => String(v || '').toLowerCase().includes(query)))).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt));
       return { feedbacks: feedbacks.slice(0, 1000).map(f => publicFeedback(f, state.users[f.userId])), total: feedbacks.length };
     }
     const feedback = get(state, request.input.feedbackId, user, admin);
-    if (request.action === 'admin-feedback-detail') return { feedback: publicFeedback(feedback, state.users[feedback.userId], true), history: state.audit.filter(a => a.targetId === feedback.id).slice(-200).reverse() };
+    if (request.action === 'feedback-detail' || request.action === 'admin-feedback-detail') return { feedback: publicFeedback(feedback, state.users[feedback.userId], true), messages: (feedback.messages || []).map(publicMessage), ...(admin ? { history: state.audit.filter(a => a.targetId === feedback.id).slice(-200).reverse() } : {}) };
     if (request.action === 'admin-feedback-part') {
       if (!feedback.submittedAt) fail('FEEDBACK_NOT_SUBMITTED', '该反馈日志尚未完整提交。', 409);
       const index = request.input.index;
@@ -182,6 +230,7 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
     if (request.action === 'feedback-begin') return begin(request);
     if (request.action === 'feedback-upload-part') return upload(request);
     if (request.action === 'feedback-finalize') return finalize(request);
+    if (request.action === 'feedback-reply' || request.action === 'admin-feedback-reply') return reply(request);
     if (request.action === 'admin-feedback-status') return adminStatus(request);
     return read(request);
   } };

@@ -1,7 +1,7 @@
 import { AccountError, fail } from './errors.js';
 
 export function emptyState() {
-  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {} };
+  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {} };
 }
 function validateState(state) {
   if (!state || state.schemaVersion !== 1 || !Array.isArray(state.audit)) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);
@@ -9,9 +9,14 @@ function validateState(state) {
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);
   }
   // Additive schema migration: deployed schemaVersion 1 accounts remain valid.
-  for (const key of ['feedback', 'feedbackRateLimits']) {
+  for (const key of ['feedback', 'feedbackRateLimits', 'feedbackReplyRateLimits']) {
     if (state[key] === undefined) state[key] = {};
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '反馈数据格式异常，请联系管理员。', 503);
+  }
+  for (const feedback of Object.values(state.feedback)) {
+    if (!feedback || typeof feedback !== 'object' || Array.isArray(feedback)) fail('STORAGE_INVALID', '反馈数据格式异常，请联系管理员。', 503);
+    if (feedback.messages === undefined) feedback.messages = [];
+    if (!Array.isArray(feedback.messages)) fail('STORAGE_INVALID', '反馈对话格式异常，请联系管理员。', 503);
   }
   return state;
 }
