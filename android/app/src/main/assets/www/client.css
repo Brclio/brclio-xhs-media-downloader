@@ -41,6 +41,16 @@ select { display:block; max-width:100%; color:var(--ink); border:1px solid var(-
 .engine-label select { padding:5px 25px 5px 0; border:0; min-height:32px; }
 .footnote { color:var(--muted); font-size:12px; line-height:1.65; }
 .composer>.footnote { margin-top:16px; }
+.shortcut-benefit { margin-top:24px; padding:clamp(16px,4vw,24px); background:var(--paper); border:1px solid var(--border); border-radius:12px; }
+.benefit-label { display:inline-block; padding:2px 8px; border-radius:4px; background:var(--yellow); font-size:11px; font-weight:700; }
+.shortcut-benefit h2 { font-size:18px; margin:10px 0 8px; }
+.shortcut-benefit p { font-size:13px; color:var(--muted); }
+.shortcut-link { display:block; margin:12px 0 16px; font-size:12px; overflow-wrap:anywhere; }
+.shortcut-link:hover { background:var(--yellow); }
+.shortcut-benefit .button-row>* { min-width:0; font-size:13px; padding:10px; }
+#shortcut-status { margin:12px 0 0; }
+#shortcut-status[data-tone=success] { color:#416144; }
+#shortcut-status[data-tone=error] { color:#a92b3c; }
 .status { padding:13px 15px; border-radius:8px; background:#e9f1f8; margin:20px 0; overflow-wrap:anywhere; }
 .status[data-tone=error] { background:#fae9e9; color:#a92b3c; }
 .status[data-tone=success] { background:#edf2e8; color:#416144; }

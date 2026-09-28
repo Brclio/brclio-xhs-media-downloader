@@ -288,6 +288,23 @@ $('paste').addEventListener('click', () => action(async () => {
   resetResult(); $('share-text').value = String(result.text).slice(0, 3000); message('链接已填入，点击「开始解析」继续。');
 }));
 $('clear').addEventListener('click', () => { generation++; resetResult(); $('share-text').value = ''; message(''); $('share-text').focus(); });
+$('copy-shortcut').addEventListener('click', async () => {
+  const button = $('copy-shortcut');
+  const status = $('shortcut-status');
+  button.disabled = true;
+  status.hidden = true;
+  try {
+    await call('copy', { text: $('shortcut-link').href });
+    status.textContent = '快捷指令链接已复制，可发送到 iPhone 打开。';
+    status.dataset.tone = 'success';
+  } catch (error) {
+    status.textContent = `复制失败：${error.message} 可长按上方链接手动复制。`;
+    status.dataset.tone = 'error';
+  } finally {
+    status.hidden = false;
+    button.disabled = busy;
+  }
+});
 $('quality').addEventListener('change', updateVideo);
 $('copy-caption').addEventListener('click', () => copy(captionText(note), '完整文案已复制。'));
 $('save-caption').addEventListener('click', () => save(`${safeFilename(note.title)}-文案.txt`, 'text/plain', [textEntry(note)]));

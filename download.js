@@ -25,7 +25,9 @@
     platformHint.textContent = '你正在使用 Android 安卓设备。请下载下方安卓 APK（Android 8.0 或更新版本），支持单篇笔记保存。';
     document.querySelector('#hero-download').href = '#android-download';
   } else if (mobile) {
-    platformHint.textContent = '你正在使用 iPhone 或 iPad 移动设备，目前可使用网页版；Mac、Windows 和 Android 安装包不适用于 iOS。';
+    platformHint.textContent = '你正在使用 iPhone 或 iPad，可使用网页版，也可查看下方 iPhone 无水印下载快捷指令福利。';
+    document.querySelector('#hero-download').href = '#ios-shortcut';
+    document.querySelector('#hero-download').textContent = '获取 iPhone 快捷指令 ↗';
   } else if (family === 'mac') {
     platformHint.textContent = '你正在使用 Mac。请在「关于本机」确认 Apple 或 Intel 芯片后选择，浏览器无法可靠判断芯片。';
   } else if (family === 'windows') {

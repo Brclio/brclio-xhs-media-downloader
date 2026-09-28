@@ -270,9 +270,29 @@ app.whenReady().then(async () => {
     await new Promise(resolve => setTimeout(resolve, 350));
     return (await win.webContents.capturePage()).toPNG();
   };
+  const verifyShortcut = async target => {
+    const evaluateShortcut = expression => target.webContents.executeJavaScript(expression, true);
+    const expected = 'https://www.icloud.com/shortcuts/70ff1d35911f43c5be308e1f692ea530';
+    assert.equal(await evaluateShortcut(`document.querySelector('[data-shortcut-link]').href`), expected);
+    assert.equal(await evaluateShortcut(`getComputedStyle(document.querySelector('[data-ios-shortcut]')).display`), 'grid', 'shortcut stylesheet is served by the desktop protocol');
+    const externalLinks = [];
+    target.webContents.setWindowOpenHandler(({ url }) => { externalLinks.push(url); return { action: 'deny' }; });
+    await evaluateShortcut(`document.querySelector('.ios-shortcut-action').click()`);
+    assert.deepEqual(externalLinks, [expected], 'get shortcut opens the exact external share URL');
+    await evaluateShortcut(`Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.shortcutCopied = text; } } }); document.querySelector('[data-shortcut-copy]').click();`);
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(await evaluateShortcut(`window.shortcutCopied`), expected, 'copy sends the whole shortcut URL');
+    assert.match(await evaluateShortcut(`document.querySelector('[data-shortcut-status]').textContent`), /链接已复制/);
+    await evaluateShortcut(`navigator.clipboard.writeText = async () => { throw new Error('Denied'); }; window.shortcutExecCommand = document.execCommand; document.execCommand = () => false; document.querySelector('[data-shortcut-copy]').click();`);
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.match(await evaluateShortcut(`document.querySelector('[data-shortcut-status]').textContent`), /未能自动复制/);
+    assert.equal(await evaluateShortcut(`document.querySelector('[data-shortcut-copy]').disabled`), false, 'failed copy can retry');
+    await evaluateShortcut(`delete navigator.clipboard; document.execCommand = window.shortcutExecCommand; document.querySelector('[data-shortcut-status]').textContent = '';`);
+  };
   await win.loadURL('xhs-app://local/');
   await check(`document.querySelector('#profile-items').children.length === 100`, 'initial list rendered');
   await check(`document.body.dataset.desktopReady === 'true'`, 'desktop readiness follows successful info and profile initialization');
+  await verifyShortcut(win);
   assert.equal(readyEvents.get(win.webContents.id), 1, 'successful initialization emits exactly one desktop-ready event');
   assert.equal(calls.filter(call => call.method === 'checkForUpdates').length, 0, 'renderer must not automatically check for updates');
   assert.equal(await evaluate(`document.querySelector('#desktop-about-page').hidden && document.querySelector('#desktop-about-update-mount').contains(document.querySelector('#desktop-update-panel'))`), true, 'updater lives inside the independent about page');
@@ -852,6 +872,10 @@ app.whenReady().then(async () => {
   await check(`document.querySelector('#desktop-update-history').hidden && document.querySelectorAll('dialog[open]').length === 0`, 'acknowledged history stays hidden after reload');
   const web = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false } });
   await web.loadURL('xhs-app://local/');
+  await verifyShortcut(web);
+  await web.loadURL('xhs-app://local/download.html');
+  await verifyShortcut(web);
+  await web.loadURL('xhs-app://local/');
   assert.equal(await web.webContents.executeJavaScript(`document.querySelector('#desktop-navigation').hidden && document.querySelector('#desktop-update-panel').hidden && document.querySelector('#desktop-update-history').hidden && !document.querySelector('#single-note-panel').hidden && !document.querySelector('#desktop-update-dialog').open && !document.querySelector('#desktop-install-confirmation').open`), true, 'web interface remains unchanged without bridge');
   const failedInitialization = new BrowserWindow({ show: false, webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false } });
   const failedInitializationId = failedInitialization.webContents.id;
@@ -870,7 +894,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

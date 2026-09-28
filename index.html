@@ -13,6 +13,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/ios-shortcut.css" />
     <link rel="stylesheet" href="/visit-counter.css" />
     <link rel="stylesheet" href="/support.css" />
     <link rel="stylesheet" href="/desktop-ui.css" />
@@ -359,6 +360,20 @@
             </div>
           </div>
         </section>
+
+        <aside id="ios-shortcut" class="ios-shortcut" data-ios-shortcut aria-labelledby="ios-shortcut-title">
+          <div class="ios-shortcut-copy">
+            <span class="ios-shortcut-badge">送你一个福利 · iPhone</span>
+            <h2 id="ios-shortcut-title">小红书无水印下载快捷指令</h2>
+            <p>在 iPhone 上打开链接，前往「快捷指令」添加。也可复制链接，发送到自己的 iPhone 或分享给朋友。</p>
+            <a class="ios-shortcut-url" data-shortcut-link href="https://www.icloud.com/shortcuts/70ff1d35911f43c5be308e1f692ea530" target="_blank" rel="noopener noreferrer">https://www.icloud.com/shortcuts/70ff1d35911f43c5be308e1f692ea530</a>
+          </div>
+          <div class="ios-shortcut-actions">
+            <a class="ios-shortcut-action" href="https://www.icloud.com/shortcuts/70ff1d35911f43c5be308e1f692ea530" target="_blank" rel="noopener noreferrer">获取快捷指令 ↗</a>
+            <button class="ios-shortcut-action ios-shortcut-action-secondary" data-shortcut-copy type="button">复制链接</button>
+          </div>
+          <p class="ios-shortcut-status" data-shortcut-status role="status" aria-live="polite"></p>
+        </aside>
 
         <section id="empty-state" class="empty-state" aria-labelledby="empty-title">
           <div class="empty-state-copy">
@@ -780,5 +795,6 @@
     <script type="module" src="/app.js"></script>
     <script type="module" src="/account-ui.js"></script>
     <script defer src="/visit-counter.js"></script>
+    <script src="/ios-shortcut.js" defer></script>
   </body>
 </html>

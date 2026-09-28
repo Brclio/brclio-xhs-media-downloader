@@ -1,0 +1,57 @@
+/* Brclio Design System app banner / CTA. © 2026 Brclio · CC BY-NC-SA 4.0. */
+.ios-shortcut {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px 28px;
+  margin: 24px 0;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--cream-deep, #faf6eb);
+  color: var(--ink, #1a1a2e);
+  scroll-margin-top: 100px;
+}
+.ios-shortcut-copy { min-width: 0; }
+.ios-shortcut-badge {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 2px 9px;
+  border-radius: 4px;
+  background: var(--yellow, #f4d758);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ios-shortcut h2 { margin: 0 0 8px; font: 900 clamp(19px, 2vw, 24px)/1.5 var(--font-serif, var(--serif, serif)); }
+.ios-shortcut p { margin: 0; color: var(--ink-light, #4a4a5a); font-size: 13px; line-height: 1.8; }
+.ios-shortcut-url { display: block; margin-top: 8px; color: var(--blue-deep, #1e5ba8); font-size: 12px; overflow-wrap: anywhere; text-underline-offset: 3px; }
+.ios-shortcut-url:hover { text-decoration-thickness: 2px; }
+.ios-shortcut-actions { display: flex; flex-direction: column; gap: 10px; }
+.ios-shortcut-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 9px 16px;
+  border: 1px solid var(--blue-deep, #1e5ba8);
+  border-radius: 7px;
+  background: var(--blue-deep, #1e5ba8);
+  color: #fefcf6;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ios-shortcut-action-secondary { background: transparent; color: var(--blue-deep, #1e5ba8); }
+.ios-shortcut-action:hover { box-shadow: 0 0 0 2px var(--yellow, #f4d758); }
+.ios-shortcut-action:focus-visible, .ios-shortcut-url:focus-visible { outline: 3px solid var(--blue, #2b7fd8); outline-offset: 4px; }
+.ios-shortcut-action:disabled { opacity: .6; cursor: wait; }
+.ios-shortcut .ios-shortcut-status { grid-column: 1 / -1; color: var(--blue-deep, #1e5ba8); }
+.ios-shortcut-status:empty { display: none; }
+@media (max-width: 600px) {
+  .ios-shortcut { grid-template-columns: minmax(0, 1fr); }
+  .ios-shortcut-actions { flex-direction: row; flex-wrap: wrap; }
+  .ios-shortcut-action { flex: 1; }
+}

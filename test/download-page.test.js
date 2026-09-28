@@ -206,7 +206,8 @@ for (const navigator of [
 ]) {
   test(`mobile browser receives no desktop platform recommendation: ${navigator.platform}`, async () => {
     const page = await runPage({ navigator });
-    assert.match(page.document.querySelector('#platform-hint').textContent, /移动设备/);
+    assert.match(page.document.querySelector('#platform-hint').textContent, /iPhone.*快捷指令/);
+    assert.equal(page.document.querySelector('#hero-download').href, '#ios-shortcut');
     assert.ok(page.document.querySelectorAll('[data-platform]').every(card => !card.classList.contains('is-platform')));
   });
 }
@@ -245,10 +246,10 @@ test('FAQ hash links open the question on initial load and later navigation', as
 test('static Android APK, checksum and release links remain available without JavaScript', () => {
   const document = documentFixture();
   const android = androidSnapshot(document);
-  assert.deepEqual(android.versions, ['v1.0.0']);
-  assert.equal(android.apk, `${base}/download/android-v1.0.0/Brclio-XHS-Android-1.0.0-release.apk`);
+  assert.deepEqual(android.versions, ['v1.0.1']);
+  assert.equal(android.apk, `${base}/download/android-v1.0.1/Brclio-XHS-Android-1.0.1-release.apk`);
   assert.equal(android.checksum, `${android.apk}.sha256`);
-  assert.ok(android.releaseLinks.every(url => url === `${base}/tag/android-v1.0.0`));
+  assert.ok(android.releaseLinks.every(url => url === `${base}/tag/android-v1.0.1`));
   assert.equal(document.querySelector('[data-platform="android"]').attributes.id, 'android-download');
   assert.match(html, /Android 8\.0 或更新版本/);
   assert.match(html, /安卓当前提供单篇功能/);
