@@ -1,0 +1,168 @@
+{
+  "version": "1.8.17",
+  "tag": "v1.8.17",
+  "sourceSha": "4014f463a6a63463f34fc1cc904075c0b1640be0",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.17",
+  "publishedAt": "2026-09-28T10:47:18Z",
+  "verifiedAt": "2026-09-28T10:48:11.174Z",
+  "assetCount": 11,
+  "builds": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "comparedSources": 56,
+      "sourceDirty": false
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "comparedSources": 56,
+      "sourceDirty": false
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "comparedSources": 56,
+      "sourceDirty": false
+    }
+  ],
+  "updates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "1.8.16",
+      "asset": "Brclio-XHS-1.8.17-mac-arm64.dmg",
+      "bytes": 139989541
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "1.8.16",
+      "asset": "Brclio-XHS-1.8.17-mac-x64.dmg",
+      "bytes": 145756257
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "1.8.16",
+      "asset": "Brclio-XHS-1.8.17-windows-x64-setup.exe",
+      "bytes": 124073263
+    }
+  ],
+  "legacyUpdater": {
+    "version": "1.8.13",
+    "tag": "v1.8.13",
+    "sourceSha": "83830d4db9b52e7e81a890a4c02d44b5eb02095c"
+  },
+  "legacyUpdates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-1.8.17-mac-arm64.dmg",
+      "bytes": 139989541,
+      "sha256": "f0837cd76ec414021c09510c00d08b0173e0d81f5c44f4f47b9a8304ad950122",
+      "manifestChecksumVerified": true
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-1.8.17-mac-x64.dmg",
+      "bytes": 145756257,
+      "sha256": "87a105cc3cc50fafa1210f5054b9d20bd698d6f99d8c019fd7a4de5c75f58f01",
+      "manifestChecksumVerified": true
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-1.8.17-windows-x64-setup.exe",
+      "bytes": 124073263,
+      "sha256": "5b70613f04365c10a6898fcb7b4e934441137b98b29fe982b1ec130a881956f7",
+      "manifestChecksumVerified": true
+    }
+  ],
+  "compatibilityAliasesVerified": true,
+  "remoteDigestsVerified": true,
+  "publicManifestsVerified": true,
+  "anonymousUpdaterVisible": true,
+  "publicInstallerProbes": [
+    {
+      "name": "Brclio-XHS-1.8.17-mac-arm64.dmg",
+      "bytes": 139989541,
+      "sha256": "f0837cd76ec414021c09510c00d08b0173e0d81f5c44f4f47b9a8304ad950122",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-1.8.17-mac-arm64.zip",
+      "bytes": 140892312,
+      "sha256": "dc227d12904b3ac16496dede47a8880aec88afe7ff53182a608ea9a3bdb13a2c",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-1.8.17-mac-x64.dmg",
+      "bytes": 145756257,
+      "sha256": "87a105cc3cc50fafa1210f5054b9d20bd698d6f99d8c019fd7a4de5c75f58f01",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-1.8.17-mac-x64.zip",
+      "bytes": 146681034,
+      "sha256": "3412c5634b00d776f56b4093abd48119f500c05aa5593ec2537e1425d72f5ab0",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-1.8.17-windows-x64-setup.exe",
+      "bytes": 124073263,
+      "sha256": "5b70613f04365c10a6898fcb7b4e934441137b98b29fe982b1ec130a881956f7",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-1.8.17-windows-x64-portable.exe",
+      "bytes": 123834736,
+      "sha256": "e47c0d920c6d2f117ab31cdc7443cb0ce2f95f11e84841467f033ad683f966fb",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-1.8.17-mac-arm64.dmg",
+      "bytes": 139989541,
+      "sha256": "f0837cd76ec414021c09510c00d08b0173e0d81f5c44f4f47b9a8304ad950122",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-1.8.17-mac-x64.dmg",
+      "bytes": 145756257,
+      "sha256": "87a105cc3cc50fafa1210f5054b9d20bd698d6f99d8c019fd7a4de5c75f58f01",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-1.8.17-windows-x64-setup.exe",
+      "bytes": 124073263,
+      "sha256": "5b70613f04365c10a6898fcb7b4e934441137b98b29fe982b1ec130a881956f7",
+      "method": "HEAD",
+      "status": 200
+    }
+  ],
+  "workflow": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36410442025",
+    "workflowSha": "4014f463a6a63463f34fc1cc904075c0b1640be0",
+    "event": "push",
+    "conclusion": "success",
+    "jobs": [
+      "windows-x64",
+      "mac-arm64",
+      "mac-intel",
+      "Publish verified installers"
+    ],
+    "nativeClipboardVerified": true
+  }
+}
