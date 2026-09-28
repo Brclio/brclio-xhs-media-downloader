@@ -752,7 +752,7 @@ app.whenReady().then(async () => {
   await click('#desktop-feedback-login');
   assert.equal(await evaluate(`document.body.dataset.desktopPage`), 'account');
   await screenshotPage('account-login', '#account-tab');
-  publishAccount({ configured: true, authenticated: true, verified: true, status: 'authenticated', account: { user: { email: 'ordinary@example.com' }, membership: { type: 'none', active: false }, device: { status: 'authorized' } } });
+  publishAccount({ configured: true, authenticated: true, verified: true, status: 'authenticated', account: { user: { id: 'fixture-user', email: 'ordinary@example.com' }, membership: { type: 'none', active: false }, device: { status: 'authorized' } } });
   await click('#feedback-tab');
   await check(`!document.querySelector('#desktop-feedback-submit').disabled`, 'feedback unlocked after login');
   await click('#desktop-diagnostics-copy');
