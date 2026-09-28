@@ -104,6 +104,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     if (!session || session.revokedAt) fail('SESSION_REVOKED', '登录已失效，请重新登录。', 401);
     const user = owns(state.users, session.userId);
     if (!user) fail('SESSION_REVOKED', '账号不存在，请联系管理员。', 401);
+    if ((session.client === 'browser') !== (request.client === 'browser')) fail('BROWSER_REQUIRED', '请使用对应的网页账号会话执行此操作。', 403);
     if (session.client === 'desktop') verifyProof({ ...request, publicKey: session.publicKey, now: time });
     if (adminRequired && (session.client !== 'admin' || !isAdmin(user))) fail('FORBIDDEN', '只有管理员可以执行此操作。', 403);
     return { session, user };
@@ -133,7 +134,8 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
   async function sendCode(request) {
     const email = emailValue(request.input.email);
     const client = request.input.client;
-    if (!['desktop', 'admin'].includes(client)) fail('INVALID_CLIENT', '登录类型无效。');
+    if (!['desktop', 'admin', 'browser'].includes(client)) fail('INVALID_CLIENT', '登录类型无效。');
+    if (client === 'browser' && request.client !== 'browser') fail('BROWSER_REQUIRED', '请通过网页登录。', 403);
     if (client === 'admin' && !config.adminEmails.includes(email)) fail('FORBIDDEN', '此邮箱未配置为管理员。', 403);
     if (mailer.configured === false) fail('MAIL_NOT_CONFIGURED', '邮件服务尚未配置，请联系管理员。', 503);
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
@@ -177,7 +179,8 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
   async function verifyCode(request) {
     const email = emailValue(request.input.email);
     const client = request.input.client;
-    if (!['desktop', 'admin'].includes(client)) fail('INVALID_CLIENT', '登录类型无效。');
+    if (!['desktop', 'admin', 'browser'].includes(client)) fail('INVALID_CLIENT', '登录类型无效。');
+    if (client === 'browser' && request.client !== 'browser') fail('BROWSER_REQUIRED', '请通过网页登录。', 403);
     if (client === 'admin' && !config.adminEmails.includes(email)) fail('FORBIDDEN', '此邮箱未配置为管理员。', 403);
     const deviceInput = client === 'desktop' ? normalizeDevice(request.input.device) : null;
     if (deviceInput) verifyProof({ ...request, token: '', publicKey: deviceInput.publicKey, now: now() });
@@ -480,7 +483,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     return result;
   }
 
-  const feedbackService = createFeedbackService({ store, now, authenticate, hash, operation, audit });
+  const feedbackService = createFeedbackService({ store, now, authenticate, hash, operation, audit, isAdmin });
   return {
     async execute({ action, input = {}, token = '', proof, ip = '', client }) {
       if (typeof action !== 'string' || action.length > 80 || !input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_REQUEST', '请求格式无效。');

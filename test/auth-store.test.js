@@ -139,11 +139,11 @@ test('an unexpected success response without a committed blob SHA is uncertain, 
 });
 
 test('deployed schema version one gains feedback fields without resetting accounts or writing on read', async () => {
-  const initial = emptyState(); delete initial.feedback; delete initial.feedbackRateLimits; delete initial.feedbackReplyRateLimits;
+  const initial = emptyState(); delete initial.feedback; delete initial.feedbackRateLimits; delete initial.feedbackReplyRateLimits; delete initial.feedbackCommentRateLimits;
   initial.users.existing = { id: 'existing', membership: { type: 'permanent' } };
   const github = fakeGithub(initial);
   const { state } = await github.store().read();
-  assert.deepEqual(state.feedback, {}); assert.deepEqual(state.feedbackRateLimits, {}); assert.deepEqual(state.feedbackReplyRateLimits, {});
+  assert.deepEqual(state.feedback, {}); assert.deepEqual(state.feedbackRateLimits, {}); assert.deepEqual(state.feedbackReplyRateLimits, {}); assert.deepEqual(state.feedbackCommentRateLimits, {});
   assert.deepEqual(state.users.existing, initial.users.existing);
   assert.equal(github.calls.filter(call => call.method === 'PUT').length, 0);
   await github.store().transaction(latest => { latest.feedback.example = { id: 'example' }; return { value: true }; });
@@ -159,11 +159,16 @@ test('legacy feedback conversations migrate additively without rewriting stored 
   const initial = emptyState();
   initial.feedback.legacy = { id: 'legacy', title: '旧标题', description: '旧问题说明' };
   const github = fakeGithub(initial), { state } = await github.store().read();
-  assert.deepEqual(state.feedback.legacy, { ...initial.feedback.legacy, messages: [] });
+  assert.deepEqual(state.feedback.legacy, { ...initial.feedback.legacy, messages: [], comments: [] });
   assert.equal(github.state.feedback.legacy.messages, undefined);
+  assert.equal(github.state.feedback.legacy.comments, undefined);
   assert.equal(github.calls.filter(call => call.method === 'PUT').length, 0);
   for (const messages of [null, false, {}]) {
     const invalid = structuredClone(initial); invalid.feedback.legacy.messages = messages;
+    await assert.rejects(fakeGithub(invalid).store().read(), { code: 'STORAGE_INVALID' });
+  }
+  for (const comments of [null, false, {}]) {
+    const invalid = structuredClone(initial); invalid.feedback.legacy.comments = comments;
     await assert.rejects(fakeGithub(invalid).store().read(), { code: 'STORAGE_INVALID' });
   }
 });

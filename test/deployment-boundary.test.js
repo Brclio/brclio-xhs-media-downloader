@@ -44,6 +44,9 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   for (const name of ['product.html', 'product.css', 'product.js']) {
     assert.ok(files.includes(name), `product introduction asset is public: ${name}`);
   }
+  for (const name of ['feedback.html', 'feedback.css', 'feedback.js']) {
+    assert.ok(files.includes(name), `public feedback board asset is included: ${name}`);
+  }
   assert.ok(!files.some(name => /server|desktop\/|\.env|README|test\//.test(name)));
   assert.ok(!files.some(name => /feedback\/|state\/|diagnostic-sanitize/.test(name)), 'private business files and server privacy logic never become static URLs');
   assert.ok(!files.some(name => name.startsWith('ios-shortcut.')), 'shortcut resources are client-only');

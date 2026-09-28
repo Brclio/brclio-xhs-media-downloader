@@ -5,6 +5,7 @@ import { createMailer } from '../server/auth/mailer.js';
 import { createAccountService } from '../server/auth/service.js';
 
 export const ADMIN_COOKIE = '__Host-xhs-admin';
+export const BROWSER_COOKIE = '__Host-xhs-browser';
 const MAX_BODY_BYTES = 16_384;
 const FEEDBACK_BODY_BYTES = 1_600_000;
 const header = (req, name) => String(req.headers?.[name] || '');
@@ -19,7 +20,7 @@ function bodyValue(req) {
       body = JSON.parse(body);
     }
     if (!body || typeof body !== 'object' || Array.isArray(body)) fail('INVALID_REQUEST', '请求格式无效。');
-    const limit = body.action === 'feedback-upload-part' ? FEEDBACK_BODY_BYTES : ['feedback-begin', 'feedback-reply', 'admin-feedback-reply'].includes(body.action) ? 49_152 : MAX_BODY_BYTES;
+    const limit = body.action === 'feedback-upload-part' ? FEEDBACK_BODY_BYTES : ['feedback-begin', 'feedback-reply', 'admin-feedback-reply', 'feedback-owner-reply'].includes(body.action) ? 49_152 : MAX_BODY_BYTES;
     if (Buffer.byteLength(JSON.stringify(body)) > limit || Number(header(req, 'content-length')) > limit) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
     return body;
   } catch (error) {
@@ -27,9 +28,9 @@ function bodyValue(req) {
     fail('INVALID_JSON', '请求 JSON 格式无效。');
   }
 }
-function cookieValue(req) {
-  const part = header(req, 'cookie').split(';').map(s => s.trim()).find(s => s.startsWith(`${ADMIN_COOKIE}=`));
-  return part ? part.slice(ADMIN_COOKIE.length + 1) : '';
+function cookieValue(req, name) {
+  const part = header(req, 'cookie').split(';').map(s => s.trim()).find(s => s.startsWith(`${name}=`));
+  return part ? part.slice(name.length + 1) : '';
 }
 function requireOrigin(req, origin) {
   let configured;
@@ -53,21 +54,25 @@ export function createAccountHandler({ service, config, env, clientIp, mailerFac
       // Omitted env retains the Vercel / local process environment behavior.
       const effectiveConfig = config || readConfig(env);
       const effectiveService = service || createAccountService({ store: createGithubStore(env), mailer: mailerFactory(env), config: effectiveConfig });
-      const cookie = cookieValue(req);
+      const adminCookie = cookieValue(req, ADMIN_COOKIE), browserCookie = cookieValue(req, BROWSER_COOKIE);
       const bearer = header(req, 'authorization').match(/^Bearer ([A-Za-z0-9_-]{32,200})$/)?.[1] || '';
-      const adminFlow = body.action?.startsWith?.('admin-') || body.input?.client === 'admin' || Boolean(cookie);
-      if (adminFlow) requireOrigin(req, effectiveConfig.siteOrigin);
-      if (cookie && bearer) fail('AMBIGUOUS_CREDENTIALS', '请使用单一登录凭据。');
+      const adminAction = body.action?.startsWith?.('admin-') || body.input?.client === 'admin';
+      const browserFlow = !adminAction && (body.input?.client === 'browser' || ['feedback-owner-detail', 'feedback-owner-reply'].includes(body.action) || (body.action === 'feedback-public-comment' && Boolean(browserCookie)));
+      const cookie = browserFlow ? browserCookie : adminCookie;
+      const adminFlow = adminAction || (!browserFlow && Boolean(adminCookie));
+      if (adminFlow || browserFlow || cookie) requireOrigin(req, effectiveConfig.siteOrigin);
+      if ((adminCookie || browserCookie) && bearer) fail('AMBIGUOUS_CREDENTIALS', '请使用单一登录凭据。');
       // Only the deployment adapter can select another platform's trusted IP header.
       // The default is Vercel, which overwrites x-vercel-forwarded-for.
       const ip = clientIp ? clientIp(req) : header(req, 'x-vercel-forwarded-for').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-      const result = await effectiveService.execute({ action: body.action, input: body.input, proof: body.proof, token: bearer || cookie, ip, client: adminFlow ? 'admin' : 'desktop' });
-      if (body.action === 'verify-code' && body.input?.client === 'admin') {
-        res.setHeader('Set-Cookie', `${ADMIN_COOKIE}=${result.token}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=34560000`);
+      const result = await effectiveService.execute({ action: body.action, input: body.input, proof: body.proof, token: bearer || cookie, ip, client: browserFlow ? 'browser' : adminFlow ? 'admin' : 'desktop' });
+      if (body.action === 'verify-code' && ['admin', 'browser'].includes(body.input?.client)) {
+        const cookieName = body.input.client === 'browser' ? BROWSER_COOKIE : ADMIN_COOKIE;
+        res.setHeader('Set-Cookie', `${cookieName}=${result.token}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=34560000`);
         const { token: ignored, ...publicResult } = result;
         return res.status(200).json({ ok: true, ...publicResult });
       }
-      if (body.action === 'logout' && cookie) res.setHeader('Set-Cookie', `${ADMIN_COOKIE}=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0`);
+      if (body.action === 'logout' && cookie) res.setHeader('Set-Cookie', `${browserFlow ? BROWSER_COOKIE : ADMIN_COOKIE}=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0`);
       return res.status(200).json({ ok: true, ...result });
     } catch (error) {
       const known = error instanceof AccountError;

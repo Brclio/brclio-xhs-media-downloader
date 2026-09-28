@@ -78,6 +78,9 @@ export function buildChecks(options = {}) {
   for (const [name, path, type, marker] of [
     ['home', '/', /text\/html/i, '<title>Brclio'],
     ['changelog', '/changelog', /text\/html/i, '<html'],
+    ['feedback-board', '/feedback', /text\/html/i, 'id="feedback-public-list"'],
+    ['feedback-script', '/feedback.js', /(?:javascript|ecmascript)/i],
+    ['feedback-style', '/feedback.css', /text\/css/i],
     ['main-script', '/app.js', /(?:javascript|ecmascript)/i],
     ['main-style', '/style.css', /text\/css/i],
     ['account-script', '/account-ui.js', /(?:javascript|ecmascript)/i],

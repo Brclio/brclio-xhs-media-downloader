@@ -107,6 +107,8 @@ jobs:
         run: npm run desktop:verify:membership
       - name: Verify feedback conversations and safe reply retries in the real desktop renderer
         run: npm run desktop:verify:feedback
+      - name: Verify public feedback, browser login and private owner conversations
+        run: npm run web:verify:feedback
       - name: Verify native credential encryption across two app processes
         run: npm run desktop:verify:account
       - uses: actions/upload-artifact@v4

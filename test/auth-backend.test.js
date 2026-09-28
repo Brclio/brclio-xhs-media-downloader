@@ -72,7 +72,7 @@ function fixture(overrides = {}) {
       const timestamp = clock, nonce = randomUUID();
       proof = { timestamp, nonce, signature: sign(null, Buffer.from(`${action}\n${timestamp}\n${nonce}\n${JSON.stringify(input)}\n${token}`), dev.privateKey).toString('base64') };
     }
-    return service.execute({ action, input, token, proof, ip: '192.0.2.100' });
+    return service.execute({ action, input, token, proof, ip: '192.0.2.100', ...((session?.client === 'browser' || input.client === 'browser') ? { client: 'browser' } : {}) });
   };
   const issue = async (email, client = 'desktop', service = instance()) => {
     await execute(service, 'send-code', { email, client });
@@ -82,7 +82,7 @@ function fixture(overrides = {}) {
     const service = instance(), code = await issue(email, client, service);
     const input = { email, code, client, ...(client === 'desktop' ? { device: dev.input } : {}) };
     const result = await execute(service, 'verify-code', input, null, client === 'desktop' ? dev : null);
-    return { ...result, dev, service };
+    return { ...result, dev, service, client };
   };
   const admin = () => login('admin@example.test', null, 'admin');
   const adminCall = (session, action, input = {}, service = instance()) => execute(service, action, { ...input, ...(['admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-send-activation', 'admin-void-code', 'admin-feedback-status'].includes(action) ? { reason: input.reason || '测试操作原因', requestId: input.requestId || randomUUID() } : {}) }, session);
@@ -1250,4 +1250,175 @@ test('reply rate limits persist across instances and retries do not consume anot
   f.advance(3_600_001);
   await feedbackCall(f, user, 'feedback-reply', { ...first, requestId: randomUUID() });
   assert.equal(f.state.feedback[feedbackId].messages.length, 21);
+});
+
+test('anonymous board reads expose only sanitized submitted issues and never private conversations or diagnostics', async () => {
+  const f = fixture(), admin = await f.admin(), user = await f.login(), snapshot = feedbackInput(f);
+  snapshot.input.title = '联系 private@example.test 的下载问题';
+  snapshot.input.description = `  原始问题\nBearer confidential-bearer\nBrclio-${'A'.repeat(40)}\n验证码：654321\n/Users/private/path\n13812345678\n微信：private-wechat\nphone: +1 415 555 0123\n保留正文  `;
+  const { feedback } = await submitFeedback(f, user, snapshot), feedbackId = feedback.id;
+  await f.adminCall(admin, 'admin-feedback-reply', { feedbackId, content: '私密答复 PRIVATE_REPLY_SENTINEL', requestId: randomUUID() });
+  f.advance(60001);
+  const pending = await feedbackCall(f, user, 'feedback-begin', feedbackInput(f).input);
+  const writes = f.writes, list = await f.execute(f.instance(), 'feedback-public-list');
+  assert.equal(list.total, 1); assert.equal(list.feedbacks[0].id, feedbackId); assert.equal(list.pageSize, 20);
+  assert.deepEqual(list.counts, { all: 1, new: 1, in_progress: 0, resolved: 0, closed: 0, unresolved: 1 });
+  const detail = await f.execute(f.instance(), 'feedback-public-detail', { feedbackId });
+  assert.deepEqual(Object.keys(detail.feedback).sort(), ['id', 'title', 'description', 'category', 'status', 'createdAt', 'updatedAt', 'submittedAt', 'commentCount'].sort());
+  assert.deepEqual(detail.comments, []); assert.equal(detail.messages, undefined);
+  const serialized = JSON.stringify({ list, detail });
+  for (const secret of ['private@example.test', 'confidential-bearer', 'A'.repeat(40), '654321', '/Users/private/path', '13812345678', 'private-wechat', '415 555 0123', 'PRIVATE_REPLY_SENTINEL', user.account.user.id, admin.account.user.id, 'inputHash', 'requestKey', 'log', 'history', 'email', 'authorId']) assert.ok(!serialized.includes(secret), secret);
+  assert.match(detail.feedback.title, /\[EMAIL\]/); assert.match(detail.feedback.description, /\[REDACTED\]/);
+  assert.equal(f.state.feedback[feedbackId].description, snapshot.input.description);
+  await assert.rejects(f.execute(f.instance(), 'feedback-public-detail', { feedbackId: pending.feedback.id }), { code: 'FEEDBACK_NOT_FOUND' });
+  for (const id of ['__proto__', 'constructor', '../state/accounts.json', null, {}]) await assert.rejects(f.execute(f.instance(), 'feedback-public-detail', { feedbackId: id }), { code: 'FEEDBACK_NOT_FOUND' });
+  assert.equal(f.writes, writes, 'anonymous reads never write business state');
+  assert.equal((await f.execute(f.instance(), 'feedback-public-list', { query: 'confidential-bearer' })).total, 0, 'search cannot reveal a redacted token');
+});
+
+test('public issue pagination and status/category/query filters keep global counts independent', async () => {
+  const f = fixture(), user = await f.login();
+  const { feedback } = await submitFeedback(f, user), source = f.state.feedback[feedback.id];
+  for (const [index, status] of ['in_progress', 'resolved', 'closed'].entries()) {
+    const id = randomUUID(); f.state.feedback[id] = { ...structuredClone(source), id, status, category: 'audio', title: `声音问题 ${index}`, updatedAt: new Date(f.clock + index + 1).toISOString() };
+  }
+  const first = await f.execute(f.instance(), 'feedback-public-list', { status: 'all', page: 1, pageSize: 2 });
+  const second = await f.execute(f.instance(), 'feedback-public-list', { page: 2, pageSize: 2 });
+  assert.equal(first.total, 4); assert.equal(first.totalPages, 2); assert.equal(new Set([...first.feedbacks, ...second.feedbacks].map(f => f.id)).size, 4);
+  assert.equal((await f.execute(f.instance(), 'feedback-public-list', { status: 'unresolved' })).total, 2);
+  const filtered = await f.execute(f.instance(), 'feedback-public-list', { category: 'audio', status: 'resolved', query: '声音' });
+  assert.equal(filtered.total, 1); assert.equal(filtered.feedbacks[0].status, 'resolved'); assert.deepEqual(filtered.counts, first.counts);
+  assert.equal((await f.execute(f.instance(), 'feedback-public-list', { page: 9 })).feedbacks.length, 0);
+  for (const input of [{ page: 0 }, { page: '1' }, { pageSize: 51 }, { pageSize: -1 }, { status: 'uploading' }, { status: {} }, { category: 'private' }, { query: 'x'.repeat(121) }]) await assert.rejects(f.execute(f.instance(), 'feedback-public-list', input), { code: 'INVALID_FEEDBACK_FILTER' });
+});
+
+test('browser login shares software identity without claiming a device and only opens the owner private conversation', async () => {
+  const f = fixture(), desktop = await f.login();
+  const { feedback } = await submitFeedback(f, desktop), feedbackId = feedback.id;
+  f.advance(60001);
+  const browser = await f.login(desktop.account.user.email, null, 'browser'), other = await f.login('other@example.test', null, 'browser');
+  assert.equal(browser.account.user.id, desktop.account.user.id); assert.equal(browser.account.membership.active, false);
+  assert.equal(browser.account.device.status, 'unbound'); assert.equal(Object.keys(f.state.devices).length, 1);
+  await assert.rejects(f.execute(f.instance(), 'feedback-owner-detail', { feedbackId }, other), { code: 'FEEDBACK_NOT_FOUND' });
+  await assert.rejects(f.execute(f.instance(), 'feedback-owner-reply', { feedbackId, content: '不能冒充提交者', requestId: randomUUID() }, other), { code: 'FEEDBACK_NOT_FOUND' });
+  const input = { feedbackId, content: '网页提交者的私密原文 own@example.test', requestId: randomUUID() };
+  const sent = await f.execute(f.instance(), 'feedback-owner-reply', input, browser);
+  assert.equal(sent.message.content, input.content);
+  const detail = await f.execute(f.instance(), 'feedback-owner-detail', { feedbackId }, browser);
+  assert.equal(detail.messages[0].content, input.content);
+  assert.deepEqual((await f.execute(f.instance(), 'feedback-public-detail', { feedbackId })).comments, []);
+  for (const action of ['feedback-begin', 'feedback-upload-part', 'feedback-finalize', 'feedback-reply']) {
+    const params = action === 'feedback-begin' ? feedbackInput(f).input : { ...input, index: 0 };
+    await assert.rejects(f.execute(f.instance(), action, params, browser), { code: 'DESKTOP_REQUIRED' });
+  }
+  await assert.rejects(f.execute(f.instance(), 'admin-feedback-reply', input, browser), { code: 'FORBIDDEN' });
+  await assert.rejects(feedbackCall(f, desktop, 'feedback-owner-detail', { feedbackId }), { code: 'BROWSER_REQUIRED' });
+  await assert.rejects(f.instance().execute({ action: 'feedback-public-comment', input, token: browser.token, client: 'desktop' }), { code: 'BROWSER_REQUIRED' });
+  await f.execute(f.instance(), 'logout', { client: 'browser' }, browser);
+  await assert.rejects(f.execute(f.instance(), 'feedback-owner-reply', input, browser), { code: 'SESSION_REVOKED' });
+  assert.equal((await feedbackCall(f, desktop, 'feedback-detail', { feedbackId })).messages.length, 1, 'browser logout does not revoke desktop session');
+});
+
+test('signed-in nonmembers and admins append flat sanitized public comments while raw originals stay private', async () => {
+  const f = fixture(), admin = await f.admin(), owner = await f.login(), commenter = await f.login('reader@example.test', null, 'browser');
+  const { feedback } = await submitFeedback(f, owner), feedbackId = feedback.id;
+  const content = '  评论原文 <b>文字</b>\n联系 reader@example.test\nCookie: secret-comment-cookie\n  ';
+  const input = { feedbackId, content, requestId: randomUUID(), expectedUserId: commenter.account.user.id };
+  await assert.rejects(f.execute(f.instance(), 'feedback-public-comment', input), { code: 'ACCOUNT_REQUIRED' });
+  const comment = await f.execute(f.instance(), 'feedback-public-comment', input, commenter);
+  assert.equal(comment.comment.authorRole, 'user'); assert.ok(!comment.comment.content.includes('reader@example.test')); assert.ok(!comment.comment.content.includes('secret-comment-cookie'));
+  assert.deepEqual(Object.keys(comment.comment).sort(), ['id', 'authorRole', 'content', 'createdAt'].sort());
+  assert.equal(f.state.feedback[feedbackId].comments[0].content, content);
+  await f.adminCall(admin, 'feedback-public-comment', { feedbackId, content: '管理员公开评论', requestId: randomUUID() });
+  await feedbackCall(f, owner, 'feedback-public-comment', { feedbackId, content: '桌面已登录用户也能评论', requestId: randomUUID() });
+  const detail = await f.execute(f.instance(), 'feedback-public-detail', { feedbackId, pageSize: 2 });
+  assert.equal(detail.total, 3); assert.equal(detail.totalPages, 2); assert.equal(detail.feedback.commentCount, 3);
+  assert.deepEqual(detail.comments.map(c => c.authorRole), ['user', 'admin']);
+  assert.equal((await f.execute(f.instance(), 'feedback-public-detail', { feedbackId, page: 2, pageSize: 2 })).comments.length, 1);
+  assert.equal(f.state.feedback[feedbackId].messages.length, 0); assert.equal(f.state.feedback[feedbackId].status, 'new');
+  for (const key of ['parent', 'parentId', 'replyTo', 'role', 'authorRole', 'authorId', '__proto__']) {
+    const forged = { ...input, requestId: randomUUID(), [key]: 'forged' };
+    await assert.rejects(f.execute(f.instance(), 'feedback-public-comment', forged, commenter), { code: 'INVALID_FEEDBACK_COMMENT' });
+  }
+  for (const invalid of ['', ' \n ', '中'.repeat(2001), 5, null]) await assert.rejects(f.execute(f.instance(), 'feedback-public-comment', { ...input, content: invalid }, commenter), { code: 'INVALID_FEEDBACK' });
+  await assert.rejects(f.execute(f.instance(), 'feedback-owner-reply', input, commenter), { code: 'FEEDBACK_NOT_FOUND' });
+  await assert.rejects(f.execute(f.instance(), 'admin-feedback-reply', input, commenter), { code: 'FORBIDDEN' });
+});
+
+test('public comment idempotency survives concurrent appends and uncertain writes without touching private replies', async () => {
+  const f = fixture(), owner = await f.login(), commenter = await f.login('reader@example.test', null, 'browser');
+  const { feedback } = await submitFeedback(f, owner), feedbackId = feedback.id;
+  const input = { feedbackId, content: '同一条公开评论\n保留原文', requestId: randomUUID(), expectedUserId: commenter.account.user.id };
+  const send = value => f.execute(f.instance(), 'feedback-public-comment', value, commenter);
+  const duplicates = await Promise.all([send(input), send(input)]);
+  assert.equal(duplicates.filter(r => r.replayed).length, 1); assert.equal(duplicates[0].comment.id, duplicates[1].comment.id);
+  await Promise.all([send({ ...input, content: '并发一', requestId: randomUUID() }), send({ ...input, content: '并发二', requestId: randomUUID() })]);
+  assert.equal(f.state.feedback[feedbackId].comments.length, 3);
+  await assert.rejects(send({ ...input, content: `${input.content} ` }), { code: 'REQUEST_ID_REUSED' });
+  const uncertain = { ...input, content: '响应丢失后的评论', requestId: randomUUID() };
+  f.faults.push({ status: 429 }); await assert.rejects(send(uncertain), { code: 'STORAGE_RATE_LIMITED' });
+  assert.equal(f.state.feedback[feedbackId].comments.length, 3);
+  f.faults.push({ commitThenThrow: true }); await assert.rejects(send(uncertain), { code: 'STORAGE_WRITE_UNCERTAIN' });
+  const writes = f.writes, retry = await send(uncertain);
+  assert.equal(retry.replayed, true); assert.equal(f.writes, writes); assert.equal(f.state.feedback[feedbackId].comments.length, 4);
+  assert.equal(f.state.feedback[feedbackId].messages.length, 0);
+  f.faults.push({ status: 409, concurrent(state) { for (const session of Object.values(state.sessions)) if (session.userId === commenter.account.user.id) session.revokedAt = new Date(f.clock).toISOString(); } });
+  await assert.rejects(send({ ...input, requestId: randomUUID() }), { code: 'SESSION_REVOKED' });
+  assert.equal(f.state.feedback[feedbackId].comments.length, 4);
+  await assert.rejects(send(input), { code: 'SESSION_REVOKED' });
+});
+
+test('public comments reject unfinished uploads and reserve account capacity without losing previous content', async () => {
+  const f = fixture(), owner = await f.login(), commenter = await f.login('reader@example.test', null, 'browser'), snapshot = feedbackInput(f);
+  const begun = await feedbackCall(f, owner, 'feedback-begin', snapshot.input), feedbackId = begun.feedback.id;
+  const input = { feedbackId, content: '原始评论'.repeat(400), requestId: randomUUID(), expectedUserId: commenter.account.user.id };
+  const send = value => f.execute(f.instance(), 'feedback-public-comment', value, commenter);
+  await assert.rejects(send(input), { code: 'FEEDBACK_NOT_FOUND' });
+  await submitFeedback(f, owner, snapshot);
+  delete f.state.feedback[feedbackId].comments; delete f.state.feedbackCommentRateLimits;
+  assert.deepEqual((await f.execute(f.instance(), 'feedback-public-detail', { feedbackId })).comments, []);
+  await send(input);
+  const padding = { testPadding: '' }; f.state.audit.push(padding);
+  padding.testPadding = 'a'.repeat(700000 - Buffer.byteLength(JSON.stringify(f.state)) - 100);
+  const before = JSON.stringify(f.state), writes = f.writes;
+  await assert.rejects(send({ ...input, requestId: randomUUID() }), { code: 'FEEDBACK_COMMENT_CAPACITY' });
+  assert.equal(f.writes, writes); assert.equal(JSON.stringify(f.state), before);
+  assert.equal((await send(input)).replayed, true, 'confirmed retry still succeeds without consuming reserved bytes');
+  assert.equal(f.state.feedback[feedbackId].comments[0].content, input.content);
+});
+
+test('public comment limits persist across services and do not consume private reply quotas', async () => {
+  const f = fixture(), owner = await f.login(), reader = await f.login('reader@example.test', null, 'browser');
+  const { feedback } = await submitFeedback(f, owner), feedbackId = feedback.id;
+  const first = { feedbackId, content: '评论', requestId: randomUUID(), expectedUserId: reader.account.user.id };
+  const send = input => f.execute(f.instance(), 'feedback-public-comment', input, reader);
+  await send(first);
+  for (let i = 1; i < 20; i++) await send({ ...first, requestId: randomUUID() });
+  await assert.rejects(send({ ...first, requestId: randomUUID() }), { code: 'FEEDBACK_COMMENT_RATE_LIMITED' });
+  assert.equal((await send(first)).replayed, true); assert.equal(f.state.feedbackCommentRateLimits.global.length, 20);
+  assert.deepEqual(f.state.feedbackReplyRateLimits, {});
+  f.advance(3600001); await send({ ...first, requestId: randomUUID() });
+  assert.equal(f.state.feedback[feedbackId].comments.length, 21);
+});
+
+test('a browser comment asserts the draft account even when another tab switches the cookie after me', async () => {
+  const f = fixture(), owner = await f.login(), first = await f.login('first@example.test', null, 'browser'), second = await f.login('second@example.test', null, 'browser'), admin = await f.admin();
+  const { feedback } = await submitFeedback(f, owner), feedbackId = feedback.id;
+  const checked = await f.execute(f.instance(), 'me', { client: 'browser' }, first);
+  const draft = { feedbackId, content: '账号一撰写的原始评论', requestId: randomUUID(), expectedUserId: checked.account.user.id };
+  const before = JSON.stringify(f.state), writes = f.writes;
+  await assert.rejects(f.execute(f.instance(), 'feedback-public-comment', draft, second), { code: 'ACCOUNT_CHANGED', status: 409 });
+  const { expectedUserId: ignored, ...missingAssertion } = draft;
+  for (const input of [missingAssertion, ...['', ' ', null, 42, {}, second.account.user.id].map(expectedUserId => ({ ...draft, expectedUserId }))]) {
+    await assert.rejects(f.execute(f.instance(), 'feedback-public-comment', input, first), { code: 'ACCOUNT_CHANGED', status: 409 });
+  }
+  await assert.rejects(feedbackCall(f, owner, 'feedback-public-comment', draft), { code: 'ACCOUNT_CHANGED', status: 409 });
+  await assert.rejects(f.adminCall(admin, 'feedback-public-comment', draft), { code: 'ACCOUNT_CHANGED', status: 409 });
+  assert.equal(f.writes, writes); assert.equal(JSON.stringify(f.state), before, 'mismatched identities never consume quota or write comments');
+  const sent = await f.execute(f.instance(), 'feedback-public-comment', draft, first);
+  assert.equal(f.state.feedback[feedbackId].comments[0].authorId, first.account.user.id);
+  assert.equal(sent.comment.authorId, undefined); assert.equal(sent.comment.expectedUserId, undefined);
+  await assert.rejects(f.execute(f.instance(), 'feedback-public-comment', draft, second), { code: 'ACCOUNT_CHANGED', status: 409 });
+  assert.equal((await f.execute(f.instance(), 'feedback-public-comment', draft, first)).replayed, true);
+  assert.equal(f.state.feedback[feedbackId].comments.length, 1);
 });

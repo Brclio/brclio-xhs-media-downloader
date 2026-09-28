@@ -239,7 +239,7 @@ h2 { font: 900 clamp(27px, 3vw, 40px)/1.5 var(--serif); letter-spacing: -.035em;
   .brand img { width: 34px; height: 34px; }
   .brand-copy strong { font-size: 14px; }
   .brand-copy small { font-size: 8px; }
-  .app-navigation { width: 100%; justify-content: space-between; gap: 10px; }
+  .app-navigation { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 0 10px; }
   .app-navigation a { min-height: 42px; font-size: 12px; }
   .hero { padding-top: 37px; }
   .label-caps { font-size: 9px; margin-bottom: 18px; letter-spacing: .12em; }

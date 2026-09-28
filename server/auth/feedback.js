@@ -7,11 +7,14 @@ export const FEEDBACK_PART_BYTES = 256 * 1024;
 export const FEEDBACK_MAX_PARTS = 64;
 export const FEEDBACK_PART_INTERVAL_MS = 2000;
 export const FEEDBACK_REPLY_MAX_CHARS = 8000;
+export const FEEDBACK_COMMENT_MAX_CHARS = 2000;
+export const FEEDBACK_COMMENT_MAX_STATE_BYTES = 700_000;
 const DAY = 86_400_000;
 const digest = value => createHash('sha256').update(value).digest('hex');
 const iso = value => new Date(value).toISOString();
 const own = (object, key) => Object.hasOwn(object, key) ? object[key] : undefined;
 const statuses = ['new', 'in_progress', 'resolved', 'closed'];
+const categories = ['download', 'audio', 'update', 'account', 'other'];
 const hashPattern = /^[a-f0-9]{64}$/;
 function requestId(value) {
   if (typeof value !== 'string' || !/^[a-zA-Z0-9_-]{16,100}$/.test(value)) fail('INVALID_REQUEST_ID', '反馈请求编号无效。');
@@ -21,7 +24,7 @@ function text(value, min, max, label) {
   if (typeof value !== 'string' || value.trim().length < min || value.length > max) fail('INVALID_FEEDBACK', `${label}长度不符合要求。`);
   return String(sanitizeDiagnostic(value.trim()));
 }
-// Authored conversations are original source text. Only diagnostic records are sanitized.
+// Preserve authored source; anonymous views apply separate redaction at read time.
 function originalText(value, min, max, label) {
   if (typeof value !== 'string' || value.trim().length < min || value.length > max) fail('INVALID_FEEDBACK', `${label}长度不符合要求。`);
   return value;
@@ -59,9 +62,34 @@ function publicMessage(message) {
   const { id, authorRole, authorId, content, createdAt } = message;
   return { id, authorRole, authorId, content, createdAt };
 }
+// Anonymous views use a separate allowlist. Never spread private feedback or messages.
+function boardText(value) {
+  return String(sanitizeDiagnostic(value))
+    .replace(/\b(?:Brclio|XHS)-[a-f0-9]{40}\b/gi, '[REDACTED]')
+    .replace(/(?:密码|验证码|激活码|会话令牌|访问令牌)\s*[:：=]\s*[^\s，。；,;]+/g, '[REDACTED]')
+    .replace(/(?:手机号|手机号码|电话|联系方式|微信(?:号)?|QQ(?:号)?)\s*[:：=][^\r\n，。；,;]+/gi, '[CONTACT]')
+    .replace(/\b(?:phone|telephone|mobile|wechat|contact)\s*[:=][^\r\n，。；,;]+/gi, '[CONTACT]')
+    .replace(/(?<!\d)(?:\+?86[ -]?)?1[3-9]\d[ -]?\d{4}[ -]?\d{4}(?!\d)/g, '[PHONE]');
+}
+function publicBoardFeedback(feedback, full = false) {
+  const description = boardText(feedback.description);
+  return { id: feedback.id, title: boardText(feedback.title), description: full ? description : description.slice(0, 200), category: categories.includes(feedback.category) ? feedback.category : 'other', status: feedback.status, createdAt: feedback.createdAt, updatedAt: feedback.updatedAt, submittedAt: feedback.submittedAt, commentCount: (feedback.comments || []).length };
+}
+function publicBoardComment(comment) {
+  return { id: comment.id, authorRole: comment.authorRole === 'admin' ? 'admin' : 'user', content: boardText(comment.content), createdAt: comment.createdAt };
+}
+function boardPage(input) {
+  const page = input.page === undefined ? 1 : input.page, pageSize = input.pageSize === undefined ? 20 : input.pageSize;
+  if (!Number.isSafeInteger(page) || page < 1 || page > 1_000_000 || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 50) fail('INVALID_FEEDBACK_FILTER', '分页参数无效。');
+  return { page, pageSize };
+}
+function pageResults(items, pagination) {
+  const { page, pageSize } = pagination;
+  return { items: items.slice((page - 1) * pageSize, page * pageSize), total: items.length, page, pageSize, totalPages: Math.ceil(items.length / pageSize) };
+}
 
 /** Log blobs are immutable; only a verified atomic state transition makes a feedback submitted. */
-export function createFeedbackService({ store, now, authenticate, hash, operation, audit }) {
+export function createFeedbackService({ store, now, authenticate, hash, operation, audit, isAdmin }) {
   const ensure = state => { state.feedback ||= {}; state.feedbackRateLimits ||= {}; };
   function get(state, id, user, admin = false) {
     if (typeof id !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id)) fail('FEEDBACK_NOT_FOUND', '没有找到该反馈。', 404);
@@ -72,6 +100,11 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
   function checkOwner(state, request, time) {
     const identity = authenticate(state, request, time);
     if (identity.session.client !== 'desktop') fail('DESKTOP_REQUIRED', '请通过桌面客户端提交反馈。', 403);
+    return identity;
+  }
+  function checkBrowserOwner(state, request, time) {
+    const identity = authenticate(state, request, time);
+    if (identity.session.client !== 'browser') fail('BROWSER_REQUIRED', '请通过网页登录查看自己的反馈对话。', 403);
     return identity;
   }
   async function begin(request) {
@@ -101,7 +134,7 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
       if (userTimes.length >= 3 || globalTimes.filter(at => at > time - 3_600_000).length >= 20) fail('FEEDBACK_RATE_LIMITED', '反馈提交次数已达上限，请稍后再试；已有反馈可以继续上传。', 429);
       if (globalTimes.some(at => time - at < 60_000)) fail('FEEDBACK_RATE_LIMITED', '反馈服务正在处理其他提交，请 60 秒后重试。', 429);
       (state.feedbackRateLimits[userKey] ||= []).push(time); (state.feedbackRateLimits.global ||= []).push(time);
-      const feedback = { id, userId: user.id, ...clean, requestKey, inputHash, originalTextVersion: 1, messages: [], status: 'uploading', createdAt: iso(time), updatedAt: iso(time), submittedAt: null };
+      const feedback = { id, userId: user.id, ...clean, requestKey, inputHash, originalTextVersion: 1, messages: [], comments: [], status: 'uploading', createdAt: iso(time), updatedAt: iso(time), submittedAt: null };
       state.feedback[id] = feedback;
       return { value: { feedback: publicFeedback(feedback, user, true), replayed: false, upload: { partBytes: FEEDBACK_PART_BYTES, maxBytes: FEEDBACK_MAX_BYTES, minPartIntervalMs: FEEDBACK_PART_INTERVAL_MS, partsReceived: [] } } };
     });
@@ -178,7 +211,7 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
     const content = originalText(request.input.content, 1, FEEDBACK_REPLY_MAX_CHARS, '回复内容');
     const key = requestId(request.input.requestId), id = randomUUID();
     return store.transaction(state => {
-      const time = now(), { user } = admin ? authenticate(state, request, time, true) : checkOwner(state, request, time);
+      const time = now(), { user } = admin ? authenticate(state, request, time, true) : request.action === 'feedback-owner-reply' ? checkBrowserOwner(state, request, time) : checkOwner(state, request, time);
       const feedback = get(state, request.input.feedbackId, user, admin);
       if (!feedback.submittedAt) fail('FEEDBACK_NOT_SUBMITTED', '该反馈日志尚未上传完成，不能回复。', 409);
       const authorRole = admin ? 'admin' : 'user';
@@ -208,14 +241,14 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
   }
   async function read(request) {
     const { state } = await store.read(), time = now(), admin = request.action.startsWith('admin-');
-    const { user } = admin ? authenticate(state, request, time, true) : checkOwner(state, request, time);
+    const { user } = admin ? authenticate(state, request, time, true) : request.action === 'feedback-owner-detail' ? checkBrowserOwner(state, request, time) : checkOwner(state, request, time);
     if (request.action === 'feedback-mine' || request.action === 'admin-feedback') {
       const query = String(request.input.query || '').trim().toLowerCase(), status = String(request.input.status || '');
       const feedbacks = Object.values(state.feedback || {}).filter(f => (admin || f.userId === user.id) && (!status || f.status === status) && (!query || [f.id, f.userId, state.users[f.userId]?.email, f.title].some(v => String(v || '').toLowerCase().includes(query)))).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.createdAt.localeCompare(a.createdAt));
       return { feedbacks: feedbacks.slice(0, 1000).map(f => publicFeedback(f, state.users[f.userId])), total: feedbacks.length };
     }
     const feedback = get(state, request.input.feedbackId, user, admin);
-    if (request.action === 'feedback-detail' || request.action === 'admin-feedback-detail') return { feedback: publicFeedback(feedback, state.users[feedback.userId], true), messages: (feedback.messages || []).map(publicMessage), ...(admin ? { history: state.audit.filter(a => a.targetId === feedback.id).slice(-200).reverse() } : {}) };
+    if (['feedback-detail', 'feedback-owner-detail', 'admin-feedback-detail'].includes(request.action)) return { feedback: publicFeedback(feedback, state.users[feedback.userId], true), messages: (feedback.messages || []).map(publicMessage), ...(admin ? { history: state.audit.filter(a => a.targetId === feedback.id).slice(-200).reverse() } : {}) };
     if (request.action === 'admin-feedback-part') {
       if (!feedback.submittedAt) fail('FEEDBACK_NOT_SUBMITTED', '该反馈日志尚未完整提交。', 409);
       const index = request.input.index;
@@ -226,11 +259,74 @@ export function createFeedbackService({ store, now, authenticate, hash, operatio
     }
     fail('UNKNOWN_ACTION', '未知反馈操作。', 404);
   }
+  function boardGet(state, id) {
+    const feedback = get(state, id, null, true);
+    if (!feedback.submittedAt || !statuses.includes(feedback.status)) fail('FEEDBACK_NOT_FOUND', '没有找到该反馈。', 404);
+    return feedback;
+  }
+  async function boardRead(request) {
+    const pagination = boardPage(request.input);
+    const { state } = await store.read();
+    if (request.action === 'feedback-public-list') {
+      const { status = '', category = '', query = '' } = request.input;
+      if (typeof status !== 'string' || (status && ![...statuses, 'all', 'unresolved'].includes(status)) || typeof category !== 'string' || (category && !categories.includes(category)) || typeof query !== 'string' || query.length > 120) fail('INVALID_FEEDBACK_FILTER', '反馈筛选条件无效。');
+      const term = query.trim().toLowerCase();
+      const submitted = Object.values(state.feedback || {}).filter(feedback => feedback.submittedAt && statuses.includes(feedback.status));
+      const counts = { all: submitted.length, ...Object.fromEntries(statuses.map(status => [status, submitted.filter(feedback => feedback.status === status).length])) };
+      counts.unresolved = counts.new + counts.in_progress;
+      const rows = submitted
+        .map(feedback => publicBoardFeedback(feedback, true))
+        .filter(feedback => (!status || status === 'all' || (status === 'unresolved' ? ['new', 'in_progress'].includes(feedback.status) : feedback.status === status)) && (!category || feedback.category === category) && (!term || `${feedback.title}\n${feedback.description}`.toLowerCase().includes(term)))
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id));
+      const { items, ...meta } = pageResults(rows, pagination);
+      return { feedbacks: items.map(feedback => ({ ...feedback, description: feedback.description.slice(0, 200) })), ...meta, counts };
+    }
+    const feedback = boardGet(state, request.input.feedbackId);
+    const { items, ...meta } = pageResults(feedback.comments || [], pagination);
+    return { feedback: publicBoardFeedback(feedback, true), comments: items.map(publicBoardComment), ...meta };
+  }
+  async function boardComment(request) {
+    if (Object.keys(request.input).some(key => !['feedbackId', 'content', 'requestId', 'expectedUserId'].includes(key))) fail('INVALID_FEEDBACK_COMMENT', '评论仅支持问题编号、正文、请求编号和账号一致性校验，不支持回复评论或自定义身份。');
+    const content = originalText(request.input.content, 1, FEEDBACK_COMMENT_MAX_CHARS, '评论内容');
+    const key = requestId(request.input.requestId), id = randomUUID();
+    return store.transaction(state => {
+      const time = now(), { user, session } = authenticate(state, request, time);
+      // A cookie can change in another tab after the author's last account check.
+      // This is an assertion about the authenticated identity, never an author override.
+      if ((session.client === 'browser' || Object.hasOwn(request.input, 'expectedUserId')) && (typeof request.input.expectedUserId !== 'string' || !request.input.expectedUserId.trim() || request.input.expectedUserId !== user.id)) fail('ACCOUNT_CHANGED', '登录账号已变化，请切回撰写评论时的账号后重试。', 409);
+      const feedback = boardGet(state, request.input.feedbackId);
+      const requestKey = hash('feedback-comment-request', `${user.id}:${key}`);
+      const inputHash = hash('feedback-comment-input', JSON.stringify({ feedbackId: feedback.id, content }));
+      for (const item of Object.values(state.feedback || {})) {
+        const prior = (item.comments || []).find(comment => comment.requestKey === requestKey);
+        if (!prior) continue;
+        if (prior.inputHash !== inputHash) fail('REQUEST_ID_REUSED', '该评论请求编号已对应其他内容，请保留原文重试。', 409);
+        return { changed: false, value: { feedback: publicBoardFeedback(feedback, true), comment: publicBoardComment(prior), replayed: true } };
+      }
+      state.feedbackCommentRateLimits ||= {};
+      for (const [rateKey, values] of Object.entries(state.feedbackCommentRateLimits)) {
+        state.feedbackCommentRateLimits[rateKey] = values.filter(at => at > time - DAY);
+        if (!state.feedbackCommentRateLimits[rateKey].length) delete state.feedbackCommentRateLimits[rateKey];
+      }
+      const userKey = hash('feedback-comment-user-rate', user.id), times = own(state.feedbackCommentRateLimits, userKey) || [], globalTimes = state.feedbackCommentRateLimits.global || [];
+      if (times.length >= 100 || times.filter(at => at > time - 3_600_000).length >= 20 || globalTimes.length >= 300 || globalTimes.filter(at => at > time - 3_600_000).length >= 100) fail('FEEDBACK_COMMENT_RATE_LIMITED', '评论次数已达上限，请稍后再试。原请求可继续重试确认。', 429);
+      (state.feedbackCommentRateLimits[userKey] ||= []).push(time);
+      (state.feedbackCommentRateLimits.global ||= []).push(time);
+      const comment = { id, authorId: user.id, authorRole: isAdmin(user) ? 'admin' : 'user', content, createdAt: iso(time), requestKey, inputHash };
+      (feedback.comments ||= []).push(comment);
+      feedback.updatedAt = iso(time);
+      // Public participation cannot consume the final 200 KB reserved for account operations.
+      if (Buffer.byteLength(JSON.stringify(state)) > FEEDBACK_COMMENT_MAX_STATE_BYTES) fail('FEEDBACK_COMMENT_CAPACITY', '评论存储暂时已满，本次评论未保存，请稍后再试或联系管理员。', 503);
+      return { value: { feedback: publicBoardFeedback(feedback, true), comment: publicBoardComment(comment), replayed: false } };
+    });
+  }
   return { async execute(request) {
+    if (request.action === 'feedback-public-list' || request.action === 'feedback-public-detail') return boardRead(request);
+    if (request.action === 'feedback-public-comment') return boardComment(request);
     if (request.action === 'feedback-begin') return begin(request);
     if (request.action === 'feedback-upload-part') return upload(request);
     if (request.action === 'feedback-finalize') return finalize(request);
-    if (request.action === 'feedback-reply' || request.action === 'admin-feedback-reply') return reply(request);
+    if (['feedback-reply', 'feedback-owner-reply', 'admin-feedback-reply'].includes(request.action)) return reply(request);
     if (request.action === 'admin-feedback-status') return adminStatus(request);
     return read(request);
   } };

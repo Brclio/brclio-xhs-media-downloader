@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAccountHandler, ADMIN_COOKIE } from '../api/account.js';
+import { createAccountHandler, ADMIN_COOKIE, BROWSER_COOKIE } from '../api/account.js';
 import { AccountError } from '../server/auth/errors.js';
 
 const origin = 'https://account.example.test';
@@ -102,4 +102,63 @@ test('HTTP logout clears the admin cookie only after server confirms revocation'
   const failed = await request({ ...options, execute: async () => { throw new AccountError('STORAGE_UNAVAILABLE', '暂不可用', 503); } });
   assert.equal(failed.code, 503);
   assert.equal(failed.headers['set-cookie'], undefined);
+});
+
+test('browser OTP login keeps its session in a separate secure cookie and never returns the token', async () => {
+  const result = await request({ body: { action: 'verify-code', input: { client: 'browser' } }, headers: { origin }, execute: async value => {
+    assert.equal(value.client, 'browser'); return { token, account: { user: { role: 'user' } } };
+  } });
+  assert.equal(result.code, 200); assert.equal(result.body.token, undefined);
+  assert.match(result.headers['set-cookie'], new RegExp(`^${BROWSER_COOKIE}=`));
+  for (const flag of ['Path=/', 'Secure', 'HttpOnly', 'SameSite=Strict']) assert.ok(result.headers['set-cookie'].includes(flag));
+  assert.ok(!result.headers['set-cookie'].includes('Domain='));
+  for (const action of ['send-code', 'verify-code', 'me', 'logout']) {
+    for (const badOrigin of ['', 'https://evil.test', `${origin}.evil.test`]) {
+      const denied = await request({ body: { action, input: { client: 'browser' } }, headers: { origin: badOrigin } });
+      assert.equal(denied.code, 403); assert.equal(denied.calls.length, 0);
+    }
+  }
+});
+
+test('coexisting browser and admin cookies select explicit sessions and logout clears only the chosen client', async () => {
+  const browserToken = 'b'.repeat(43), cookies = `${ADMIN_COOKIE}=${token}; ${BROWSER_COOKIE}=${browserToken}`;
+  const selected = [
+    ['me', { client: 'browser' }, browserToken, 'browser'], ['logout', { client: 'browser' }, browserToken, 'browser'],
+    ['feedback-owner-detail', {}, browserToken, 'browser'], ['feedback-owner-reply', {}, browserToken, 'browser'],
+    ['feedback-public-comment', {}, browserToken, 'browser'], ['admin-feedback-detail', {}, token, 'admin'],
+    ['me', {}, token, 'admin'], ['logout', {}, token, 'admin'],
+  ];
+  for (const [action, input, expectedToken, expectedClient] of selected) {
+    const result = await request({ body: { action, input }, headers: { origin, cookie: cookies } });
+    assert.equal(result.code, 200); assert.equal(result.calls[0].token, expectedToken); assert.equal(result.calls[0].client, expectedClient);
+    if (action === 'logout') assert.match(result.headers['set-cookie'], new RegExp(`^${expectedClient === 'browser' ? BROWSER_COOKIE : ADMIN_COOKIE}=;.*Max-Age=0`));
+  }
+  for (const action of ['me', 'logout', 'feedback-owner-detail', 'feedback-owner-reply']) {
+    const result = await request({ body: { action, input: { client: 'browser' } }, headers: { origin, cookie: `${ADMIN_COOKIE}=${token}` } });
+    assert.equal(result.calls[0].token, '', 'a browser action never falls back to an administrator cookie');
+    assert.equal(result.headers['set-cookie'], undefined);
+  }
+  const failed = await request({ body: { action: 'logout', input: { client: 'browser' } }, headers: { origin, cookie: cookies }, execute: async () => { throw new AccountError('STORAGE_UNAVAILABLE', '暂不可用', 503); } });
+  assert.equal(failed.headers['set-cookie'], undefined);
+});
+
+test('board HTTP reads are anonymous while comments and owner actions preserve transport and size boundaries', async () => {
+  for (const action of ['feedback-public-list', 'feedback-public-detail']) {
+    const result = await request({ body: { action, input: {} } }); assert.equal(result.code, 200); assert.equal(result.calls[0].token, '');
+  }
+  for (const action of ['feedback-owner-detail', 'feedback-owner-reply', 'feedback-public-comment']) {
+    const rejected = await request({ body: { action, input: {} }, headers: { cookie: `${BROWSER_COOKIE}=${token}`, origin: 'https://evil.test' } });
+    assert.equal(rejected.code, 403); assert.equal(rejected.calls.length, 0);
+  }
+  const mixed = await request({ body: { action: 'feedback-public-comment', input: {} }, headers: { origin, cookie: `${BROWSER_COOKIE}=${token}`, authorization: `Bearer ${token}` } });
+  assert.equal(mixed.body.error.code, 'AMBIGUOUS_CREDENTIALS');
+  for (const content of ['中'.repeat(2000), '\u0000'.repeat(2000)]) {
+    const accepted = await request({ body: { action: 'feedback-public-comment', input: { content, expectedUserId: 'draft-account-id' } }, headers: { origin, cookie: `${BROWSER_COOKIE}=${token}` } });
+    assert.equal(accepted.code, 200); assert.equal(accepted.calls[0].input.content, content);
+    assert.equal(accepted.calls[0].input.expectedUserId, 'draft-account-id');
+  }
+  const tooLarge = await request({ body: { action: 'feedback-public-comment', input: { content: 'a'.repeat(16384) } }, headers: { origin } });
+  assert.equal(tooLarge.code, 413);
+  const reply = await request({ body: { action: 'feedback-owner-reply', input: { content: '\u0000'.repeat(8000) } }, headers: { origin, cookie: `${BROWSER_COOKIE}=${token}` } });
+  assert.equal(reply.code, 200);
 });

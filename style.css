@@ -1600,6 +1600,16 @@ footer > p {
     justify-content: space-between;
   }
 
+  body:not(.is-desktop) .app-navigation {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  body:not(.is-desktop) .nav-link {
+    padding-inline: 8px;
+    white-space: nowrap;
+  }
+
   .hero {
     gap: 38px;
     padding: 56px 0 68px;

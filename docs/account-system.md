@@ -9,6 +9,7 @@
 | `api/account.js`、`server/auth/` | 邮箱登录、会员、设备、激活码、管理员权限、GitHub 存储 | Vercel 服务端函数，或主 Worker 私有 `AccountRuntime` 执行环境 |
 | `cloudflare/account-runtime.js` | 私有账号 Durable Object，不使用其存储 | 主 Worker 的 `ACCOUNT_RUNTIME` 绑定 |
 | `admin/` | 管理网页 | Vercel 静态目录，或经 Pages 网关与主 Worker 提供；保留后台安全响应头 |
+| `feedback.html`、`feedback.js`、`feedback.css` | 公开问题、评论和网页软件账号登录 | 公共静态目录；私密数据经同源 `/api/account` 按会话返回 |
 | `cloudflare/pages/` | 自定义域名入口 | Pages；API 与后台请求通过 `APP` 服务绑定交给主 Worker，不持有账号 Secrets |
 | `desktop/`、`account-ui.*` | 本地安全存储、软件账号界面、实际业务授权检查 | Electron 安装包 |
 | `lib/membership-policy.js` | 集中配置会员保护范围 | 后端与桌面共用 |

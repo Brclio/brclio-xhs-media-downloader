@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!-- Brclio Design System app template: compact header, status filters and two-column workspace.
+     Adapted components 14, 16, 18 and 27. © 2026 Brclio · CC BY-NC-SA 4.0. -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fefcf6">
+  <meta name="description" content="Brclio 小红书下载器问题广场：查看问题进展，登录软件账号参与公开评论，提交者可继续与管理员私密沟通。">
+  <title>问题广场 · Brclio 小红书下载器</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./feedback.css">
+  <script src="./feedback.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到问题广场</a>
+  <header class="app-header"><div class="app-header-inner container">
+    <a class="brand" href="./" aria-label="Brclio 小红书下载器首页"><img src="./aiyc.svg" alt="" width="38" height="38"><span class="brand-copy"><strong>Brclio <span>小红书下载器</span></strong><small>XHS MEDIA SAVER</small></span></a>
+    <nav class="app-navigation" aria-label="主要导航"><a href="./">下载工具</a><a href="./download.html">软件下载</a><a href="./feedback.html" aria-current="page">问题广场</a><a href="./changelog.html">更新记录</a></nav>
+    <a class="header-admin" href="./admin/">管理后台 ↗</a>
+  </div></header>
+  <main id="main" class="container board-main">
+    <header class="board-heading"><div><span class="eyebrow">FEEDBACK / 一起改进</span><h1>问题广场</h1><p>看见问题，也看见解决的进展。</p></div><div class="account-tools"><span id="feedback-account-label">无需登录即可浏览</span><button id="feedback-login-open" class="button button-primary" type="button">登录参与讨论 ↗</button><button id="feedback-logout" class="button button-secondary" type="button" hidden>退出登录</button></div></header>
+    <p id="feedback-notice" class="notice" role="status" aria-live="polite" hidden></p>
+    <div class="board-note"><span aria-hidden="true">✎</span><p>问题和评论公开可见。提交者与管理员的私密对话，仅双方可见。<span>新问题请在桌面软件的「问题反馈」中提交。</span></p></div>
+    <section class="board-filters" aria-label="筛选问题">
+      <div class="status-filters" role="group" aria-label="问题状态"><button type="button" data-status-filter="" aria-pressed="true">全部 <span data-status-count="all">—</span></button><button type="button" data-status-filter="unresolved" aria-pressed="false">未解决 <span data-status-count="unresolved">—</span></button><button type="button" data-status-filter="resolved" aria-pressed="false">已解决 <span data-status-count="resolved">—</span></button><button type="button" data-status-filter="closed" aria-pressed="false">已关闭 <span data-status-count="closed">—</span></button></div>
+      <form id="feedback-search-form" class="search-form"><label class="sr-only" for="feedback-search">搜索问题</label><input id="feedback-search" type="search" maxlength="120" placeholder="搜索标题或描述"><label class="sr-only" for="feedback-category">问题分类</label><select id="feedback-category"><option value="">全部分类</option><option value="download">下载与任务</option><option value="audio">视频声音</option><option value="account">账号与会员</option><option value="update">安装与更新</option><option value="other">建议 / 其他</option></select><button class="button button-secondary" type="submit">搜索</button></form>
+    </section>
+    <div class="board-workspace">
+      <section class="issue-index" aria-label="公开问题列表"><div class="list-heading"><h2>公开问题</h2><button id="feedback-list-retry" class="text-button" type="button">刷新列表</button></div><p id="feedback-list-status" class="status-text" role="status" aria-live="polite">正在读取问题…</p><div id="feedback-public-list" class="issue-list" aria-busy="true"></div><nav class="pagination" aria-label="问题列表分页"><button id="feedback-prev" class="button button-secondary" type="button" disabled>上一页</button><span id="feedback-page-label">1 / 1</span><button id="feedback-next" class="button button-secondary" type="button" disabled>下一页</button></nav></section>
+      <div class="issue-pane">
+        <div id="feedback-detail-empty" class="detail-empty"><span aria-hidden="true">↖</span><h2>从一个问题开始</h2><p>选择左侧问题，查看进展与讨论。</p></div>
+        <section id="feedback-detail" class="issue-detail" aria-labelledby="feedback-detail-title" hidden>
+          <div class="detail-actions"><span id="feedback-detail-badges" class="badge-row"></span><div><button id="feedback-detail-refresh" class="text-button" type="button">刷新</button><button id="feedback-share" class="text-button" type="button">复制链接 ↗</button></div></div>
+          <input id="feedback-share-url" class="share-url" type="text" aria-label="问题链接" readonly hidden>
+          <h2 id="feedback-detail-title" tabindex="-1">正在读取问题…</h2><p id="feedback-detail-meta" class="small-text"></p><p id="feedback-detail-description" class="original-text issue-description"></p><p id="feedback-detail-status" class="status-text" role="status" aria-live="polite"></p>
+          <section class="public-discussion" aria-labelledby="feedback-comments-title"><div class="section-heading"><h3 id="feedback-comments-title">公开评论</h3><span id="feedback-comment-count" class="small-text"></span></div><p class="small-text">登录任意软件账号即可参与，无需会员。请勿公开个人联系方式或登录信息。</p><div id="feedback-public-comments" class="comment-list"></div><nav id="feedback-comments-pagination" class="pagination" aria-label="公开评论分页" hidden><button id="feedback-comments-prev" class="button button-secondary" type="button">上一页</button><span id="feedback-comments-page-label"></span><button id="feedback-comments-next" class="button button-secondary" type="button">下一页</button></nav>
+            <form id="feedback-comment-form" class="composer"><label for="feedback-comment-content">添加公开评论</label><textarea id="feedback-comment-content" rows="4" maxlength="2000" placeholder="分享你遇到的情况，或补充有帮助的信息。" required></textarea><div class="composer-actions"><button id="feedback-comment-submit" class="button button-primary" type="submit">登录后评论 ↗</button><span id="feedback-comment-hint" class="small-text">公开可见 · 最多 2000 字</span></div><p id="feedback-comment-status" class="status-text" role="status" aria-live="polite"></p></form>
+          </section>
+          <section id="feedback-owner-section" class="owner-discussion" aria-labelledby="feedback-owner-title" hidden><div class="section-heading"><h3 id="feedback-owner-title">与管理员的私密对话</h3><span class="badge badge-private">仅双方可见</span></div><p class="small-text">你是这个问题的提交者。以下对话不会出现在公开评论中。</p><details id="feedback-owner-original" class="owner-original"><summary>查看你提交的问题原文</summary><p id="feedback-owner-original-title" class="original-text"></p><p id="feedback-owner-original-description" class="original-text"></p></details><div id="feedback-owner-messages" class="comment-list"></div><form id="feedback-owner-reply-form" class="composer"><label for="feedback-owner-reply">继续私密回复</label><textarea id="feedback-owner-reply" rows="4" maxlength="8000" placeholder="回复管理员，或补充问题细节。" required></textarea><div class="composer-actions"><button id="feedback-owner-reply-submit" class="button button-primary" type="submit">发送私密回复 ↗</button><span id="feedback-owner-reply-hint" class="small-text">仅双方可见 · 最多 8000 字</span></div><p id="feedback-owner-reply-status" class="status-text" role="status" aria-live="polite"></p></form></section>
+          <p id="feedback-owner-status" class="status-text" role="status" aria-live="polite"></p>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="container page-footer"><p>Brclio · 喜欢的内容，好好保存。</p><div class="footer-links"><a href="./admin/">管理后台 ↗</a><a href="https://github.com/Brclio/brclio-design-system" target="_blank" rel="noopener noreferrer">© 2026 Brclio · CC BY-NC-SA 4.0</a></div></footer>
+  <dialog id="feedback-login-dialog" aria-labelledby="feedback-login-title"><div class="login-heading"><span class="eyebrow">SOFTWARE ACCOUNT</span><button id="feedback-login-close" class="text-button" type="button" aria-label="关闭登录">关闭 ×</button></div><h2 id="feedback-login-title">登录软件账号</h2><p class="small-text">使用软件账号的邮箱。首次验证会创建账号，验证码 5 分钟内有效。</p><form id="feedback-login-form" class="login-form"><label for="feedback-login-email">邮箱<input id="feedback-login-email" type="email" autocomplete="email" maxlength="254" placeholder="name@example.com" required></label><div class="code-row"><label for="feedback-login-code">邮箱验证码<input id="feedback-login-code" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" placeholder="6 位数字" required></label><button id="feedback-send-code" class="button button-secondary" type="button">获取验证码</button></div><button id="feedback-login-submit" class="button button-primary" type="submit">验证并登录 ↗</button><p id="feedback-login-status" class="status-text" role="status" aria-live="polite"></p></form></dialog>
+</body>
+</html>
