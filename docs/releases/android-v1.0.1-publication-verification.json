@@ -1,0 +1,149 @@
+{
+  "version": "1.0.1",
+  "tag": "android-v1.0.1",
+  "sourceCommit": "5518757724c9414b4feb9929746d3f4f3611700f",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.1",
+  "publishedAt": "2026-09-28T03:03:31Z",
+  "verifiedAt": "2026-09-28T03:06:12.353Z",
+  "releaseBuild": {
+    "schemaVersion": 1,
+    "platform": "android",
+    "version": "1.0.1",
+    "versionCode": 10001,
+    "applicationId": "com.brclio.xhs",
+    "minSdk": 26,
+    "signingCertificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b",
+    "sourceCommit": "5518757724c9414b4feb9929746d3f4f3611700f",
+    "sourceDirty": false,
+    "builtAt": "2026-09-28T03:03:13.337Z",
+    "apk": {
+      "name": "Brclio-XHS-Android-1.0.1-release.apk",
+      "bytes": 1789294,
+      "sha256": "5856f36bba5ee9a8efe9e9488fb42eb401d0aed53109fb729bff1f54a224789f"
+    }
+  },
+  "previousRelease": {
+    "tag": "android-v1.0.0",
+    "sourceCommit": "c2609b6a51af685fde4f5d25d2b663fc959f554b",
+    "versionCode": 10000,
+    "signingCertificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b",
+    "publicProofDigestVerified": true
+  },
+  "ci": {
+    "releaseRun": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36372098181",
+    "build": "success",
+    "publish": "success",
+    "sourceCommitMatches": true
+  },
+  "assetsVerified": [
+    {
+      "name": "android-update.json",
+      "bytes": 545,
+      "sha256": "7387f115664043fea2f374d752da9c698fbbb6983187e9b4b0270bab4d8dec06",
+      "anonymousDownloadStatus": 200
+    },
+    {
+      "name": "Brclio-XHS-Android-1.0.1-release.apk",
+      "bytes": 1789294,
+      "sha256": "5856f36bba5ee9a8efe9e9488fb42eb401d0aed53109fb729bff1f54a224789f",
+      "anonymousDownloadStatus": 200
+    },
+    {
+      "name": "Brclio-XHS-Android-1.0.1-release.apk.sha256",
+      "bytes": 103,
+      "sha256": "9c5e06bf00d898ec62b502ce065b07a7ad028d9182abe9982eb3a0ad574b97aa",
+      "anonymousDownloadStatus": 200
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 103,
+      "sha256": "9c5e06bf00d898ec62b502ce065b07a7ad028d9182abe9982eb3a0ad574b97aa",
+      "anonymousDownloadStatus": 200
+    }
+  ],
+  "verification": {
+    "exactFourPublicAssets": true,
+    "publicApkSha256Matches": true,
+    "publicAssetDigestsMatch": true,
+    "apkV2SignatureVerified": true,
+    "packageVersionAndMinSdkVerified": true,
+    "stableSigningCertificateVerified": true,
+    "versionCodeIncreased": true,
+    "sourceCommitMatchesTagAndWorkflow": true,
+    "sourceDirty": false,
+    "desktopLatest": "v1.8.15",
+    "androidDoesNotReplaceDesktopLatest": true,
+    "embeddedShortcut": {
+      "zipCrcValid": true,
+      "shortcutUrlCount": 3,
+      "copyButtonPresent": true,
+      "nativeCopyBridgeUsed": true,
+      "shortcutStylesPresent": true,
+      "uiVersion": "1.0.1"
+    }
+  },
+  "notVerified": [
+    "Published APK installation or update on Android device in this audit",
+    "Shortcut execution on iPhone"
+  ],
+  "runtimeVerification": {
+    "verifiedAt": "2026-09-28T03:11:25.580441+00:00",
+    "device": "Android 15 ARM64 emulator-5554",
+    "sourceCommit": "5518757724c9414b4feb9929746d3f4f3611700f",
+    "version": "1.0.1",
+    "versionCode": 10001,
+    "apkSha256": "5856f36bba5ee9a8efe9e9488fb42eb401d0aed53109fb729bff1f54a224789f",
+    "installedApkSha256": "5856f36bba5ee9a8efe9e9488fb42eb401d0aed53109fb729bff1f54a224789f",
+    "installedApkMatchesPublicArtifact": true,
+    "upgrade": {
+      "before": "1.0.0 / 10000",
+      "after": "1.0.1 / 10001",
+      "method": "adb install -r",
+      "preservesPackage": "com.brclio.xhs"
+    },
+    "packagedAssetsMatchSource": {
+      "index.html": true,
+      "client.js": true,
+      "client.css": true
+    },
+    "realNativeClipboard": {
+      "releaseCopySuccessMessage": true,
+      "releaseClipboardSystemOverlay": true,
+      "debugCopyPasteExactUrl": true,
+      "target": "https://www.icloud.com/shortcuts/70ff1d35911f43c5be308e1f692ea530"
+    },
+    "externalNavigation": {
+      "releaseSystemBrowser": "com.android.chrome/org.chromium.chrome.browser.ChromeTabbedActivity",
+      "releaseIntentExactTarget": true,
+      "pageTitle": "获取小红书的照片",
+      "getShortcutButtonVisible": true
+    },
+    "debugFailureInjection": {
+      "failureMessageAndManualCopyHint": true,
+      "restoredNativeCopySucceeds": true,
+      "mainNoteStatusUnchanged": true
+    },
+    "debugResponsive": [
+      {
+        "width": 393,
+        "scrollWidth": 393
+      },
+      {
+        "width": 320,
+        "scrollWidth": 320,
+        "buttonsStacked": true
+      }
+    ],
+    "checks": {
+      "androidNodeTests": 30,
+      "javaTests": 17,
+      "lintErrors": 0,
+      "lintWarnings": 6
+    },
+    "limits": [
+      "No physical iPhone shortcut installation or execution performed",
+      "This run tests upgrade with adb install -r, not the in-app download and system installer workflow"
+    ]
+  },
+  "desktopLatestAtFinalVerification": "v1.8.16"
+}
