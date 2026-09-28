@@ -1,0 +1,597 @@
+{
+  "feature": "Public feedback board",
+  "verifiedAt": "2026-09-28T12:14:45.087Z",
+  "sourceCommit": "f74d3382d39b7b548a46891baadfc07e348604d7",
+  "productionUrl": "https://xhs.download.brclio.com/feedback.html",
+  "deployment": {
+    "workerVersionId": "9d21642b-9f2e-4645-903a-6d5455a29c38",
+    "pagesUrl": "https://ab2d27a1.brclio-xhs-pages.pages.dev",
+    "applicationVersion": "1.8.17"
+  },
+  "behavior": {
+    "anonymousProblemBrowsing": true,
+    "statusFilters": [
+      "all",
+      "unresolved",
+      "resolved",
+      "closed"
+    ],
+    "comments": "Any verified software account; no membership required; flat comments without nested replies",
+    "privateReplies": "Administrator and submitting user only",
+    "originalStorage": "Existing private GitHub account-state repository",
+    "publicProjection": "Allowlisted fields with sensitive-text redaction; excludes private messages and diagnostics"
+  },
+  "automatedChecks": {
+    "node": {
+      "total": 645,
+      "passed": 638,
+      "skipped": 7,
+      "failed": 0
+    },
+    "python": {
+      "passed": 21,
+      "failed": 0
+    },
+    "publicFeedbackUi": {
+      "passed": true,
+      "scenarios": 26,
+      "localApiCalls": 88
+    },
+    "desktopFeedbackRegression": {
+      "passed": true,
+      "scenarios": 10
+    },
+    "adminRegression": {
+      "passed": true,
+      "localApiCalls": 77,
+      "fixtureStateWrites": 20
+    },
+    "cloudflareDryRun": {
+      "passed": true
+    },
+    "workerIntegration": {
+      "passed": true,
+      "scope": "Miniflare/workerd -> account HTTP handler -> account service -> GitHub state store, using local GitHub and email fixtures"
+    }
+  },
+  "publicHttp": {
+    "ok": true,
+    "checkedAt": "2026-09-28T12:14:45.087Z",
+    "origin": "https://xhs.download.brclio.com",
+    "sourceCommit": "f74d3382d39b7b548a46891baadfc07e348604d7",
+    "deploymentUrl": "https://ab2d27a1.brclio-xhs-pages.pages.dev",
+    "health": {
+      "ok": true,
+      "platform": "cloudflare",
+      "version": "1.8.17",
+      "pythonBinding": true,
+      "deploymentId": "9d21642b-9f2e-4645-903a-6d5455a29c38"
+    },
+    "assets": [
+      {
+        "file": "feedback.html",
+        "status": 200,
+        "bytes": 9882,
+        "sha256": "1186088d4246f27b6e9d7653559c0cd2383ea3ee63ed98240c504ea38c840a63",
+        "matchesBuiltSource": true
+      },
+      {
+        "file": "feedback.css",
+        "status": 200,
+        "bytes": 12953,
+        "sha256": "5809f494c46e65f3991063e2ae5cdcda48a4991d274ad116d623c4294be82f0e",
+        "matchesBuiltSource": true
+      },
+      {
+        "file": "feedback.js",
+        "status": 200,
+        "bytes": 29448,
+        "sha256": "16b88bba6579fa9d0586dcec7f90324ba36ed625b07b2df3a7aaf886d618147c",
+        "matchesBuiltSource": true
+      },
+      {
+        "file": "index.html",
+        "status": 200,
+        "bytes": 50596,
+        "sha256": "6460b233a62c23151ac5f8e3e4498cbecc414092db32c0361aa9523d5cdfa8ab",
+        "matchesBuiltSource": true
+      },
+      {
+        "file": "download.html",
+        "status": 200,
+        "bytes": 22686,
+        "sha256": "42d435d8e72c6e784aa7a8db7aef9f46bb2771e3d7c71bc3220c34d0b8c7e2ed",
+        "matchesBuiltSource": true
+      },
+      {
+        "file": "changelog.html",
+        "status": 200,
+        "bytes": 117991,
+        "sha256": "9f37b72cb1bf75b2b32aa1a11dd9291698a02130437546b50c20dc83d2a61180",
+        "matchesBuiltSource": true
+      },
+      {
+        "file": "style.css",
+        "status": 200,
+        "bytes": 33346,
+        "sha256": "38b91b94a321bf84d6778257af425a627c05e0271f7a53ccda291ff76855d6a7",
+        "matchesBuiltSource": true
+      },
+      {
+        "file": "download.css",
+        "status": 200,
+        "bytes": 23525,
+        "sha256": "90f04e20915842314ac562a842131264fd7729f1b10296915c974d1805886c3c",
+        "matchesBuiltSource": true
+      },
+      {
+        "file": "admin/admin.js",
+        "status": 200,
+        "bytes": 64894,
+        "sha256": "5ced199531648a9398cd10f5f19cea322b13d8b3d699ac1cd69c3553cc826ca0",
+        "matchesBuiltSource": true
+      }
+    ],
+    "publicLists": [
+      {
+        "filter": "all",
+        "status": 200,
+        "total": 2,
+        "returned": 2,
+        "counts": {
+          "all": 2,
+          "new": 1,
+          "in_progress": 0,
+          "resolved": 1,
+          "closed": 0,
+          "unresolved": 1
+        },
+        "publicFieldAllowlistVerified": true
+      },
+      {
+        "filter": "unresolved",
+        "status": 200,
+        "total": 1,
+        "returned": 1,
+        "counts": {
+          "all": 2,
+          "new": 1,
+          "in_progress": 0,
+          "resolved": 1,
+          "closed": 0,
+          "unresolved": 1
+        },
+        "publicFieldAllowlistVerified": true
+      },
+      {
+        "filter": "resolved",
+        "status": 200,
+        "total": 1,
+        "returned": 1,
+        "counts": {
+          "all": 2,
+          "new": 1,
+          "in_progress": 0,
+          "resolved": 1,
+          "closed": 0,
+          "unresolved": 1
+        },
+        "publicFieldAllowlistVerified": true
+      },
+      {
+        "filter": "closed",
+        "status": 200,
+        "total": 0,
+        "returned": 0,
+        "counts": {
+          "all": 2,
+          "new": 1,
+          "in_progress": 0,
+          "resolved": 1,
+          "closed": 0,
+          "unresolved": 1
+        },
+        "publicFieldAllowlistVerified": true
+      }
+    ],
+    "publicDetail": {
+      "status": 200,
+      "returnedComments": 0,
+      "totalComments": 0,
+      "publicFieldAllowlistVerified": true,
+      "privateMessagesPresent": false
+    },
+    "anonymousAccessBoundaries": [
+      {
+        "action": "me",
+        "status": 401,
+        "errorCode": "ACCOUNT_REQUIRED"
+      },
+      {
+        "action": "feedback-owner-detail",
+        "status": 401,
+        "errorCode": "ACCOUNT_REQUIRED"
+      }
+    ],
+    "productionMessagesSent": 0,
+    "verificationEmailsSent": 0
+  },
+  "productionSmoke": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-09-28T12:13:41.838Z",
+    "passed": 47,
+    "total": 47,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1078
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 391
+      },
+      {
+        "name": "static/feedback-board",
+        "ok": true,
+        "status": 200,
+        "durationMs": 576
+      },
+      {
+        "name": "static/feedback-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 302
+      },
+      {
+        "name": "static/feedback-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 309
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 220
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 250
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 264
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 198
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 328
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 748
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 300
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 226
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 300
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 362
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 462
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 308
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 437
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 308
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 309
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 196
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 235
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 195
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 331
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 193
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 336
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 193
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 327
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 1057
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 326
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 543
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 315
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 382
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 318
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 842
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 207
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 208
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 200
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 320
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 208
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 315
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 205
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 322
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 315
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 311
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 421
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 526
+      }
+    ]
+  },
+  "productionBrowser": {
+    "ok": true,
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-09-28T12:14:33.208Z",
+    "session": "isolated anonymous browser",
+    "pages": [
+      {
+        "path": "/feedback.html",
+        "width": 1280,
+        "viewport": 1280,
+        "content": 1280,
+        "overflow": false
+      },
+      {
+        "path": "/feedback.html",
+        "width": 390,
+        "viewport": 390,
+        "content": 390,
+        "overflow": false
+      },
+      {
+        "path": "/",
+        "width": 390,
+        "viewport": 390,
+        "content": 390,
+        "overflow": false
+      },
+      {
+        "path": "/download.html",
+        "width": 390,
+        "viewport": 390,
+        "content": 390,
+        "overflow": false
+      }
+    ],
+    "checks": [
+      "production list loaded",
+      "anonymous private area hidden",
+      "status filter unresolved loaded",
+      "status filter resolved loaded",
+      "status filter closed loaded",
+      "status filter all loaded",
+      "public detail loaded",
+      "public comments data or explicit empty state",
+      "anonymous detail has no private DOM content",
+      "login dialog opens without requesting code",
+      "/ page loaded",
+      "/ has visible problem-board link",
+      "/download.html page loaded",
+      "/download.html has visible problem-board link"
+    ],
+    "apiCounts": {
+      "feedback-public-list": 5,
+      "me": 1,
+      "feedback-public-detail": 1
+    },
+    "blockedActions": [],
+    "errors": [],
+    "initialRows": 2,
+    "statusCounts": {
+      "all": 2,
+      "unresolved": 1,
+      "resolved": 1,
+      "closed": 0
+    },
+    "commentRows": 0,
+    "commentState": "empty",
+    "apiStatuses": [
+      200,
+      401,
+      200,
+      200,
+      200,
+      200,
+      200
+    ],
+    "screenshotsCaptured": 5,
+    "visuallyInspected": true
+  },
+  "validationLimits": {
+    "authenticatedProductionActions": false,
+    "productionCommentsSent": 0,
+    "verificationEmailsSent": 0,
+    "authenticatedFlowsCoveredByLocalFixtures": true,
+    "realMediaDownloadsIncluded": false
+  }
+}
