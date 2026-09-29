@@ -29,7 +29,7 @@ test('ASAR nested lookups use Windows directory separators on Windows', () => {
   } finally { Object.assign(path, original); }
 });
 
-test('packaged membership catalog and payment codes match the reviewed source bytes', async t => {
+test('packaged membership and learning content match the reviewed source bytes', async t => {
   const temporary = await mkdtemp(path.join(tmpdir(), 'brclio-packaged-membership-'));
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const source = path.join(temporary, 'source');
@@ -71,6 +71,26 @@ test('packaged membership catalog and payment codes match the reviewed source by
     await assert.rejects(verify(), /exactly the reviewed application files/);
     await writeFile(destination, `${original}\n// changed after review\n`);
     await assert.rejects(verify(), /Packaged source differs.*membership-plans/);
+    await writeFile(destination, original);
+  });
+  for (const name of ['assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png']) {
+    await t.test(`rejects missing or altered ${name}`, async () => {
+      const destination = path.join(source, name);
+      const original = await readFile(destination);
+      await rm(destination);
+      await assert.rejects(verify(), /not found|Unable to find/i);
+      const changed = Buffer.from(original);
+      changed[changed.length - 1] ^= 1;
+      await writeFile(destination, changed);
+      await assert.rejects(verify(), /Packaged learning asset differs/);
+      await writeFile(destination, original);
+    });
+  }
+  await t.test('rejects a missing learning page script', async () => {
+    const destination = path.join(source, 'learn.js');
+    const original = await readFile(destination);
+    await rm(destination);
+    await assert.rejects(verify(), /exactly the reviewed application files/);
     await writeFile(destination, original);
   });
 });

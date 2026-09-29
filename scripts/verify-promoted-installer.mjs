@@ -38,7 +38,8 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   try { await stat(path.join(sourceDirectory, 'desktop/update-manager.js')); expectedSources.push('desktop/update-manager.js'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
   for (const name of ['account-ui.js', 'account-ui.css', 'download.html', 'download.css', 'download.js',
-    'changelog.js', 'ios-shortcut.js', 'ios-shortcut.css', 'product.html', 'product.css', 'product.js', 'desktop/account-client.js',
+    'changelog.js', 'ios-shortcut.js', 'ios-shortcut.css', 'product.html', 'product.css', 'product.js',
+    'learn.html', 'learn.css', 'learn.js', 'desktop/account-client.js',
     'desktop/account-storage.js', 'lib/membership-policy.js', 'desktop/diagnostic-log.js',
     'desktop/feedback-client.js', 'desktop/mac-update.js', 'desktop/mac-install-progress.js',
     'desktop/windows-update.js', 'desktop/install-confirmation.js', 'desktop/mac-update-cleanup.js',
@@ -68,6 +69,12 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     for (const name of ['assets/membership/wechat-pay.png', 'assets/membership/alipay.png', 'assets/membership/wechat-contact.png']) {
       assert.ok(extract(name).equals(await readFile(path.join(sourceDirectory, name))),
         `Packaged membership QR differs from release tag: ${name}`);
+    }
+  }
+  if (expectedSources.includes('learn.html')) {
+    for (const name of ['assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png']) {
+      assert.ok(extract(name).equals(await readFile(path.join(sourceDirectory, name))),
+        `Packaged learning asset differs from release tag: ${name}`);
     }
   }
   if (expectedSources.includes('desktop/account-client.js')) {

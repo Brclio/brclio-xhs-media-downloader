@@ -26,7 +26,7 @@ button, input, select, textarea { max-width: 100%; }
 .brand-copy { display: grid; }
 .brand-copy strong { font: 900 15px/1.5 var(--serif); }
 .brand-copy small { font: 600 8px/1.8 Georgia, serif; letter-spacing: .14em; color: var(--ink-faint); }
-.app-navigation { display: flex; gap: 23px; }
+.app-navigation { display: flex; flex-wrap: wrap; gap: 0 23px; }
 .app-navigation a { display: grid; place-items: center; min-height: 44px; font-size: 12px; white-space: nowrap; text-decoration: none; position: relative; }
 .app-navigation a::after { position: absolute; content: ""; left: 0; right: 0; bottom: 5px; height: 4px; background: var(--yellow); opacity: 0; }
 .app-navigation a:hover::after, .app-navigation [aria-current="page"]::after { opacity: 1; }

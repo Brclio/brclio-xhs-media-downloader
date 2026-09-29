@@ -106,12 +106,18 @@ function external(url) {
 }
 
 function openLocalPreview(url) {
-  const preview = new BrowserWindow({ parent: mainWindow, width: 720, height: 820,
+  const isLearningPage = new URL(url).pathname === '/learn.html';
+  const preview = new BrowserWindow({ parent: mainWindow, width: isLearningPage ? 1120 : 720, height: 820,
     webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
   preview.removeMenu();
   preview.webContents.setWindowOpenHandler(({ url: target }) => { external(target); return { action: 'deny' }; });
   preview.webContents.on('will-navigate', (event, target) => {
     if (!isAppUrl(target)) { event.preventDefault(); external(target); }
+    else if (isLearningPage && ['/', '/index.html'].includes(new URL(target).pathname)) {
+      event.preventDefault();
+      mainWindow?.focus();
+      preview.close();
+    }
   });
   void preview.loadURL(url).catch(() => preview.close());
 }

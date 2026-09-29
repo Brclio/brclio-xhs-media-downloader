@@ -178,6 +178,11 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 if (isLocalDocument(uri)) return false;
+                if (request.isForMainFrame() && request.hasGesture()
+                        && LearningPagePolicy.isLearningDocument(uri.toString())) {
+                    startActivity(new Intent(MainActivity.this, LearningActivity.class));
+                    return true;
+                }
                 if (request.isForMainFrame() && request.hasGesture()) openExternal(uri);
                 return true;
             }

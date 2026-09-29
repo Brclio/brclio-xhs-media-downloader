@@ -7,6 +7,25 @@ def signingKeys = ['ANDROID_SIGNING_STORE_FILE', 'ANDROID_SIGNING_STORE_PASSWORD
 def signingValues = signingKeys.collectEntries { [(it): System.getenv(it)] }
 def hasReleaseSigning = signingValues.values().every { it != null && !it.isBlank() }
 
+// Keep the promotion page identical to the website without checking in a second copy.
+def learningAssets = layout.buildDirectory.dir('generated/learningAssets')
+def learningFiles = ['learn.html', 'learn.css', 'learn.js', 'aiyc.svg', 'favicon.svg',
+                     'assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png']
+def syncLearningAssets = tasks.register('syncLearningAssets', Sync) {
+    from(rootProject.projectDir.parentFile) {
+        include learningFiles
+        into 'www'
+    }
+    into learningAssets
+    doFirst {
+        learningFiles.each { path ->
+            if (!new File(rootProject.projectDir.parentFile, path).isFile()) {
+                throw new GradleException("Missing shared learning page asset: ${path}")
+            }
+        }
+    }
+}
+
 android {
     namespace 'com.brclio.xhs'
     compileSdk 35
@@ -16,13 +35,15 @@ android {
         applicationId 'com.brclio.xhs'
         minSdk 26
         targetSdk 35
-        versionCode 10001
-        versionName '1.0.1'
+        versionCode 10002
+        versionName '1.0.2'
     }
 
     buildFeatures {
         buildConfig true
     }
+
+    sourceSets.main.assets.srcDir(learningAssets)
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -55,6 +76,8 @@ android {
         abortOnError true
     }
 }
+
+tasks.named('preBuild').configure { dependsOn syncLearningAssets }
 
 // Never silently produce an unsigned or debug-signed artifact labelled release.
 gradle.taskGraph.whenReady { graph ->

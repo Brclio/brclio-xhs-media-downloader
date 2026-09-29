@@ -1552,6 +1552,14 @@ footer > p {
   }
 }
 
+@media (max-width: 700px) {
+  body:not(.is-desktop) .app-header { height: auto; }
+  body:not(.is-desktop) .app-header-inner { flex-wrap: wrap; justify-content: center; gap: 2px 12px; padding-top: 8px; }
+  body:not(.is-desktop) .app-header-actions { width: 100%; justify-content: center; }
+  body:not(.is-desktop) .app-navigation { flex-wrap: wrap; justify-content: center; }
+  body:not(.is-desktop) .nav-link { white-space: nowrap; }
+}
+
 @media (max-width: 620px) {
   .app-header {
     height: 58px;

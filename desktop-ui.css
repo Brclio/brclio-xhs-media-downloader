@@ -856,6 +856,10 @@ body.is-desktop .desktop-tab[aria-selected="true"] { background: #e5eef9; color:
 body.is-desktop .desktop-tab:hover { background: #eee9df; }
 body.is-desktop .desktop-tab[aria-selected="true"]:hover { background: #e5eef9; }
 body.is-desktop .desktop-nav-icon { display: grid; width: 19px; place-items: center; font-size: 1.18rem; line-height: 1; }
+body.is-desktop .desktop-learning-link { display: flex; align-items: center; gap: 10px; padding: 13px 12px; border: 1px solid #e0d7bb; border-radius: 7px; color: var(--ink); background: #f7f0d8; text-decoration: none; font-size: .81rem; font-weight: 600; }
+body.is-desktop .desktop-learning-link:hover { background: #f2e8c5; border-color: #ccb975; }
+body.is-desktop .desktop-learning-link:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+body.is-desktop .desktop-learning-link small { display: block; margin-top: 5px; color: var(--ink-light); font-size: .63rem; font-weight: 400; }
 body.is-desktop .desktop-nav-count { margin-left: auto; padding: 2px 5px; border-radius: 4px; background: #e9e1c6; color: #6c5f2d; font-size: .58rem; line-height: 1.55; font-weight: 600; white-space: nowrap; }
 body.is-desktop .desktop-new-badge { background: var(--yellow); color: var(--ink); }
 body.is-desktop .desktop-sidebar-bottom { margin-top: auto; border-top: 1px solid var(--line); padding-top: 17px; }
@@ -1189,6 +1193,8 @@ body.is-desktop .toast { z-index: 300; max-width: min(460px, calc(100vw - 30px))
   body.is-desktop .desktop-navigation { grid-column: 1; grid-row: 1; display: block; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line); overflow: visible; }
   body.is-desktop .desktop-nav-heading, body.is-desktop .desktop-sidebar-bottom { display: none; }
   body.is-desktop .desktop-tabs { display: flex; flex-direction: row; width: 100%; gap: 3px; overflow-x: auto; }
+  body.is-desktop .desktop-learning-link { justify-content: center; gap: 6px; margin-top: 7px; padding: 7px 10px; font-size: .72rem; }
+  body.is-desktop .desktop-learning-link small { display: inline; margin-left: 12px; font-size: .62rem; }
   body.is-desktop .desktop-tab { flex: 0 0 auto; min-height: 41px; padding: 8px 10px; gap: 6px; font-size: .72rem; }
   body.is-desktop .desktop-nav-icon { width: 15px; font-size: .95rem; }
   body.is-desktop .desktop-nav-count { font-size: .55rem; }

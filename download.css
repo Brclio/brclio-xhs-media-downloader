@@ -231,6 +231,10 @@ h2 { font: 900 clamp(27px, 3vw, 40px)/1.5 var(--serif); letter-spacing: -.035em;
   .faq-heading { position: static; }
   .faq-heading h2 br, .faq-heading p br { display: none; }
 }
+@media (max-width: 700px) {
+  .app-header-inner { flex-direction: column; align-items: flex-start; gap: 5px; padding-top: 14px; }
+  .app-navigation { width: 100%; justify-content: space-between; flex-wrap: wrap; gap: 0 10px; }
+}
 @media (max-width: 600px) {
   html { scroll-padding-top: 135px; }
   .container { width: calc(100% - 40px); }

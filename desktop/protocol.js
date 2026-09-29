@@ -11,6 +11,7 @@ const STATIC_FILES = new Set([
   'download.html', 'download.css', 'download.js',
   'ios-shortcut.css', 'ios-shortcut.js',
   'product.html', 'product.css', 'product.js',
+  'learn.html', 'learn.css', 'learn.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js'
 ]);

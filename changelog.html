@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 9 月 28 日，桌面 v1.8.17 支持管理员与用户在问题反馈中双向回复，完整对话原文保存至 GitHub 私有仓库。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 9 月 29 日，桌面 v1.8.18 与 Android v1.0.2 新增书籍推荐与一对一编程私教页面，支持微信二维码放大和保存。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -35,14 +35,15 @@
           <nav class="app-navigation" aria-label="主要导航">
             <a class="nav-link" href="/">下载工具</a>
             <a class="nav-link" href="/download.html">软件下载</a>
+            <a class="nav-link" href="/learn.html">编程私教与书籍</a>
             <a class="nav-link is-current" href="/changelog.html" aria-current="page">更新记录</a>
             <a class="nav-link" href="https://xhs.download.brclio.com/feedback.html">问题广场</a>
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="记录整理至 2026 年 9 月 28 日">
+          <div class="header-status" aria-label="记录整理至 2026 年 9 月 29 日">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>更新至 2026.09.28</span>
+            <span>更新至 2026.09.29</span>
           </div>
         </div>
       </div>
@@ -55,7 +56,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。桌面客户端支持问题反馈双向回复，可查看管理员答复并继续交流。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。新增书籍与编程私教页面，介绍作者书籍与长期一对一教学，微信扫码即可咨询。
             </p>
 
             <div class="release-hero-actions">
@@ -70,8 +71,8 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v1.8.17</strong>
-              <small>2026.09.28 · Mac / Windows</small>
+              <strong>v1.8.18</strong>
+              <small>2026.09.29 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
@@ -84,17 +85,17 @@
                 <span>桌面主页批量</span>
               </div>
               <div class="summary-stat">
-                <strong>1.0.1</strong>
+                <strong>1.0.2</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
-                <strong>09.28</strong>
+                <strong>09.29</strong>
                 <span>最近整理 · 2026</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 管理员在后台直接答复，用户在“我的反馈”中查看并继续回复；问题与对话原文保存在 GitHub 私有仓库。</p>
-            <a class="release-summary-link" href="#feedback-conversation-update">阅读反馈对话更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 《编程启蒙：思维与代码》与长期一对一编程教学；小学到大学、留学生均可咨询。</p>
+            <a class="release-summary-link" href="#learning-update">阅读书籍与编程私教更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -112,7 +113,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v1.8.17、反馈、Android" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v1.8.18、编程私教、Android" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -126,6 +127,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#learning-update"><span>09.29</span><strong>书籍与编程私教</strong></a>
               <a href="#feedback-conversation-update"><span>v1.8.17</span><strong>问题反馈双向回复</strong></a>
               <a href="#ios-shortcut-update"><span>09.28</span><strong>iPhone 快捷指令福利</strong></a>
               <a href="#failed-note-recovery-update"><span>v1.8.15</span><strong>失败链接复制与单篇下载</strong></a>
@@ -177,7 +179,20 @@
 
           <div id="release-feed" class="release-feed">
             <p class="release-empty" hidden>没有找到匹配的更新。试试更短的关键词，或点击“清除筛选”查看全部记录。</p>
-            <article id="feedback-conversation-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+            <article id="learning-update" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-29"><span>09.29</span><small>2026 · 编程教育</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.18</span><span class="release-badge release-badge-blue">Android v1.0.2</span><span class="release-status">网页 / Mac / Windows / Android</span></div><h3>读一本书，或开启一对一编程学习</h3></div></header>
+                <p class="release-lead">新增「编程私教与书籍」页面，介绍《编程启蒙：思维与代码》，以及面向小学到大学、留学生的长期编程私教。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>找到适合自己的方向</strong>Vibe Coding、Python、Java、C++、少儿编程、竞赛与课程辅导，按基础和学习目标沟通。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>在客户端中直接查看</strong>桌面侧栏和安卓首页均有入口，独立页面保留原下载工作台，查看后可直接返回。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>微信联系更方便</strong>仅展示裁切后的二维码，支持放大与保存；网页导航同步适配窄屏换行。</p></div>
+                </div>
+                <div class="release-card-footer"><a href="/learn.html">查看书籍与编程私教 ↗</a><a href="/download.html">下载最新版 ↗</a><span>编程教育 · 2026.09.29</span></div>
+              </div>
+            </article>
+            <article id="feedback-conversation-update" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-09-28"><span>09.28</span><small>2026 · 反馈对话</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v1.8.17</span><span class="release-status">Mac / Windows · 管理后台</span></div><h3>问题反馈，可以直接查看答复、继续回复</h3></div></header>
@@ -1488,7 +1503,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.09.28 · 桌面 v1.8.17 · Android v1.0.1。</p>
+        <p>网页版与客户端记录整理至 2026.09.29 · 桌面 v1.8.18 · Android v1.0.2。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

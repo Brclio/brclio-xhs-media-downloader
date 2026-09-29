@@ -5,6 +5,11 @@ on:
   pull_request:
     paths:
       - 'android/**'
+      - 'learn.*'
+      - 'aiyc.svg'
+      - 'favicon.svg'
+      - 'assets/learning/**'
+      - 'assets/support/wechat-personal-qr.png'
       - 'scripts/build-android.mjs'
       - 'scripts/publish-android-release.mjs'
       - 'test/android*.test.js'
@@ -14,6 +19,11 @@ on:
     branches: [main]
     paths:
       - 'android/**'
+      - 'learn.*'
+      - 'aiyc.svg'
+      - 'favicon.svg'
+      - 'assets/learning/**'
+      - 'assets/support/wechat-personal-qr.png'
       - 'scripts/build-android.mjs'
       - 'scripts/publish-android-release.mjs'
       - 'test/android*.test.js'
