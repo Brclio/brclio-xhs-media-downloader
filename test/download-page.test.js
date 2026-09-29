@@ -247,10 +247,10 @@ test('FAQ hash links open the question on initial load and later navigation', as
 test('static Android APK, checksum and release links remain available without JavaScript', () => {
   const document = documentFixture();
   const android = androidSnapshot(document);
-  assert.deepEqual(android.versions, ['v1.0.1']);
-  assert.equal(android.apk, `${base}/download/android-v1.0.1/Brclio-XHS-Android-1.0.1-release.apk`);
+  assert.deepEqual(android.versions, ['v1.0.2']);
+  assert.equal(android.apk, `${base}/download/android-v1.0.2/Brclio-XHS-Android-1.0.2-release.apk`);
   assert.equal(android.checksum, `${android.apk}.sha256`);
-  assert.ok(android.releaseLinks.every(url => url === `${base}/tag/android-v1.0.1`));
+  assert.ok(android.releaseLinks.every(url => url === `${base}/tag/android-v1.0.2`));
   assert.equal(document.querySelector('[data-platform="android"]').attributes.id, 'android-download');
   assert.match(html, /Android 8\.0 或更新版本/);
   assert.match(html, /安卓当前提供单篇功能/);

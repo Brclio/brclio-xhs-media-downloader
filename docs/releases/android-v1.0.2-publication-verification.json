@@ -1,0 +1,130 @@
+{
+  "verifiedAt": "2026-09-29T14:14:23.224Z",
+  "repository": "Brclio/brclio-xhs-media-downloader",
+  "tag": "android-v1.0.2",
+  "sourceCommit": "b9051d542f90c0010515aef179ca2d850fb8b1df",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.2",
+  "publishedAt": "2026-09-29T13:54:47Z",
+  "draft": false,
+  "prerelease": false,
+  "workflow": {
+    "runId": 36578464286,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36578464286",
+    "conclusion": "success",
+    "sourceCommit": "b9051d542f90c0010515aef179ca2d850fb8b1df"
+  },
+  "package": {
+    "applicationId": "com.brclio.xhs",
+    "versionName": "1.0.2",
+    "versionCode": 10002,
+    "minSdk": 26,
+    "targetSdk": 35,
+    "learningActivityExported": false
+  },
+  "signature": {
+    "tool": "Android apksig 8.9.2",
+    "verified": true,
+    "v2": true,
+    "v3": false,
+    "certificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b"
+  },
+  "sourceProof": {
+    "file": "android-update.json",
+    "matchesReleaseTag": true,
+    "sourceDirty": false
+  },
+  "releaseAssets": [
+    {
+      "name": "Brclio-XHS-Android-1.0.2-release.apk",
+      "bytes": 3934494,
+      "sha256": "a1db01b7a6baa671b6df1fbfd0089b4c0721f1eadb63567b328a29989850150c",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.2/Brclio-XHS-Android-1.0.2-release.apk"
+    },
+    {
+      "name": "Brclio-XHS-Android-1.0.2-release.apk.sha256",
+      "bytes": 103,
+      "sha256": "45b73dce6e9bd112732817d9d5a3714b696e3f8e013cc0856d62d6e4b0af1027",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.2/Brclio-XHS-Android-1.0.2-release.apk.sha256"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 103,
+      "sha256": "45b73dce6e9bd112732817d9d5a3714b696e3f8e013cc0856d62d6e4b0af1027",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.2/SHA256SUMS.txt"
+    },
+    {
+      "name": "android-update.json",
+      "bytes": 545,
+      "sha256": "0776b936c1e26989303480e19252d87d9785bae1b4effa623b4c9b23decc9c20",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.2/android-update.json"
+    }
+  ],
+  "bundledPromotionAssets": [
+    {
+      "path": "assets/www/learn.html",
+      "bytes": 10041,
+      "sha256": "72824564b06cd13a662e042dca2381d6a5aa70b0a621a2e5f60778763d02c104",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/learn.css",
+      "bytes": 14275,
+      "sha256": "4d8b80fd27d347914d277d571937aa066c3126eda80181a483981bc52f04cba5",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/learn.js",
+      "bytes": 3180,
+      "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/aiyc.svg",
+      "bytes": 3913,
+      "sha256": "6c9919d43f082026aee9a4a57243f3d12b6ac94b38d68fc3653ef718c3362b50",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/favicon.svg",
+      "bytes": 370,
+      "sha256": "829b051b8ef0a80fa95d7f1909af52af9e4c32bad4ce82c70618a5c901d0719b",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/assets/learning/book-promo.png",
+      "bytes": 1951638,
+      "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/assets/support/wechat-personal-qr.png",
+      "bytes": 178625,
+      "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+      "matchesTaggedSource": true
+    }
+  ],
+  "clientEntryVerified": true,
+  "desktopLatestPreserved": "v1.8.18",
+  "validation": {
+    "nodeTests": 33,
+    "javaUnitTests": 20,
+    "javaFailures": 0,
+    "ciLint": {
+      "status": "passed",
+      "warnings": 5,
+      "errors": 0,
+      "warningTypes": [
+        "DataExtractionRules",
+        "UsableSpace",
+        "MonochromeLauncherIcon",
+        "SetTextI18n"
+      ]
+    },
+    "ciSignedBuild": "passed",
+    "independentApkSignature": "passed",
+    "bundledAssetByteComparison": "passed"
+  },
+  "limitations": [
+    "No new physical Android device installation or QR save interaction was performed for this publication verification."
+  ]
+}
