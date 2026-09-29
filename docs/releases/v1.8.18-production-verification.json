@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-29T15:16:41.563Z",
+  "sourceSha": "8428612b07778edf7322c98e8d53b0e4978d03ea",
+  "origin": "https://xhs.download.brclio.com",
+  "versions": {
+    "desktop": "1.8.18",
+    "android": "1.0.2"
+  },
+  "worker": {
+    "name": "brclio-xhs-downloader",
+    "versionId": "fdeab9f3-6b6c-4f4d-8840-34412a6b6717",
+    "url": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+    "health": {
+      "ok": true,
+      "platform": "cloudflare",
+      "version": "1.8.18",
+      "pythonBinding": true,
+      "deploymentId": "fdeab9f3-6b6c-4f4d-8840-34412a6b6717"
+    }
+  },
+  "pages": {
+    "project": "brclio-xhs-pages",
+    "deploymentId": "9e82d0ae-8406-4f96-9cfe-80443b7b3fb2",
+    "deploymentUrl": "https://9e82d0ae.brclio-xhs-pages.pages.dev",
+    "environment": "Production",
+    "branch": "main",
+    "sourcePrefix": "8428612"
+  },
+  "assets": [
+    {
+      "route": "/learn",
+      "status": 200,
+      "bytes": 10041,
+      "sha256": "72824564b06cd13a662e042dca2381d6a5aa70b0a621a2e5f60778763d02c104",
+      "matchesReleaseBuild": true
+    },
+    {
+      "route": "/learn.css",
+      "status": 200,
+      "bytes": 14275,
+      "sha256": "4d8b80fd27d347914d277d571937aa066c3126eda80181a483981bc52f04cba5",
+      "matchesReleaseBuild": true
+    },
+    {
+      "route": "/learn.js",
+      "status": 200,
+      "bytes": 3180,
+      "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78",
+      "matchesReleaseBuild": true
+    },
+    {
+      "route": "/assets/learning/book-promo.png",
+      "status": 200,
+      "bytes": 1951638,
+      "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd",
+      "matchesReleaseBuild": true
+    },
+    {
+      "route": "/assets/support/wechat-personal-qr.png",
+      "status": 200,
+      "bytes": 178625,
+      "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+      "matchesReleaseBuild": true
+    },
+    {
+      "route": "/download",
+      "status": 200,
+      "bytes": 22739,
+      "sha256": "e17213fc6beb31052fa0f17410b17fbbfcdb74a81d4916bc6d131d38bfac7abf",
+      "matchesReleaseBuild": true
+    }
+  ],
+  "browser": {
+    "result": "PASS",
+    "engine": "Electron 44.4.3 Chromium, real production HTTPS",
+    "viewportWidths": [
+      1440,
+      390
+    ],
+    "checks": [
+      "production learning page, images, responsive layout, QR dialog/Escape and exact PNG save",
+      "production home has learning navigation",
+      "production download page displays v1.8.18 and Android v1.0.2 with all six correct asset links"
+    ],
+    "qrDownloadSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+    "artifacts": "/private/tmp/brclio-learning-production.dwnGsM"
+  },
+  "downloads": {
+    "verifiedAgainstPublicGitHubReleaseMetadata": true,
+    "desktopPublishedAt": "2026-09-29T14:06:45Z",
+    "androidPublishedAt": "2026-09-29T13:54:47Z",
+    "links": [
+      {
+        "key": "mac-arm64",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.18/Brclio-XHS-1.8.18-mac-arm64.dmg",
+        "release": "v1.8.18",
+        "bytes": 141962485,
+        "sha256": "9b4c85b9b4e1c5c78c870da9f13ffad6f834b3a87c7442b0d61961a6d7bd960c"
+      },
+      {
+        "key": "mac-x64",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.18/Brclio-XHS-1.8.18-mac-x64.dmg",
+        "release": "v1.8.18",
+        "bytes": 147710911,
+        "sha256": "3f011778f8d1a2d2bbd10d67face8fac1c234d655f6f186f72403e4084fbf2f9"
+      },
+      {
+        "key": "windows-setup",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.18/Brclio-XHS-1.8.18-windows-x64-setup.exe",
+        "release": "v1.8.18",
+        "bytes": 126019744,
+        "sha256": "6ecaeef4869eb4cca17cd032b1a90bf8a977bfbc15e392ed4fe658fb7904f237"
+      },
+      {
+        "key": "windows-portable",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.18/Brclio-XHS-1.8.18-windows-x64-portable.exe",
+        "release": "v1.8.18",
+        "bytes": 125781234,
+        "sha256": "192a03dc2a17953d6310dd14f81b42fb85bc4137fbf94eab7c91271d06b9b186"
+      },
+      {
+        "key": "android",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.2/Brclio-XHS-Android-1.0.2-release.apk",
+        "release": "android-v1.0.2",
+        "bytes": 3934494,
+        "sha256": "a1db01b7a6baa671b6df1fbfd0089b4c0721f1eadb63567b328a29989850150c"
+      },
+      {
+        "key": "android-checksum",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.2/Brclio-XHS-Android-1.0.2-release.apk.sha256",
+        "release": "android-v1.0.2",
+        "bytes": 103,
+        "sha256": "45b73dce6e9bd112732817d9d5a3714b696e3f8e013cc0856d62d6e4b0af1027"
+      }
+    ]
+  },
+  "anonymousSmoke": {
+    "checkedAt": "2026-09-29T15:02:39.488Z",
+    "passed": 47,
+    "total": 47,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/feedback-board",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/feedback-script",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/feedback-style",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413
+      }
+    ]
+  },
+  "scope": "Cloudflare Worker and Pages deployed. Production static bytes, browser page/QR/navigation, published download metadata and anonymous API boundaries verified; installer execution and authenticated flows are outside this website report."
+}

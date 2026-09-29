@@ -1,0 +1,258 @@
+{
+  "version": "1.8.18",
+  "tag": "v1.8.18",
+  "sourceSha": "b9051d542f90c0010515aef179ca2d850fb8b1df",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.18",
+  "publishedAt": "2026-09-29T14:06:45Z",
+  "verifiedAt": "2026-09-29T14:31:57.692Z",
+  "assetCount": 11,
+  "builds": [
+    {
+      "version": "1.8.18",
+      "sourceSha": "b9051d542f90c0010515aef179ca2d850fb8b1df",
+      "sourceDirty": false,
+      "platform": "darwin",
+      "arch": "arm64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 59,
+      "bundledPythonVerified": true,
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "macSignatureContainers": [
+        "dmg",
+        "zip"
+      ],
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true,
+      "files": [
+        {
+          "name": "Brclio-XHS-1.8.18-mac-arm64.dmg",
+          "bytes": 141962485,
+          "sha256": "9b4c85b9b4e1c5c78c870da9f13ffad6f834b3a87c7442b0d61961a6d7bd960c"
+        },
+        {
+          "name": "Brclio-XHS-1.8.18-mac-arm64.zip",
+          "bytes": 142839539,
+          "sha256": "0bc257bd09161c6ab89d06a596204ff873a4fd8a3bda22b593e6b8ff3ea1f09f"
+        }
+      ]
+    },
+    {
+      "version": "1.8.18",
+      "sourceSha": "b9051d542f90c0010515aef179ca2d850fb8b1df",
+      "sourceDirty": false,
+      "platform": "darwin",
+      "arch": "x64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 59,
+      "bundledPythonVerified": true,
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "macSignatureContainers": [
+        "dmg",
+        "zip"
+      ],
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true,
+      "files": [
+        {
+          "name": "Brclio-XHS-1.8.18-mac-x64.dmg",
+          "bytes": 147710911,
+          "sha256": "3f011778f8d1a2d2bbd10d67face8fac1c234d655f6f186f72403e4084fbf2f9"
+        },
+        {
+          "name": "Brclio-XHS-1.8.18-mac-x64.zip",
+          "bytes": 148628256,
+          "sha256": "e8770425f4ed7b47f42ba498e585af91fd5571ee736a84e9144885c3a145668a"
+        }
+      ]
+    },
+    {
+      "version": "1.8.18",
+      "sourceSha": "b9051d542f90c0010515aef179ca2d850fb8b1df",
+      "sourceDirty": false,
+      "platform": "win32",
+      "arch": "x64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 59,
+      "bundledPythonVerified": true,
+      "files": [
+        {
+          "name": "Brclio-XHS-1.8.18-windows-x64-setup.exe",
+          "bytes": 126019744,
+          "sha256": "6ecaeef4869eb4cca17cd032b1a90bf8a977bfbc15e392ed4fe658fb7904f237"
+        },
+        {
+          "name": "Brclio-XHS-1.8.18-windows-x64-portable.exe",
+          "bytes": 125781234,
+          "sha256": "192a03dc2a17953d6310dd14f81b42fb85bc4137fbf94eab7c91271d06b9b186"
+        }
+      ]
+    }
+  ],
+  "updates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "1.8.17",
+      "asset": "Brclio-XHS-1.8.18-mac-arm64.dmg",
+      "bytes": 141962485
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "1.8.17",
+      "asset": "Brclio-XHS-1.8.18-mac-x64.dmg",
+      "bytes": 147710911
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "1.8.17",
+      "asset": "Brclio-XHS-1.8.18-windows-x64-setup.exe",
+      "bytes": 126019744
+    }
+  ],
+  "legacyAliases": [
+    {
+      "name": "XHS-Downloader-1.8.18-mac-arm64.dmg",
+      "sourceName": "Brclio-XHS-1.8.18-mac-arm64.dmg",
+      "bytes": 141962485,
+      "sha256": "9b4c85b9b4e1c5c78c870da9f13ffad6f834b3a87c7442b0d61961a6d7bd960c"
+    },
+    {
+      "name": "XHS-Downloader-1.8.18-mac-x64.dmg",
+      "sourceName": "Brclio-XHS-1.8.18-mac-x64.dmg",
+      "bytes": 147710911,
+      "sha256": "3f011778f8d1a2d2bbd10d67face8fac1c234d655f6f186f72403e4084fbf2f9"
+    },
+    {
+      "name": "XHS-Downloader-1.8.18-windows-x64-setup.exe",
+      "sourceName": "Brclio-XHS-1.8.18-windows-x64-setup.exe",
+      "bytes": 126019744,
+      "sha256": "6ecaeef4869eb4cca17cd032b1a90bf8a977bfbc15e392ed4fe658fb7904f237"
+    }
+  ],
+  "compatibilityAliasesVerified": true,
+  "remoteDigestsVerified": true,
+  "publicManifestsVerified": true,
+  "publicManifestAssets": [
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 915,
+      "sha256": "848c4ff9165ca7634a041a6dc04a2096390919a958a0f90e2d19a7fa99d31986",
+      "status": 200
+    },
+    {
+      "name": "build-evidence.json",
+      "bytes": 3553,
+      "sha256": "10ff86762dde6471c67ed200f18b4825d27a63ce32f481a6965d0d57dde640d1",
+      "status": 200
+    }
+  ],
+  "anonymousUpdaterVisible": true,
+  "latestTag": "v1.8.18",
+  "releaseNotesMatchSource": true,
+  "publicInstallerProbes": [
+    {
+      "name": "Brclio-XHS-1.8.18-mac-arm64.dmg",
+      "bytes": 141962485,
+      "sha256": "9b4c85b9b4e1c5c78c870da9f13ffad6f834b3a87c7442b0d61961a6d7bd960c",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 141962485
+    },
+    {
+      "name": "Brclio-XHS-1.8.18-mac-arm64.zip",
+      "bytes": 142839539,
+      "sha256": "0bc257bd09161c6ab89d06a596204ff873a4fd8a3bda22b593e6b8ff3ea1f09f",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 142839539
+    },
+    {
+      "name": "Brclio-XHS-1.8.18-mac-x64.dmg",
+      "bytes": 147710911,
+      "sha256": "3f011778f8d1a2d2bbd10d67face8fac1c234d655f6f186f72403e4084fbf2f9",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 147710911
+    },
+    {
+      "name": "Brclio-XHS-1.8.18-mac-x64.zip",
+      "bytes": 148628256,
+      "sha256": "e8770425f4ed7b47f42ba498e585af91fd5571ee736a84e9144885c3a145668a",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 148628256
+    },
+    {
+      "name": "Brclio-XHS-1.8.18-windows-x64-setup.exe",
+      "bytes": 126019744,
+      "sha256": "6ecaeef4869eb4cca17cd032b1a90bf8a977bfbc15e392ed4fe658fb7904f237",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 126019744
+    },
+    {
+      "name": "Brclio-XHS-1.8.18-windows-x64-portable.exe",
+      "bytes": 125781234,
+      "sha256": "192a03dc2a17953d6310dd14f81b42fb85bc4137fbf94eab7c91271d06b9b186",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 125781234
+    },
+    {
+      "name": "XHS-Downloader-1.8.18-mac-arm64.dmg",
+      "bytes": 141962485,
+      "sha256": "9b4c85b9b4e1c5c78c870da9f13ffad6f834b3a87c7442b0d61961a6d7bd960c",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 141962485
+    },
+    {
+      "name": "XHS-Downloader-1.8.18-mac-x64.dmg",
+      "bytes": 147710911,
+      "sha256": "3f011778f8d1a2d2bbd10d67face8fac1c234d655f6f186f72403e4084fbf2f9",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 147710911
+    },
+    {
+      "name": "XHS-Downloader-1.8.18-windows-x64-setup.exe",
+      "bytes": 126019744,
+      "sha256": "6ecaeef4869eb4cca17cd032b1a90bf8a977bfbc15e392ed4fe658fb7904f237",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 126019744
+    }
+  ],
+  "workflow": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36578464189",
+    "workflowSha": "b9051d542f90c0010515aef179ca2d850fb8b1df",
+    "event": "push",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "mac-intel",
+        "conclusion": "success"
+      },
+      {
+        "name": "windows-x64",
+        "conclusion": "success"
+      },
+      {
+        "name": "mac-arm64",
+        "conclusion": "success"
+      },
+      {
+        "name": "Publish verified installers",
+        "conclusion": "success"
+      }
+    ],
+    "nativeClipboardVerified": true
+  },
+  "verificationScope": "Downloaded and hashed public manifests; compared all nine installer GitHub SHA-256 digests and sizes with manifests and CI build evidence; anonymous HEAD verified public availability. Installer payload bytes were validated by successful native CI jobs, not downloaded again in this audit."
+}
