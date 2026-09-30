@@ -120,7 +120,8 @@ async function connect(url) {
 
 // Standard NSIS wizard controls, addressed by Win32 IDs, independent of language.
 // A manual setup is cancelled BEFORE any install starts. A completed update's
-// finish window is also closed here; no taskkill is used in successful checks.
+// finish window requires its Finish button: NSIS ignores WM_CLOSE when Cancel
+// is disabled. No taskkill is used in successful checks.
 async function closeWizard(pid, cancel) {
   await ps(`Add-Type @'
 using System;
@@ -129,14 +130,38 @@ public static class VerifyWindow {
   private delegate bool EnumCallback(IntPtr window, IntPtr unused);
   [DllImport("user32.dll")] private static extern bool EnumWindows(EnumCallback callback, IntPtr unused);
   [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+  [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr window);
+  [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
   [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr window, int id);
-  [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr w, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr window, uint message, IntPtr w, IntPtr l);
+  public static bool ClickAction(uint target, bool cancel) {
+    bool clicked = false;
+    EnumWindows(delegate(IntPtr window, IntPtr unused) {
+      uint pid; GetWindowThreadProcessId(window, out pid);
+      if (pid == target && IsWindowVisible(window)) {
+        IntPtr button = GetDlgItem(window, cancel ? 2 : 1);
+        IntPtr back = GetDlgItem(window, 3), cancelButton = GetDlgItem(window, 2);
+        // The Finish state has disabled Back/Cancel and an enabled button 1.
+        // This prevents a premature call from advancing an installation page.
+        bool finished = back != IntPtr.Zero && cancelButton != IntPtr.Zero && !IsWindowEnabled(back) && !IsWindowEnabled(cancelButton);
+        if (button != IntPtr.Zero && IsWindowVisible(button) && IsWindowEnabled(button) && (cancel || finished)) {
+          // Post the button's BN_CLICKED command: it works without foreground
+          // focus and lets this controller answer a modal cancellation prompt.
+          clicked = PostMessage(window, 0x0111, new IntPtr(cancel ? 2 : 1), button);
+          return !clicked;
+        }
+      }
+      return true;
+    }, IntPtr.Zero);
+    return clicked;
+  }
   public static void ConfirmCancel(uint target) {
     EnumWindows(delegate(IntPtr window, IntPtr unused) {
       uint pid; GetWindowThreadProcessId(window, out pid);
       if (pid == target) {
         IntPtr yes = GetDlgItem(window, 6);
-        if (yes != IntPtr.Zero) SendMessage(yes, 0x00F5, IntPtr.Zero, IntPtr.Zero);
+        if (yes != IntPtr.Zero && IsWindowVisible(yes) && IsWindowEnabled(yes))
+          PostMessage(window, 0x0111, new IntPtr(6), yes);
       }
       return true;
     }, IntPtr.Zero);
@@ -144,7 +169,11 @@ public static class VerifyWindow {
 }
 '@;
 $p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue;
-if ($p) { [void]$p.CloseMainWindow() }
+if ($p) {
+  if (-not [VerifyWindow]::ClickAction([uint32]$env:VERIFY_PID, ($env:VERIFY_CANCEL -eq '1'))) {
+    throw "Expected enabled Cancel or Finish action is unavailable"
+  }
+}
 if ($env:VERIFY_CANCEL -eq '1') {
   $deadline = (Get-Date).AddSeconds(8);
   do {
