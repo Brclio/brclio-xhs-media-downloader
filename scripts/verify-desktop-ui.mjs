@@ -250,6 +250,14 @@ app.whenReady().then(async () => {
     const focus = await evaluate(`(() => {
       const button = document.querySelector('#desktop-update-install');
       return { active: document.activeElement?.id || document.activeElement?.tagName,
+        viewport: { width: innerWidth, height: innerHeight },
+        dialogs: Array.from(document.querySelectorAll('dialog[open]'), dialog => ({
+          id: dialog.id, bounds: dialog.getBoundingClientRect().toJSON(),
+          clientWidth: dialog.clientWidth, scrollWidth: dialog.scrollWidth,
+          actions: Array.from(dialog.querySelectorAll('button'), button => ({
+            id: button.id, bounds: button.getBoundingClientRect().toJSON()
+          }))
+        })),
         buttonHidden: button?.hidden, buttonDisabled: button?.disabled,
         buttonRects: button?.getClientRects().length,
         confirmationOpen: document.querySelector('#desktop-install-confirmation')?.open,
@@ -263,6 +271,13 @@ app.whenReady().then(async () => {
   // cancel becomes non-cancelable and the browser bypasses dialog.close itself.
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`, true);
   const paint = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+  const resizeViewport = async (width, height) => {
+    // Native resize and renderer viewport updates are asynchronous. In
+    // particular, a height-only change can still paint the previous viewport.
+    win.setContentSize(width, height);
+    await check(`innerWidth === ${width} && innerHeight === ${height}`, `viewport reaches ${width}×${height}`);
+    await paint();
+  };
   const captureFrame = async () => {
     // Chromium may still be rasterizing an earlier frame after DOM assertions.
     // Let the offscreen compositor publish the changed layout before capture.
@@ -383,7 +398,7 @@ app.whenReady().then(async () => {
   await evaluate(`for (const toast of document.querySelectorAll('#toast, #alert-toast')) toast.classList.remove('toast-visible')`);
   const failureScreenshots = {};
   for (const [name, width, height] of [['desktop', 1180, 980], ['narrow', 390, 760]]) {
-    win.setSize(width, height);
+    await resizeViewport(width, height);
     await paint();
     await evaluate(`document.querySelector('#profile-items-details').scrollIntoView({ block: 'end' })`);
     assert.equal(await evaluate(`(() => {
@@ -394,7 +409,7 @@ app.whenReady().then(async () => {
     writeFileSync(file, await captureFrame());
     failureScreenshots[name] = file;
   }
-  win.setSize(1180, 980);
+  await resizeViewport(1180, 980);
   await paint();
   await click('#profile-items button[data-retry-id]');
   await check(`document.querySelector('#profile-status').textContent === '正在下载'`, 'single retry enters active queue');
@@ -553,21 +568,27 @@ app.whenReady().then(async () => {
   assert.match(await evaluate(`document.querySelector('#desktop-install-replacement-description').textContent`), /成功启动后.*清理旧客户端/);
   assert.equal(acceptedInstallations, 0, 'opening confirmation does not approve installation');
   const installDialogFits = `(() => { const d = document.querySelector('#desktop-install-confirmation'), a = document.querySelector('#desktop-install-confirm'), b = d.getBoundingClientRect(), f = a.getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight && b.height <= 600 && d.scrollWidth <= d.clientWidth && f.bottom <= b.bottom && b.bottom - f.bottom <= 32 && f.top >= b.top; })()`;
-  assert.equal(await evaluate(installDialogFits), true, 'installation summary and actions fit on desktop');
+  const assertInstallationLayout = async description => {
+    const geometry = await evaluate(`(() => {
+      const dialog = document.querySelector('#desktop-install-confirmation');
+      return { fits: ${installDialogFits}, viewport: { width: innerWidth, height: innerHeight },
+        dialog: dialog.getBoundingClientRect().toJSON(), clientWidth: dialog.clientWidth, scrollWidth: dialog.scrollWidth,
+        action: document.querySelector('#desktop-install-confirm').getBoundingClientRect().toJSON(),
+        detailsOpen: document.querySelector('#desktop-install-details').open };
+    })()`);
+    assert.equal(geometry.fits, true, `${description}; geometry: ${JSON.stringify(geometry)}`);
+  };
+  await assertInstallationLayout('installation summary and actions fit on desktop');
   const installDialogScreenshot = path.join(temporary, 'desktop-install-confirmation.png');
   writeFileSync(installDialogScreenshot, await captureFrame());
-  win.setSize(390, 760);
-  await check(`innerWidth === 390`, 'installation dialog narrow viewport');
-  await paint();
-  assert.equal(await evaluate(installDialogFits), true, 'installation dialog fits at 390px');
+  await resizeViewport(390, 760);
+  await assertInstallationLayout('installation dialog fits at 390px');
   const installDialogNarrowScreenshot = path.join(temporary, 'desktop-install-confirmation-narrow.png');
   writeFileSync(installDialogNarrowScreenshot, await captureFrame());
   await click('#desktop-install-details summary');
-  win.setSize(390, 480);
-  await paint();
-  assert.equal(await evaluate(installDialogFits), true, 'expanded platform details scroll without hiding approval actions on short screens');
-  win.setSize(1180, 980);
-  await paint();
+  await resizeViewport(390, 480);
+  await assertInstallationLayout('expanded platform details scroll without hiding approval actions on short screens');
+  await resizeViewport(1180, 980);
   await click('#desktop-install-later');
   await check(`!document.querySelector('#desktop-install-confirmation').open && document.querySelector('#desktop-update-dialog').open && document.activeElement.id === 'desktop-update-dialog-action'`, 'later returns to the original version dialog and restores focus');
   await check(`!document.querySelector('#desktop-update-dialog-action').disabled`, 'cancelled installation confirmation keeps the modal usable');
@@ -785,7 +806,7 @@ app.whenReady().then(async () => {
     // a development Mac configured to use overlay scrollbars.
     await win.webContents.insertCSS('.desktop-page { overflow-y: scroll !important; } .desktop-page::-webkit-scrollbar { width: 16px; }');
   }
-  win.setContentSize(390, 844);
+  await resizeViewport(390, 844);
   // clientWidth excludes a classic vertical scrollbar; innerWidth describes
   // the requested viewport consistently on macOS and Windows.
   await check(`window.innerWidth === 390`, 'narrow viewport');
@@ -830,7 +851,7 @@ app.whenReady().then(async () => {
   publishUpdate({ ...available(), status: 'up-to-date', latestVersion: '1.6.0' });
   await check(`!document.querySelector('#desktop-update-dialog').open`, 'a newer check with no update closes the obsolete modal');
   // A prior install result must stay passive with and without a version dialog.
-  win.setContentSize(1180, 980);
+  await resizeViewport(1180, 980);
   publishUpdate({ ...available(), status: 'downloading', download: { receivedBytes: 46, totalBytes: 100, canResume: false } });
   await click('#profile-tab');
   await evaluate(`document.querySelector('#profile-url').focus()`);
@@ -842,7 +863,7 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 46);
   const historyScreenshot = path.join(temporary, 'desktop-update-history.png');
   writeFileSync(historyScreenshot, await captureFrame());
-  win.setContentSize(390, 844);
+  await resizeViewport(390, 844);
   await check(`window.innerWidth === 390`, 'history notice narrow viewport');
   await evaluate(`document.querySelector('#desktop-update-history').scrollIntoView({ block: 'center' })`);
   assert.equal(await evaluate(`document.querySelector('#desktop-about-page').scrollWidth <= document.querySelector('#desktop-about-page').clientWidth`), true, 'history metadata fits at 390px');
