@@ -171,9 +171,13 @@ final class UpdateManager {
             boolean allowed = false;
             try { allowed = canInstallBuild && activity.getPackageManager().canRequestPackageInstalls(); }
             catch (RuntimeException ignored) { }
+            boolean downloadReady = downloaded != null && available != null
+                    && available.sameAsset(downloaded.release) && downloaded.file.isFile()
+                    && downloaded.file.length() == downloaded.release.size;
             JSONObject state = object("currentVersion", BuildConfig.VERSION_NAME,
                     "currentVersionCode", BuildConfig.VERSION_CODE, "status", status,
                     "canInstallBuild", canInstallBuild, "debug", BuildConfig.DEBUG,
+                    "downloadReady", downloadReady,
                     "installAllowed", allowed, "bytes", bytes, "total", total,
                     "update", available == null ? JSONObject.NULL : available.json(downloaded != null
                             && available.sameAsset(downloaded.release) ? downloaded.versionCode : null));

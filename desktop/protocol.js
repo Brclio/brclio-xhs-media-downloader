@@ -7,7 +7,7 @@ import videoHandler from '../api/video.js';
 
 export const APP_URL = 'xhs-app://local';
 const STATIC_FILES = new Set([
-  'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css', 'changelog.js',
+  'index.html', 'changelog.html', 'app.js', 'style.css', 'site-header.css', 'changelog.css', 'changelog.js',
   'download.html', 'download.css', 'download.js',
   'ios-shortcut.css', 'ios-shortcut.js',
   'product.html', 'product.css', 'product.js',

@@ -15,7 +15,7 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
       await writeFile(path.join(target, 'index.html'), 'public');
     } else {
       await mkdir(path.dirname(target), { recursive: true });
-      await writeFile(target, ['index.html', 'download.html'].includes(name)
+      await writeFile(target, ['index.html', 'download.html', 'learn.html'].includes(name)
         ? await readFile(new URL(`../${name}`, import.meta.url), 'utf8')
         : 'public');
     }
@@ -58,6 +58,25 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
     assert.match(desktop, /icloud\.com\/shortcuts\//, `${name} retains the client shortcut URL`);
   }
   assert.equal(await readFile(path.join(out, 'app.js'), 'utf8'), 'public');
+  const learningSource = await readFile(path.join(root, 'learn.html'), 'utf8');
+  const learningWeb = await readFile(path.join(out, 'learn.html'), 'utf8');
+  const homepage = await readFile(path.join(out, 'index.html'), 'utf8');
+  const header = html => html.match(/<header\b[^>]*>[\s\S]*?<\/header>/)?.[0];
+  const links = html => [...header(html).matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)]
+    .map(([, href, label]) => ({ href, label }));
+  assert.deepEqual(links(learningWeb), links(homepage).map(link => ({ ...link, href: link.href === '#support' ? '/#support' : link.href })), 'public learning navigation follows the homepage');
+  assert.match(learningWeb, /class="learning-web"/);
+  assert.match(header(learningWeb), /class="nav-link is-current" href="\/learn\.html" aria-current="page"/);
+  assert.equal([...header(learningWeb).matchAll(/aria-current="page"/g)].length, 1);
+  assert.ok(learningWeb.indexOf('href="./site-header.css"') > learningWeb.indexOf('href="./learn.css"'), 'shared navigation styles load after learning styles');
+  assert.ok(files.includes('site-header.css'));
+  for (const font of homepage.match(/<link\b[^>]*href="https:\/\/fonts\.(?:googleapis|gstatic)\.com\/[^>]*>/g) || []) {
+    assert.ok(learningWeb.includes(font), 'public learning page uses the same homepage font resources');
+  }
+  assert.match(learningSource, /class="site-header"/);
+  assert.match(learningSource, /id="back-to-tool"/);
+  assert.doesNotMatch(learningSource, /learning-web|site-header\.css|class="app-header"/, 'native learning navigation remains in the source');
+  assert.equal(await readFile(path.join(root, 'learn.html'), 'utf8'), learningSource, 'public build never overwrites native source');
 });
 
 test('desktop package excludes account backend and admin source', async () => {

@@ -6,6 +6,7 @@ import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
 import { startMacInstallProgress } from './mac-install-progress.js';
+import { readMacArchitectures } from './mac-architecture.js';
 
 const execute = promisify(execFile);
 const nativeFs = process.versions.electron ? createRequire(import.meta.url)('original-fs') : nodeFs;
@@ -26,6 +27,7 @@ const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const path = require('node:path');
 const run = promisify(execFile);
+const readMacArchitectures = ${readMacArchitectures.toString()};
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 function guiEnvironment() {
   // This helper must stay in Node mode, but LaunchServices inherits open's
@@ -69,7 +71,7 @@ async function verify(bundle) {
     || ['.', '..'].includes(parsed.CFBundleExecutable)) throw new Error('Application identity mismatch');
   const executable = path.join(bundle, 'Contents/MacOS', parsed.CFBundleExecutable);
   if (!(await fs.lstat(executable)).isFile() || !(await fs.realpath(executable)).startsWith((await fs.realpath(bundle)) + path.sep)) throw new Error('Invalid executable path');
-  const architectures = (await run('/usr/bin/lipo', ['-archs', executable], { timeout: 30000 })).stdout.trim().split(/\s+/);
+  const architectures = await readMacArchitectures(executable, fs);
   if (!architectures.includes(architecture)) throw new Error('Application architecture mismatch');
   await run('/usr/bin/codesign', ['--verify', '--deep', '--strict', '--verbose=2', bundle], { timeout: 120000 });
   return parsed.CFBundleExecutable;
@@ -280,7 +282,7 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
     try {
       const executable = path.join(bundle, 'Contents/MacOS', metadata.CFBundleExecutable);
       if (!(await lstat(executable)).isFile() || !contained(await realpath(bundle), await realpath(executable))) throw new Error('Executable must be inside the app bundle');
-      architectures = (await run('/usr/bin/lipo', ['-archs', executable])).stdout.trim().split(/\s+/);
+      architectures = await readMacArchitectures(executable, nativeFs.promises);
     }
     catch (cause) { fail('MAC_UPDATE_ARCH', '无法确认应用处理器架构，已停止安装。', cause); }
     if (!architectures.includes(arch)) fail('MAC_UPDATE_ARCH', '此安装包不支持当前处理器，请下载对应版本。');

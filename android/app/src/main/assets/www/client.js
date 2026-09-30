@@ -111,7 +111,9 @@ function renderUpdater() {
   const update = updater.update;
   const verifying = updater.status === 'verifying';
   const downloading = downloadingUpdate || updater.status === 'downloading' || verifying;
-  const downloaded = ['downloaded', 'permission_required', 'installer_opened'].includes(updater.status);
+  const downloaded = updater.downloadReady === undefined
+    ? ['downloaded', 'permission_required', 'installer_opened'].includes(updater.status)
+    : updater.downloadReady === true;
   const mayInstall = updater.canInstallBuild !== false;
   $('update-current').textContent = updater.currentVersion || $('version').textContent;
   $('update-banner').hidden = !update;
@@ -123,7 +125,7 @@ function renderUpdater() {
   $('update-notes').textContent = update?.notes || '';
   $('download-update').hidden = !update || downloaded || downloading;
   $('download-update').disabled = !mayInstall || checkingUpdate;
-  $('install-update').hidden = !downloaded;
+  $('install-update').hidden = !downloaded || downloading || checkingUpdate || updater.status === 'checking';
   $('install-update').disabled = busy || installingUpdate || !mayInstall;
   $('cancel-update').hidden = !downloading;
   $('cancel-update').disabled = false;

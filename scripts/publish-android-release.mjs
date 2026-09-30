@@ -17,7 +17,7 @@ export function androidVersion(tag) {
   return version;
 }
 
-export function validateReleaseProof(proof, { tag, sourceCommit, certificateSha256 }) {
+export function validateReleaseProof(proof, { tag, sourceCommit, certificateSha256, requireEmulatorUpgrade = true }) {
   const version = androidVersion(tag);
   assert.match(sourceCommit, /^[a-f\d]{40}$/);
   assert.match(certificateSha256, /^[a-f\d]{64}$/);
@@ -33,6 +33,25 @@ export function validateReleaseProof(proof, { tag, sourceCommit, certificateSha2
   assert.equal(proof.apk?.name, `Brclio-XHS-Android-${version}-release.apk`);
   assert.match(proof.apk.sha256, /^[a-f\d]{64}$/);
   assert.ok(Number.isSafeInteger(proof.apk.bytes) && proof.apk.bytes > 0);
+  const [major, minor, patch] = version.split('.').map(Number);
+  if (requireEmulatorUpgrade && (major > 1 || (major === 1 && (minor > 0 || patch >= 3)))) {
+    const check = proof.emulatorUpgrade;
+    assert.ok(check, 'Android 1.0.3+ requires the successful emulator upgrade gate');
+    assert.equal(check.method, 'adb install -r');
+    assert.equal(check.sourceCommit, sourceCommit, 'Emulator acceptance source mismatch');
+    assert.equal(check.apkSha256, proof.apk.sha256, 'Emulator acceptance APK mismatch');
+    assert.equal(check.targetVersion, version);
+    assert.equal(check.targetVersionCode, proof.versionCode);
+    assert.ok(Number.isSafeInteger(check.baselineVersionCode) && check.baselineVersionCode > 0
+      && check.baselineVersionCode < proof.versionCode, 'Emulator must upgrade an older version');
+    assert.ok(Number.isSafeInteger(check.apiLevel) && check.apiLevel >= proof.minSdk);
+    assert.ok(Number.isFinite(Date.parse(check.verifiedAt)), 'Missing emulator verification time');
+    for (const key of ['signaturesVerified', 'oldAndNewLaunchVerified', 'uidPreserved',
+      'firstInstallTimePreserved', 'userSettingPreserved', 'updateCheckUiVerified']) {
+      assert.equal(check[key], true, `Emulator upgrade did not verify ${key}`);
+    }
+    assert.equal(check.inAppInstallerConfirmationTested, false, 'ADB replacement is not system-installer confirmation testing');
+  }
   return version;
 }
 

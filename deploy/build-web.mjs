@@ -5,7 +5,7 @@ import path from 'node:path';
 // Only this allowlist becomes public static content. Vercel builds /api
 // functions separately and traces their server-side imports.
 export const PUBLIC_FILES = [
-  'index.html', 'changelog.html', 'app.js', 'style.css', 'changelog.css', 'changelog.js',
+  'index.html', 'changelog.html', 'app.js', 'style.css', 'site-header.css', 'changelog.css', 'changelog.js',
   'download.html', 'download.css', 'download.js',
   'feedback.html', 'feedback.css', 'feedback.js',
   'product.html', 'product.css', 'product.js',
@@ -14,6 +14,28 @@ export const PUBLIC_FILES = [
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css',
   'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'assets', 'admin'
 ];
+
+function learningWebNavigation(html, homepage) {
+  const header = homepage.match(/<header\b[^>]*class="app-header"[^>]*>[\s\S]*?<\/header>/)?.[0];
+  if (!header) throw new Error('The learning page requires the homepage navigation');
+  const navigation = header.replace(/<a\b[^>]*>/g, tag => {
+    const selected = /href="\/learn\.html"/.test(tag);
+    let link = tag.replace(/\saria-current="[^"]*"/g, '').replace(/class="([^"]*)"/, (_, value) => {
+      const classes = value.split(/\s+/).filter(name => name && name !== 'is-current');
+      if (selected) classes.push('is-current');
+      return `class="${classes.join(' ')}"`;
+    });
+    if (selected) link = link.replace(/>$/, ' aria-current="page">');
+    return link.replace('href="#support"', 'href="/#support"');
+  });
+  const fonts = [...homepage.matchAll(/<link\b[^>]*>/g)]
+    .map(match => match[0]).filter(link => /href="https:\/\/fonts\.(?:googleapis|gstatic)\.com\//.test(link));
+  return html.replace(/<header\b[^>]*>[\s\S]*?<\/header>/, navigation)
+    .replace(/<body\b([^>]*)>/, (_, attributes) => attributes.includes('class="')
+      ? `<body${attributes.replace(/class="([^"]*)"/, 'class="$1 learning-web"')}>`
+      : `<body${attributes} class="learning-web">`)
+    .replace('</head>', `${fonts.join('\n')}\n  <link rel="stylesheet" href="./site-header.css">\n</head>`);
+}
 
 export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.url))) {
   const output = path.join(root, 'dist-web');
@@ -25,9 +47,14 @@ export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.u
     if (name.endsWith('.html')) {
       // Electron packages the original pages. Public deployments omit client-only
       // benefits entirely, including their links and supporting resource tags.
-      const html = (await readFile(path.join(root, name), 'utf8'))
+      let html = (await readFile(path.join(root, name), 'utf8'))
         .replace(/^[ \t]*<!-- desktop-only:start -->[\s\S]*?<!-- desktop-only:end -->\r?\n?/gm, '');
       if (html.includes('<!-- desktop-only:')) throw new Error(`Unmatched desktop-only block in ${name}`);
+      // Native clients retain their compact local navigation. Only the public
+      // learning page receives the same menu and fonts as the downloader home.
+      if (name === 'learn.html' && /<header\b/.test(html)) {
+        html = learningWebNavigation(html, await readFile(path.join(root, 'index.html'), 'utf8'));
+      }
       await writeFile(destination, html);
     } else {
       await cp(path.join(root, name), destination, { recursive: true, dereference: false });

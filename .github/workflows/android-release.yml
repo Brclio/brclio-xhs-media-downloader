@@ -6,9 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Existing Android tag to build and publish (for example android-v1.0.0)
+        description: Android tag matching the package version (must exist unless build_only is enabled)
         required: true
         type: string
+      build_only:
+        description: Verify this branch without publishing or requiring an existing release tag
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -28,7 +33,7 @@ jobs:
         run: '[[ "$RELEASE_TAG" =~ ^android-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]'
       - uses: actions/checkout@v4
         with:
-          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
+          ref: ${{ inputs.build_only && github.ref || format('refs/tags/{0}', inputs.release_tag || github.ref_name) }}
           fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
@@ -71,10 +76,10 @@ jobs:
           ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
           ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
           ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
-      - name: Upload verified release artifacts
+      - name: Upload signed build for emulator acceptance
         uses: actions/upload-artifact@v4
         with:
-          name: Android-release-${{ github.run_id }}-${{ github.run_attempt }}
+          name: Android-signed-build-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             dist-android/*-release.apk
             dist-android/*-release.apk.sha256
@@ -96,8 +101,77 @@ jobs:
         if: always()
         run: node -e "require('node:fs').rmSync(require('node:path').join(process.env.RUNNER_TEMP, 'brclio-android-release.keystore'), { force:true })"
 
-  publish:
+  upgrade-emulator:
     needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.build_only && github.ref || format('refs/tags/{0}', inputs.release_tag || github.ref_name) }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install APK signature verifier
+        run: sdkmanager 'build-tools;35.0.0'
+      - uses: actions/download-artifact@v4
+        with:
+          name: Android-signed-build-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist-android
+      - name: Enable emulator KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Upgrade the published APK and preserve its user setting
+        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: node scripts/verify-android-upgrade.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ANDROID_RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+          ANDROID_UPGRADE_BASELINE_TAG: android-v1.0.2
+          ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+      - name: Upload emulator-verified release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            dist-android/*-release.apk
+            dist-android/*-release.apk.sha256
+            dist-android/SHA256SUMS.txt
+            dist-android/android-update.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload emulator upgrade evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-upgrade-emulator-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            dist-android/emulator-upgrade/*.json
+            dist-android/emulator-upgrade/*.xml
+            dist-android/emulator-upgrade/*.png
+            dist-android/emulator-upgrade/*.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  publish:
+    needs: [build, upgrade-emulator]
+    if: ${{ !inputs.build_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -105,7 +179,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
+          ref: ${{ inputs.build_only && github.ref || format('refs/tags/{0}', inputs.release_tag || github.ref_name) }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:

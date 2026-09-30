@@ -21,7 +21,11 @@ async function fixture(t, overrides = {}) {
   async function bundle(directory, meta) {
     await mkdir(path.join(directory, 'Contents/MacOS'), { recursive: true });
     await writeFile(path.join(directory, 'Contents/Info.plist'), JSON.stringify(meta));
-    await writeFile(path.join(directory, 'Contents/MacOS/fixture'), 'fixture');
+    const executable = Buffer.alloc(32);
+    executable.writeUInt32LE(0xfeedfacf, 0);
+    executable.writeUInt32LE(overrides.arch === 'x86_64' ? 0x01000007 : 0x0100000c, 4);
+    executable.writeUInt32LE(2, 12);
+    await writeFile(path.join(directory, 'Contents/MacOS/fixture'), executable);
   }
   await bundle(current, { ...metadata('1.7.1'), ...overrides.current });
   await bundle(source, { ...metadata('1.8.0'), ...overrides.target });
@@ -45,7 +49,6 @@ async function fixture(t, overrides = {}) {
       return { stdout: JSON.stringify({ 'system-entities': [{ 'mount-point': mount, 'dev-entry': '/dev/fixture' }] }) };
     }
     if (command.endsWith('/hdiutil')) return { stdout: '' };
-    if (command.endsWith('/lipo')) return { stdout: overrides.arch || 'arm64 x86_64' };
     if (command.endsWith('/codesign')) {
       if (overrides.signatureFailure === 'source' || (overrides.signatureFailure === 'staged' && args.at(-1).endsWith('next.app'))) throw new Error('code has no resources but signature indicates they must be present');
       return { stdout: '' };
@@ -72,6 +75,7 @@ test('preparation leaves current app untouched, verifies source and staged copy,
   assert.ok(helper.includes('process.argv.slice(2)'));
   assert.equal(helper.match(/run\('\/usr\/bin\/open', \['-n', current\]/g)?.length, 2, 'replacement and rollback explicitly start a new app instance while the Electron helper still lives');
   assert.ok(!helper.includes(f.current), 'paths are not interpolated into helper source');
+  assert.ok(!helper.includes('/usr/bin/lipo'), 'detached replacement must not need Xcode tools');
   assert.ok(!/sudo|spctl|xattr.*(?:-d|-c)/.test(helper), 'does not disable platform security');
   await prepared.dispose();
   assert.equal(f.progressStates.at(-1), 'closed', 'cancelled preparation closes its progress window');

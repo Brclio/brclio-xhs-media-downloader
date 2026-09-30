@@ -94,6 +94,12 @@ app.whenReady().then(async () => {
     win.setContentSize(1440, 1000);
     await win.loadURL(`${origin}/learn.html`);
     assert.equal(await evaluate('document.title'), '书籍与编程私教 · Brclio');
+    if (surface === 'web') {
+      assert.equal(await evaluate(`document.querySelectorAll('.app-header').length === 1 && document.querySelector('.app-header [aria-current="page"]').getAttribute('href') === '/learn.html'`), true, 'public learning page selects its item in the homepage menu');
+      assert.equal(await evaluate(`document.querySelector('.app-header a[href="/#support"]') !== null`), true, 'support returns to the downloader support section');
+    } else {
+      assert.equal(await evaluate(`document.querySelector('.site-header #back-to-tool') !== null && document.querySelector('.app-header') === null`), true, 'native learning page retains its compact navigation');
+    }
     await evaluate(`document.querySelector('#contact').scrollIntoView({ block: 'start', behavior: 'instant' })`);
     await waitFor(async () => (await snapshot()).images.every(item => item.loaded), `${surface}: images loaded`);
     assert.ok((await snapshot()).images.length >= 2, `${surface}: book and QR images exist`);
@@ -161,7 +167,7 @@ app.whenReady().then(async () => {
     checks.push(`${surface}: consultation anchor, explicit dialog close, QR save exact bytes`);
 
     const returned = new Promise(resolve => win.webContents.once('did-finish-load', resolve));
-    await click('#back-to-tool');
+    await click(surface === 'web' ? '.app-header .app-navigation a[href="/"]' : '#back-to-tool');
     await returned;
     await waitFor(() => ['/index.html', '/'].includes(new URL(win.webContents.getURL()).pathname), `${surface}: return to tool`);
     assert.deepEqual(failedRequests, [], `${surface}: no failed navigation`);

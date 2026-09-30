@@ -66,7 +66,8 @@ test('Pages build uses the public allowlist, removes stale files and includes on
       if (['assets', 'admin'].includes(name)) {
         await mkdir(path.join(root, name));
         await writeFile(path.join(root, name, 'public.txt'), 'public');
-      } else await writeFile(path.join(root, name), 'public');
+      } else await writeFile(path.join(root, name), ['index.html', 'learn.html'].includes(name)
+        ? await readFile(new URL(`../${name}`, import.meta.url), 'utf8') : 'public');
     }
     await mkdir(path.join(root, 'assets/downloads'), { recursive: true });
     await writeFile(path.join(root, 'assets/downloads/hero.webp'), 'public-image');
@@ -84,6 +85,8 @@ test('Pages build uses the public allowlist, removes stale files and includes on
     for (const name of ['download.html', 'download.css', 'download.js']) assert.ok(entries.includes(name));
     for (const name of ['product.html', 'product.css', 'product.js']) assert.ok(entries.includes(name));
     for (const name of ['feedback.html', 'feedback.css', 'feedback.js']) assert.ok(entries.includes(name));
+    assert.ok(entries.includes('site-header.css'));
+    assert.match(await readFile(path.join(output, 'learn.html'), 'utf8'), /class="app-header"/);
     assert.equal(await readFile(path.join(output, 'assets/downloads/hero.webp'), 'utf8'), 'public-image');
     for (const forbidden of ['.env', 'wrangler.jsonc', 'stale-secret.txt', 'api', 'server', 'desktop']) assert.ok(!entries.includes(forbidden));
     assert.equal(await readFile(path.join(output, '_worker.js'), 'utf8'), await readFile(new URL('../cloudflare/pages/_worker.js', import.meta.url), 'utf8'));

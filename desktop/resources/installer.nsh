@@ -39,6 +39,21 @@
   ${EndIf}
 !macroend
 
+; The assisted wizard normally appends APP_FILENAME to a custom destination.
+; During --updated, INSTDIR already comes from the registered installation.
+; Appending again would move silent /D installs into an unexpected subfolder.
+!macro customPageAfterChangeDir
+  !ifdef allowToChangeInstallationDirectory
+    !undef MUI_PAGE_CUSTOMFUNCTION_PRE
+    !define MUI_PAGE_CUSTOMFUNCTION_PRE BrclioInstFilesPre
+    Function BrclioInstFilesPre
+      ${IfNot} ${isUpdated}
+        Call instFilesPre
+      ${EndIf}
+    FunctionEnd
+  !endif
+!macroend
+
 ; The finish page can also be shown after an aborted install. Record success
 ; only after NSIS has installed files, registration and shortcuts completely.
 !macro customInstall

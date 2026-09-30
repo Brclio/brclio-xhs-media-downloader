@@ -94,6 +94,12 @@ jobs:
           fi
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
+      - name: Verify real Windows installed and portable upgrades from published v1.8.17
+        if: runner.os == 'Windows'
+        timeout-minutes: 12
+        run: node scripts/verify-packaged-windows-update.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Exercise real Electron main process, bridge, and both download engines
         run: npm run desktop:verify
       - name: Verify native image clipboard and multi-file paste

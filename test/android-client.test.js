@@ -453,6 +453,28 @@ test('Android update cancellation and retry do not alter the current parsed note
   assert.equal(ui.element('install-update').hidden, true);
 });
 
+test('Android retains a verified cached installer after recheck or installer-launch failure and allows retry', async t => {
+  const ui = await clientFixture(t);
+  await ui.respond(ui.next('checkUpdate'), { ...newAndroidRelease(), status: 'downloaded', downloadReady: true });
+  assert.equal(ui.element('install-update').hidden, false);
+  ui.click('check-update');
+  ui.update({ status: 'checking', downloadReady: true });
+  assert.equal(ui.element('install-update').hidden, true, 'Do not offer installation during another update task');
+  ui.update({ status: 'error', downloadReady: true, error: '网络不可达' });
+  await ui.respond(ui.next('checkUpdate'), {}, '网络不可达');
+  assert.equal(ui.element('install-update').hidden, false, 'A failed metadata request must not hide the verified APK');
+  assert.equal(ui.element('download-update').hidden, true);
+  ui.click('install-update');
+  ui.update({ status: 'error', downloadReady: true, error: '系统安装器暂不可用' });
+  await ui.respond(ui.next('installUpdate'), {}, '系统安装器暂不可用');
+  assert.equal(ui.element('install-update').hidden, false);
+  assert.equal(ui.element('install-update').disabled, false);
+  assert.match(ui.element('update-status').textContent, /系统安装器暂不可用/);
+  ui.update({ status: 'available', downloadReady: false });
+  assert.equal(ui.element('install-update').hidden, true, 'Native invalidation of a missing or damaged cache must remove Install');
+  assert.equal(ui.element('download-update').hidden, false);
+});
+
 test('Android distinguishes unavailable releases and debug builds from a confirmed latest version', async t => {
   const ui = await clientFixture(t);
   await ui.respond(ui.next('checkUpdate'), { currentVersion: '1.0.0', status: 'unpublished', update: null });

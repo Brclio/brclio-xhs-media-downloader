@@ -73,6 +73,10 @@ public class UpdatePolicyTest {
     @Test public void archiveMustMatchPublishedVersionAndStrictlyIncreaseVersionCode() {
         UpdatePolicy.validateVersion("1.0.0", "1.0.0", 10000, 9000);
         UpdatePolicy.validateVersion("1.0.1", "1.0.1", 10001, 10000);
+        UpdatePolicy.validateVersion("1.0.2", "1.0.2", 10002, 10001);
+        UpdatePolicy.validateVersion("1.0.3", "1.0.3", 10003, 10001);
+        UpdatePolicy.validateVersion("1.0.3", "1.0.3", 10003, 10002);
+        assertThrows(IllegalArgumentException.class, () -> UpdatePolicy.validateVersion("1.0.3", "1.0.3", 10002, 10002));
         assertThrows(IllegalArgumentException.class, () -> UpdatePolicy.validateVersion("1.0.1", "1.0.1", 10000, 10000));
         assertThrows(IllegalArgumentException.class, () -> UpdatePolicy.validateVersion("1.0.1", "1.0.1", 9000, 10000));
         assertThrows(IllegalArgumentException.class, () -> UpdatePolicy.validateVersion("1.0.1", "1.0.2", 10002, 10000));

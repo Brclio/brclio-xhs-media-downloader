@@ -14,6 +14,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createMacFixtureDmg } from './create-mac-fixture-dmg.mjs';
+import { readMacArchitectures } from '../desktop/mac-architecture.js';
 
 const run = promisify(execFile);
 const asar = createRequire(import.meta.url)('@electron/asar');
@@ -124,7 +125,14 @@ export async function verifyPackagedMacUpdate(input) {
   const targetVersion = parts.join('.');
   const updater = asar.extractFile(inputArchive, 'desktop/mac-update.js').toString();
   assert.equal(updater.match(/env: guiEnvironment\(\)/g)?.length, 2, 'Input must contain both fixed GUI launch paths');
-  const expectedHelper = /const HELPER = String.raw`([\s\S]*?)`;\n\nconst RESULTS/.exec(updater)?.[1];
+  assert.equal(updater.split('${readMacArchitectures.toString()}').length, 2,
+    'The packaged detached helper must embed the architecture reader exactly once');
+  assert.ok(!updater.includes('/usr/bin/lipo'), 'The packaged updater must not depend on Xcode');
+  assert.deepEqual(asar.extractFile(inputArchive, 'desktop/mac-architecture.js'),
+    await readFile(new URL('../desktop/mac-architecture.js', import.meta.url)),
+    'The packaged architecture reader must match the verified source');
+  const expectedHelper = /const HELPER = String.raw`([\s\S]*?)`;\n\nconst RESULTS/.exec(updater)?.[1]
+    ?.replace('${readMacArchitectures.toString()}', readMacArchitectures.toString());
   assert.ok(expectedHelper);
   const files = asar.listPackage(inputArchive).map(name => name.replace(/^\//, ''))
     .filter(name => !asar.statFile(inputArchive, name).files && name !== 'package.json');

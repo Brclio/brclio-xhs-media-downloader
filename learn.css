@@ -18,10 +18,12 @@ h1, h2, h3, p, figure { margin: 0; }
 .container { width: min(1300px, calc(100% - 96px)); margin-inline: auto; }
 .skip-link { position: fixed; z-index: 10; left: 20px; top: -100px; background: var(--yellow); color: var(--ink); padding: 12px 20px; }
 .skip-link:focus { top: 12px; }
+html:has(body.learning-web) { scroll-padding-top: 84px; }
+body.learning-web .skip-link { z-index: 110; }
 .site-header { border-bottom: 1px solid var(--line); background: var(--cream); }
 .header-inner { min-height: 86px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 750; white-space: nowrap; letter-spacing: -.6px; }
-.brand img { flex-shrink: 0; }
+.site-header .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 750; white-space: nowrap; letter-spacing: -.6px; }
+.site-header .brand img { flex-shrink: 0; }
 .brand-note { font-size: 12px; font-weight: 500; color: var(--ink-light); letter-spacing: 0; }
 .header-inner nav { display: flex; gap: clamp(18px, 2.5vw, 36px); font-size: 14px; }
 .header-inner nav a, .back-link, .footer-links a { text-underline-offset: 6px; }
@@ -145,8 +147,8 @@ h1 { margin-block: 24px; font-family: var(--serif); font-size: clamp(40px, 4.2vw
 @media (max-width: 650px) {
   html { scroll-padding-top: 24px; }
   .container { width: calc(100% - 40px); }
-  .brand { font-size: 20px; }
-  .brand img { width: 30px; height: 30px; }
+  .site-header .brand { font-size: 20px; }
+  .site-header .brand img { width: 30px; height: 30px; }
   .back-link { font-size: 11px; }
   .header-inner nav { font-size: 13px; }
   .hero { padding-top: 40px; }
@@ -182,4 +184,5 @@ h1 { margin-block: 24px; font-family: var(--serif); font-size: clamp(40px, 4.2vw
   .qr-dialog { padding: 16px; }
   .dialog-heading h2 { font-size: 13px; }
 }
+@media (max-width: 700px) { html:has(body.learning-web) { scroll-padding-top: 160px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; } }

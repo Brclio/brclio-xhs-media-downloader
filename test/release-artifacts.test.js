@@ -124,7 +124,8 @@ async function fixture(t) {
     }
     await writeFile(path.join(directory, `release-proof-${label}.json`), JSON.stringify({
       version, sourceSha, platform, arch, comparedSources: 27, bundledPythonVerified: true,
-      ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning: 'adhoc', packagedMacUpdateVerified: true, packagedUpdateHistoryVerified: true } : {}), files
+      ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning: 'adhoc', packagedMacUpdateVerified: true, packagedUpdateHistoryVerified: true }
+        : { packagedWindowsUpdateVerified: true, packagedWindowsPortableVerified: true }), files
     }));
   }
   return directory;
@@ -206,6 +207,20 @@ test('release rejects incomplete and unexpected platform assets', async t => {
   await rm(path.join(directory, `Brclio-XHS-${version}-windows-x64-setup.exe`));
   await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /three verified/);
 });
+
+for (const field of ['packagedWindowsUpdateVerified', 'packagedWindowsPortableVerified']) {
+  test(`release rejects Windows builds without ${field}`, async t => {
+    const directory = await fixture(t);
+    const proofPath = path.join(directory, 'release-proof-windows-x64.json');
+    const proof = JSON.parse(await readFile(proofPath, 'utf8'));
+    for (const value of [undefined, false, 'true']) {
+      if (value === undefined) delete proof[field];
+      else proof[field] = value;
+      await writeFile(proofPath, JSON.stringify(proof));
+      await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /Packaged Windows .* must be verified/);
+    }
+  });
+}
 
 for (const label of ['mac-arm64', 'mac-x64']) {
   test(`release rejects ${label} without packaged history acknowledgement acceptance`, async t => {

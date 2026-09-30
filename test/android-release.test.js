@@ -30,6 +30,28 @@ test('Android release proof binds official package, version, certificate and cle
   assert.throws(() => validateReleaseProof({ ...proof(), apk: { ...proof().apk, name: '../wrong.apk' } }, options));
 });
 
+test('Android 1.0.3 publication requires an emulator acceptance result bound to the exact signed build', () => {
+  const release = { ...proof(), version: '1.0.3', versionCode: 10003,
+    apk: { ...proof().apk, name: 'Brclio-XHS-Android-1.0.3-release.apk' } };
+  const checked = { ...options, tag: 'android-v1.0.3' };
+  assert.throws(() => validateReleaseProof(release, checked), /emulator upgrade gate/);
+  assert.equal(validateReleaseProof(release, { ...checked, requireEmulatorUpgrade: false }), '1.0.3',
+    'The emulator gate must first be able to validate its signed input before testing it');
+  release.emulatorUpgrade = {
+    verifiedAt: '2026-09-30T00:00:00.000Z', method: 'adb install -r', apiLevel: 35,
+    sourceCommit: options.sourceCommit, apkSha256: release.apk.sha256, targetVersion: '1.0.3', targetVersionCode: 10003,
+    baselineVersion: '1.0.2', baselineVersionCode: 10002, signaturesVerified: true,
+    oldAndNewLaunchVerified: true, uidPreserved: true, firstInstallTimePreserved: true,
+    userSettingPreserved: true, updateCheckUiVerified: true, inAppInstallerConfirmationTested: false,
+  };
+  assert.equal(validateReleaseProof(release, checked), '1.0.3');
+  for (const [key, value] of Object.entries({ apkSha256: 'c'.repeat(64), sourceCommit: 'd'.repeat(40),
+    targetVersionCode: 10002, baselineVersionCode: 10003, oldAndNewLaunchVerified: false,
+    userSettingPreserved: false, inAppInstallerConfirmationTested: true })) {
+    assert.throws(() => validateReleaseProof({ ...release, emulatorUpgrade: { ...release.emulatorUpgrade, [key]: value } }, checked), key);
+  }
+});
+
 test('Android asset validation rejects modified APK bytes and checksums before any upload', () => {
   const directory = mkdtempSync(join(tmpdir(), 'android-release-test-'));
   const data = proof();

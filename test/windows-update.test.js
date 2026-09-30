@@ -74,6 +74,9 @@ test('NSIS assisted installer wiring covers successful visible completion and ex
   assert.match(custom, /Function BrclioFinishPagePre\s+IfAbort brclio_finish_done/);
   assert.match(custom, /\$BrclioInstallSucceeded == "1"[\s\S]+\$\{StdUtils.ExecShellAsUser\}/);
   assert.doesNotMatch(custom, /MUI_FINISHPAGE_RUN/, 'manual finish does not add a second launch checkbox');
+  assert.match(custom, /!macro customPageAfterChangeDir[\s\S]*?!define MUI_PAGE_CUSTOMFUNCTION_PRE BrclioInstFilesPre/);
+  assert.match(custom, /Function BrclioInstFilesPre\s+\$\{IfNot\} \$\{isUpdated\}\s+Call instFilesPre\s+\$\{EndIf\}/,
+    'registered custom /D installation paths remain unchanged during updates, while fresh setup still normalizes its destination');
   const section = await readFile(new URL('../node_modules/app-builder-lib/templates/nsis/installSection.nsh', import.meta.url), 'utf8');
   assert.match(section, /\$\{if\} \$\{isForceRun\}\s+\$\{andIf\} \$\{Silent\}\s+!insertmacro doStartApp/, 'pinned builder only performs its own launch for explicit silent invocations, so visible installation launches once');
 });

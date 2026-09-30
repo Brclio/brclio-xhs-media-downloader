@@ -46,6 +46,11 @@ export async function validateArtifacts(directory, { version, sourceSha }) {
         `Packaged macOS update and automatic relaunch must be verified before release: ${target.label}`);
       assert.equal(proof.packagedUpdateHistoryVerified, true,
         `Packaged update history and acknowledgement must be verified before release: ${target.label}`);
+    } else {
+      assert.equal(proof.packagedWindowsUpdateVerified, true,
+        'Packaged Windows installer upgrade must be verified before release');
+      assert.equal(proof.packagedWindowsPortableVerified, true,
+        'Packaged Windows portable migration must be verified before release');
     }
     assert.ok(Number.isInteger(proof.comparedSources) && proof.comparedSources >= 27);
     const expected = target.suffixes.map(suffix => `Brclio-XHS-${version}-${suffix}`).sort();
