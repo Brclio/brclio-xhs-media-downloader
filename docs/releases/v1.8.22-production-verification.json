@@ -1,0 +1,1291 @@
+{
+  "version": "1.8.22",
+  "verifiedAt": "2026-09-30T09:30:21.995Z",
+  "websiteSourceSha": "cfed2eb52f2d9b5e692e4e5fd5b936ce3ed09743",
+  "desktopReleaseSourceSha": "0c0a2f80038aacb802df5799434c2d47571a6458",
+  "desktopPublicationVerification": "v1.8.22-publication-verification.json",
+  "deployments": {
+    "worker": "b022ea4d-fabc-4916-9cb7-96fe9d38b0aa",
+    "pages": "5d6129f0",
+    "pagesPreview": "https://5d6129f0.brclio-xhs-pages.pages.dev"
+  },
+  "surfaces": [
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "health": {
+        "status": 200,
+        "version": "1.8.22",
+        "pythonBinding": true,
+        "deploymentId": "b022ea4d-fabc-4916-9cb7-96fe9d38b0aa"
+      },
+      "assets": [
+        {
+          "path": "index.html",
+          "status": 200,
+          "bytes": 53156,
+          "sha256": "f97209b80ae83b0670d04a3a922da681f85454a96c2daab1b6917e97daca96e5"
+        },
+        {
+          "path": "download.html",
+          "status": 200,
+          "bytes": 23711,
+          "sha256": "011c2fbd4233a16ca5779107555d6d114b69044a2580467a9730c82a78e3b684"
+        },
+        {
+          "path": "download.js",
+          "status": 200,
+          "bytes": 9796,
+          "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433"
+        },
+        {
+          "path": "learn.html",
+          "status": 200,
+          "bytes": 11115,
+          "sha256": "4c17639250049113ee1dbea9d0edc60383b1962e9d15e66a54b6aab649d5590a"
+        },
+        {
+          "path": "learn.js",
+          "status": 200,
+          "bytes": 3180,
+          "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78"
+        },
+        {
+          "path": "learn.css",
+          "status": 200,
+          "bytes": 14887,
+          "sha256": "81f3303749afbdffcdae138a23492ebd97e4159f362571364404893ad15725f4"
+        },
+        {
+          "path": "desktop-ui.js",
+          "status": 200,
+          "bytes": 83724,
+          "sha256": "5e8a7635c5bdf50dfa5ffe7ebc86a930afbd94332b329810342fcca80a2e334b"
+        },
+        {
+          "path": "desktop-ui.css",
+          "status": 200,
+          "bytes": 50477,
+          "sha256": "e3f5aac7f702853ad91ee8132a0f29a8564196220b5bdb871e745ef058471a0c"
+        },
+        {
+          "path": "assets/learning/book-promo.png",
+          "status": 200,
+          "bytes": 1951638,
+          "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd"
+        },
+        {
+          "path": "assets/support/wechat-personal-qr.png",
+          "status": 200,
+          "bytes": 178625,
+          "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f"
+        }
+      ]
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "health": {
+        "status": 200,
+        "version": "1.8.22",
+        "pythonBinding": true,
+        "deploymentId": "b022ea4d-fabc-4916-9cb7-96fe9d38b0aa"
+      },
+      "assets": [
+        {
+          "path": "index.html",
+          "status": 200,
+          "bytes": 53156,
+          "sha256": "f97209b80ae83b0670d04a3a922da681f85454a96c2daab1b6917e97daca96e5"
+        },
+        {
+          "path": "download.html",
+          "status": 200,
+          "bytes": 23711,
+          "sha256": "011c2fbd4233a16ca5779107555d6d114b69044a2580467a9730c82a78e3b684"
+        },
+        {
+          "path": "download.js",
+          "status": 200,
+          "bytes": 9796,
+          "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433"
+        },
+        {
+          "path": "learn.html",
+          "status": 200,
+          "bytes": 11115,
+          "sha256": "4c17639250049113ee1dbea9d0edc60383b1962e9d15e66a54b6aab649d5590a"
+        },
+        {
+          "path": "learn.js",
+          "status": 200,
+          "bytes": 3180,
+          "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78"
+        },
+        {
+          "path": "learn.css",
+          "status": 200,
+          "bytes": 14887,
+          "sha256": "81f3303749afbdffcdae138a23492ebd97e4159f362571364404893ad15725f4"
+        },
+        {
+          "path": "desktop-ui.js",
+          "status": 200,
+          "bytes": 83724,
+          "sha256": "5e8a7635c5bdf50dfa5ffe7ebc86a930afbd94332b329810342fcca80a2e334b"
+        },
+        {
+          "path": "desktop-ui.css",
+          "status": 200,
+          "bytes": 50477,
+          "sha256": "e3f5aac7f702853ad91ee8132a0f29a8564196220b5bdb871e745ef058471a0c"
+        },
+        {
+          "path": "assets/learning/book-promo.png",
+          "status": 200,
+          "bytes": 1951638,
+          "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd"
+        },
+        {
+          "path": "assets/support/wechat-personal-qr.png",
+          "status": 200,
+          "bytes": 178625,
+          "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f"
+        }
+      ]
+    }
+  ],
+  "anonymousSmokeChecks": [
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "checkedAt": "2026-09-30T09:28:56.314Z",
+      "passed": 47,
+      "total": 47,
+      "ok": true,
+      "realMediaChecks": false,
+      "results": [
+        {
+          "name": "static/home",
+          "ok": true,
+          "status": 200,
+          "durationMs": 936
+        },
+        {
+          "name": "static/changelog",
+          "ok": true,
+          "status": 200,
+          "durationMs": 506
+        },
+        {
+          "name": "static/feedback-board",
+          "ok": true,
+          "status": 200,
+          "durationMs": 307
+        },
+        {
+          "name": "static/feedback-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 198
+        },
+        {
+          "name": "static/feedback-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 543
+        },
+        {
+          "name": "static/main-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 307
+        },
+        {
+          "name": "static/main-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 200
+        },
+        {
+          "name": "static/account-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 322
+        },
+        {
+          "name": "static/archive-module",
+          "ok": true,
+          "status": 200,
+          "durationMs": 184
+        },
+        {
+          "name": "static/favicon",
+          "ok": true,
+          "status": 200,
+          "durationMs": 343
+        },
+        {
+          "name": "static/admin",
+          "ok": true,
+          "status": 200,
+          "durationMs": 525
+        },
+        {
+          "name": "static/admin-trailing-slash",
+          "ok": true,
+          "status": 200,
+          "durationMs": 204
+        },
+        {
+          "name": "static/admin-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 537
+        },
+        {
+          "name": "static/admin-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 530
+        },
+        {
+          "name": "node/parse/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 341
+        },
+        {
+          "name": "node/parse/empty",
+          "ok": true,
+          "status": 400,
+          "durationMs": 485
+        },
+        {
+          "name": "node/parse/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 318
+        },
+        {
+          "name": "node/parse/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 354
+        },
+        {
+          "name": "node/parse/input-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 1005
+        },
+        {
+          "name": "node/parse/direct-image",
+          "ok": true,
+          "status": 200,
+          "durationMs": 417
+        },
+        {
+          "name": "node/image/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 201
+        },
+        {
+          "name": "node/image/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 555
+        },
+        {
+          "name": "node/video/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 293
+        },
+        {
+          "name": "node/video/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 285
+        },
+        {
+          "name": "node/image/invalid-token",
+          "ok": true,
+          "status": 400,
+          "durationMs": 242
+        },
+        {
+          "name": "node/video/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 206
+        },
+        {
+          "name": "node/video/invalid-range",
+          "ok": true,
+          "status": 400,
+          "durationMs": 315
+        },
+        {
+          "name": "node/video/oversize-range",
+          "ok": true,
+          "status": 413,
+          "durationMs": 807
+        },
+        {
+          "name": "python/parse/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 351
+        },
+        {
+          "name": "python/parse/empty",
+          "ok": true,
+          "status": 400,
+          "durationMs": 415
+        },
+        {
+          "name": "python/parse/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 319
+        },
+        {
+          "name": "python/parse/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 356
+        },
+        {
+          "name": "python/parse/input-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 374
+        },
+        {
+          "name": "python/parse/direct-image",
+          "ok": true,
+          "status": 200,
+          "durationMs": 362
+        },
+        {
+          "name": "python/image/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 1302
+        },
+        {
+          "name": "python/image/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 432
+        },
+        {
+          "name": "python/video/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 523
+        },
+        {
+          "name": "python/video/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 214
+        },
+        {
+          "name": "python/image/invalid-token",
+          "ok": true,
+          "status": 400,
+          "durationMs": 534
+        },
+        {
+          "name": "python/video/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 306
+        },
+        {
+          "name": "python/video/invalid-range",
+          "ok": true,
+          "status": 400,
+          "durationMs": 213
+        },
+        {
+          "name": "python/video/oversize-range",
+          "ok": true,
+          "status": 413,
+          "durationMs": 520
+        },
+        {
+          "name": "account/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 314
+        },
+        {
+          "name": "account/content-type",
+          "ok": true,
+          "status": 415,
+          "durationMs": 1044
+        },
+        {
+          "name": "account/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 316
+        },
+        {
+          "name": "account/invalid-shape",
+          "ok": true,
+          "status": 400,
+          "durationMs": 314
+        },
+        {
+          "name": "account/body-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 423
+        }
+      ]
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "checkedAt": "2026-09-30T09:28:51.594Z",
+      "passed": 47,
+      "total": 47,
+      "ok": true,
+      "realMediaChecks": false,
+      "results": [
+        {
+          "name": "static/home",
+          "ok": true,
+          "status": 200,
+          "durationMs": 971
+        },
+        {
+          "name": "static/changelog",
+          "ok": true,
+          "status": 200,
+          "durationMs": 251
+        },
+        {
+          "name": "static/feedback-board",
+          "ok": true,
+          "status": 200,
+          "durationMs": 176
+        },
+        {
+          "name": "static/feedback-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 178
+        },
+        {
+          "name": "static/feedback-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 174
+        },
+        {
+          "name": "static/main-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 184
+        },
+        {
+          "name": "static/main-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 175
+        },
+        {
+          "name": "static/account-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 177
+        },
+        {
+          "name": "static/archive-module",
+          "ok": true,
+          "status": 200,
+          "durationMs": 170
+        },
+        {
+          "name": "static/favicon",
+          "ok": true,
+          "status": 200,
+          "durationMs": 170
+        },
+        {
+          "name": "static/admin",
+          "ok": true,
+          "status": 200,
+          "durationMs": 476
+        },
+        {
+          "name": "static/admin-trailing-slash",
+          "ok": true,
+          "status": 200,
+          "durationMs": 217
+        },
+        {
+          "name": "static/admin-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 528
+        },
+        {
+          "name": "static/admin-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 185
+        },
+        {
+          "name": "node/parse/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 344
+        },
+        {
+          "name": "node/parse/empty",
+          "ok": true,
+          "status": 400,
+          "durationMs": 317
+        },
+        {
+          "name": "node/parse/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 313
+        },
+        {
+          "name": "node/parse/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 413
+        },
+        {
+          "name": "node/parse/input-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 285
+        },
+        {
+          "name": "node/parse/direct-image",
+          "ok": true,
+          "status": 200,
+          "durationMs": 312
+        },
+        {
+          "name": "node/image/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 174
+        },
+        {
+          "name": "node/image/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 278
+        },
+        {
+          "name": "node/video/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 167
+        },
+        {
+          "name": "node/video/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 172
+        },
+        {
+          "name": "node/image/invalid-token",
+          "ok": true,
+          "status": 400,
+          "durationMs": 184
+        },
+        {
+          "name": "node/video/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 169
+        },
+        {
+          "name": "node/video/invalid-range",
+          "ok": true,
+          "status": 400,
+          "durationMs": 170
+        },
+        {
+          "name": "node/video/oversize-range",
+          "ok": true,
+          "status": 413,
+          "durationMs": 185
+        },
+        {
+          "name": "python/parse/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 872
+        },
+        {
+          "name": "python/parse/empty",
+          "ok": true,
+          "status": 400,
+          "durationMs": 333
+        },
+        {
+          "name": "python/parse/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 366
+        },
+        {
+          "name": "python/parse/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 291
+        },
+        {
+          "name": "python/parse/input-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 289
+        },
+        {
+          "name": "python/parse/direct-image",
+          "ok": true,
+          "status": 200,
+          "durationMs": 294
+        },
+        {
+          "name": "python/image/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 1224
+        },
+        {
+          "name": "python/image/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 193
+        },
+        {
+          "name": "python/video/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 331
+        },
+        {
+          "name": "python/video/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 524
+        },
+        {
+          "name": "python/image/invalid-token",
+          "ok": true,
+          "status": 400,
+          "durationMs": 186
+        },
+        {
+          "name": "python/video/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 337
+        },
+        {
+          "name": "python/video/invalid-range",
+          "ok": true,
+          "status": 400,
+          "durationMs": 186
+        },
+        {
+          "name": "python/video/oversize-range",
+          "ok": true,
+          "status": 413,
+          "durationMs": 179
+        },
+        {
+          "name": "account/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 485
+        },
+        {
+          "name": "account/content-type",
+          "ok": true,
+          "status": 415,
+          "durationMs": 285
+        },
+        {
+          "name": "account/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 629
+        },
+        {
+          "name": "account/invalid-shape",
+          "ok": true,
+          "status": 400,
+          "durationMs": 537
+        },
+        {
+          "name": "account/body-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 322
+        }
+      ]
+    }
+  ],
+  "vercelGitHubDeploymentStatus": {
+    "context": "Vercel",
+    "state": "success",
+    "sourceSha": "cfed2eb52f2d9b5e692e4e5fd5b936ce3ed09743",
+    "targetUrl": "https://vercel.com/hibrmuse-9510s-projects/xhs-images-video-vercel-downloader/Cy4YJrFxfFek1exhCbdz4UJMThSU"
+  },
+  "liveChromium": {
+    "result": "PASS",
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-09-30T11:38:44.447Z",
+    "widths": [
+      1440,
+      900,
+      390,
+      320
+    ],
+    "pages": {
+      "download": {
+        "url": "https://xhs.download.brclio.com/download",
+        "release": {
+          "version": "v1.8.22",
+          "status": "版本信息暂未刷新，仍可下载已发布的 v1.8.22。查看最新发布 ↗",
+          "releaseLink": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.22",
+          "links": [
+            {
+              "asset": "mac-arm64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.22/Brclio-XHS-1.8.22-mac-arm64.dmg"
+            },
+            {
+              "asset": "mac-x64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.22/Brclio-XHS-1.8.22-mac-x64.dmg"
+            },
+            {
+              "asset": "windows-setup",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.22/Brclio-XHS-1.8.22-windows-x64-setup.exe"
+            },
+            {
+              "asset": "windows-portable",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.22/Brclio-XHS-1.8.22-windows-x64-portable.exe"
+            }
+          ]
+        },
+        "layouts": [
+          {
+            "width": 1440,
+            "height": 1000,
+            "clientWidth": 1440,
+            "scrollWidth": 1440,
+            "bodyWidth": 1440
+          },
+          {
+            "width": 900,
+            "height": 1000,
+            "clientWidth": 900,
+            "scrollWidth": 900,
+            "bodyWidth": 900
+          },
+          {
+            "width": 390,
+            "height": 1000,
+            "clientWidth": 390,
+            "scrollWidth": 390,
+            "bodyWidth": 390
+          },
+          {
+            "width": 320,
+            "height": 1000,
+            "clientWidth": 320,
+            "scrollWidth": 320,
+            "bodyWidth": 320
+          }
+        ],
+        "images": [
+          {
+            "url": "https://xhs.download.brclio.com/aiyc.svg",
+            "loaded": true,
+            "width": 150,
+            "height": 150
+          },
+          {
+            "url": "https://xhs.download.brclio.com/assets/downloads/desktop-scrapbook.webp",
+            "loaded": true,
+            "width": 1536,
+            "height": 1024
+          }
+        ]
+      },
+      "learn": {
+        "url": "https://xhs.download.brclio.com/learn",
+        "layouts": [
+          {
+            "width": 1440,
+            "height": 1000,
+            "clientWidth": 1440,
+            "scrollWidth": 1440,
+            "bodyWidth": 1440
+          },
+          {
+            "width": 900,
+            "height": 1000,
+            "clientWidth": 900,
+            "scrollWidth": 900,
+            "bodyWidth": 900
+          },
+          {
+            "width": 390,
+            "height": 1000,
+            "clientWidth": 390,
+            "scrollWidth": 390,
+            "bodyWidth": 390
+          },
+          {
+            "width": 320,
+            "height": 1000,
+            "clientWidth": 320,
+            "scrollWidth": 320,
+            "bodyWidth": 320
+          }
+        ],
+        "qr": [
+          {
+            "width": 1440,
+            "dialog": {
+              "open": true,
+              "left": 450,
+              "right": 990,
+              "top": 181.5,
+              "bottom": 818.5,
+              "clientWidth": 538,
+              "scrollWidth": 538
+            },
+            "escapeClosed": true,
+            "focused": "qr-open"
+          },
+          {
+            "width": 900,
+            "dialog": {
+              "open": true,
+              "left": 180,
+              "right": 720,
+              "top": 181.5,
+              "bottom": 818.5,
+              "clientWidth": 538,
+              "scrollWidth": 538
+            },
+            "escapeClosed": true,
+            "focused": "qr-open"
+          },
+          {
+            "width": 390,
+            "dialog": {
+              "open": true,
+              "left": 19,
+              "right": 371,
+              "top": 275.5,
+              "bottom": 724.5,
+              "clientWidth": 350,
+              "scrollWidth": 350
+            },
+            "escapeClosed": true,
+            "focused": "qr-open"
+          },
+          {
+            "width": 320,
+            "dialog": {
+              "open": true,
+              "left": 19,
+              "right": 301,
+              "top": 300,
+              "bottom": 700,
+              "clientWidth": 280,
+              "scrollWidth": 280
+            },
+            "escapeClosed": true,
+            "focused": "qr-open"
+          }
+        ],
+        "images": [
+          {
+            "url": "https://xhs.download.brclio.com/aiyc.svg",
+            "loaded": true,
+            "width": 150,
+            "height": 150
+          },
+          {
+            "url": "https://xhs.download.brclio.com/assets/learning/book-promo.png",
+            "loaded": true,
+            "width": 1672,
+            "height": 941
+          },
+          {
+            "url": "https://xhs.download.brclio.com/assets/support/wechat-personal-qr.png",
+            "loaded": true,
+            "width": 736,
+            "height": 736
+          },
+          {
+            "url": "https://xhs.download.brclio.com/assets/support/wechat-personal-qr.png",
+            "loaded": true,
+            "width": 736,
+            "height": 736
+          }
+        ],
+        "qrSave": {
+          "path": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-web-r5LSFH/live-wechat-qr.png",
+          "bytes": 178625,
+          "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+          "matchesSource": true,
+          "pageRemainsOpen": true
+        }
+      }
+    },
+    "networkFailures": [
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.113.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7kqGWbhppHtk.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/fraunces/v38/6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxC9TeP2Xz5c.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.118.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.115.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALRLoKI2w328g.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/caveat/v23/Wnz6HAc5bAfYB2Q7ZjYYiAzcPA.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.117.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/fraunces/v38/6NUs8FyLNQOQZAnv9ZwNjucMHVn85Ni7emAe9lKqZTnbB-gzTK0K1ChJdt9hFwpX9W37lm1_mv0iQublWII.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.118.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.117.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.116.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.116.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.111.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.119.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.90.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.119.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.112.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.114.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.110.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.104.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.115.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.108.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.109.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.6.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.110.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.114.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.108.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.87.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.112.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.102.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.106.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.105.woff2",
+        "resourceType": "font"
+      }
+    ],
+    "rendererErrors": [],
+    "warnings": [
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.113.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7kqGWbhppHtk.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/fraunces/v38/6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxC9TeP2Xz5c.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.118.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.115.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALRLoKI2w328g.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/caveat/v23/Wnz6HAc5bAfYB2Q7ZjYYiAzcPA.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.117.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/fraunces/v38/6NUs8FyLNQOQZAnv9ZwNjucMHVn85Ni7emAe9lKqZTnbB-gzTK0K1ChJdt9hFwpX9W37lm1_mv0iQublWII.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.118.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.117.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.116.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.116.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.111.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.119.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.90.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.119.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.112.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.114.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.110.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.104.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.115.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.108.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.109.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.6.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.110.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.114.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.108.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.87.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notoserifsc/v35/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.112.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.102.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.106.woff2",
+        "resourceType": "font"
+      },
+      {
+        "error": "net::ERR_CACHE_MISS",
+        "url": "https://fonts.gstatic.com/s/notosanssc/v40/k3kXo84MPvpLmixcA63oeALhLIiP-Q-87KaAaH7rzeAODp22mF0qmF4CSjmPC6A0Rg5g1igg1w.105.woff2",
+        "resourceType": "font"
+      }
+    ],
+    "firstPartyNetworkFailures": []
+  }
+}
