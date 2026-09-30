@@ -1,0 +1,703 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T07:33:35.746372Z",
+  "sourceSha": "ee7dde16679bde679782518b4d7c8bd2aa9d08ff",
+  "origin": "https://xhs.download.brclio.com",
+  "versions": {
+    "desktop": "1.8.20",
+    "android": "1.0.4"
+  },
+  "worker": {
+    "name": "brclio-xhs-downloader",
+    "versionId": "548e491b-daaf-4faf-ab74-0006b2d8372a",
+    "health": {
+      "ok": true,
+      "platform": "cloudflare",
+      "version": "1.8.20",
+      "pythonBinding": true,
+      "deploymentId": "548e491b-daaf-4faf-ab74-0006b2d8372a"
+    },
+    "keepVars": true,
+    "pythonServiceUnchanged": true
+  },
+  "pages": {
+    "project": "brclio-xhs-pages",
+    "deploymentId": "75e7e7a6-5594-499e-9df5-facc00a36fa3",
+    "deploymentUrl": "https://75e7e7a6.brclio-xhs-pages.pages.dev",
+    "environment": "Production",
+    "branch": "main",
+    "sourcePrefix": "ee7dde1"
+  },
+  "assets": [
+    {
+      "route": "/",
+      "status": 200,
+      "bytes": 52689,
+      "sha256": "e3d6e36733563e49a90bef9d389ed4885083e9870d9fd46ef2b83f7bbbc434f7",
+      "matchesReleaseBuild": true,
+      "anonymous": true
+    },
+    {
+      "route": "/download",
+      "status": 200,
+      "bytes": 23711,
+      "sha256": "c7af95d58cfcc96c710dc752701751f153034df3c34619700d00993d525f7cff",
+      "matchesReleaseBuild": true,
+      "anonymous": true
+    },
+    {
+      "route": "/learn",
+      "status": 200,
+      "bytes": 11115,
+      "sha256": "4c17639250049113ee1dbea9d0edc60383b1962e9d15e66a54b6aab649d5590a",
+      "matchesReleaseBuild": true,
+      "anonymous": true
+    },
+    {
+      "route": "/site-header.css",
+      "status": 200,
+      "bytes": 6251,
+      "sha256": "b7d957ff70d493b2c8b1dddecb85931ff75be01592c099f38d658f568eb1c4ef",
+      "matchesReleaseBuild": true,
+      "anonymous": true
+    },
+    {
+      "route": "/download.js",
+      "status": 200,
+      "bytes": 9796,
+      "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+      "matchesReleaseBuild": true,
+      "anonymous": true
+    }
+  ],
+  "releaseAssets": {
+    "source": "Anonymous official GitHub Releases API",
+    "displayUnits": "decimal MB, rounded to one decimal place",
+    "verifiedSizes": [
+      {
+        "asset": "Brclio-XHS-1.8.20-mac-arm64.dmg",
+        "bytes": 141968082,
+        "display": "142.0 MB",
+        "previousDisplay": "142.0 MB",
+        "displayChanged": false,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-mac-arm64.dmg",
+        "sha256": "ca117d4135a8deb5b9d6abe33d9569f3f9593826a3abf475873447bb82d531d8"
+      },
+      {
+        "asset": "Brclio-XHS-1.8.20-mac-x64.dmg",
+        "bytes": 147711756,
+        "display": "147.7 MB",
+        "previousDisplay": "147.7 MB",
+        "displayChanged": false,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-mac-x64.dmg",
+        "sha256": "9d90b15d20f6295fe9b0a28794c6be4714bd3914a964dace41c574ca6f1f5a2e"
+      },
+      {
+        "asset": "Brclio-XHS-1.8.20-windows-x64-setup.exe",
+        "bytes": 126022431,
+        "display": "126.0 MB",
+        "previousDisplay": "126.0 MB",
+        "displayChanged": false,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-windows-x64-setup.exe",
+        "sha256": "46bcb9ccc3a62919f170d75894fcd11cbc89fb640683ca60b839298d62aa63bf"
+      },
+      {
+        "asset": "Brclio-XHS-1.8.20-windows-x64-portable.exe",
+        "bytes": 125783916,
+        "display": "125.8 MB",
+        "previousDisplay": "125.8 MB",
+        "displayChanged": false,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-windows-x64-portable.exe",
+        "sha256": "1eb0b4bdfec20fe91fbe0883d04b1457193dd8f60cdcb82350de9f08ebd96721"
+      },
+      {
+        "asset": "Brclio-XHS-Android-1.0.4-release.apk",
+        "bytes": 3936818,
+        "display": "3.9 MB",
+        "previousDisplay": "3.9 MB",
+        "displayChanged": false,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/Brclio-XHS-Android-1.0.4-release.apk",
+        "sha256": "51533f3b54f1865d4b98d0866ca543852667b92a6778b9b3fe631edb3f21a7d0"
+      }
+    ],
+    "anonymousInstallerLinks": [
+      {
+        "asset": "Brclio-XHS-1.8.20-mac-arm64.dmg",
+        "httpStatus": 200,
+        "ok": true,
+        "anonymous": true
+      },
+      {
+        "asset": "Brclio-XHS-1.8.20-mac-x64.dmg",
+        "httpStatus": 200,
+        "ok": true,
+        "anonymous": true
+      },
+      {
+        "asset": "Brclio-XHS-1.8.20-windows-x64-setup.exe",
+        "httpStatus": 200,
+        "ok": true,
+        "anonymous": true
+      },
+      {
+        "asset": "Brclio-XHS-1.8.20-windows-x64-portable.exe",
+        "httpStatus": 200,
+        "ok": true,
+        "anonymous": true
+      },
+      {
+        "asset": "Brclio-XHS-Android-1.0.4-release.apk",
+        "httpStatus": 200,
+        "ok": true,
+        "anonymous": true
+      }
+    ]
+  },
+  "browser": {
+    "result": "PASS",
+    "engine": "Electron 44.4.3 Chromium, real production HTTPS",
+    "viewportWidths": [
+      1440,
+      390
+    ],
+    "checks": [
+      "Downloads show desktop v1.8.20 and Android v1.0.4 with exact public asset and checksum URLs",
+      "Displayed sizes match the exact public release asset byte counts",
+      "Manual installation FAQ opens, explains default browser download and replacing the original installation while retaining data",
+      "Android installation FAQ offers browser APK download without uninstalling the existing app",
+      "Learning page reuses all seven homepage navigation entries with learning as the current page",
+      "Support navigation reaches the homepage /#support",
+      "All learning images load; download, expanded FAQ and learning layouts have no horizontal overflow",
+      "QR dialog opens, Escape restores focus, and downloaded QR images exactly match the cropped source"
+    ],
+    "qrDownloadSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+    "results": [
+      {
+        "width": 1440,
+        "download": {
+          "version": "v1.8.20",
+          "sizes": {
+            "mac-arm64": "142.0 MB",
+            "mac-x64": "147.7 MB",
+            "windows-setup": "126.0 MB",
+            "windows-portable": "125.8 MB"
+          },
+          "androidSize": "3.9 MB",
+          "androidVersion": "v1.0.4",
+          "assets": {
+            "mac-arm64": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-mac-arm64.dmg",
+            "mac-x64": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-mac-x64.dmg",
+            "windows-setup": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-windows-x64-setup.exe",
+            "windows-portable": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-windows-x64-portable.exe"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.20",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.20"
+          ],
+          "androidReleaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.4",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.4"
+          ],
+          "androidAsset": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/Brclio-XHS-Android-1.0.4-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/Brclio-XHS-Android-1.0.4-release.apk.sha256"
+        },
+        "manualFaq": {
+          "open": true,
+          "text": "04\n已经装过旧版，更新或安装失败怎么办？\n+\n\n可在桌面版「关于软件」里检查更新。安装失败时，可点击「手动下载安装包」，通过默认浏览器下载适合当前系统与芯片的最新正式版。旧版没有此按钮时，选择本页对应版本的完整安装包即可。\n\n下载完成后先退出旧版，再在原位置覆盖安装：Mac 打开对应芯片的 DMG，将新版应用拖到原位置并选择替换；Windows 运行安装版，使用原安装位置。覆盖安装通常会保留账号、任务和已下载文件；请保留原数据目录及下载文件夹，不要先卸载或删除数据。更新后，未完成的任务需要手动继续。\n\nMac v1.8.3–v1.8.6 首次升级：请等待已有安装结束，完全退出旧版，用本页完整 DMG 覆盖原安装位置，再从「应用程序」手动打开新版。Windows 便携版更新会转为安装版，之后请从新版快捷方式启动。\n\n选择对应系统与芯片的安装包 ↗",
+          "android": "07安卓 APK 如何安装和更新？+使用安卓手机下载 APK，打开后按系统提示安装。如系统要求允许当前浏览器或「文件」应用安装未知来源应用，请先确认文件来自本页链接的官方 GitHub Releases，再按该应用的安装提示操作。安装后粘贴笔记链接，或从小红书的系统分享菜单选择 Brclio。保存时选择文件位置，再到系统「文件」应用查看；处理期间请保持客户端打开。实况保存为 JPG＋MP4 素材，不会自动合成为相册实况。安卓客户端启动时会检查新版，也可在「软件更新」中手动检查。发现新版后，由你确认下载安装包；校验通过后，再点击安装并在系统安装器中确认。检查更新不会自动下载安装。安装失败或未完成时，可点击「浏览器下载最新版 APK」，也可从本页下载新版 APK，打开后按系统提示覆盖原正式版，不要先卸载旧版。安卓与桌面版分别维护版本号；安卓当前不提供主页批量下载。查看安卓发布说明 ↗"
+        },
+        "links": [
+          {
+            "label": "下载工具",
+            "href": "/",
+            "active": null
+          },
+          {
+            "label": "产品介绍",
+            "href": "/product.html",
+            "active": null
+          },
+          {
+            "label": "软件下载",
+            "href": "/download.html",
+            "active": null
+          },
+          {
+            "label": "编程私教与书籍",
+            "href": "/learn.html",
+            "active": "page"
+          },
+          {
+            "label": "更新记录",
+            "href": "/changelog.html",
+            "active": null
+          },
+          {
+            "label": "问题广场",
+            "href": "https://xhs.download.brclio.com/feedback.html",
+            "active": null
+          },
+          {
+            "label": "支持",
+            "href": "/#support",
+            "active": null
+          }
+        ],
+        "noOverflow": true,
+        "qrDialog": true,
+        "qrSaveSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+        "qrExactSourceBytes": true,
+        "support": "https://xhs.download.brclio.com/#support"
+      },
+      {
+        "width": 390,
+        "download": {
+          "version": "v1.8.20",
+          "sizes": {
+            "mac-arm64": "142.0 MB",
+            "mac-x64": "147.7 MB",
+            "windows-setup": "126.0 MB",
+            "windows-portable": "125.8 MB"
+          },
+          "androidSize": "3.9 MB",
+          "androidVersion": "v1.0.4",
+          "assets": {
+            "mac-arm64": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-mac-arm64.dmg",
+            "mac-x64": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-mac-x64.dmg",
+            "windows-setup": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-windows-x64-setup.exe",
+            "windows-portable": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.20/Brclio-XHS-1.8.20-windows-x64-portable.exe"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.20",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.20"
+          ],
+          "androidReleaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.4",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.4"
+          ],
+          "androidAsset": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/Brclio-XHS-Android-1.0.4-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/Brclio-XHS-Android-1.0.4-release.apk.sha256"
+        },
+        "manualFaq": {
+          "open": true,
+          "text": "04\n已经装过旧版，更新或安装失败怎么办？\n+\n\n可在桌面版「关于软件」里检查更新。安装失败时，可点击「手动下载安装包」，通过默认浏览器下载适合当前系统与芯片的最新正式版。旧版没有此按钮时，选择本页对应版本的完整安装包即可。\n\n下载完成后先退出旧版，再在原位置覆盖安装：Mac 打开对应芯片的 DMG，将新版应用拖到原位置并选择替换；Windows 运行安装版，使用原安装位置。覆盖安装通常会保留账号、任务和已下载文件；请保留原数据目录及下载文件夹，不要先卸载或删除数据。更新后，未完成的任务需要手动继续。\n\nMac v1.8.3–v1.8.6 首次升级：请等待已有安装结束，完全退出旧版，用本页完整 DMG 覆盖原安装位置，再从「应用程序」手动打开新版。Windows 便携版更新会转为安装版，之后请从新版快捷方式启动。\n\n选择对应系统与芯片的安装包 ↗",
+          "android": "07安卓 APK 如何安装和更新？+使用安卓手机下载 APK，打开后按系统提示安装。如系统要求允许当前浏览器或「文件」应用安装未知来源应用，请先确认文件来自本页链接的官方 GitHub Releases，再按该应用的安装提示操作。安装后粘贴笔记链接，或从小红书的系统分享菜单选择 Brclio。保存时选择文件位置，再到系统「文件」应用查看；处理期间请保持客户端打开。实况保存为 JPG＋MP4 素材，不会自动合成为相册实况。安卓客户端启动时会检查新版，也可在「软件更新」中手动检查。发现新版后，由你确认下载安装包；校验通过后，再点击安装并在系统安装器中确认。检查更新不会自动下载安装。安装失败或未完成时，可点击「浏览器下载最新版 APK」，也可从本页下载新版 APK，打开后按系统提示覆盖原正式版，不要先卸载旧版。安卓与桌面版分别维护版本号；安卓当前不提供主页批量下载。查看安卓发布说明 ↗"
+        },
+        "links": [
+          {
+            "label": "下载工具",
+            "href": "/",
+            "active": null
+          },
+          {
+            "label": "产品介绍",
+            "href": "/product.html",
+            "active": null
+          },
+          {
+            "label": "软件下载",
+            "href": "/download.html",
+            "active": null
+          },
+          {
+            "label": "编程私教与书籍",
+            "href": "/learn.html",
+            "active": "page"
+          },
+          {
+            "label": "更新记录",
+            "href": "/changelog.html",
+            "active": null
+          },
+          {
+            "label": "问题广场",
+            "href": "https://xhs.download.brclio.com/feedback.html",
+            "active": null
+          },
+          {
+            "label": "支持",
+            "href": "/#support",
+            "active": null
+          }
+        ],
+        "noOverflow": true,
+        "qrDialog": true,
+        "qrSaveSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+        "qrExactSourceBytes": true,
+        "support": "https://xhs.download.brclio.com/#support"
+      }
+    ],
+    "artifacts": "/tmp/brclio-final-web-verification/run-Ie3haD",
+    "visuallyInspected": [
+      "download-1440-downloads.png",
+      "download-390-manual-install-faq.png",
+      "learn-1440-hero.png",
+      "learn-390-hero.png"
+    ],
+    "screenshots": [
+      {
+        "file": "download-1440-android-download.png",
+        "bytes": 278654,
+        "sha256": "fdd3b32143a95e886af035a62c5fcdfcc3c0c8d3a72cd85507d4311b30e32b3d"
+      },
+      {
+        "file": "download-1440-downloads.png",
+        "bytes": 280118,
+        "sha256": "df5a4d111b47f85e6a09753808c023ce3609e8acac95d74ddf3c18832c1edc4a"
+      },
+      {
+        "file": "download-1440-hero.png",
+        "bytes": 1850105,
+        "sha256": "cb3e6089470d0920b9921a9d7ac3aef018bb089f367a9b7c5aa4d967a4fe0f53"
+      },
+      {
+        "file": "download-1440-manual-install-faq.png",
+        "bytes": 392017,
+        "sha256": "eb002e9447f26ec82f9727b2b268a6fe3f877543b76744de7509e0a3f0cac457"
+      },
+      {
+        "file": "download-390-android-download.png",
+        "bytes": 181025,
+        "sha256": "7a28878a5431ec0d6f2ab2fa5d05d636e8b3cbabf238bf8c05773d229dc14bc2"
+      },
+      {
+        "file": "download-390-downloads.png",
+        "bytes": 145961,
+        "sha256": "2d2629aa2337a2bcc4664e9bfbbe1a88c3b51e8ae3fec96182b2d05e5ef0449d"
+      },
+      {
+        "file": "download-390-hero.png",
+        "bytes": 614635,
+        "sha256": "4724f7d732ce9fec926c1a2c6ceea07857fd5eeec179b1f70c3f5daa482e40f9"
+      },
+      {
+        "file": "download-390-manual-install-faq.png",
+        "bytes": 249765,
+        "sha256": "c33ac80ed826ec30723a5240725405e869cc31eedebbeae11ec7ba5c5e69ea1e"
+      },
+      {
+        "file": "learn-1440-contact.png",
+        "bytes": 376797,
+        "sha256": "2354c82dce79f9800a635ae03ea78d35cd4e6d2884bf4347f376a9e56100ee83"
+      },
+      {
+        "file": "learn-1440-hero.png",
+        "bytes": 1530821,
+        "sha256": "9c71b6e80841b12d0d9994d47a72d2f29398cf1cb23abce760e60670b7b4535a"
+      },
+      {
+        "file": "learn-1440-qr-dialog.png",
+        "bytes": 621896,
+        "sha256": "6171d71bbbc1a476787a1d22669f9756623f98dddb6d5881bd325686b769f34f"
+      },
+      {
+        "file": "learn-390-contact.png",
+        "bytes": 258989,
+        "sha256": "0b4d12cfaf43a248bf5787e2a916c8b4b92685b4ca7b680a3a051ba75bb98765"
+      },
+      {
+        "file": "learn-390-hero.png",
+        "bytes": 501843,
+        "sha256": "5b913917364cd6fbb32999f7fc06735147ef5051999481d6e512c8af5e4b8d90"
+      },
+      {
+        "file": "learn-390-qr-dialog.png",
+        "bytes": 296701,
+        "sha256": "e73eef1e318ec2fe4556079f9def4ef4c6fffee0066a7c1d558ca5c4fdcbce02"
+      }
+    ]
+  },
+  "anonymousSmoke": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-09-30T07:28:44.014Z",
+    "passed": 47,
+    "total": 47,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1765
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 522
+      },
+      {
+        "name": "static/feedback-board",
+        "ok": true,
+        "status": 200,
+        "durationMs": 209
+      },
+      {
+        "name": "static/feedback-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 315
+      },
+      {
+        "name": "static/feedback-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 524
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 523
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 200
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 548
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 936
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 695
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 521
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1344
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 752
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 1197
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 378
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 322
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 355
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 368
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 333
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 201
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 517
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 207
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 317
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 204
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 926
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 791
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 1224
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 1270
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 349
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 1067
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 1102
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 407
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 558
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 839
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 219
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 802
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 242
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 208
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 280
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 207
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 317
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 314
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 328
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 407
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 320
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 728
+      }
+    ]
+  },
+  "scope": "Production website, public installer links and non-mutating anonymous API checks. Desktop native upgrade and Android emulator evidence are recorded in the separate publication reports. No Vercel deployment or Python Worker change was performed."
+}
