@@ -151,7 +151,7 @@ function uniqueAsset(assets, name) {
   return matches[0];
 }
 
-export function parseRelease(release, { currentVersion, platform, arch }) {
+export function parseRelease(release, { currentVersion, platform, arch }, { includeInstaller = false } = {}) {
   if (!release || release.draft !== false || release.prerelease !== false || typeof release.tag_name !== 'string') {
     fail('INVALID_RELEASE', '更新信息不是正式发布版本。');
   }
@@ -163,7 +163,9 @@ export function parseRelease(release, { currentVersion, platform, arch }) {
   const metadata = { latestVersion: version, releaseUrl,
     releaseNotes: typeof release.body === 'string' ? release.body.slice(0, 32000) : '',
     publishedAt: typeof release.published_at === 'string' ? release.published_at.slice(0, 40) : '' };
-  if (compareVersions(version, currentVersion) <= 0) return { metadata, candidate: null };
+  const comparison = compareVersions(version, currentVersion);
+  if (comparison < 0 && includeInstaller) fail('OLDER_RELEASE', '公开安装包低于当前版本，已阻止打开旧版下载。');
+  if (comparison <= 0 && !includeInstaller) return { metadata, candidate: null };
   if (!Array.isArray(release.assets) || release.assets.length > 1000) fail('INVALID_ASSET', '发布附件列表无效。');
   const preferredName = installerName(version, platform, arch);
   // Keep both historical filenames readable. The first present name must pass
@@ -218,7 +220,8 @@ export class UpdateManager {
   constructor({ currentVersion, platform = process.platform, arch = process.arch, portable = false,
     directory, fetchImpl = globalThis.fetch, onUpdate = () => {}, networkTimeoutMs = 30000,
     confirmInstall = async () => false, pauseDownloads = async () => {},
-    openInstaller = async () => fail('INSTALL_UNAVAILABLE', '当前环境无法打开安装程序。'), onInstalled = () => {} }) {
+    openInstaller = async () => fail('INSTALL_UNAVAILABLE', '当前环境无法打开安装程序。'),
+    openExternal = async () => fail('BROWSER_OPEN_FAILED', '无法打开浏览器，请检查默认浏览器设置后重试。'), onInstalled = () => {} }) {
     versionParts(currentVersion);
     if (!directory || !path.isAbsolute(directory)) throw new TypeError('Update cache must be an absolute path');
     this.directory = directory;
@@ -228,11 +231,14 @@ export class UpdateManager {
     this.confirmInstall = confirmInstall;
     this.pauseDownloads = pauseDownloads;
     this.openInstaller = openInstaller;
+    this.openExternal = openExternal;
     this.onInstalled = onInstalled;
     this.candidate = null;
     this.verifiedFile = null;
     this.operation = null;
     this.controller = null;
+    this.latestInstallerOperation = null;
+    this.latestInstallerController = null;
     this.lastProgressAt = 0;
     this.state = { status: 'idle', currentVersion, latestVersion: null, platform, arch,
       releaseUrl: null, releaseNotes: '', publishedAt: '',
@@ -363,14 +369,41 @@ export class UpdateManager {
     candidate.sha256 = checksumFromManifest(contents, candidate.name);
   }
 
+  async readLatestRelease(controller) {
+    const response = await this.request(LATEST_RELEASE_URL, controller);
+    try { return JSON.parse(await this.text(response, MAX_RELEASE_BYTES, controller)); }
+    catch (error) { if (error instanceof UpdateError) throw error; fail('INVALID_RELEASE', '无法读取更新信息，请稍后重试。'); }
+  }
+
+  openLatestInstaller() {
+    if (this.latestInstallerOperation) return this.latestInstallerOperation;
+    const controller = new AbortController();
+    this.latestInstallerController = controller;
+    // Recovery is independent of the failed installation. Never clear its
+    // error, replace its verified candidate, or accept a URL from the renderer.
+    this.latestInstallerOperation = (async () => {
+      try {
+        const release = await this.readLatestRelease(controller);
+        const { candidate } = parseRelease(release, this.state, { includeInstaller: true });
+        controller.signal.throwIfAborted();
+        try { await this.openExternal(candidate.url); }
+        catch { fail('BROWSER_OPEN_FAILED', '无法打开浏览器，请检查默认浏览器设置后重试。'); }
+        return { ok: true, version: candidate.version, name: candidate.name };
+      } catch (error) {
+        const reason = controller.signal.aborted ? controller.signal.reason : error;
+        const failure = reason instanceof UpdateError ? reason
+          : new UpdateError('NETWORK_ERROR', '无法获取最新安装包，请检查网络连接后重试。');
+        return { ok: false, error: { code: failure.code, message: failure.message } };
+      }
+    })().finally(() => { this.latestInstallerOperation = null; this.latestInstallerController = null; });
+    return this.latestInstallerOperation;
+  }
+
   checkForUpdates() {
     return this.run('check', async controller => {
       if (this.state.status === 'downloaded') return;
       this.emit({ status: 'checking', error: null, checkError: null, canRetry: false });
-      const response = await this.request(LATEST_RELEASE_URL, controller);
-      let release;
-      try { release = JSON.parse(await this.text(response, MAX_RELEASE_BYTES, controller)); }
-      catch (error) { if (error instanceof UpdateError) throw error; fail('INVALID_RELEASE', '无法读取更新信息，请稍后重试。'); }
+      const release = await this.readLatestRelease(controller);
       const { metadata, candidate } = parseRelease(release, this.state);
       // Cached filenames only signal that progress may exist. Resolve the
       // current trusted manifest before deciding which saved bytes are usable.
@@ -561,6 +594,8 @@ export class UpdateManager {
   }
 
   async shutdown() {
+    this.latestInstallerController?.abort(new UpdateError('CANCELED', '应用即将关闭。'));
+    await this.latestInstallerOperation;
     if (['checking', 'downloading'].includes(this.state.status)) {
       this.controller?.abort(new UpdateError('CANCELED', '应用即将关闭。'));
       await this.operation;

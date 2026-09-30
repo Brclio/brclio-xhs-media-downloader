@@ -60,6 +60,13 @@
         <p id="desktop-update-dialog-version"></p>
       </header>
       <div id="desktop-update-dialog-notes" class="desktop-update-dialog-notes" role="region" aria-label="本次更新内容" tabindex="0"></div>
+      <section id="desktop-update-dialog-manual" class="desktop-update-dialog-manual" aria-label="手动安装新版" tabindex="0" hidden>
+        <h3>请手动下载最新版，覆盖安装</h3>
+        <p>按钮会通过默认浏览器，下载适合当前系统与芯片的最新安装包。</p>
+        <p data-manual-install-guidance></p>
+        <p>覆盖安装通常会保留账号、任务和已下载文件。请保留原数据目录及下载文件夹，不要先卸载或删除数据。</p>
+        <p id="desktop-update-dialog-manual-status" class="desktop-manual-installer-status" role="status" aria-live="polite" hidden></p>
+      </section>
       <div class="desktop-update-dialog-bottom">
         <div id="desktop-update-dialog-progress-wrap" class="desktop-update-progress-wrap" hidden>
           <progress id="desktop-update-dialog-progress" max="100" aria-label="更新下载进度"></progress>
@@ -67,6 +74,9 @@
         </div>
         <p id="desktop-update-dialog-check-note" class="desktop-update-check-note" role="status" aria-live="polite" hidden></p>
         <p id="desktop-update-dialog-error" class="desktop-update-error" role="alert" hidden></p>
+        <div id="desktop-update-dialog-manual-actions" class="desktop-update-dialog-actions desktop-manual-installer-actions" hidden>
+          <button id="desktop-update-dialog-manual-download" class="desktop-update-dialog-primary" type="button">手动下载安装包</button>
+        </div>
         <div class="desktop-update-dialog-actions">
           <button id="desktop-update-dialog-later" class="desktop-update-dialog-secondary" type="button">稍后再说</button>
           <button id="desktop-update-dialog-action" class="desktop-update-dialog-primary" type="button">立即更新</button>
@@ -189,6 +199,14 @@
             <p id="desktop-update-progress-text"></p>
           </div>
           <p id="desktop-update-error" class="desktop-update-error" role="alert" hidden></p>
+          <section id="desktop-update-manual" class="desktop-update-manual" aria-label="手动安装新版" hidden>
+            <strong>请手动下载最新版，覆盖安装</strong>
+            <p>按钮会通过默认浏览器，下载适合当前系统与芯片的最新安装包。</p>
+            <p data-manual-install-guidance></p>
+            <p>覆盖安装通常会保留账号、任务和已下载文件。请保留原数据目录及下载文件夹，不要先卸载或删除数据。</p>
+            <button id="desktop-update-manual-download" class="button button-primary" type="button">手动下载安装包</button>
+            <p id="desktop-update-manual-status" class="desktop-manual-installer-status" role="status" aria-live="polite" hidden></p>
+          </section>
           <p id="desktop-update-installation-hint" class="desktop-update-installation-hint" hidden></p>
           <details id="desktop-update-notes-details" class="desktop-update-notes-details" hidden>
             <summary>查看更新内容</summary>

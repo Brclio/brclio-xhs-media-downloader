@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
   downloadUpdate: () => ipcRenderer.invoke('desktop:download-update'),
   cancelUpdateDownload: () => ipcRenderer.invoke('desktop:cancel-update-download'),
   installUpdate: () => ipcRenderer.invoke('desktop:install-update'),
+  openLatestInstaller: () => ipcRenderer.invoke('desktop:open-latest-installer'),
   respondInstallConfirmation: (id, confirmed) => ipcRenderer.invoke('desktop:respond-install-confirmation', id, confirmed),
   onInstallConfirmation: (callback) => {
     if (typeof callback !== 'function') throw new TypeError('callback must be a function');

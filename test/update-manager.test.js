@@ -6,6 +6,7 @@ import { Readable } from 'node:stream';
 import { mkdtemp, mkdir, open, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { UpdateManager, LATEST_RELEASE_URL, allowedAssetRedirect, checksumFromManifest,
   compareVersions, createElectronUpdateFetch, installerName, parseRelease } from '../desktop/update-manager.js';
 
@@ -259,6 +260,164 @@ test('checking only fetches metadata, publishes no local path, and selects the p
   assert.ok(!JSON.stringify(state).includes(f.directory));
   assert.ok(!JSON.stringify(state).includes('browser_download_url'));
   assert.equal(state.error, null);
+});
+
+test('manual recovery opens the official latest installer for each supported platform, including reinstalling the current version', async t => {
+  for (const [platform, arch] of [['darwin', 'arm64'], ['darwin', 'x64'], ['win32', 'x64']]) {
+    const opened = [];
+    const latest = release({ version: '1.7.0', platform, arch });
+    const f = await fixture(t, { currentVersion: '1.7.0', platform, arch, release: latest,
+      openExternal: async url => { opened.push(url); } });
+    const before = await f.manager.checkForUpdates();
+    assert.equal(before.status, 'up-to-date');
+    assert.deepEqual(await f.manager.openLatestInstaller(), { ok: true, version: '1.7.0', name: latest.assets[0].name });
+    assert.deepEqual(opened, [latest.assets[0].browser_download_url]);
+    assert.deepEqual(f.requests, [LATEST_RELEASE_URL, LATEST_RELEASE_URL]);
+    assert.deepEqual(f.manager.snapshot(), before);
+    assert.equal(f.manager.candidate, null);
+    assert.deepEqual(await readdir(f.directory), [], 'browser recovery must not download or alter the update cache');
+  }
+});
+
+test('manual recovery refreshes latest without changing the failed installation or its verified cached installer', async t => {
+  let latest = release(), opened;
+  const f = await fixture(t, { fetchImpl: url => url === LATEST_RELEASE_URL ? Response.json(latest) : new Response(content),
+    confirmInstall: async () => true,
+    openInstaller: async () => { throw Object.assign(new Error('无法确认应用处理器架构，已停止安装。'), { code: 'MAC_UPDATE_ARCH' }); },
+    openExternal: async url => { opened = url; } });
+  await f.manager.checkForUpdates();
+  await f.manager.downloadUpdate();
+  const failed = await f.manager.installUpdate();
+  assert.equal(failed.error.code, 'MAC_UPDATE_ARCH');
+  const candidate = f.manager.candidate, verifiedFile = f.manager.verifiedFile;
+  latest = release({ version: '1.8.0' });
+  const requestCount = f.requests.length;
+  assert.deepEqual(await f.manager.openLatestInstaller(), { ok: true, version: '1.8.0', name: latest.assets[0].name });
+  assert.equal(opened, latest.assets[0].browser_download_url);
+  assert.deepEqual(f.requests.slice(requestCount), [LATEST_RELEASE_URL]);
+  assert.deepEqual(f.manager.snapshot(), failed);
+  assert.equal(f.manager.candidate, candidate);
+  assert.equal(f.manager.verifiedFile, verifiedFile);
+  assert.deepEqual(await readFile(verifiedFile), content);
+});
+
+test('manual recovery never opens a release older than the installed application', async t => {
+  let opened = false;
+  const f = await fixture(t, { currentVersion: '1.8.0', release: release({ version: '1.7.0' }),
+    openExternal: async () => { opened = true; } });
+  const before = f.manager.snapshot();
+  const result = await f.manager.openLatestInstaller();
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'OLDER_RELEASE');
+  assert.match(result.error.message, /已阻止.*旧版/);
+  assert.equal(opened, false);
+  assert.deepEqual(f.manager.snapshot(), before);
+});
+
+test('manual recovery refuses untrusted, ambiguous or incomplete release assets before opening a browser', async t => {
+  for (const [change, code] of [
+    [latest => { latest.assets[0].browser_download_url = 'https://attacker.example/setup.dmg'; }, 'UNTRUSTED_URL'],
+    [latest => { latest.html_url = 'https://github.com/another/project/releases/tag/v1.7.0'; }, 'UNTRUSTED_URL'],
+    [latest => { latest.assets.push({ ...latest.assets[0] }); }, 'ASSET_NOT_FOUND'],
+    [latest => { latest.assets = release({ arch: 'x64' }).assets; }, 'ASSET_NOT_FOUND'],
+    [latest => { latest.assets[0].digest = 'sha256:invalid'; }, 'INVALID_CHECKSUM'],
+    [latest => { latest.prerelease = true; }, 'INVALID_RELEASE']
+  ]) {
+    const latest = release(); change(latest);
+    let opened = false;
+    const f = await fixture(t, { release: latest, openExternal: async () => { opened = true; } });
+    const before = f.manager.snapshot();
+    const result = await f.manager.openLatestInstaller();
+    assert.equal(result.ok, false);
+    assert.equal(result.error.code, code);
+    assert.equal(opened, false);
+    assert.deepEqual(f.manager.snapshot(), before);
+  }
+});
+
+test('manual recovery reports request errors without leaking internals and permits a fresh retry', async t => {
+  for (const [failure, code] of [
+    [() => { throw new Error('secret URL and personal path'); }, 'NETWORK_ERROR'],
+    [() => new Response('', { status: 429 }), 'RATE_LIMITED'],
+    [() => new Response('{invalid json'), 'INVALID_RELEASE'],
+    [() => new Response(null, { status: 302, headers: { location: 'https://attacker.example/latest' } }), 'UNTRUSTED_REDIRECT'],
+    [() => new Promise(() => {}), 'TIMEOUT']
+  ]) {
+    let shouldFail = true, opened = 0;
+    const f = await fixture(t, { networkTimeoutMs: 15,
+      fetchImpl: () => shouldFail ? failure() : Response.json(release()), openExternal: async () => { opened++; } });
+    const before = f.manager.snapshot();
+    const failed = await f.manager.openLatestInstaller();
+    assert.equal(failed.ok, false);
+    assert.equal(failed.error.code, code);
+    assert.doesNotMatch(JSON.stringify(failed), /secret|personal|attacker/);
+    assert.equal(opened, 0);
+    assert.deepEqual(f.manager.snapshot(), before);
+    shouldFail = false;
+    assert.equal((await f.manager.openLatestInstaller()).ok, true);
+    assert.equal(opened, 1);
+    assert.deepEqual(f.manager.snapshot(), before);
+  }
+});
+
+test('manual recovery browser errors preserve update state and remain retryable', async t => {
+  let shouldFail = true;
+  const f = await fixture(t, { openExternal: async () => {
+    if (shouldFail) throw new Error('private browser path');
+  } });
+  const before = await f.manager.checkForUpdates();
+  const failed = await f.manager.openLatestInstaller();
+  assert.equal(failed.error.code, 'BROWSER_OPEN_FAILED');
+  assert.doesNotMatch(JSON.stringify(failed), /private/);
+  assert.deepEqual(f.manager.snapshot(), before);
+  shouldFail = false;
+  assert.equal((await f.manager.openLatestInstaller()).ok, true);
+  assert.deepEqual(f.manager.snapshot(), before);
+});
+
+test('concurrent manual recovery clicks share one lookup and browser launch, but a later click refreshes latest', async t => {
+  let respond, opened = 0;
+  const f = await fixture(t, { fetchImpl: () => new Promise(resolve => { respond = resolve; }),
+    openExternal: async () => { opened++; } });
+  const first = f.manager.openLatestInstaller();
+  const duplicate = f.manager.openLatestInstaller();
+  assert.equal(first, duplicate);
+  respond(Response.json(release()));
+  assert.equal((await first).ok, true);
+  assert.equal(opened, 1);
+  assert.deepEqual(f.requests, [LATEST_RELEASE_URL]);
+  const next = f.manager.openLatestInstaller();
+  respond(Response.json(release({ version: '1.8.0' })));
+  assert.equal((await next).version, '1.8.0');
+  assert.equal(opened, 2);
+  assert.deepEqual(f.requests, [LATEST_RELEASE_URL, LATEST_RELEASE_URL]);
+});
+
+test('shutdown cancels a pending manual installer lookup without launching a browser or clearing the update error', async t => {
+  let waiting = false, opened = false;
+  const f = await fixture(t, { fetchImpl: () => waiting ? new Promise(() => {}) : new Response('', { status: 429 }),
+    openExternal: async () => { opened = true; } });
+  const before = await f.manager.checkForUpdates();
+  waiting = true;
+  const opening = f.manager.openLatestInstaller();
+  await f.manager.shutdown();
+  assert.equal((await opening).error.code, 'CANCELED');
+  assert.equal(opened, false);
+  assert.deepEqual(f.manager.snapshot(), before);
+});
+
+test('the preload recovery capability never forwards renderer-supplied installer URLs or platform overrides', async () => {
+  let desktop;
+  const invocations = [];
+  const response = { ok: true, version: '1.7.0', name: 'Brclio-XHS-1.7.0-mac-arm64.dmg' };
+  const preload = await readFile(new URL('../desktop/preload.cjs', import.meta.url), 'utf8');
+  runInNewContext(preload, { require(module) {
+    assert.equal(module, 'electron');
+    return { contextBridge: { exposeInMainWorld(name, api) { assert.equal(name, 'xhsDesktop'); desktop = api; } },
+      ipcRenderer: { invoke: async (...args) => { invocations.push(args); return response; } } };
+  } });
+  assert.equal(await desktop.openLatestInstaller('https://attacker.example/installer.exe', { platform: 'win32' }), response);
+  assert.deepEqual(invocations, [['desktop:open-latest-installer']]);
 });
 
 test('equal and older releases never offer a downgrade or require installer assets', async t => {

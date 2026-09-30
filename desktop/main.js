@@ -185,6 +185,7 @@ function registerIpc() {
   handle('desktop:download-update', () => updateManager.downloadUpdate());
   handle('desktop:cancel-update-download', () => updateManager.cancelUpdateDownload());
   handle('desktop:install-update', () => updateManager.installUpdate());
+  handle('desktop:open-latest-installer', () => updateManager.openLatestInstaller());
   handle('desktop:respond-install-confirmation', (id, confirmed) => installConfirmation.respond(id, confirmed));
   handle('desktop:choose-directory', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -339,6 +340,7 @@ async function boot() {
     directory: path.join(app.getPath('userData'), 'updates'),
     portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR),
     fetchImpl: createElectronUpdateFetch(net),
+    openExternal: url => shell.openExternal(url),
     onUpdate(state) {
       if (state.status !== lastUpdateStatus) { diagnostic('update.state', { status: state.status, latestVersion: state.latestVersion, error: state.error }); lastUpdateStatus = state.status; }
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:update-state', state);

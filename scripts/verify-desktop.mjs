@@ -1,13 +1,15 @@
 // Developer smoke: run with node_modules/.bin/electron scripts/verify-desktop.mjs.
 // Uses a disposable application profile and the real main/preload/protocol code.
-import { app, Menu, net, session } from 'electron';
+import { app, Menu, net, session, shell } from 'electron';
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import { createServer } from 'node:http';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createElectronUpdateFetch } from '../desktop/update-manager.js';
+import { Readable } from 'node:stream';
+import { createElectronUpdateFetch, installerName, LATEST_RELEASE_URL } from '../desktop/update-manager.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -63,6 +65,47 @@ async function verifyUpdateTransport() {
   }
 }
 
+async function verifyManualInstallerBridge(win) {
+  const name = installerName(pkg.version, process.platform, process.arch);
+  const url = `https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v${pkg.version}/${name}`;
+  const release = { tag_name: `v${pkg.version}`, draft: false, prerelease: false,
+    html_url: `https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v${pkg.version}`,
+    assets: [{ name, browser_download_url: url, size: 32, digest: `sha256:${'0'.repeat(64)}` }] };
+  const request = net.request, openExternal = shell.openExternal;
+  const opened = [];
+  let requests = 0;
+  // Intercept only OS/network effects. Exercise the real main constructor,
+  // trusted IPC handler, preload, release selection and browser callback.
+  net.request = options => {
+    if (options.url !== LATEST_RELEASE_URL) return request.call(net, options);
+    requests++;
+    const connection = new EventEmitter();
+    connection.abort = () => {};
+    connection.end = () => queueMicrotask(() => {
+      const incoming = Readable.from([Buffer.from(JSON.stringify(release))]);
+      incoming.statusCode = 200;
+      incoming.headers = {};
+      connection.emit('response', incoming);
+    });
+    return connection;
+  };
+  shell.openExternal = async value => { opened.push(value); };
+  try {
+    const before = await win.webContents.executeJavaScript('window.xhsDesktop.getUpdateState()');
+    for (let index = 0; index < 2; index++) {
+      const result = await win.webContents.executeJavaScript("window.xhsDesktop.openLatestInstaller('https://attacker.example/installer.exe')");
+      assert.deepEqual(result, { ok: true, version: pkg.version, name });
+    }
+    assert.equal(requests, 2, 'Each completed recovery action refreshes official release metadata');
+    assert.deepEqual(opened, [url, url], 'The real UpdateManager must be wired to shell.openExternal with a validated asset');
+    assert.deepEqual(await win.webContents.executeJavaScript('window.xhsDesktop.getUpdateState()'), before);
+    return true;
+  } finally {
+    net.request = request;
+    shell.openExternal = openExternal;
+  }
+}
+
 app.on('browser-window-created', (_event, win) => {
   win.webContents.on('did-finish-load', async () => {
     if (done || !win.webContents.getURL().startsWith('xhs-app://local/')) return;
@@ -76,6 +119,7 @@ app.on('browser-window-created', (_event, win) => {
       assert.equal(win.getTitle(), 'Brclio 小红书下载器');
       if (process.platform === 'darwin') assert.equal(Menu.getApplicationMenu().items[0].label, 'Brclio 小红书下载器');
       const updateTransportVerified = await verifyUpdateTransport();
+      const manualInstallerBridgeVerified = await verifyManualInstallerBridge(win);
       const result = await win.webContents.executeJavaScript(`(async () => {
         const info = await window.xhsDesktop.getInfo();
         const state = await window.xhsDesktop.getProfileState();
@@ -88,7 +132,7 @@ app.on('browser-window-created', (_event, win) => {
           await new Promise(resolve => setTimeout(resolve, 50));
         }
         const feedback = await window.xhsDesktop.submitFeedback({ title: '验证未登录反馈', description: '本地主进程接口验证，无远端上传。', category: 'other' });
-        const updateMethods = ['checkForUpdates', 'downloadUpdate', 'cancelUpdateDownload', 'installUpdate', 'onUpdateState', 'onInstallConfirmation', 'respondInstallConfirmation', 'retryItem']
+        const updateMethods = ['checkForUpdates', 'downloadUpdate', 'cancelUpdateDownload', 'installUpdate', 'openLatestInstaller', 'onUpdateState', 'onInstallConfirmation', 'respondInstallConfirmation', 'retryItem']
           .every(name => typeof window.xhsDesktop[name] === 'function');
         const unsubscribeClipboard = window.xhsDesktop.onClipboardProgress(() => {});
         unsubscribeClipboard();
@@ -118,7 +162,7 @@ app.on('browser-window-created', (_event, win) => {
       }
       const screenshot = path.join(temporary, 'desktop.png');
       writeFileSync(screenshot, (await win.webContents.capturePage()).toPNG());
-      console.log(JSON.stringify({ smoke: 'passed', ...result, updateTransportVerified, screenshot }));
+      console.log(JSON.stringify({ smoke: 'passed', ...result, updateTransportVerified, manualInstallerBridgeVerified, screenshot }));
       clearTimeout(timer);
       app.quit();
     } catch (error) {

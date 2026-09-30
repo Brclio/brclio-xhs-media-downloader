@@ -90,6 +90,9 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     updateProgress: element("desktop-update-progress"),
     updateProgressText: element("desktop-update-progress-text"),
     updateError: element("desktop-update-error"),
+    updateManual: element("desktop-update-manual"),
+    updateManualDownload: element("desktop-update-manual-download"),
+    updateManualStatus: element("desktop-update-manual-status"),
     updateInstallationHint: element("desktop-update-installation-hint"),
     updateNotesDetails: element("desktop-update-notes-details"),
     updateNotes: element("desktop-update-notes"),
@@ -108,6 +111,10 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     updateDialogProgressText: element("desktop-update-dialog-progress-text"),
     updateDialogCheckNote: element("desktop-update-dialog-check-note"),
     updateDialogError: element("desktop-update-dialog-error"),
+    updateDialogManual: element("desktop-update-dialog-manual"),
+    updateDialogManualActions: element("desktop-update-dialog-manual-actions"),
+    updateDialogManualDownload: element("desktop-update-dialog-manual-download"),
+    updateDialogManualStatus: element("desktop-update-dialog-manual-status"),
     updateDialogLater: element("desktop-update-dialog-later"),
     updateDialogAction: element("desktop-update-dialog-action"),
     installDialog: element("desktop-install-confirmation"),
@@ -179,6 +186,10 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   let updateState = { status: "idle" };
   let updatePending = null;
   let updateRequestId = 0;
+  let manualInstallerPending = false;
+  let manualInstallerMessage = "";
+  let manualInstallerFailed = false;
+  let manualInstallerContext = "";
   const shownUpdateDialogs = new Set();
   let updateDialogPreviousFocus = null;
   let updateDialogNotesText = null;
@@ -745,6 +756,62 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     }
   }
 
+  function renderManualInstaller() {
+    const show = updateState.status === "error" && updateState.error?.phase === "install";
+    const context = show ? JSON.stringify([updateState.latestVersion, updateState.error]) : "";
+    if (manualInstallerContext !== context) {
+      manualInstallerContext = context;
+      manualInstallerMessage = "";
+      manualInstallerFailed = false;
+    }
+    ui.updateManual.hidden = !show;
+    ui.updateDialogManual.hidden = !show;
+    ui.updateDialogManualActions.hidden = !show;
+    ui.updateDialogNotes.hidden = show;
+    const guidance = desktopInfo.platform === "win32" && desktopInfo.portable
+      ? "下载后先退出旧版，运行安装包安装正式版，之后从新版快捷方式启动。旧便携文件不会自动删除。"
+      : "下载后先退出旧版，再将新版安装到原位置并覆盖。";
+    for (const container of [ui.updateManual, ui.updateDialogManual]) {
+      container.querySelector("[data-manual-install-guidance]").textContent = guidance;
+    }
+    for (const button of [ui.updateManualDownload, ui.updateDialogManualDownload]) {
+      button.disabled = manualInstallerPending;
+      button.textContent = manualInstallerPending ? "正在获取安装包…" : "手动下载安装包";
+      button.setAttribute("aria-busy", String(manualInstallerPending));
+    }
+    for (const message of [ui.updateManualStatus, ui.updateDialogManualStatus]) {
+      message.hidden = !manualInstallerMessage;
+      message.textContent = manualInstallerMessage;
+      message.dataset.status = manualInstallerFailed ? "error" : "success";
+    }
+  }
+
+  async function openManualInstaller() {
+    if (manualInstallerPending || updateState.status !== "error" || updateState.error?.phase !== "install") return;
+    const context = manualInstallerContext;
+    manualInstallerPending = true;
+    manualInstallerMessage = "";
+    manualInstallerFailed = false;
+    renderManualInstaller();
+    try {
+      const result = await bridge.openLatestInstaller();
+      if (context !== manualInstallerContext) return;
+      if (!result?.ok) {
+        manualInstallerFailed = true;
+        manualInstallerMessage = `未能打开安装包下载：${result?.error?.message || "暂时无法获取安装包，请稍后重试。"}`;
+        return;
+      }
+      manualInstallerMessage = `已请求默认浏览器下载${result.version ? ` v${result.version}` : "最新版本"} 安装包，请查看浏览器下载进度。下载完成后再退出旧版并安装。`;
+    } catch {
+      if (context !== manualInstallerContext) return;
+      manualInstallerFailed = true;
+      manualInstallerMessage = "未能打开安装包下载：请检查网络和默认浏览器设置后重试。";
+    } finally {
+      manualInstallerPending = false;
+      renderManualInstaller();
+    }
+  }
+
   function renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes, checkNote }) {
     if (!ui.updateDialog) return;
     ui.updateDialog.dataset.status = status;
@@ -799,6 +866,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     ui.updateCheckNote.textContent = checkNote;
     const failed = status === "error";
     const failedPhase = ["check", "download", "install"].includes(next.error?.phase) ? next.error.phase : "check";
+    renderManualInstaller();
     const mayRetry = next.canRetry !== false;
     const received = count(next.download?.receivedBytes);
     const total = count(next.download?.totalBytes);
@@ -1190,6 +1258,8 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   ui.updateDownload.addEventListener("click", () => void performUpdate("download"));
   ui.updateCancel.addEventListener("click", () => void performUpdate("cancel"));
   ui.updateInstall.addEventListener("click", () => void performUpdate("install"));
+  ui.updateManualDownload.addEventListener("click", () => void openManualInstaller());
+  ui.updateDialogManualDownload.addEventListener("click", () => void openManualInstaller());
   ui.updateDialogLater?.addEventListener("click", closeUpdateDialog);
   ui.updateDialogAction?.addEventListener("click", () => {
     const action = ui.updateDialogAction.dataset.action;

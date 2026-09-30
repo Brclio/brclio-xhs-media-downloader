@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('xhsDesktop', {
   downloadUpdate: () => invoke('downloadUpdate'),
   cancelUpdateDownload: () => invoke('cancelUpdateDownload'),
   installUpdate: () => invoke('installUpdate'),
+  openLatestInstaller: () => invoke('openLatestInstaller'),
   onInstallConfirmation: callback => subscribe('ui-fixture:install-confirmation', callback),
   respondInstallConfirmation: (id, confirmed) => invoke('respondInstallConfirmation', { id, confirmed }),
   chooseDirectory: () => invoke('chooseDirectory'),
@@ -118,6 +119,9 @@ app.whenReady().then(async () => {
   let releaseConfirmationReply;
   let installationPlatform = 'darwin';
   let installationPortable = false;
+  let installationMode = 'confirmation';
+  let manualInstallerMode = 'pending';
+  let resolveManualInstaller;
   let resolveDirectory;
   let win;
   const publishProfile = value => { profile = value; win.webContents.send('ui-fixture:profile', value); return value; };
@@ -206,6 +210,7 @@ app.whenReady().then(async () => {
       return state;
     }
     if (method === 'installUpdate') {
+      if (installationMode === 'failure') return publishUpdate({ ...available(), status: 'error', error: { phase: 'install', message: '测试安装失败' } });
       const id = `fixture-install-${++installSequence}`;
       publishUpdate({ ...available(), status: 'installing' });
       const result = new Promise(resolve => { pendingInstall = { id, resolve }; });
@@ -234,6 +239,10 @@ app.whenReady().then(async () => {
       }
       pending.resolve(publishUpdate({ ...available(), status: value.confirmed ? 'installing' : 'downloaded' }));
       return true;
+    }
+    if (method === 'openLatestInstaller') {
+      if (manualInstallerMode === 'throw') throw new Error('测试浏览器拒绝打开 <img src=x onerror=alert(1)>');
+      return new Promise(resolve => { resolveManualInstaller = resolve; });
     }
     return profile;
   });
@@ -688,6 +697,88 @@ app.whenReady().then(async () => {
   assert.equal(calls.filter(call => call.method === 'respondInstallConfirmation').at(-1).value.confirmed, true);
   publishUpdate({ ...available(), status: 'error', error: { phase: 'install', message: '测试安装失败' } });
   await check(`document.querySelector('#desktop-update-install').textContent === '重试安装'`, 'installation error retry');
+  installationMode = 'failure';
+  await click('#desktop-update-install');
+  await check(`document.querySelector('#desktop-update-dialog').open && !document.querySelector('#desktop-update-dialog-manual').hidden`, 'failed installation opens manual recovery in the actual update modal');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-manual').hidden`), false, 'about page also offers manual installation');
+  assert.equal(calls.filter(call => call.method === 'openLatestInstaller').length, 0, 'installation failure alone never opens the browser');
+  assert.match(await evaluate(`document.querySelector('#desktop-update-dialog-manual').textContent`), /退出旧版.*原位置并覆盖/s);
+  assert.match(await evaluate(`document.querySelector('#desktop-update-manual').textContent`), /通常会保留账号、任务和已下载文件/);
+  await evaluate(`document.querySelector('#desktop-update-dialog-manual-download').click(); document.querySelector('#desktop-update-dialog-manual-download').dispatchEvent(new MouseEvent('click')); document.querySelector('#desktop-update-manual-download').dispatchEvent(new MouseEvent('click'));`);
+  await check(`document.querySelector('#desktop-update-dialog-manual-download').disabled && document.querySelector('#desktop-update-manual-download').disabled`, 'both manual buttons share the pending state');
+  assert.equal(calls.filter(call => call.method === 'openLatestInstaller').length, 1, 'rapid clicks across both surfaces invoke the backend once');
+  assert.equal(calls.filter(call => call.method === 'openLatestInstaller')[0].value, undefined, 'renderer submits no URL, platform or architecture');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-manual-download').textContent`), '正在获取安装包…');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').disabled`), false, 'manual loading keeps the existing retry action available');
+  await click('#desktop-update-dialog-later');
+  await check(`!document.querySelector('#desktop-update-dialog').open && document.querySelector('#desktop-update-manual-download').disabled`, 'later dismisses the modal without interrupting the independent request');
+  resolveManualInstaller({ ok: false, error: { code: 'NETWORK', message: '测试网络错误 <img src=x onerror=alert(1)>' } });
+  await check(`!document.querySelector('#desktop-update-manual-download').disabled && document.querySelector('#desktop-update-manual-status').dataset.status === 'error'`, 'manual fetch failure is visible and can retry');
+  assert.match(await evaluate(`document.querySelector('#desktop-update-manual-status').textContent`), /未能打开安装包下载.*测试网络错误/);
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-error').textContent`), '测试安装失败', 'network failure retains the original installation error');
+  await click('#desktop-update-manual-download');
+  await check(`document.querySelector('#desktop-update-manual-download').disabled`, 'about page can retry the manual download');
+  resolveManualInstaller({ ok: true, version: '1.6.9', name: 'latest-mac-arm64.dmg' });
+  await check(`!document.querySelector('#desktop-update-manual-download').disabled && document.querySelector('#desktop-update-manual-status').textContent.includes('v1.6.9')`, 'confirmed browser request reports the freshly fetched version');
+  assert.match(await evaluate(`document.querySelector('#desktop-update-manual-status').textContent`), /请查看浏览器下载进度/);
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-error').textContent`), '测试安装失败', 'opening a manual installer never claims installation success');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-install').textContent`), '重试安装');
+  await click('#desktop-update-install');
+  await check(`document.querySelector('#desktop-update-dialog').open && !document.querySelector('#desktop-update-dialog-action').disabled`, 'existing installation retry remains usable after manual download');
+  manualInstallerMode = 'throw';
+  await click('#desktop-update-dialog-manual-download');
+  await check(`!document.querySelector('#desktop-update-dialog-manual-download').disabled && document.querySelector('#desktop-update-dialog-manual-status').textContent.includes('请检查网络和默认浏览器设置后重试')`, 'rejected browser IPC also reports failure and restores controls');
+  assert.doesNotMatch(await evaluate(`document.querySelector('#desktop-update-dialog-manual-status').textContent`), /ui-fixture:invoke|Error invoking/, 'unexpected IPC internals do not enter the user guidance');
+  for (const selector of ['#desktop-update-manual-status', '#desktop-update-dialog-manual-status']) {
+    assert.equal(await evaluate(`document.querySelector('${selector}').querySelector('img') === null`), true, 'manual installer errors render as safe text');
+  }
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-error').textContent`), '测试安装失败');
+  publishUpdate({ ...update, canRetry: false });
+  await check(`document.querySelector('#desktop-update-dialog-action').disabled && !document.querySelector('#desktop-update-dialog-manual-download').disabled && !document.querySelector('#desktop-update-manual').hidden`, 'manual recovery stays available when automatic installation cannot retry');
+  publishUpdate({ ...update, canRetry: true });
+  await check(`!document.querySelector('#desktop-update-dialog-action').disabled`, 'automatic retry availability follows the original update state');
+  if (process.argv.includes('--classic-scrollbars')) {
+    // Reproduce a CI desktop with scrollbars that consume layout width, even on
+    // a development Mac configured to use overlay scrollbars.
+    await win.webContents.insertCSS('.desktop-page { overflow-y: scroll !important; } .desktop-page::-webkit-scrollbar { width: 16px; }');
+  }
+  const manualInstallerScreenshots = {};
+  const manualRecoveryFits = `(() => {
+    const d = document.querySelector('#desktop-update-dialog'), b = d.getBoundingClientRect();
+    const content = document.querySelector('#desktop-update-dialog-manual');
+    return d.open && b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight && d.scrollWidth <= d.clientWidth
+      && content.clientHeight > 0 && content.scrollWidth <= content.clientWidth
+      && ['#desktop-update-dialog-manual-download', '#desktop-update-dialog-action', '#desktop-update-dialog-later'].every(selector => {
+        const r = document.querySelector(selector).getBoundingClientRect(); return r.top >= b.top && r.bottom <= b.bottom && r.left >= b.left && r.right <= b.right && r.height >= 44;
+      });
+  })()`;
+  for (const [width, height] of [[1180, 800], [390, 844], [390, 480], [320, 480]]) {
+    await resizeViewport(width, height);
+    await check(manualRecoveryFits, `manual recovery and all actions fit ${width}×${height}`);
+    await evaluate(`document.querySelector('#desktop-update-dialog-manual').scrollTop = 9999`);
+    assert.equal(await evaluate(manualRecoveryFits), true, 'scrolling manual guidance keeps all failure actions visible');
+    await evaluate(`document.querySelector('#desktop-update-dialog-manual').scrollTop = 0`);
+    const name = `${width}x${height}`;
+    manualInstallerScreenshots[name] = path.join(temporary, `desktop-manual-installer-${name}.png`);
+    writeFileSync(manualInstallerScreenshots[name], await captureFrame());
+  }
+  await click('#desktop-update-dialog-later');
+  await click('#about-tab');
+  await evaluate(`document.querySelector('#desktop-update-manual-download').scrollIntoView({ block: 'center' })`);
+  assert.equal(await evaluate(`(() => { const p = document.querySelector('#desktop-about-page'), b = document.querySelector('#desktop-update-manual-download').getBoundingClientRect(); return p.scrollWidth <= p.clientWidth && b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight; })()`), true, 'about recovery remains reachable without narrow overflow');
+  manualInstallerScreenshots.about = path.join(temporary, 'desktop-manual-installer-about-narrow.png');
+  writeFileSync(manualInstallerScreenshots.about, await captureFrame());
+  manualInstallerMode = 'pending';
+  await click('#desktop-update-manual-download');
+  await check(`document.querySelector('#desktop-update-manual-download').disabled`, 'a manual request can overlap a later update state');
+  publishUpdate({ ...available(), status: 'downloaded' });
+  await check(`document.querySelector('#desktop-update-manual').hidden && document.querySelector('#desktop-update-dialog-manual').hidden`, 'leaving installation failure hides both manual recovery views');
+  resolveManualInstaller({ ok: true, version: '9.9.9' });
+  await check(`!document.querySelector('#desktop-update-manual-download').disabled`, 'late manual reply releases busy state');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-manual-status').textContent`), '', 'stale manual result cannot replace a newer update state');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-panel').dataset.status`), 'downloaded');
+  installationMode = 'confirmation';
+  await resizeViewport(1180, 980);
   publishUpdate({ ...available(), status: 'error', error: { phase: 'check', message: '测试检查失败' } });
   await check(`!document.querySelector('#desktop-update-retry').hidden`, 'check error retry');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-download').hidden`), true, 'a raw latestVersion cannot authorize downloading after an ordinary check error');
@@ -801,11 +892,6 @@ app.whenReady().then(async () => {
   win.webContents.send('ui-fixture:navigate', { page: 'about' });
   await check(`document.body.dataset.desktopPage === 'about'`, 'main-process notification navigates to about');
   await screenshotPage('about', '#about-tab');
-  if (process.argv.includes('--classic-scrollbars')) {
-    // Reproduce a CI desktop with scrollbars that consume layout width, even on
-    // a development Mac configured to use overlay scrollbars.
-    await win.webContents.insertCSS('.desktop-page { overflow-y: scroll !important; } .desktop-page::-webkit-scrollbar { width: 16px; }');
-  }
   await resizeViewport(390, 844);
   // clientWidth excludes a classic vertical scrollbar; innerWidth describes
   // the requested viewport consistently on macOS and Windows.
@@ -915,7 +1001,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {
