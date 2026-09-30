@@ -1243,3 +1243,10 @@ body.is-desktop .toast { z-index: 300; max-width: min(460px, calc(100vw - 30px))
   body.is-desktop #single-note-panel .form-actions .button-secondary { width: auto; }
   body.is-desktop .desktop-diagnostics-panel { padding: 20px; }
 }
+
+/* Public community entry stays available for guests and every software account. */
+body.is-desktop .desktop-vip-link small { display: block; margin-top: 4px; color: var(--ink-light); font-size: .63rem; font-weight: 400; }
+body.is-desktop .desktop-vip-link .desktop-nav-icon { color: var(--blue-deep); }
+body.is-desktop .desktop-vip-page { padding: 0; overflow: hidden; scrollbar-gutter: auto; }
+body.is-desktop #desktop-vip-frame { display: block; width: 100%; height: 100%; border: 0; background: var(--cream); }
+@media (max-width: 600px) { body.is-desktop .desktop-vip-link small { display: none; } }

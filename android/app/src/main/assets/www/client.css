@@ -45,6 +45,11 @@ select { display:block; max-width:100%; color:var(--ink); border:1px solid var(-
 .learning-promo h2 { font-size:19px; margin:8px 0; }
 .learning-promo p { font-size:13px; color:var(--muted); margin:8px 0 16px; }
 .learning-promo .button { border-color:var(--blue); color:var(--blue); }
+.vip-promo { margin-top:24px; padding:20px 0; border-top:1px solid var(--border); }
+.vip-promo h2 { font:700 clamp(18px,3vw,19px)/1.4 'Noto Serif SC','Songti SC',serif; margin:8px 0; }
+.vip-promo p { font-size:13px; color:var(--muted); margin:8px 0 16px; }
+.vip-promo .button { border-color:var(--blue); color:var(--blue); }
+.vip-price { background:var(--yellow); padding:2px 9px; color:var(--ink); font-size:12px; font-weight:700; white-space:nowrap; }
 .shortcut-benefit { margin-top:24px; padding:clamp(16px,4vw,24px); background:var(--paper); border:1px solid var(--border); border-radius:12px; }
 .benefit-label { display:inline-block; padding:2px 8px; border-radius:4px; background:var(--yellow); font-size:11px; font-weight:700; }
 .shortcut-benefit h2 { font-size:18px; margin:10px 0 8px; }

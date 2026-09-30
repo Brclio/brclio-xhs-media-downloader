@@ -226,6 +226,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     ["account", element("account-tab"), element("desktop-account-page")],
     ["feedback", element("feedback-tab"), element("desktop-feedback-page")],
     ["about", element("about-tab"), element("desktop-about-page")],
+    ["vip", element("desktop-vip-link"), element("desktop-vip-page")],
     ["learning", element("desktop-learning-link"), element("desktop-learning-page")]
   ];
   for (const [, , page] of pages) page.classList.add("desktop-page");
@@ -266,6 +267,35 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     });
     restoreLearningScroll(learningScrollRevision);
   });
+  const vipFrame = element("desktop-vip-frame");
+  let returnFromVip = "profile";
+  let vipScroll = null;
+  let vipRevision = 0;
+  let vipScrollPending = false;
+  function restoreVipScroll(revision) {
+    if (!vipScroll || currentPage !== "vip" || !vipFrame.contentDocument?.body?.classList.contains("vip-embedded")) return;
+    vipScrollPending = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (revision !== vipRevision || currentPage !== "vip") return;
+      vipFrame.contentWindow.scrollTo({ ...vipScroll, behavior: "instant" });
+      vipScrollPending = false;
+    }));
+  }
+  vipFrame.addEventListener("load", () => {
+    const content = vipFrame.contentDocument;
+    if (!content || new URL(content.URL).pathname !== "/vip.html") return;
+    content.body.classList.add("vip-embedded");
+    content.addEventListener("click", event => {
+      const link = event.target.closest?.("a[href]");
+      if (!link) return;
+      const target = new URL(link.href);
+      if (target.protocol === location.protocol && target.host === location.host && ["/", "/index.html"].includes(target.pathname)) {
+        event.preventDefault();
+        navigate(returnFromVip);
+      }
+    });
+    restoreVipScroll(vipRevision);
+  });
   let dismissedUpdate = "";
   let announcedUpdate = "";
   const compactNavigation = window.matchMedia("(max-width: 600px)");
@@ -284,6 +314,14 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   }, { once: true });
 
   function selectTab(tab, focus = false) {
+    const vipTab = element("desktop-vip-link");
+    const enteringVip = tab === vipTab && currentPage !== "vip";
+    const leavingVip = currentPage === "vip" && tab !== vipTab;
+    if (leavingVip && !vipScrollPending && vipFrame.contentDocument?.body?.classList.contains("vip-embedded")) {
+      vipScroll = { left: vipFrame.contentWindow.scrollX, top: vipFrame.contentWindow.scrollY };
+    }
+    if (enteringVip || leavingVip) { vipRevision++; vipScrollPending = false; }
+    if (enteringVip) returnFromVip = currentPage;
     const learningTab = element("desktop-learning-link");
     const enteringLearning = tab === learningTab && currentPage !== "learning";
     const leavingLearning = currentPage === "learning" && tab !== learningTab;
@@ -306,11 +344,13 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
       if (selected) currentPage = name;
     }
     document.body.dataset.desktopPage = currentPage;
+    if (currentPage === "vip" && !vipFrame.hasAttribute("src")) vipFrame.src = vipFrame.dataset.src;
     if (currentPage === "learning" && !learningFrame.hasAttribute("src")) learningFrame.src = learningFrame.dataset.src;
     if (currentPage === "about") element("desktop-update-announcement").hidden = true;
     if (currentPage === "feedback") { void loadDiagnostics(); void loadFeedbackList(); }
     if (focus) tab.focus();
     if (compactNavigation.matches) tab.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (enteringVip) restoreVipScroll(vipRevision);
     if (enteringLearning) restoreLearningScroll(learningScrollRevision);
   }
 

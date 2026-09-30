@@ -40,6 +40,7 @@ import java.util.concurrent.Executors;
 
 /** A separate local page keeps the downloader's parsed result and ongoing transfer intact. */
 public final class LearningActivity extends Activity {
+    static final String EXTRA_PAGE = "promotion_page";
     private static final int SAVE_QR = 2001;
     private static final String CSP = "default-src 'none'; script-src 'self'; style-src 'self'; "
             + "img-src 'self'; font-src 'self'; connect-src 'none'; frame-src 'none'; "
@@ -74,7 +75,7 @@ public final class LearningActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if (!request.isForMainFrame()) return true;
                 String url = request.getUrl().toString();
-                if (LearningPagePolicy.isLearningDocument(url)) return false;
+                if (LearningPagePolicy.isPromotionDocument(url)) return false;
                 if (request.hasGesture()) {
                     if (LearningPagePolicy.isReturnDocument(url)) finish();
                     else openExternal(request.getUrl());
@@ -85,7 +86,7 @@ public final class LearningActivity extends Activity {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
                 if (!"GET".equals(request.getMethod()) || !LearningPagePolicy.isBundledAsset(url)
-                        || (request.isForMainFrame() && !LearningPagePolicy.isLearningDocument(url))) return blocked();
+                        || (request.isForMainFrame() && !LearningPagePolicy.isPromotionDocument(url))) return blocked();
                 WebResourceResponse response = assets.shouldInterceptRequest(request.getUrl());
                 if (response == null) return blocked();
                 Map<String, String> headers = new HashMap<>();
@@ -96,11 +97,11 @@ public final class LearningActivity extends Activity {
             }
 
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap icon) {
-                if (!LearningPagePolicy.isLearningDocument(url)) view.stopLoading();
+                if (!LearningPagePolicy.isPromotionDocument(url)) view.stopLoading();
             }
 
             @Override public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
-                Toast.makeText(LearningActivity.this, "页面已停止，请重新打开书籍与编程私教页面。", Toast.LENGTH_LONG).show();
+                Toast.makeText(LearningActivity.this, "页面已停止，请返回下载页重新打开。", Toast.LENGTH_LONG).show();
                 finish();
                 return true;
             }
@@ -109,7 +110,7 @@ public final class LearningActivity extends Activity {
             WebViewCompat.addWebMessageListener(webView, "BrclioLearning", Collections.singleton(LearningPagePolicy.ORIGIN),
                     (view, message, origin, mainFrame, reply) -> {
                         if (destroyed || !mainFrame || !LearningPagePolicy.ORIGIN.equals(origin.toString())
-                                || !LearningPagePolicy.isLearningDocument(view.getUrl())) return;
+                                || !LearningPagePolicy.isPromotionDocument(view.getUrl())) return;
                         try {
                             if ("saveQr".equals(message.getData())) saveQr();
                         } catch (RuntimeException ignored) { }
@@ -127,7 +128,7 @@ public final class LearningActivity extends Activity {
         });
         setContentView(container);
         ViewCompat.requestApplyInsets(container);
-        webView.loadUrl(LearningPagePolicy.START_URL);
+        webView.loadUrl(LearningPagePolicy.startUrl(getIntent().getStringExtra(EXTRA_PAGE)));
     }
 
     private void saveQr() {
@@ -138,7 +139,7 @@ public final class LearningActivity extends Activity {
         try {
             saving = true;
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                    .setType("image/png").putExtra(Intent.EXTRA_TITLE, "Brclio-微信咨询.png");
+                    .setType("image/png").putExtra(Intent.EXTRA_TITLE, LearningPagePolicy.qrFilename(webView.getUrl()));
             startActivityForResult(intent, SAVE_QR);
         } catch (RuntimeException error) {
             saving = false;

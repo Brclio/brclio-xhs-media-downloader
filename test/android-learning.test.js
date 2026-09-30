@@ -3,10 +3,10 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-async function learningPage({ bridge = true, failBridge = false } = {}) {
+async function learningPage({ page = 'learn', bridge = true, failBridge = false } = {}) {
   const [html, source] = await Promise.all([
-    readFile(new URL('../learn.html', import.meta.url), 'utf8'),
-    readFile(new URL('../learn.js', import.meta.url), 'utf8'),
+    readFile(new URL(`../${page}.html`, import.meta.url), 'utf8'),
+    readFile(new URL(`../${page}.js`, import.meta.url), 'utf8'),
   ]);
   const element = () => ({
     listeners: new Map(), textContent: '', opened: false,
@@ -44,8 +44,9 @@ async function learningPage({ bridge = true, failBridge = false } = {}) {
   };
 }
 
-test('Android QR saving waits for native completion, prevents duplicate pickers, and retries after cancellation', async () => {
-  const page = await learningPage();
+for (const document of ['learn', 'vip']) {
+test(`Android ${document} QR saving waits for native completion, prevents duplicate pickers, and retries after cancellation`, async () => {
+  const page = await learningPage({ page: document });
   await page.save();
   await page.save();
   assert.deepEqual(page.requests, ['saveQr']);
@@ -58,8 +59,8 @@ test('Android QR saving waits for native completion, prevents duplicate pickers,
   assert.equal(page.status(), '二维码已保存到所选位置。');
 });
 
-test('Android without the native save bridge gives a working enlargement and screenshot path', async () => {
-  const page = await learningPage({ bridge: false });
+test(`Android ${document} without the native save bridge gives a working enlargement and screenshot path`, async () => {
+  const page = await learningPage({ page: document, bridge: false });
   assert.equal(page.saveLink.textContent, '放大二维码并截图');
   assert.match(page.mobileNote.textContent, /截图/);
   await page.save();
@@ -67,10 +68,11 @@ test('Android without the native save bridge gives a working enlargement and scr
   assert.match(page.status(), /请截图保存/);
 });
 
-test('Android native bridge failure shows a fallback and does not leave saving locked', async () => {
-  const page = await learningPage({ failBridge: true });
+test(`Android ${document} native bridge failure shows a fallback and does not leave saving locked`, async () => {
+  const page = await learningPage({ page: document, failBridge: true });
   await page.save();
   assert.match(page.status(), /放大后截图/);
   await page.save();
   assert.equal(page.requests.length, 2);
 });
+}

@@ -92,6 +92,98 @@ async function until(check, label, milliseconds = 60000) {
   throw new Error(`Timed out waiting for ${label}`);
 }
 
+export async function verifyVipCommunity({ shell, device, snapshot, screenshot, findText, tap, output }) {
+  const marker = 'VIP-return-input-check';
+  const qrFilename = 'Brclio-VIP-微信.png';
+  const savedPath = `/sdcard/Download/${qrFilename}`;
+  const display = (await shell('wm', 'size')).match(/(?:Physical|Override) size: (\d+)x(\d+)/);
+  assert.ok(display, 'Emulator dimensions are required for returning to the input');
+  const screenWidth = Number(display[1]), screenHeight = Number(display[2]);
+  // Exercise Android's real share entry and preserve that input through the local
+  // promotion Activity. The signed application has no debug or test bridge.
+  await shell('am', 'start', '-W', '-n', `${APPLICATION}/.MainActivity`, '-a', 'android.intent.action.SEND',
+    '-t', 'text/plain', '--es', 'android.intent.extra.TEXT', marker);
+  await until(() => findText(marker), 'single-post shared text before VIP navigation');
+  assert.ok(await findText('开始解析'), 'Single-post parsing remains available');
+  const entry = await findText('查看微信二维码与入群说明', true);
+  assert.ok(entry, 'VIP community must be accessible on the downloader without authentication');
+  assert.ok(await findText('99.99 元'), 'The public Android entry must show the paid price');
+  await screenshot('vip-public-entry');
+
+  await shell('cmd', 'connectivity', 'airplane-mode', 'enable');
+  try {
+    assert.equal((await shell('settings', 'get', 'global', 'airplane_mode_on')).trim(), '1');
+    await tap(entry);
+    await until(() => findText('VIP 交流群'), 'offline VIP page title');
+    const activity = await shell('dumpsys', 'activity', 'activities');
+    assert.match(activity, /(?:topResumedActivity=|ResumedActivity:)[^\n]*com\.brclio\.xhs\/\.LearningActivity/,
+      'VIP must open the application local Activity');
+    await writeFile(path.join(output, 'vip-offline-activities.txt'), activity);
+    assert.ok(await findText('99.99', true), 'VIP page price must be visible offline');
+    assert.ok(await findText('预算与可行性范围内', true), 'Budget and feasibility conditions must be visible');
+    assert.ok(await findText('后续产品，抢先体验', true), 'Early product access must be visible');
+    assert.ok(await findText('添加时请备注「VIP 交流群」', true), 'Personal WeChat entry instructions must be visible');
+    const qr = await findText('放大微信二维码', true);
+    assert.ok(qr, 'Bundled personal QR code must be accessible offline');
+    await screenshot('vip-offline-contact');
+    await tap(qr);
+    await until(() => findText('微信联系 AI悦创 / Brclio'), 'QR enlargement dialog');
+    const enlargedQr = await findText('VIP 交流群申请用个人微信二维码，放大版');
+    assert.ok(enlargedQr && onScreen(enlargedQr), 'The enlarged QR image must have rendered bounds');
+    await screenshot('vip-offline-qr-dialog');
+    const close = await findText('关闭二维码');
+    assert.ok(close); await tap(close);
+
+    // Save the fixed bundled image with the real Storage Access Framework. This
+    // path is deleted only on the already-restricted disposable CI emulator.
+    await shell('rm', '-f', savedPath);
+    const saveQr = await findText('保存二维码', true);
+    assert.ok(saveQr); await tap(saveQr);
+    let picker = await until(async () => {
+      const nodes = await snapshot();
+      return nodes.some(node => /documentsui/.test(node.package || '') && node.text === qrFilename) ? nodes : null;
+    }, 'native PNG create-document picker');
+    const roots = picker.find(node => onScreen(node) && /Show roots/i.test(node['content-desc'] || ''));
+    if (roots) {
+      await tap(roots);
+      const downloads = await until(() => findText('Downloads'), 'system Downloads destination');
+      await tap(downloads);
+    }
+    picker = await snapshot();
+    assert.ok(picker.some(node => /documentsui/.test(node.package || '') && node.text === qrFilename),
+      'The QR picker must keep the VIP filename');
+    const save = picker.find(node => /documentsui/.test(node.package || '') && onScreen(node)
+      && /^save$/i.test(node.text || '') && node.enabled === 'true');
+    assert.ok(save, 'Native DocumentsUI save control must be present');
+    await screenshot('vip-qr-system-save');
+    await tap(save);
+    await until(() => findText('二维码已保存到所选位置'), 'native QR save completion');
+    const savedBytes = await device(['exec-out', 'cat', savedPath], { encoding: 'buffer' });
+    const expectedBytes = await readFile(path.join(ROOT, 'assets/support/wechat-personal-qr.png'));
+    assert.equal(hash(savedBytes), hash(expectedBytes), 'Saved QR must match the bundled personal QR bytes');
+    assert.equal(savedBytes.length, expectedBytes.length);
+    await screenshot('vip-qr-save-complete');
+    await shell('input', 'keyevent', 'KEYCODE_BACK');
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await shell('input', 'swipe', String(Math.floor(screenWidth / 2)), String(Math.floor(screenHeight * .3)),
+        String(Math.floor(screenWidth / 2)), String(Math.floor(screenHeight * .8)), '250');
+    }
+    await until(() => findText('保存一篇笔记'), 'return to original single-post page');
+    assert.ok(await findText(marker), 'Opening and closing VIP must preserve the shared input');
+    assert.ok(await findText('开始解析'), 'Return must keep the single-post parser usable');
+    await screenshot('vip-return-single-post');
+    return { visibleWithoutLogin: true, paidPrice: '99.99 元', localActivityVerified: true,
+      airplaneModeEnabledDuringPageCheck: true, offlinePageVerified: true,
+      budgetAndFeasibilityVisible: true, earlyAccessVisible: true, personalWechatInstructionsVisible: true,
+      enlargedQrRendered: true, nativeSafSaveVerified: true, savedQrFilename: qrFilename,
+      savedQrBytes: savedBytes.length, savedQrSha256: hash(savedBytes),
+      returnedToSinglePost: true, sharedInputPreserved: true };
+  } finally {
+    await shell('cmd', 'connectivity', 'airplane-mode', 'disable');
+    assert.equal((await shell('settings', 'get', 'global', 'airplane_mode_on')).trim(), '0');
+  }
+}
+
 export async function verifyAndroidUpgrade() {
   assert.equal(process.env.GITHUB_ACTIONS, 'true', 'This destructive install fixture is restricted to GitHub Actions');
   const serial = process.env.ANDROID_SERIAL || `emulator-${process.env.EMULATOR_PORT || '5554'}`;
@@ -218,6 +310,7 @@ export async function verifyAndroidUpgrade() {
     assert.equal(after.firstInstallTime, before.firstInstallTime, 'This was a reinstall rather than an in-place upgrade');
     const userSettingAfter = (await shell('appops', 'get', APPLICATION, 'REQUEST_INSTALL_PACKAGES')).trim();
     assert.match(userSettingAfter, /REQUEST_INSTALL_PACKAGES:\s*allow/, 'Upgrade lost the user-selected install-source permission');
+    const vipCommunity = await verifyVipCommunity({ shell, device, snapshot, screenshot, findText, tap, output });
     const afterUi = await checkUpdateUi('after');
     const manualFallback = await verifyManualFallback({ root: ROOT, output, run, device, shell,
       snapshot, screenshot, findText, tap });
@@ -232,7 +325,7 @@ export async function verifyAndroidUpgrade() {
       retainedUserSetting: { name: 'Allow from this source', setThroughSystemUi: true,
         before: userSettingBefore, after: userSettingAfter, preserved: true },
       updateUi: { before: beforeUi, after: afterUi }, oldAndNewLaunchVerified: true, appCrashDetected: false,
-      manualFallback,
+      manualFallback, vipCommunity,
       limitations: ['The actual system Package Manager replacement was tested. In-app APK download and system installer confirmation were not automated; no newer public release exists for the unpublished candidate.'],
     };
     await writeFile(path.join(output, 'verification.json'), JSON.stringify(report, null, 2) + '\n');
@@ -246,6 +339,8 @@ export async function verifyAndroidUpgrade() {
       firstInstallTimePreserved: true, userSettingPreserved: true, updateCheckUiVerified: true,
       inAppInstallerConfirmationTested: false,
       manualFallbackFixtureVerified: manualFallback.actualBrowserIntentVerified,
+      vipCommunityVerified: vipCommunity.offlinePageVerified && vipCommunity.nativeSafSaveVerified
+        && vipCommunity.sharedInputPreserved,
     };
     await writeFile(path.join(ROOT, 'dist-android/android-update.json'), JSON.stringify(proof, null, 2) + '\n');
     console.log(JSON.stringify(report));

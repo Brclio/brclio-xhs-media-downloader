@@ -54,6 +54,9 @@ export function validateReleaseProof(proof, { tag, sourceCommit, certificateSha2
     if (major > 1 || (major === 1 && (minor > 0 || patch >= 4))) {
       assert.equal(check.manualFallbackFixtureVerified, true, 'Android 1.0.4+ requires the isolated manual-fallback acceptance');
     }
+    if (major > 1 || (major === 1 && (minor > 0 || patch >= 5))) {
+      assert.equal(check.vipCommunityVerified, true, 'Android 1.0.5+ requires offline VIP page, QR save and return acceptance');
+    }
   }
   return version;
 }

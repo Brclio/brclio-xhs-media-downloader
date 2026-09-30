@@ -7,9 +7,9 @@ def signingKeys = ['ANDROID_SIGNING_STORE_FILE', 'ANDROID_SIGNING_STORE_PASSWORD
 def signingValues = signingKeys.collectEntries { [(it): System.getenv(it)] }
 def hasReleaseSigning = signingValues.values().every { it != null && !it.isBlank() }
 
-// Keep the promotion page identical to the website without checking in a second copy.
+// Keep the public promotion pages identical to the website without checking in second copies.
 def learningAssets = layout.buildDirectory.dir('generated/learningAssets')
-def learningFiles = ['learn.html', 'learn.css', 'learn.js', 'aiyc.svg', 'favicon.svg',
+def learningFiles = ['learn.html', 'learn.css', 'learn.js', 'vip.html', 'vip.css', 'vip.js', 'aiyc.svg', 'favicon.svg',
                      'assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png']
 def syncLearningAssets = tasks.register('syncLearningAssets', Sync) {
     from(rootProject.projectDir.parentFile) {
@@ -35,8 +35,8 @@ android {
         applicationId 'com.brclio.xhs'
         minSdk 26
         targetSdk 35
-        versionCode 10004
-        versionName '1.0.4'
+        versionCode 10005
+        versionName '1.0.5'
     }
 
     buildFeatures {

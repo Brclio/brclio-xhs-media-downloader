@@ -109,25 +109,25 @@ function openLocalPreview(url) {
   // Catch old links and programmatic window.open calls as well as the sidebar.
   // Keeping this in the main process prevents stale renderer code from creating
   // a second window or replacing the downloader and discarding its form state.
-  if (new URL(url).pathname === '/learn.html') {
-    navigateDesktop('learning');
+  if (['/learn.html', '/vip.html'].includes(new URL(url).pathname)) {
+    navigateDesktop(new URL(url).pathname === '/vip.html' ? 'vip' : 'learning');
     return;
   }
   const preview = new BrowserWindow({ parent: mainWindow, width: 720, height: 820,
     webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
   preview.removeMenu();
   preview.webContents.setWindowOpenHandler(({ url: target }) => {
-    if (isAppUrl(target) && new URL(target).pathname === '/learn.html') {
-      navigateDesktop('learning');
+    if (isAppUrl(target) && ['/learn.html', '/vip.html'].includes(new URL(target).pathname)) {
+      navigateDesktop(new URL(target).pathname === '/vip.html' ? 'vip' : 'learning');
       preview.close();
     } else external(target);
     return { action: 'deny' };
   });
   preview.webContents.on('will-navigate', (event, target) => {
     if (!isAppUrl(target)) { event.preventDefault(); external(target); }
-    else if (new URL(target).pathname === '/learn.html') {
+    else if (['/learn.html', '/vip.html'].includes(new URL(target).pathname)) {
       event.preventDefault();
-      navigateDesktop('learning');
+      navigateDesktop(new URL(target).pathname === '/vip.html' ? 'vip' : 'learning');
       preview.close();
     }
   });
@@ -257,9 +257,9 @@ async function createWindow() {
   });
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!isAppUrl(url)) { event.preventDefault(); external(url); }
-    else if (new URL(url).pathname === '/learn.html') {
+    else if (['/learn.html', '/vip.html'].includes(new URL(url).pathname)) {
       event.preventDefault();
-      navigateDesktop('learning');
+      navigateDesktop(new URL(url).pathname === '/vip.html' ? 'vip' : 'learning');
     }
   });
   mainWindow.webContents.on('will-attach-webview', (event) => event.preventDefault());

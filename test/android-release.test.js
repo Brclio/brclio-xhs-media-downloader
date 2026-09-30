@@ -51,6 +51,16 @@ test('Android 1.0.3 publication requires an emulator acceptance result bound to 
   assert.throws(() => validateReleaseProof(next, { ...checked, tag: 'android-v1.0.4' }), /manual-fallback acceptance/);
   next.emulatorUpgrade.manualFallbackFixtureVerified = true;
   assert.equal(validateReleaseProof(next, { ...checked, tag: 'android-v1.0.4' }), '1.0.4');
+  const vip = { ...next, version: '1.0.5', versionCode: 10005,
+    apk: { ...next.apk, name: 'Brclio-XHS-Android-1.0.5-release.apk' },
+    emulatorUpgrade: { ...next.emulatorUpgrade, targetVersion: '1.0.5', targetVersionCode: 10005 } };
+  const vipOptions = { ...checked, tag: 'android-v1.0.5' };
+  assert.throws(() => validateReleaseProof(vip, vipOptions), /offline VIP page, QR save and return acceptance/);
+  assert.equal(validateReleaseProof(vip, { ...vipOptions, requireEmulatorUpgrade: false }), '1.0.5');
+  vip.emulatorUpgrade.vipCommunityVerified = false;
+  assert.throws(() => validateReleaseProof(vip, vipOptions), /offline VIP page, QR save and return acceptance/);
+  vip.emulatorUpgrade.vipCommunityVerified = true;
+  assert.equal(validateReleaseProof(vip, vipOptions), '1.0.5');
   for (const [key, value] of Object.entries({ apkSha256: 'c'.repeat(64), sourceCommit: 'd'.repeat(40),
     targetVersionCode: 10002, baselineVersionCode: 10003, oldAndNewLaunchVerified: false,
     userSettingPreserved: false, inAppInstallerConfirmationTested: true })) {

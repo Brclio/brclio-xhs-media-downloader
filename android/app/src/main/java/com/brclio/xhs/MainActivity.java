@@ -179,8 +179,10 @@ public final class MainActivity extends Activity {
                 Uri uri = request.getUrl();
                 if (isLocalDocument(uri)) return false;
                 if (request.isForMainFrame() && request.hasGesture()
-                        && LearningPagePolicy.isLearningDocument(uri.toString())) {
-                    startActivity(new Intent(MainActivity.this, LearningActivity.class));
+                        && LearningPagePolicy.isPromotionDocument(uri.toString())) {
+                    startActivity(new Intent(MainActivity.this, LearningActivity.class)
+                            .putExtra(LearningActivity.EXTRA_PAGE,
+                                    LearningPagePolicy.isVipDocument(uri.toString()) ? "vip" : "learn"));
                     return true;
                 }
                 if (request.isForMainFrame() && request.hasGesture()) openExternal(uri);

@@ -10,16 +10,18 @@ export const PUBLIC_FILES = [
   'feedback.html', 'feedback.css', 'feedback.js',
   'product.html', 'product.css', 'product.js',
   'learn.html', 'learn.css', 'learn.js',
+  'vip.html', 'vip.css', 'vip.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css',
   'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'assets', 'admin'
 ];
 
-function learningWebNavigation(html, homepage) {
+function promotionWebNavigation(html, homepage, page = 'learn.html') {
   const header = homepage.match(/<header\b[^>]*class="app-header"[^>]*>[\s\S]*?<\/header>/)?.[0];
   if (!header) throw new Error('The learning page requires the homepage navigation');
+  const webClass = page === 'vip.html' ? 'vip-web' : 'learning-web';
   const navigation = header.replace(/<a\b[^>]*>/g, tag => {
-    const selected = /href="\/learn\.html"/.test(tag);
+    const selected = tag.includes(`href="/${page}"`);
     let link = tag.replace(/\saria-current="[^"]*"/g, '').replace(/class="([^"]*)"/, (_, value) => {
       const classes = value.split(/\s+/).filter(name => name && name !== 'is-current');
       if (selected) classes.push('is-current');
@@ -32,8 +34,8 @@ function learningWebNavigation(html, homepage) {
     .map(match => match[0]).filter(link => /href="https:\/\/fonts\.(?:googleapis|gstatic)\.com\//.test(link));
   return html.replace(/<header\b[^>]*>[\s\S]*?<\/header>/, navigation)
     .replace(/<body\b([^>]*)>/, (_, attributes) => attributes.includes('class="')
-      ? `<body${attributes.replace(/class="([^"]*)"/, 'class="$1 learning-web"')}>`
-      : `<body${attributes} class="learning-web">`)
+      ? `<body${attributes.replace(/class="([^"]*)"/, `class="$1 ${webClass}"`)}>`
+      : `<body${attributes} class="${webClass}">`)
     .replace('</head>', `${fonts.join('\n')}\n  <link rel="stylesheet" href="./site-header.css">\n</head>`);
 }
 
@@ -50,10 +52,10 @@ export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.u
       let html = (await readFile(path.join(root, name), 'utf8'))
         .replace(/^[ \t]*<!-- desktop-only:start -->[\s\S]*?<!-- desktop-only:end -->\r?\n?/gm, '');
       if (html.includes('<!-- desktop-only:')) throw new Error(`Unmatched desktop-only block in ${name}`);
-      // Native clients retain their compact local navigation. Only the public
-      // learning page receives the same menu and fonts as the downloader home.
-      if (name === 'learn.html' && /<header\b/.test(html)) {
-        html = learningWebNavigation(html, await readFile(path.join(root, 'index.html'), 'utf8'));
+      // Native clients retain their compact local navigation. The public
+      // promotion pages receive the same menu and fonts as the downloader home.
+      if (['learn.html', 'vip.html'].includes(name) && /<header\b/.test(html)) {
+        html = promotionWebNavigation(html, await readFile(path.join(root, 'index.html'), 'utf8'), name);
       }
       await writeFile(destination, html);
     } else {
