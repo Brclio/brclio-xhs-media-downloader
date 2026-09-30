@@ -1,0 +1,494 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-30T04:45:41.986Z",
+  "sourceSha": "76401951e44f7337836355dad6b0a6d45f279861",
+  "origin": "https://xhs.download.brclio.com",
+  "versions": {
+    "desktop": "1.8.19",
+    "android": "1.0.3"
+  },
+  "worker": {
+    "name": "brclio-xhs-downloader",
+    "versionId": "8197731f-851f-483a-9805-8e781f2cf5cb",
+    "health": {
+      "ok": true,
+      "platform": "cloudflare",
+      "version": "1.8.19",
+      "pythonBinding": true,
+      "deploymentId": "8197731f-851f-483a-9805-8e781f2cf5cb"
+    }
+  },
+  "pages": {
+    "project": "brclio-xhs-pages",
+    "deploymentId": "d4c85684-c182-4f00-8b7a-5b5f76be077d",
+    "deploymentUrl": "https://d4c85684.brclio-xhs-pages.pages.dev",
+    "environment": "Production",
+    "branch": "main",
+    "sourcePrefix": "7640195"
+  },
+  "assets": [
+    {
+      "route": "/download",
+      "status": 200,
+      "bytes": 22974,
+      "sha256": "75ad819b8acbb6c79873ed43541f6091e9bafb9d7383545968224e732eb20fe1",
+      "matchesReleaseBuild": true
+    },
+    {
+      "route": "/learn",
+      "status": 200,
+      "bytes": 11115,
+      "sha256": "4c17639250049113ee1dbea9d0edc60383b1962e9d15e66a54b6aab649d5590a",
+      "matchesReleaseBuild": true
+    },
+    {
+      "route": "/site-header.css",
+      "status": 200,
+      "bytes": 6251,
+      "sha256": "b7d957ff70d493b2c8b1dddecb85931ff75be01592c099f38d658f568eb1c4ef",
+      "matchesReleaseBuild": true
+    }
+  ],
+  "browser": {
+    "result": "PASS",
+    "engine": "Electron 44.4.3 Chromium, real production HTTPS",
+    "viewportWidths": [
+      1440,
+      390
+    ],
+    "checks": [
+      "downloads show both public release versions and exact verified URLs",
+      "learning page reuses all seven homepage navigation items and current-page highlighting",
+      "support navigation returns to home /#support",
+      "images load and layouts have no horizontal overflow",
+      "QR dialog, Escape focus restoration and saved PNG match original cropped source bytes"
+    ],
+    "qrDownloadSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+    "results": [
+      {
+        "width": 1440,
+        "download": {
+          "version": "v1.8.19",
+          "androidVersion": "v1.0.3",
+          "assets": {
+            "mac-arm64": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.19/Brclio-XHS-1.8.19-mac-arm64.dmg",
+            "mac-x64": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.19/Brclio-XHS-1.8.19-mac-x64.dmg",
+            "windows-setup": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.19/Brclio-XHS-1.8.19-windows-x64-setup.exe",
+            "windows-portable": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.19/Brclio-XHS-1.8.19-windows-x64-portable.exe"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.19",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.19"
+          ],
+          "androidReleaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.3",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.3"
+          ],
+          "androidAsset": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.3/Brclio-XHS-Android-1.0.3-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.3/Brclio-XHS-Android-1.0.3-release.apk.sha256"
+        },
+        "links": [
+          {
+            "label": "下载工具",
+            "href": "/",
+            "active": null
+          },
+          {
+            "label": "产品介绍",
+            "href": "/product.html",
+            "active": null
+          },
+          {
+            "label": "软件下载",
+            "href": "/download.html",
+            "active": null
+          },
+          {
+            "label": "编程私教与书籍",
+            "href": "/learn.html",
+            "active": "page"
+          },
+          {
+            "label": "更新记录",
+            "href": "/changelog.html",
+            "active": null
+          },
+          {
+            "label": "问题广场",
+            "href": "https://xhs.download.brclio.com/feedback.html",
+            "active": null
+          },
+          {
+            "label": "支持",
+            "href": "/#support",
+            "active": null
+          }
+        ],
+        "noOverflow": true,
+        "qrDialog": true,
+        "qrSaveSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+        "qrExactSourceBytes": true,
+        "support": "https://xhs.download.brclio.com/#support"
+      },
+      {
+        "width": 390,
+        "download": {
+          "version": "v1.8.19",
+          "androidVersion": "v1.0.3",
+          "assets": {
+            "mac-arm64": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.19/Brclio-XHS-1.8.19-mac-arm64.dmg",
+            "mac-x64": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.19/Brclio-XHS-1.8.19-mac-x64.dmg",
+            "windows-setup": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.19/Brclio-XHS-1.8.19-windows-x64-setup.exe",
+            "windows-portable": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.19/Brclio-XHS-1.8.19-windows-x64-portable.exe"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.19",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.19"
+          ],
+          "androidReleaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.3",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.3"
+          ],
+          "androidAsset": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.3/Brclio-XHS-Android-1.0.3-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.3/Brclio-XHS-Android-1.0.3-release.apk.sha256"
+        },
+        "links": [
+          {
+            "label": "下载工具",
+            "href": "/",
+            "active": null
+          },
+          {
+            "label": "产品介绍",
+            "href": "/product.html",
+            "active": null
+          },
+          {
+            "label": "软件下载",
+            "href": "/download.html",
+            "active": null
+          },
+          {
+            "label": "编程私教与书籍",
+            "href": "/learn.html",
+            "active": "page"
+          },
+          {
+            "label": "更新记录",
+            "href": "/changelog.html",
+            "active": null
+          },
+          {
+            "label": "问题广场",
+            "href": "https://xhs.download.brclio.com/feedback.html",
+            "active": null
+          },
+          {
+            "label": "支持",
+            "href": "/#support",
+            "active": null
+          }
+        ],
+        "noOverflow": true,
+        "qrDialog": true,
+        "qrSaveSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+        "qrExactSourceBytes": true,
+        "support": "https://xhs.download.brclio.com/#support"
+      }
+    ],
+    "artifacts": "/tmp/brclio-final-web-verification/run-tdaegv"
+  },
+  "anonymousSmoke": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-09-30T04:35:47.564Z",
+    "passed": 47,
+    "total": 47,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1055
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 547
+      },
+      {
+        "name": "static/feedback-board",
+        "ok": true,
+        "status": 200,
+        "durationMs": 320
+      },
+      {
+        "name": "static/feedback-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1050
+      },
+      {
+        "name": "static/feedback-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 253
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 269
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 522
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 202
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 328
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 192
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 560
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 292
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 524
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 239
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 810
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 306
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 304
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 661
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 301
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 308
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 217
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 188
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 335
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 194
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 550
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 307
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 213
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 314
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 858
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 330
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 380
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 332
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 326
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 393
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 1057
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 218
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 293
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 216
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 312
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 798
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 287
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 230
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 323
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 671
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 321
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 320
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 527
+      }
+    ]
+  },
+  "scope": "Production website and non-mutating API checks. Desktop native upgrade and Android emulator evidence are recorded in their separate publication reports."
+}
