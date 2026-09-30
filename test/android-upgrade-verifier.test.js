@@ -5,6 +5,8 @@ import { packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-a
 test('emulator acceptance reads signed package identity without confusing user or target SDK numbers', () => {
   const value = packageState('Package [com.brclio.xhs]\n userId=10176\n versionCode=10003 minSdk=26 targetSdk=35\n versionName=1.0.3\n firstInstallTime=2026-09-30 01:23:45\n');
   assert.deepEqual(value, { versionCode: 10003, versionName: '1.0.3', userId: 10176, firstInstallTime: '2026-09-30 01:23:45' });
+  const android15 = 'Package [com.brclio.xhs]\n appId=10176\n versionCode=10003 minSdk=26 targetSdk=35\n versionName=1.0.3\n User 0: installed=true\n  firstInstallTime=2026-09-30 01:23:45\n';
+  assert.deepEqual(packageState(android15), value, 'Android 15 package dumps label the app UID as appId');
   assert.throws(() => packageState('Unable to find package'), /Missing installed version/);
 });
 

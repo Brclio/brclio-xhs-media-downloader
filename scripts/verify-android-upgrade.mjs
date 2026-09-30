@@ -37,7 +37,9 @@ export function packageState(text) {
   const result = {
     versionCode: Number(text.match(/\bversionCode=(\d+)/)?.[1]),
     versionName: text.match(/\bversionName=([^\s]+)/)?.[1],
-    userId: Number(text.match(/\buserId=(\d+)/)?.[1]),
+    // Android 15 labels this appId; on the primary user it is the app UID.
+    // Older platform dumps use userId for the same package-level field.
+    userId: Number(text.match(/^\s*(?:appId|userId)=(\d+)/m)?.[1]),
     firstInstallTime: text.match(/\bfirstInstallTime=([^\r\n]+)/)?.[1]?.trim(),
   };
   assert.ok(Number.isSafeInteger(result.versionCode) && result.versionCode > 0, 'Missing installed version');
@@ -66,6 +68,7 @@ export async function verifyAndroidUpgrade() {
   const device = (args, options) => run(adb, ['-s', serial, ...args], options);
   const shell = (...args) => device(['shell', ...args]);
   assert.equal((await shell('getprop', 'ro.kernel.qemu')).trim(), '1', 'Only a disposable Android emulator is allowed');
+  assert.equal((await shell('am', 'get-current-user')).trim(), '0', 'Package appId must refer to the primary emulator user');
   const output = path.join(ROOT, 'dist-android/emulator-upgrade');
   const baselineDirectory = path.join(output, 'baseline');
   await mkdir(baselineDirectory, { recursive: true });
@@ -131,7 +134,9 @@ export async function verifyAndroidUpgrade() {
     assert.match(result, /Status: ok/);
     await until(() => findText('保存一篇笔记'), `${label} real WebView startup`);
     assert.match((await shell('pidof', APPLICATION)).trim(), /^\d/);
-    const installed = packageState(await shell('dumpsys', 'package', APPLICATION));
+    const dump = await shell('dumpsys', 'package', APPLICATION);
+    await writeFile(path.join(output, `${label}-package.txt`), dump);
+    const installed = packageState(dump);
     assert.equal(installed.versionName, expectedVersion);
     await screenshot(`${label}-startup`);
     return installed;
@@ -208,6 +213,7 @@ export async function verifyAndroidUpgrade() {
     return report;
   } finally {
     await writeFile(path.join(output, 'last-ui.xml'), lastXml).catch(() => {});
+    await screenshot('last-screen').catch(() => {});
     await device(['logcat', '-d']).then(log => writeFile(path.join(output, 'logcat.txt'), log)).catch(() => {});
   }
 }
