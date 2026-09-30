@@ -1,6 +1,6 @@
 # Brclio 小红书下载器 · Android
 
-Android 客户端版本独立编号，当前为 `1.0.5`，`versionCode` 为 `10005`（首版为 `1.0.0 / 10000`），支持 Android 8.0（API 26）及以上。安装 APK 后可粘贴小红书单篇笔记链接或分享文案，也可以在其他应用中通过系统「分享」将文字交给 Brclio。
+Android 客户端版本独立编号，当前为 `1.0.6`，`versionCode` 为 `10006`（首版为 `1.0.0 / 10000`），支持 Android 8.0（API 26）及以上。安装 APK 后可粘贴小红书单篇笔记链接或分享文案，也可以在其他应用中通过系统「分享」将文字交给 Brclio。
 
 本版聚焦单篇笔记：标题与正文、原图、实况静态图与动态片段、视频清晰度选择、勾选图片与 ZIP、图片复制及系统分享。保存文件时使用 Android 系统文件选择器，由用户选择位置；无需「所有文件访问权限」或相册读取权限。不同目标应用对多图剪贴板支持不同，可改用系统分享或 ZIP。
 
@@ -54,8 +54,8 @@ npm run android:build
 构建脚本只使用 Node.js 内置模块，不要求安装桌面版依赖。首次构建需要联网下载 Gradle 和 Android 依赖。脚本先核对完整 JDK（包含 `javac`、`jlink`）、SDK 与 Gradle Wrapper 校验值，再运行 Android 前端 Node.js 测试、Java 单元测试、Android lint 和 APK 构建。成功后才导出：
 
 ```text
-dist-android/Brclio-XHS-Android-1.0.5-debug.apk
-dist-android/Brclio-XHS-Android-1.0.5-debug.apk.sha256
+dist-android/Brclio-XHS-Android-1.0.6-debug.apk
+dist-android/Brclio-XHS-Android-1.0.6-debug.apk.sha256
 ```
 
 `debug` 包使用构建机的调试密钥，应用 ID 为 `com.brclio.xhs.debug`；正式包应用 ID 为 `com.brclio.xhs`，可并存。不同构建机产生的调试密钥可能不同，因此来自不同构建机的 debug 包不一定能覆盖安装。
@@ -63,7 +63,7 @@ dist-android/Brclio-XHS-Android-1.0.5-debug.apk.sha256
 连接已开启 USB 调试的设备后，可安装测试包：
 
 ```bash
-adb install -r dist-android/Brclio-XHS-Android-1.0.5-debug.apk
+adb install -r dist-android/Brclio-XHS-Android-1.0.6-debug.apk
 ```
 
 也可用 Android Studio 打开 `android/` 目录构建及运行。构建成功仅说明代码、资源与静态检查通过，不等于完成真机解析、文件保存或图片粘贴验证。
@@ -88,7 +88,7 @@ adb install -r dist-android/Brclio-XHS-Android-1.0.5-debug.apk
 npm run android:build:release
 ```
 
-成功后输出 `dist-android/Brclio-XHS-Android-1.0.5-release.apk`、同名 `.apk.sha256`、`SHA256SUMS.txt` 与 `android-update.json`。APK 使用 Android SDK 的 `apksigner` 校验真实签名，并以 `aapt` 读取并核对包名与版本；缺少签名配置、使用 Android Debug 证书、证书不符或 APK 版本不符都会失败。JSON 记录源码提交、工作区是否干净、版本、APK 字节数、校验值与签名证书指纹，供发布前核对。
+成功后输出 `dist-android/Brclio-XHS-Android-1.0.6-release.apk`、同名 `.apk.sha256`、`SHA256SUMS.txt` 与 `android-update.json`。APK 使用 Android SDK 的 `apksigner` 校验真实签名，并以 `aapt` 读取并核对包名与版本；缺少签名配置、使用 Android Debug 证书、证书不符或 APK 版本不符都会失败。JSON 记录源码提交、工作区是否干净、版本、APK 字节数、校验值与签名证书指纹，供发布前核对。
 
 后续升级继续使用同一签名密钥，并提高 `android/app/build.gradle` 中的 `versionCode` 与 `versionName`。`versionCode` 只要求严格递增，不根据版本名硬编码推算；Android 版本独立于根目录的桌面版版本号。
 
@@ -100,7 +100,7 @@ npm run android:build:release
 
 从 `1.0.4` 起，还在模拟器中安装临时源码副本生成的独立 debug 夹具：仅该副本的版本设为 `0.0.0-debug`，通过既有 debug WebView 调试能力注入标记清楚的失败界面状态，再真实点击手动下载按钮。原生代码联网校验最新公开 APK 与校验文件，并将官方 APK 地址交给实际浏览器；验收记录浏览器收到的 Intent。正式 APK 不开启调试或注入接口。这项检查不冒称触发了真实安装器失败，也不将浏览器地址跳转当作文件下载完成。
 
-从 `1.0.5` 起，模拟器发布门槛还要求正式签名包展示公开的 VIP 入口与价格，在飞行模式下打开本地群说明、放大二维码，通过系统文件选择器保存 PNG 并核对与仓库二维码的完整字节，返回后保留系统分享填入的文本与单篇解析入口。缺少这项与 APK 及源码绑定的证明时，发布脚本拒绝公开 Release。截图、界面 XML 与二维码保存校验记录随该次模拟器检查输出。
+从 `1.0.6` 起，模拟器发布门槛还要求正式签名包展示公开的 VIP 入口与价格，在飞行模式下打开本地群说明、放大二维码，通过系统文件选择器保存 PNG 并核对与仓库二维码的完整字节，返回后保留系统分享填入的文本与单篇解析入口。缺少这项与 APK 及源码绑定的证明时，发布脚本拒绝公开 Release。截图、界面 XML 与二维码保存校验记录随该次模拟器检查输出。
 
 维护者首次准备并妥善保管固定签名密钥后，在 GitHub 仓库配置以下 Secrets：
 
@@ -111,12 +111,12 @@ npm run android:build:release
 
 另配置公开仓库变量 `ANDROID_SIGNING_CERT_SHA256` 为正式签名证书的 SHA256 指纹。工作流把密钥解码到临时目录，以 `ANDROID_SIGNING_STORE_FILE` 传给构建，完成后清除临时文件。发布升级所需的原始密钥和密码应另行备份，不要为每个版本重新生成密钥。
 
-发布前先提交最终代码与该版本说明，例如 `docs/releases/android-v1.0.5.md`，再把 `android-v1.0.5` 标签推送到同一提交。发布脚本要求构建时工作区干净，且 APK 记录的提交与本地标签、远端标签及当前检出提交完全相同。它先创建草稿，上传并重新下载全部四个附件核对字节，再以 `--latest=false` 公开；Android 不占用桌面版的 GitHub Latest，原 Mac / Windows 自动更新仍使用桌面发布。
+发布前先提交最终代码与该版本说明，例如 `docs/releases/android-v1.0.6.md`，再把 `android-v1.0.6` 标签推送到同一提交。发布脚本要求构建时工作区干净，且 APK 记录的提交与本地标签、远端标签及当前检出提交完全相同。它先创建草稿，上传并重新下载全部四个附件核对字节，再以 `--latest=false` 公开；Android 不占用桌面版的 GitHub Latest，原 Mac / Windows 自动更新仍使用桌面发布。
 
 同一标签的发布作业串行执行。已公开的 Android Release 不覆盖；失败留下的草稿只有在提交和附件名称一致时才可由同一标签重试。若正式版本需要修复，请增加版本名和 `versionCode` 后发布新标签。手动运行同一发布流程可用：
 
 ```bash
-ANDROID_RELEASE_TAG=android-v1.0.5 node scripts/publish-android-release.mjs
+ANDROID_RELEASE_TAG=android-v1.0.6 node scripts/publish-android-release.mjs
 ```
 
 此命令需要已通过完整构建的正式附件、公开证书变量和已登录的 GitHub CLI；它会实际发布 Release。普通本地构建与 debug CI 均不会发布。

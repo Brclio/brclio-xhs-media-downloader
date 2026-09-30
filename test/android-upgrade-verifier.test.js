@@ -1,7 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import { captureUiHierarchy, installSourceToggle, packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
-import { selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
+import { FALLBACK_SHARED_ASSETS, selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
+
+test('isolated manual fallback fixture includes every shared asset required by the candidate Gradle bundle', async () => {
+  const gradle = await readFile(new URL('../android/app/build.gradle', import.meta.url), 'utf8');
+  const assetList = gradle.match(/def learningFiles\s*=\s*\[([\s\S]*?)\]/)?.[1];
+  assert.ok(assetList, 'Candidate Gradle shared promotion asset list must be explicit');
+  const required = [...assetList.matchAll(/'([^']+)'/g)].map(([, file]) => file);
+  assert.deepEqual([...FALLBACK_SHARED_ASSETS].sort(), required.sort(),
+    'The disposable fixture must copy the complete candidate bundle before its debug build');
+  for (const file of FALLBACK_SHARED_ASSETS) {
+    assert.ok((await readFile(new URL(`../${file}`, import.meta.url))).length > 0, `Shared asset is missing: ${file}`);
+  }
+});
 
 test('emulator acceptance reads signed package identity without confusing user or target SDK numbers', () => {
   const value = packageState('Package [com.brclio.xhs]\n userId=10176\n versionCode=10003 minSdk=26 targetSdk=35\n versionName=1.0.3\n firstInstallTime=2026-09-30 01:23:45\n');

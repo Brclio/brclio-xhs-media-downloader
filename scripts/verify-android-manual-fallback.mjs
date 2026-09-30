@@ -6,6 +6,13 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 
+// Match every shared asset required by Gradle's promotion-page bundle, so the
+// isolated fixture builds the same pages as the signed candidate.
+export const FALLBACK_SHARED_ASSETS = Object.freeze([
+  'learn.html', 'learn.css', 'learn.js', 'vip.html', 'vip.css', 'vip.js', 'aiyc.svg', 'favicon.svg',
+  'assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png',
+]);
+
 export function selectPublishedAndroid(releases) {
   const stable = releases.filter(release => release.draft === false && release.prerelease === false
     && /^android-v(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})$/.test(release.tag_name));
@@ -72,8 +79,7 @@ export async function verifyManualFallback({ root, output, run, device, shell, s
     filter: source => !path.relative(path.join(root, 'android'), source).split(path.sep)
       .some(part => ['build', '.gradle', 'local.properties'].includes(part)),
   });
-  for (const file of ['learn.html', 'learn.css', 'learn.js', 'aiyc.svg', 'favicon.svg',
-    'assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png']) {
+  for (const file of FALLBACK_SHARED_ASSETS) {
     await mkdir(path.dirname(path.join(fixtureRoot, file)), { recursive: true });
     await cp(path.join(root, file), path.join(fixtureRoot, file));
   }
