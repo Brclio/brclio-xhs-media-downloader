@@ -15,3 +15,9 @@
 下载 [Brclio-XHS-Android-1.0.7-release.apk](https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.7/Brclio-XHS-Android-1.0.7-release.apk)，直接覆盖原正式版，不要先卸载。正式包沿用固定签名；按系统提示完成安装。
 
 同名 `.apk.sha256` 与 `SHA256SUMS.txt` 提供校验值，`android-update.json` 记录源码提交、版本和签名证书指纹。debug 包使用独立应用 ID。
+
+## 发布核验
+
+正式 APK、校验文件和源码证明均已公开，匿名下载、SHA256、固定签名及 14 个打包页面资源核对通过。Android API 35 模拟器已验证旧正式版覆盖升级、数据保留、无需登录的 VIP 入口、飞行模式离线浏览、二维码系统文件保存以及返回下载页后保留输入。详见 [发布核验记录](android-v1.0.7-publication-verification.json)。
+
+覆盖升级通过系统 Package Manager 测试；应用内下载安装确认未自动化。手动下载回退通过 debug 页面故障夹具验证，不代表真实生产安装器故障或浏览器下载完成。

@@ -1,0 +1,860 @@
+{
+  "version": "1.8.23",
+  "androidVersion": "1.0.7",
+  "verifiedAt": "2026-09-30T13:31:17.130Z",
+  "websiteSourceSha": "cccce0d6f08d3630b18666dfed538dd27d961c2c",
+  "desktopReleaseSourceSha": "a5e449c1cacbadb33c62fcf7ebd8f6e401aab2fe",
+  "desktopPublicationVerification": "v1.8.23-publication-verification.json",
+  "deployments": {
+    "worker": "ef81b8f1-7eb6-4328-9861-b2fb7ead3efc",
+    "pages": {
+      "id": "956ef241",
+      "url": "https://956ef241.brclio-xhs-pages.pages.dev",
+      "origin": "https://brclio-xhs-pages.pages.dev"
+    }
+  },
+  "surfaces": [
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "health": {
+        "status": 200,
+        "version": "1.8.23",
+        "pythonBinding": true,
+        "deploymentId": "ef81b8f1-7eb6-4328-9861-b2fb7ead3efc"
+      },
+      "assets": [
+        {
+          "path": "index.html",
+          "status": 200,
+          "bytes": 53911,
+          "sha256": "91821338bbb8e6cafca51aa9ecdab3527b7d2d34f217bccd5a6bc2f51c6c6ce0"
+        },
+        {
+          "path": "download.html",
+          "status": 200,
+          "bytes": 23749,
+          "sha256": "48d3321be8a73aa3b63dea89a3f83744ddba7c14c609b9194d22371d8286300e"
+        },
+        {
+          "path": "download.js",
+          "status": 200,
+          "bytes": 9796,
+          "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433"
+        },
+        {
+          "path": "download.css",
+          "status": 200,
+          "bytes": 23754,
+          "sha256": "2b23a0179b97387fc585c7622dafac75ffe7f16001d9aabba835018de45cc727"
+        },
+        {
+          "path": "changelog.html",
+          "status": 200,
+          "bytes": 121912,
+          "sha256": "5013881c9543e753a14cc4bca4d8cf54499290a65bb1b331bb2c4573cd3d3812"
+        },
+        {
+          "path": "learn.html",
+          "status": 200,
+          "bytes": 11182,
+          "sha256": "555781b235327bccbdcad239a68ac828f4fb1d3af151227cb7adb0f0ab388e0a"
+        },
+        {
+          "path": "learn.js",
+          "status": 200,
+          "bytes": 3180,
+          "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78"
+        },
+        {
+          "path": "learn.css",
+          "status": 200,
+          "bytes": 14887,
+          "sha256": "81f3303749afbdffcdae138a23492ebd97e4159f362571364404893ad15725f4"
+        },
+        {
+          "path": "vip.html",
+          "status": 200,
+          "bytes": 5556,
+          "sha256": "7ed0f16868030b03f43e02d722ff885235fa1583abc19b74b561a6d3379ef27f"
+        },
+        {
+          "path": "vip.js",
+          "status": 200,
+          "bytes": 3180,
+          "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78"
+        },
+        {
+          "path": "vip.css",
+          "status": 200,
+          "bytes": 5599,
+          "sha256": "8745e78c24ea73132ccb8e048fb1f7a418e5a9231e4b6baa6964f267453f1ab9"
+        },
+        {
+          "path": "site-header.css",
+          "status": 200,
+          "bytes": 6251,
+          "sha256": "db53bdca3621a390a964bc75065bdf1fad245051edf9e91a07bc5e0e674c90a2"
+        },
+        {
+          "path": "desktop-ui.js",
+          "status": 200,
+          "bytes": 85717,
+          "sha256": "87363b576548be07d9237257dab7fe9f2ce4b62fc330643bdd6c004c0ddfae80"
+        },
+        {
+          "path": "desktop-ui.css",
+          "status": 200,
+          "bytes": 51082,
+          "sha256": "7bbd1274f215847fd3857e50ca15f818c8fd8ab73e680ef07084ec0797ffabf2"
+        },
+        {
+          "path": "assets/learning/book-promo.png",
+          "status": 200,
+          "bytes": 1951638,
+          "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd"
+        },
+        {
+          "path": "assets/support/wechat-personal-qr.png",
+          "status": 200,
+          "bytes": 178625,
+          "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f"
+        }
+      ]
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "health": {
+        "status": 200,
+        "version": "1.8.23",
+        "pythonBinding": true,
+        "deploymentId": "ef81b8f1-7eb6-4328-9861-b2fb7ead3efc"
+      },
+      "assets": [
+        {
+          "path": "index.html",
+          "status": 200,
+          "bytes": 53911,
+          "sha256": "91821338bbb8e6cafca51aa9ecdab3527b7d2d34f217bccd5a6bc2f51c6c6ce0"
+        },
+        {
+          "path": "download.html",
+          "status": 200,
+          "bytes": 23749,
+          "sha256": "48d3321be8a73aa3b63dea89a3f83744ddba7c14c609b9194d22371d8286300e"
+        },
+        {
+          "path": "download.js",
+          "status": 200,
+          "bytes": 9796,
+          "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433"
+        },
+        {
+          "path": "download.css",
+          "status": 200,
+          "bytes": 23754,
+          "sha256": "2b23a0179b97387fc585c7622dafac75ffe7f16001d9aabba835018de45cc727"
+        },
+        {
+          "path": "changelog.html",
+          "status": 200,
+          "bytes": 121912,
+          "sha256": "5013881c9543e753a14cc4bca4d8cf54499290a65bb1b331bb2c4573cd3d3812"
+        },
+        {
+          "path": "learn.html",
+          "status": 200,
+          "bytes": 11182,
+          "sha256": "555781b235327bccbdcad239a68ac828f4fb1d3af151227cb7adb0f0ab388e0a"
+        },
+        {
+          "path": "learn.js",
+          "status": 200,
+          "bytes": 3180,
+          "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78"
+        },
+        {
+          "path": "learn.css",
+          "status": 200,
+          "bytes": 14887,
+          "sha256": "81f3303749afbdffcdae138a23492ebd97e4159f362571364404893ad15725f4"
+        },
+        {
+          "path": "vip.html",
+          "status": 200,
+          "bytes": 5556,
+          "sha256": "7ed0f16868030b03f43e02d722ff885235fa1583abc19b74b561a6d3379ef27f"
+        },
+        {
+          "path": "vip.js",
+          "status": 200,
+          "bytes": 3180,
+          "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78"
+        },
+        {
+          "path": "vip.css",
+          "status": 200,
+          "bytes": 5599,
+          "sha256": "8745e78c24ea73132ccb8e048fb1f7a418e5a9231e4b6baa6964f267453f1ab9"
+        },
+        {
+          "path": "site-header.css",
+          "status": 200,
+          "bytes": 6251,
+          "sha256": "db53bdca3621a390a964bc75065bdf1fad245051edf9e91a07bc5e0e674c90a2"
+        },
+        {
+          "path": "desktop-ui.js",
+          "status": 200,
+          "bytes": 85717,
+          "sha256": "87363b576548be07d9237257dab7fe9f2ce4b62fc330643bdd6c004c0ddfae80"
+        },
+        {
+          "path": "desktop-ui.css",
+          "status": 200,
+          "bytes": 51082,
+          "sha256": "7bbd1274f215847fd3857e50ca15f818c8fd8ab73e680ef07084ec0797ffabf2"
+        },
+        {
+          "path": "assets/learning/book-promo.png",
+          "status": 200,
+          "bytes": 1951638,
+          "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd"
+        },
+        {
+          "path": "assets/support/wechat-personal-qr.png",
+          "status": 200,
+          "bytes": 178625,
+          "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f"
+        }
+      ]
+    }
+  ],
+  "anonymousSmokeChecks": [
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "checkedAt": "2026-09-30T13:28:01.229Z",
+      "passed": 47,
+      "total": 47,
+      "ok": true,
+      "realMediaChecks": false,
+      "results": [
+        {
+          "name": "static/home",
+          "ok": true,
+          "status": 200,
+          "durationMs": 860
+        },
+        {
+          "name": "static/changelog",
+          "ok": true,
+          "status": 200,
+          "durationMs": 507
+        },
+        {
+          "name": "static/feedback-board",
+          "ok": true,
+          "status": 200,
+          "durationMs": 561
+        },
+        {
+          "name": "static/feedback-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 487
+        },
+        {
+          "name": "static/feedback-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 197
+        },
+        {
+          "name": "static/main-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 543
+        },
+        {
+          "name": "static/main-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 1060
+        },
+        {
+          "name": "static/account-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 297
+        },
+        {
+          "name": "static/archive-module",
+          "ok": true,
+          "status": 200,
+          "durationMs": 184
+        },
+        {
+          "name": "static/favicon",
+          "ok": true,
+          "status": 200,
+          "durationMs": 336
+        },
+        {
+          "name": "static/admin",
+          "ok": true,
+          "status": 200,
+          "durationMs": 744
+        },
+        {
+          "name": "static/admin-trailing-slash",
+          "ok": true,
+          "status": 200,
+          "durationMs": 308
+        },
+        {
+          "name": "static/admin-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 528
+        },
+        {
+          "name": "static/admin-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 198
+        },
+        {
+          "name": "node/parse/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 368
+        },
+        {
+          "name": "node/parse/empty",
+          "ok": true,
+          "status": 400,
+          "durationMs": 307
+        },
+        {
+          "name": "node/parse/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 298
+        },
+        {
+          "name": "node/parse/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 966
+        },
+        {
+          "name": "node/parse/input-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 310
+        },
+        {
+          "name": "node/parse/direct-image",
+          "ok": true,
+          "status": 200,
+          "durationMs": 307
+        },
+        {
+          "name": "node/image/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 182
+        },
+        {
+          "name": "node/image/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 203
+        },
+        {
+          "name": "node/video/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 526
+        },
+        {
+          "name": "node/video/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 185
+        },
+        {
+          "name": "node/image/invalid-token",
+          "ok": true,
+          "status": 400,
+          "durationMs": 1455
+        },
+        {
+          "name": "node/video/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 815
+        },
+        {
+          "name": "node/video/invalid-range",
+          "ok": true,
+          "status": 400,
+          "durationMs": 394
+        },
+        {
+          "name": "node/video/oversize-range",
+          "ok": true,
+          "status": 413,
+          "durationMs": 230
+        },
+        {
+          "name": "python/parse/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 1172
+        },
+        {
+          "name": "python/parse/empty",
+          "ok": true,
+          "status": 400,
+          "durationMs": 314
+        },
+        {
+          "name": "python/parse/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 619
+        },
+        {
+          "name": "python/parse/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 325
+        },
+        {
+          "name": "python/parse/input-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 326
+        },
+        {
+          "name": "python/parse/direct-image",
+          "ok": true,
+          "status": 200,
+          "durationMs": 456
+        },
+        {
+          "name": "python/image/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 864
+        },
+        {
+          "name": "python/image/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 204
+        },
+        {
+          "name": "python/video/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 207
+        },
+        {
+          "name": "python/video/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 301
+        },
+        {
+          "name": "python/image/invalid-token",
+          "ok": true,
+          "status": 400,
+          "durationMs": 521
+        },
+        {
+          "name": "python/video/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 1047
+        },
+        {
+          "name": "python/video/invalid-range",
+          "ok": true,
+          "status": 400,
+          "durationMs": 813
+        },
+        {
+          "name": "python/video/oversize-range",
+          "ok": true,
+          "status": 413,
+          "durationMs": 237
+        },
+        {
+          "name": "account/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 527
+        },
+        {
+          "name": "account/content-type",
+          "ok": true,
+          "status": 415,
+          "durationMs": 325
+        },
+        {
+          "name": "account/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 522
+        },
+        {
+          "name": "account/invalid-shape",
+          "ok": true,
+          "status": 400,
+          "durationMs": 326
+        },
+        {
+          "name": "account/body-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 599
+        }
+      ]
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "checkedAt": "2026-09-30T13:28:13.086Z",
+      "passed": 47,
+      "total": 47,
+      "ok": true,
+      "realMediaChecks": false,
+      "results": [
+        {
+          "name": "static/home",
+          "ok": true,
+          "status": 200,
+          "durationMs": 3991
+        },
+        {
+          "name": "static/changelog",
+          "ok": true,
+          "status": 200,
+          "durationMs": 524
+        },
+        {
+          "name": "static/feedback-board",
+          "ok": true,
+          "status": 200,
+          "durationMs": 683
+        },
+        {
+          "name": "static/feedback-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 394
+        },
+        {
+          "name": "static/feedback-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 493
+        },
+        {
+          "name": "static/main-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 529
+        },
+        {
+          "name": "static/main-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 243
+        },
+        {
+          "name": "static/account-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 1089
+        },
+        {
+          "name": "static/archive-module",
+          "ok": true,
+          "status": 200,
+          "durationMs": 430
+        },
+        {
+          "name": "static/favicon",
+          "ok": true,
+          "status": 200,
+          "durationMs": 1469
+        },
+        {
+          "name": "static/admin",
+          "ok": true,
+          "status": 200,
+          "durationMs": 1653
+        },
+        {
+          "name": "static/admin-trailing-slash",
+          "ok": true,
+          "status": 200,
+          "durationMs": 466
+        },
+        {
+          "name": "static/admin-script",
+          "ok": true,
+          "status": 200,
+          "durationMs": 1633
+        },
+        {
+          "name": "static/admin-style",
+          "ok": true,
+          "status": 200,
+          "durationMs": 1021
+        },
+        {
+          "name": "node/parse/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 3526
+        },
+        {
+          "name": "node/parse/empty",
+          "ok": true,
+          "status": 400,
+          "durationMs": 1252
+        },
+        {
+          "name": "node/parse/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 519
+        },
+        {
+          "name": "node/parse/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 324
+        },
+        {
+          "name": "node/parse/input-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 305
+        },
+        {
+          "name": "node/parse/direct-image",
+          "ok": true,
+          "status": 200,
+          "durationMs": 843
+        },
+        {
+          "name": "node/image/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 1568
+        },
+        {
+          "name": "node/image/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 728
+        },
+        {
+          "name": "node/video/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 225
+        },
+        {
+          "name": "node/video/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 736
+        },
+        {
+          "name": "node/image/invalid-token",
+          "ok": true,
+          "status": 400,
+          "durationMs": 312
+        },
+        {
+          "name": "node/video/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 783
+        },
+        {
+          "name": "node/video/invalid-range",
+          "ok": true,
+          "status": 400,
+          "durationMs": 266
+        },
+        {
+          "name": "node/video/oversize-range",
+          "ok": true,
+          "status": 413,
+          "durationMs": 193
+        },
+        {
+          "name": "python/parse/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 1380
+        },
+        {
+          "name": "python/parse/empty",
+          "ok": true,
+          "status": 400,
+          "durationMs": 874
+        },
+        {
+          "name": "python/parse/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 523
+        },
+        {
+          "name": "python/parse/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 311
+        },
+        {
+          "name": "python/parse/input-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 392
+        },
+        {
+          "name": "python/parse/direct-image",
+          "ok": true,
+          "status": 200,
+          "durationMs": 524
+        },
+        {
+          "name": "python/image/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 188
+        },
+        {
+          "name": "python/image/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 549
+        },
+        {
+          "name": "python/video/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 310
+        },
+        {
+          "name": "python/video/missing-input",
+          "ok": true,
+          "status": 400,
+          "durationMs": 869
+        },
+        {
+          "name": "python/image/invalid-token",
+          "ok": true,
+          "status": 400,
+          "durationMs": 191
+        },
+        {
+          "name": "python/video/untrusted-url",
+          "ok": true,
+          "status": 400,
+          "durationMs": 192
+        },
+        {
+          "name": "python/video/invalid-range",
+          "ok": true,
+          "status": 400,
+          "durationMs": 320
+        },
+        {
+          "name": "python/video/oversize-range",
+          "ok": true,
+          "status": 413,
+          "durationMs": 190
+        },
+        {
+          "name": "account/method",
+          "ok": true,
+          "status": 405,
+          "durationMs": 334
+        },
+        {
+          "name": "account/content-type",
+          "ok": true,
+          "status": 415,
+          "durationMs": 307
+        },
+        {
+          "name": "account/malformed",
+          "ok": true,
+          "status": 400,
+          "durationMs": 301
+        },
+        {
+          "name": "account/invalid-shape",
+          "ok": true,
+          "status": 400,
+          "durationMs": 439
+        },
+        {
+          "name": "account/body-size",
+          "ok": true,
+          "status": 413,
+          "durationMs": 526
+        }
+      ]
+    }
+  ],
+  "verified": true,
+  "androidReleaseSourceSha": "59cb7d212513fa9f8562303d167453b234e38c59",
+  "androidPublicationVerification": "android-v1.0.7-publication-verification.json",
+  "liveUiVerification": {
+    "report": "v1.8.23-live-ui-verification.json",
+    "result": "PASS",
+    "finishedAt": "2026-09-30T13:30:02.436Z",
+    "origins": [
+      "https://xhs.download.brclio.com",
+      "https://brclio-xhs-pages.pages.dev"
+    ],
+    "widths": [
+      390,
+      600,
+      701,
+      720,
+      760,
+      900,
+      1440
+    ],
+    "checks": [
+      "GitHub Latest is v1.8.23; Android v1.0.7 published; installer/APK/checksum names, uploaded state and positive sizes match live HEAD responses",
+      "https://xhs.download.brclio.com: VIP visible from homepage and downloads; 390/600/701/720/760/900/1440 page/navigation/dialog layout; price/benefits/QR verified; Escape/close focus and original-byte QR save; desktop v1.8.23 and Android v1.0.7 links/sizes match current published assets",
+      "https://brclio-xhs-pages.pages.dev: VIP visible from homepage and downloads; 390/600/701/720/760/900/1440 page/navigation/dialog layout; price/benefits/QR verified; Escape/close focus and original-byte QR save; desktop v1.8.23 and Android v1.0.7 links/sizes match current published assets"
+    ],
+    "personalQrSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+    "rendererErrors": [],
+    "failedLoads": [],
+    "popups": [],
+    "visualReview": {
+      "result": "PASS",
+      "reviewedScreenshots": [
+        "vercel-domain-vip-390.png",
+        "vercel-domain-vip-1440.png",
+        "vercel-domain-vip-390-qr-dialog.png",
+        "cloudflare-pages-vip-390.png",
+        "cloudflare-pages-vip-1440.png",
+        "cloudflare-pages-vip-390-qr-dialog.png"
+      ],
+      "observations": "Both deployed VIP pages show the 99.99 yuan fee and budget/feasibility/early-access terms. Desktop QR is fully visible. Mobile layout and modal fit the viewport, with the QR and close control unobscured. No visual defect found."
+    }
+  }
+}

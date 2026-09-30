@@ -1,0 +1,2397 @@
+{
+  "result": "PASS",
+  "startedAt": "2026-09-30T13:29:02.001Z",
+  "sourceCommit": "cccce0d6f08d3630b18666dfed538dd27d961c2c",
+  "widths": [
+    390,
+    600,
+    701,
+    720,
+    760,
+    900,
+    1440
+  ],
+  "origins": [
+    "https://xhs.download.brclio.com",
+    "https://brclio-xhs-pages.pages.dev"
+  ],
+  "screenshots": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-vip-8R3AjX/screenshots",
+  "checks": [
+    "GitHub Latest is v1.8.23; Android v1.0.7 published; installer/APK/checksum names, uploaded state and positive sizes match live HEAD responses",
+    "https://xhs.download.brclio.com: VIP visible from homepage and downloads; 390/600/701/720/760/900/1440 page/navigation/dialog layout; price/benefits/QR verified; Escape/close focus and original-byte QR save; desktop v1.8.23 and Android v1.0.7 links/sizes match current published assets",
+    "https://brclio-xhs-pages.pages.dev: VIP visible from homepage and downloads; 390/600/701/720/760/900/1440 page/navigation/dialog layout; price/benefits/QR verified; Escape/close focus and original-byte QR save; desktop v1.8.23 and Android v1.0.7 links/sizes match current published assets"
+  ],
+  "releases": {
+    "v1.8.23": {
+      "publishedAt": "2026-09-30T12:35:35Z",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.23",
+      "assets": [
+        {
+          "name": "Brclio-XHS-1.8.23-mac-arm64.dmg",
+          "bytes": 141979335,
+          "state": "uploaded",
+          "digest": "sha256:cf00f2455a5a339750a257ad46568a0866cd7e247fa06f497eed0aab9bbe91f4"
+        },
+        {
+          "name": "Brclio-XHS-1.8.23-mac-arm64.zip",
+          "bytes": 142849446,
+          "state": "uploaded",
+          "digest": "sha256:18b15d31ba8688c0e8c5aa08a8722701a3056ec554d75479b982d622b42d7e7e"
+        },
+        {
+          "name": "Brclio-XHS-1.8.23-mac-x64.dmg",
+          "bytes": 147721872,
+          "state": "uploaded",
+          "digest": "sha256:7b891026444a5337b514998f6c10d352e0bf60afd89544befe586ad33c66156d"
+        },
+        {
+          "name": "Brclio-XHS-1.8.23-mac-x64.zip",
+          "bytes": 148638170,
+          "state": "uploaded",
+          "digest": "sha256:ea47038c0d0278f7449b4629e787ba233917fd2a85917d2a99512de8443ae1cc"
+        },
+        {
+          "name": "Brclio-XHS-1.8.23-windows-x64-portable.exe",
+          "bytes": 125787085,
+          "state": "uploaded",
+          "digest": "sha256:d8446b1699f1a19f07fb0a28d25409264252b55c07806fee950157862e3684d3"
+        },
+        {
+          "name": "Brclio-XHS-1.8.23-windows-x64-setup.exe",
+          "bytes": 126025588,
+          "state": "uploaded",
+          "digest": "sha256:230a75ab37e8e18b533ab8014b1ed88ac171a0a6c383b49f425762a82b9c799e"
+        },
+        {
+          "name": "build-evidence.json",
+          "bytes": 5054,
+          "state": "uploaded",
+          "digest": "sha256:9fca4eac27bffa806ca73b84c51c908fc73cef3d555fb65912a452f827ab19d9"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 915,
+          "state": "uploaded",
+          "digest": "sha256:8847f48877e970426a2f17591adef0ebaa45bedd8fddf3e9c67148f3eff293f2"
+        },
+        {
+          "name": "XHS-Downloader-1.8.23-mac-arm64.dmg",
+          "bytes": 141979335,
+          "state": "uploaded",
+          "digest": "sha256:cf00f2455a5a339750a257ad46568a0866cd7e247fa06f497eed0aab9bbe91f4"
+        },
+        {
+          "name": "XHS-Downloader-1.8.23-mac-x64.dmg",
+          "bytes": 147721872,
+          "state": "uploaded",
+          "digest": "sha256:7b891026444a5337b514998f6c10d352e0bf60afd89544befe586ad33c66156d"
+        },
+        {
+          "name": "XHS-Downloader-1.8.23-windows-x64-setup.exe",
+          "bytes": 126025588,
+          "state": "uploaded",
+          "digest": "sha256:230a75ab37e8e18b533ab8014b1ed88ac171a0a6c383b49f425762a82b9c799e"
+        }
+      ],
+      "selected": [
+        {
+          "name": "Brclio-XHS-1.8.23-mac-arm64.dmg",
+          "bytes": 141979335,
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-mac-arm64.dmg",
+          "digest": "sha256:cf00f2455a5a339750a257ad46568a0866cd7e247fa06f497eed0aab9bbe91f4",
+          "headVerified": true
+        },
+        {
+          "name": "Brclio-XHS-1.8.23-mac-x64.dmg",
+          "bytes": 147721872,
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-mac-x64.dmg",
+          "digest": "sha256:7b891026444a5337b514998f6c10d352e0bf60afd89544befe586ad33c66156d",
+          "headVerified": true
+        },
+        {
+          "name": "Brclio-XHS-1.8.23-windows-x64-setup.exe",
+          "bytes": 126025588,
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-windows-x64-setup.exe",
+          "digest": "sha256:230a75ab37e8e18b533ab8014b1ed88ac171a0a6c383b49f425762a82b9c799e",
+          "headVerified": true
+        },
+        {
+          "name": "Brclio-XHS-1.8.23-windows-x64-portable.exe",
+          "bytes": 125787085,
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-windows-x64-portable.exe",
+          "digest": "sha256:d8446b1699f1a19f07fb0a28d25409264252b55c07806fee950157862e3684d3",
+          "headVerified": true
+        }
+      ]
+    },
+    "android-v1.0.7": {
+      "publishedAt": "2026-09-30T13:19:36Z",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.7",
+      "assets": [
+        {
+          "name": "android-update.json",
+          "bytes": 1274,
+          "state": "uploaded",
+          "digest": "sha256:288c4ec4e8cea330f7b5ea654fa4ac3187f19057b69a48f0305b3ece43e4d559"
+        },
+        {
+          "name": "Brclio-XHS-Android-1.0.7-release.apk",
+          "bytes": 3942750,
+          "state": "uploaded",
+          "digest": "sha256:41adb08c2aac1a3c838ccdafbbea45a8dc95ccfa3d227141bca79cb73a0fe46e"
+        },
+        {
+          "name": "Brclio-XHS-Android-1.0.7-release.apk.sha256",
+          "bytes": 103,
+          "state": "uploaded",
+          "digest": "sha256:7c63082a86b2c827ed6fe292b210228f7a383d46e7105bc0b0d9f4e420fa5e8b"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "bytes": 103,
+          "state": "uploaded",
+          "digest": "sha256:7c63082a86b2c827ed6fe292b210228f7a383d46e7105bc0b0d9f4e420fa5e8b"
+        }
+      ],
+      "selected": [
+        {
+          "name": "Brclio-XHS-Android-1.0.7-release.apk",
+          "bytes": 3942750,
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.7/Brclio-XHS-Android-1.0.7-release.apk",
+          "digest": "sha256:41adb08c2aac1a3c838ccdafbbea45a8dc95ccfa3d227141bca79cb73a0fe46e",
+          "headVerified": true
+        },
+        {
+          "name": "Brclio-XHS-Android-1.0.7-release.apk.sha256",
+          "bytes": 103,
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.7/Brclio-XHS-Android-1.0.7-release.apk.sha256",
+          "digest": "sha256:7c63082a86b2c827ed6fe292b210228f7a383d46e7105bc0b0d9f4e420fa5e8b",
+          "headVerified": true
+        }
+      ]
+    }
+  },
+  "surfaces": [
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "label": "primary-domain",
+      "homeLayouts": [
+        {
+          "width": 390,
+          "scrollWidth": 390,
+          "links": [
+            {
+              "text": "Brclio\n小红书下载器",
+              "left": 130.125,
+              "right": 259.875
+            },
+            {
+              "text": "下载工具",
+              "left": 60.265625,
+              "right": 123.640625
+            },
+            {
+              "text": "产品介绍",
+              "left": 125.640625,
+              "right": 189.015625
+            },
+            {
+              "text": "软件下载",
+              "left": 191.015625,
+              "right": 254.390625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 256.390625,
+              "right": 329.734375
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 59.328125,
+              "right": 158.21875
+            },
+            {
+              "text": "更新记录",
+              "left": 160.21875,
+              "right": 223.59375
+            },
+            {
+              "text": "问题广场",
+              "left": 225.59375,
+              "right": 288.96875
+            },
+            {
+              "text": "支持",
+              "left": 290.96875,
+              "right": 330.65625
+            }
+          ]
+        },
+        {
+          "width": 600,
+          "scrollWidth": 600,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器",
+              "left": 209.03125,
+              "right": 390.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 28.59375,
+              "right": 91.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 93.96875,
+              "right": 157.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 159.34375,
+              "right": 222.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 224.71875,
+              "right": 298.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 300.0625,
+              "right": 398.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 400.953125,
+              "right": 464.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 466.328125,
+              "right": 529.703125
+            },
+            {
+              "text": "支持",
+              "left": 531.703125,
+              "right": 571.390625
+            }
+          ]
+        },
+        {
+          "width": 701,
+          "scrollWidth": 701,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 256.53125,
+              "right": 444.46875
+            },
+            {
+              "text": "下载工具",
+              "left": 55.09375,
+              "right": 124.46875
+            },
+            {
+              "text": "产品介绍",
+              "left": 126.46875,
+              "right": 195.84375
+            },
+            {
+              "text": "软件下载",
+              "left": 197.84375,
+              "right": 267.21875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 269.21875,
+              "right": 348.5625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 350.5625,
+              "right": 455.453125
+            },
+            {
+              "text": "更新记录",
+              "left": 457.453125,
+              "right": 526.828125
+            },
+            {
+              "text": "问题广场",
+              "left": 528.828125,
+              "right": 598.203125
+            },
+            {
+              "text": "支持",
+              "left": 600.203125,
+              "right": 645.890625
+            }
+          ]
+        },
+        {
+          "width": 720,
+          "scrollWidth": 720,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 266.03125,
+              "right": 453.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 64.59375,
+              "right": 133.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 135.96875,
+              "right": 205.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 207.34375,
+              "right": 276.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 278.71875,
+              "right": 358.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 360.0625,
+              "right": 464.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 466.953125,
+              "right": 536.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 538.328125,
+              "right": 607.703125
+            },
+            {
+              "text": "支持",
+              "left": 609.703125,
+              "right": 655.390625
+            }
+          ]
+        },
+        {
+          "width": 760,
+          "scrollWidth": 760,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 286.03125,
+              "right": 473.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 84.59375,
+              "right": 153.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 155.96875,
+              "right": 225.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 227.34375,
+              "right": 296.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 298.71875,
+              "right": 378.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 380.0625,
+              "right": 484.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 486.953125,
+              "right": 556.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 558.328125,
+              "right": 627.703125
+            },
+            {
+              "text": "支持",
+              "left": 629.703125,
+              "right": 675.390625
+            }
+          ]
+        },
+        {
+          "width": 900,
+          "scrollWidth": 900,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 20,
+              "right": 207.9375
+            },
+            {
+              "text": "下载工具",
+              "left": 289.203125,
+              "right": 358.578125
+            },
+            {
+              "text": "产品介绍",
+              "left": 360.578125,
+              "right": 429.953125
+            },
+            {
+              "text": "软件下载",
+              "left": 431.953125,
+              "right": 501.328125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 503.328125,
+              "right": 582.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 584.671875,
+              "right": 689.5625
+            },
+            {
+              "text": "更新记录",
+              "left": 691.5625,
+              "right": 760.9375
+            },
+            {
+              "text": "问题广场",
+              "left": 762.9375,
+              "right": 832.3125
+            },
+            {
+              "text": "支持",
+              "left": 834.3125,
+              "right": 880
+            }
+          ]
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 120,
+              "right": 307.9375
+            },
+            {
+              "text": "下载工具",
+              "left": 606.203125,
+              "right": 675.578125
+            },
+            {
+              "text": "产品介绍",
+              "left": 677.578125,
+              "right": 746.953125
+            },
+            {
+              "text": "软件下载",
+              "left": 748.953125,
+              "right": 818.328125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 820.328125,
+              "right": 899.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 901.671875,
+              "right": 1006.5625
+            },
+            {
+              "text": "更新记录",
+              "left": 1008.5625,
+              "right": 1077.9375
+            },
+            {
+              "text": "问题广场",
+              "left": 1079.9375,
+              "right": 1149.3125
+            },
+            {
+              "text": "支持",
+              "left": 1151.3125,
+              "right": 1197
+            }
+          ]
+        }
+      ],
+      "vipLayouts": [
+        {
+          "width": 390,
+          "scrollWidth": 390,
+          "links": [
+            {
+              "text": "Brclio\n小红书下载器",
+              "left": 130.125,
+              "right": 259.875
+            },
+            {
+              "text": "下载工具",
+              "left": 60.265625,
+              "right": 123.640625
+            },
+            {
+              "text": "产品介绍",
+              "left": 125.640625,
+              "right": 189.015625
+            },
+            {
+              "text": "软件下载",
+              "left": 191.015625,
+              "right": 254.390625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 256.390625,
+              "right": 329.734375
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 59.328125,
+              "right": 158.21875
+            },
+            {
+              "text": "更新记录",
+              "left": 160.21875,
+              "right": 223.59375
+            },
+            {
+              "text": "问题广场",
+              "left": 225.59375,
+              "right": 288.96875
+            },
+            {
+              "text": "支持",
+              "left": 290.96875,
+              "right": 330.65625
+            }
+          ]
+        },
+        {
+          "width": 600,
+          "scrollWidth": 600,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器",
+              "left": 209.03125,
+              "right": 390.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 28.59375,
+              "right": 91.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 93.96875,
+              "right": 157.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 159.34375,
+              "right": 222.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 224.71875,
+              "right": 298.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 300.0625,
+              "right": 398.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 400.953125,
+              "right": 464.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 466.328125,
+              "right": 529.703125
+            },
+            {
+              "text": "支持",
+              "left": 531.703125,
+              "right": 571.390625
+            }
+          ]
+        },
+        {
+          "width": 701,
+          "scrollWidth": 701,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 256.53125,
+              "right": 444.46875
+            },
+            {
+              "text": "下载工具",
+              "left": 55.09375,
+              "right": 124.46875
+            },
+            {
+              "text": "产品介绍",
+              "left": 126.46875,
+              "right": 195.84375
+            },
+            {
+              "text": "软件下载",
+              "left": 197.84375,
+              "right": 267.21875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 269.21875,
+              "right": 348.5625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 350.5625,
+              "right": 455.453125
+            },
+            {
+              "text": "更新记录",
+              "left": 457.453125,
+              "right": 526.828125
+            },
+            {
+              "text": "问题广场",
+              "left": 528.828125,
+              "right": 598.203125
+            },
+            {
+              "text": "支持",
+              "left": 600.203125,
+              "right": 645.890625
+            }
+          ]
+        },
+        {
+          "width": 720,
+          "scrollWidth": 720,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 266.03125,
+              "right": 453.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 64.59375,
+              "right": 133.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 135.96875,
+              "right": 205.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 207.34375,
+              "right": 276.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 278.71875,
+              "right": 358.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 360.0625,
+              "right": 464.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 466.953125,
+              "right": 536.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 538.328125,
+              "right": 607.703125
+            },
+            {
+              "text": "支持",
+              "left": 609.703125,
+              "right": 655.390625
+            }
+          ]
+        },
+        {
+          "width": 760,
+          "scrollWidth": 760,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 286.03125,
+              "right": 473.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 84.59375,
+              "right": 153.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 155.96875,
+              "right": 225.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 227.34375,
+              "right": 296.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 298.71875,
+              "right": 378.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 380.0625,
+              "right": 484.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 486.953125,
+              "right": 556.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 558.328125,
+              "right": 627.703125
+            },
+            {
+              "text": "支持",
+              "left": 629.703125,
+              "right": 675.390625
+            }
+          ]
+        },
+        {
+          "width": 900,
+          "scrollWidth": 900,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 20,
+              "right": 207.9375
+            },
+            {
+              "text": "下载工具",
+              "left": 289.203125,
+              "right": 358.578125
+            },
+            {
+              "text": "产品介绍",
+              "left": 360.578125,
+              "right": 429.953125
+            },
+            {
+              "text": "软件下载",
+              "left": 431.953125,
+              "right": 501.328125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 503.328125,
+              "right": 582.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 584.671875,
+              "right": 689.5625
+            },
+            {
+              "text": "更新记录",
+              "left": 691.5625,
+              "right": 760.9375
+            },
+            {
+              "text": "问题广场",
+              "left": 762.9375,
+              "right": 832.3125
+            },
+            {
+              "text": "支持",
+              "left": 834.3125,
+              "right": 880
+            }
+          ]
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 120,
+              "right": 307.9375
+            },
+            {
+              "text": "下载工具",
+              "left": 606.203125,
+              "right": 675.578125
+            },
+            {
+              "text": "产品介绍",
+              "left": 677.578125,
+              "right": 746.953125
+            },
+            {
+              "text": "软件下载",
+              "left": 748.953125,
+              "right": 818.328125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 820.328125,
+              "right": 899.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 901.671875,
+              "right": 1006.5625
+            },
+            {
+              "text": "更新记录",
+              "left": 1008.5625,
+              "right": 1077.9375
+            },
+            {
+              "text": "问题广场",
+              "left": 1079.9375,
+              "right": 1149.3125
+            },
+            {
+              "text": "支持",
+              "left": 1151.3125,
+              "right": 1197
+            }
+          ]
+        }
+      ],
+      "qr": {
+        "savedPath": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-vip-8R3AjX/vercel-domain-vip-personal-wechat-qr.png",
+        "savedBytes": 178625,
+        "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f"
+      },
+      "staticFallbackVersions": {
+        "desktop": "v1.8.23",
+        "android": "v1.0.7"
+      },
+      "downloadVersions": {
+        "desktop": [
+          "v1.8.23"
+        ],
+        "android": [
+          "v1.0.7"
+        ],
+        "desktopStatus": "已核对最新正式版 v1.8.23，安装包由 GitHub Releases 提供。查看最新发布 ↗",
+        "androidStatus": "已核对安卓正式版 v1.0.7，APK 与 SHA-256 校验文件均已上传。"
+      },
+      "downloadAssets": [
+        {
+          "key": "mac-arm64",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-mac-arm64.dmg",
+          "size": "142.0 MB",
+          "bytes": 141979335
+        },
+        {
+          "key": "mac-x64",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-mac-x64.dmg",
+          "size": "147.7 MB",
+          "bytes": 147721872
+        },
+        {
+          "key": "windows-setup",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-windows-x64-setup.exe",
+          "size": "126.0 MB",
+          "bytes": 126025588
+        },
+        {
+          "key": "windows-portable",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-windows-x64-portable.exe",
+          "size": "125.8 MB",
+          "bytes": 125787085
+        }
+      ],
+      "androidDownload": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.7/Brclio-XHS-Android-1.0.7-release.apk",
+        "checksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.7/Brclio-XHS-Android-1.0.7-release.apk.sha256",
+        "size": "3.9 MB",
+        "bytes": 3942750
+      },
+      "downloadLayouts": [
+        {
+          "width": 390,
+          "scrollWidth": 390,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 20,
+              "right": 193.796875
+            },
+            {
+              "text": "下载工具",
+              "left": 20,
+              "right": 68
+            },
+            {
+              "text": "软件下载",
+              "left": 84.171875,
+              "right": 132.171875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 148.34375,
+              "right": 205.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 221.828125,
+              "right": 305.828125
+            },
+            {
+              "text": "更新记录",
+              "left": 322,
+              "right": 370
+            },
+            {
+              "text": "问题广场",
+              "left": 20,
+              "right": 68
+            },
+            {
+              "text": "支持",
+              "left": 346,
+              "right": 370
+            }
+          ]
+        },
+        {
+          "width": 600,
+          "scrollWidth": 600,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 20,
+              "right": 193.796875
+            },
+            {
+              "text": "下载工具",
+              "left": 20,
+              "right": 68
+            },
+            {
+              "text": "软件下载",
+              "left": 101.78125,
+              "right": 149.78125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 183.5625,
+              "right": 240.890625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 274.671875,
+              "right": 358.671875
+            },
+            {
+              "text": "更新记录",
+              "left": 392.4375,
+              "right": 440.4375
+            },
+            {
+              "text": "问题广场",
+              "left": 474.21875,
+              "right": 522.21875
+            },
+            {
+              "text": "支持",
+              "left": 556,
+              "right": 580
+            }
+          ]
+        },
+        {
+          "width": 701,
+          "scrollWidth": 701,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 32,
+              "right": 230.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 32,
+              "right": 84
+            },
+            {
+              "text": "软件下载",
+              "left": 125.65625,
+              "right": 177.65625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 219.296875,
+              "right": 281.390625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 323.046875,
+              "right": 414.046875
+            },
+            {
+              "text": "更新记录",
+              "left": 455.703125,
+              "right": 507.703125
+            },
+            {
+              "text": "问题广场",
+              "left": 549.34375,
+              "right": 601.34375
+            },
+            {
+              "text": "支持",
+              "left": 643,
+              "right": 669
+            }
+          ]
+        },
+        {
+          "width": 720,
+          "scrollWidth": 720,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 32,
+              "right": 230.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 32,
+              "right": 84
+            },
+            {
+              "text": "软件下载",
+              "left": 128.8125,
+              "right": 180.8125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 225.640625,
+              "right": 287.734375
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 332.546875,
+              "right": 423.546875
+            },
+            {
+              "text": "更新记录",
+              "left": 468.359375,
+              "right": 520.359375
+            },
+            {
+              "text": "问题广场",
+              "left": 565.1875,
+              "right": 617.1875
+            },
+            {
+              "text": "支持",
+              "left": 662,
+              "right": 688
+            }
+          ]
+        },
+        {
+          "width": 760,
+          "scrollWidth": 760,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 32,
+              "right": 230.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 32,
+              "right": 84
+            },
+            {
+              "text": "软件下载",
+              "left": 135.484375,
+              "right": 187.484375
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 238.96875,
+              "right": 301.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 352.546875,
+              "right": 443.546875
+            },
+            {
+              "text": "更新记录",
+              "left": 495.03125,
+              "right": 547.03125
+            },
+            {
+              "text": "问题广场",
+              "left": 598.515625,
+              "right": 650.515625
+            },
+            {
+              "text": "支持",
+              "left": 702,
+              "right": 728
+            }
+          ]
+        },
+        {
+          "width": 900,
+          "scrollWidth": 900,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 32,
+              "right": 230.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 372.90625,
+              "right": 424.90625
+            },
+            {
+              "text": "软件下载",
+              "left": 442.90625,
+              "right": 494.90625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 512.90625,
+              "right": 575
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 593,
+              "right": 684
+            },
+            {
+              "text": "更新记录",
+              "left": 702,
+              "right": 754
+            },
+            {
+              "text": "问题广场",
+              "left": 772,
+              "right": 824
+            },
+            {
+              "text": "支持",
+              "left": 842,
+              "right": 868
+            }
+          ]
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 100,
+              "right": 298.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 514.5625,
+              "right": 566.5625
+            },
+            {
+              "text": "软件下载",
+              "left": 591.5625,
+              "right": 643.5625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 668.5625,
+              "right": 730.65625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 755.65625,
+              "right": 846.65625
+            },
+            {
+              "text": "更新记录",
+              "left": 871.65625,
+              "right": 923.65625
+            },
+            {
+              "text": "问题广场",
+              "left": 948.65625,
+              "right": 1000.65625
+            },
+            {
+              "text": "支持",
+              "left": 1025.65625,
+              "right": 1051.65625
+            },
+            {
+              "text": "GitHub\n↗",
+              "left": 1268.171875,
+              "right": 1340
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "label": "cloudflare-pages",
+      "homeLayouts": [
+        {
+          "width": 390,
+          "scrollWidth": 390,
+          "links": [
+            {
+              "text": "Brclio\n小红书下载器",
+              "left": 130.125,
+              "right": 259.875
+            },
+            {
+              "text": "下载工具",
+              "left": 60.265625,
+              "right": 123.640625
+            },
+            {
+              "text": "产品介绍",
+              "left": 125.640625,
+              "right": 189.015625
+            },
+            {
+              "text": "软件下载",
+              "left": 191.015625,
+              "right": 254.390625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 256.390625,
+              "right": 329.734375
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 59.328125,
+              "right": 158.21875
+            },
+            {
+              "text": "更新记录",
+              "left": 160.21875,
+              "right": 223.59375
+            },
+            {
+              "text": "问题广场",
+              "left": 225.59375,
+              "right": 288.96875
+            },
+            {
+              "text": "支持",
+              "left": 290.96875,
+              "right": 330.65625
+            }
+          ]
+        },
+        {
+          "width": 600,
+          "scrollWidth": 600,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器",
+              "left": 209.03125,
+              "right": 390.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 28.59375,
+              "right": 91.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 93.96875,
+              "right": 157.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 159.34375,
+              "right": 222.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 224.71875,
+              "right": 298.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 300.0625,
+              "right": 398.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 400.953125,
+              "right": 464.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 466.328125,
+              "right": 529.703125
+            },
+            {
+              "text": "支持",
+              "left": 531.703125,
+              "right": 571.390625
+            }
+          ]
+        },
+        {
+          "width": 701,
+          "scrollWidth": 701,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 256.53125,
+              "right": 444.46875
+            },
+            {
+              "text": "下载工具",
+              "left": 55.09375,
+              "right": 124.46875
+            },
+            {
+              "text": "产品介绍",
+              "left": 126.46875,
+              "right": 195.84375
+            },
+            {
+              "text": "软件下载",
+              "left": 197.84375,
+              "right": 267.21875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 269.21875,
+              "right": 348.5625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 350.5625,
+              "right": 455.453125
+            },
+            {
+              "text": "更新记录",
+              "left": 457.453125,
+              "right": 526.828125
+            },
+            {
+              "text": "问题广场",
+              "left": 528.828125,
+              "right": 598.203125
+            },
+            {
+              "text": "支持",
+              "left": 600.203125,
+              "right": 645.890625
+            }
+          ]
+        },
+        {
+          "width": 720,
+          "scrollWidth": 720,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 266.03125,
+              "right": 453.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 64.59375,
+              "right": 133.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 135.96875,
+              "right": 205.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 207.34375,
+              "right": 276.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 278.71875,
+              "right": 358.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 360.0625,
+              "right": 464.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 466.953125,
+              "right": 536.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 538.328125,
+              "right": 607.703125
+            },
+            {
+              "text": "支持",
+              "left": 609.703125,
+              "right": 655.390625
+            }
+          ]
+        },
+        {
+          "width": 760,
+          "scrollWidth": 760,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 286.03125,
+              "right": 473.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 84.59375,
+              "right": 153.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 155.96875,
+              "right": 225.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 227.34375,
+              "right": 296.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 298.71875,
+              "right": 378.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 380.0625,
+              "right": 484.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 486.953125,
+              "right": 556.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 558.328125,
+              "right": 627.703125
+            },
+            {
+              "text": "支持",
+              "left": 629.703125,
+              "right": 675.390625
+            }
+          ]
+        },
+        {
+          "width": 900,
+          "scrollWidth": 900,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 20,
+              "right": 207.9375
+            },
+            {
+              "text": "下载工具",
+              "left": 289.203125,
+              "right": 358.578125
+            },
+            {
+              "text": "产品介绍",
+              "left": 360.578125,
+              "right": 429.953125
+            },
+            {
+              "text": "软件下载",
+              "left": 431.953125,
+              "right": 501.328125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 503.328125,
+              "right": 582.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 584.671875,
+              "right": 689.5625
+            },
+            {
+              "text": "更新记录",
+              "left": 691.5625,
+              "right": 760.9375
+            },
+            {
+              "text": "问题广场",
+              "left": 762.9375,
+              "right": 832.3125
+            },
+            {
+              "text": "支持",
+              "left": 834.3125,
+              "right": 880
+            }
+          ]
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 120,
+              "right": 307.9375
+            },
+            {
+              "text": "下载工具",
+              "left": 606.203125,
+              "right": 675.578125
+            },
+            {
+              "text": "产品介绍",
+              "left": 677.578125,
+              "right": 746.953125
+            },
+            {
+              "text": "软件下载",
+              "left": 748.953125,
+              "right": 818.328125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 820.328125,
+              "right": 899.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 901.671875,
+              "right": 1006.5625
+            },
+            {
+              "text": "更新记录",
+              "left": 1008.5625,
+              "right": 1077.9375
+            },
+            {
+              "text": "问题广场",
+              "left": 1079.9375,
+              "right": 1149.3125
+            },
+            {
+              "text": "支持",
+              "left": 1151.3125,
+              "right": 1197
+            }
+          ]
+        }
+      ],
+      "vipLayouts": [
+        {
+          "width": 390,
+          "scrollWidth": 390,
+          "links": [
+            {
+              "text": "Brclio\n小红书下载器",
+              "left": 130.125,
+              "right": 259.875
+            },
+            {
+              "text": "下载工具",
+              "left": 60.265625,
+              "right": 123.640625
+            },
+            {
+              "text": "产品介绍",
+              "left": 125.640625,
+              "right": 189.015625
+            },
+            {
+              "text": "软件下载",
+              "left": 191.015625,
+              "right": 254.390625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 256.390625,
+              "right": 329.734375
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 59.328125,
+              "right": 158.21875
+            },
+            {
+              "text": "更新记录",
+              "left": 160.21875,
+              "right": 223.59375
+            },
+            {
+              "text": "问题广场",
+              "left": 225.59375,
+              "right": 288.96875
+            },
+            {
+              "text": "支持",
+              "left": 290.96875,
+              "right": 330.65625
+            }
+          ]
+        },
+        {
+          "width": 600,
+          "scrollWidth": 600,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器",
+              "left": 209.03125,
+              "right": 390.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 28.59375,
+              "right": 91.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 93.96875,
+              "right": 157.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 159.34375,
+              "right": 222.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 224.71875,
+              "right": 298.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 300.0625,
+              "right": 398.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 400.953125,
+              "right": 464.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 466.328125,
+              "right": 529.703125
+            },
+            {
+              "text": "支持",
+              "left": 531.703125,
+              "right": 571.390625
+            }
+          ]
+        },
+        {
+          "width": 701,
+          "scrollWidth": 701,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 256.53125,
+              "right": 444.46875
+            },
+            {
+              "text": "下载工具",
+              "left": 55.09375,
+              "right": 124.46875
+            },
+            {
+              "text": "产品介绍",
+              "left": 126.46875,
+              "right": 195.84375
+            },
+            {
+              "text": "软件下载",
+              "left": 197.84375,
+              "right": 267.21875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 269.21875,
+              "right": 348.5625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 350.5625,
+              "right": 455.453125
+            },
+            {
+              "text": "更新记录",
+              "left": 457.453125,
+              "right": 526.828125
+            },
+            {
+              "text": "问题广场",
+              "left": 528.828125,
+              "right": 598.203125
+            },
+            {
+              "text": "支持",
+              "left": 600.203125,
+              "right": 645.890625
+            }
+          ]
+        },
+        {
+          "width": 720,
+          "scrollWidth": 720,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 266.03125,
+              "right": 453.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 64.59375,
+              "right": 133.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 135.96875,
+              "right": 205.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 207.34375,
+              "right": 276.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 278.71875,
+              "right": 358.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 360.0625,
+              "right": 464.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 466.953125,
+              "right": 536.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 538.328125,
+              "right": 607.703125
+            },
+            {
+              "text": "支持",
+              "left": 609.703125,
+              "right": 655.390625
+            }
+          ]
+        },
+        {
+          "width": 760,
+          "scrollWidth": 760,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 286.03125,
+              "right": 473.96875
+            },
+            {
+              "text": "下载工具",
+              "left": 84.59375,
+              "right": 153.96875
+            },
+            {
+              "text": "产品介绍",
+              "left": 155.96875,
+              "right": 225.34375
+            },
+            {
+              "text": "软件下载",
+              "left": 227.34375,
+              "right": 296.71875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 298.71875,
+              "right": 378.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 380.0625,
+              "right": 484.953125
+            },
+            {
+              "text": "更新记录",
+              "left": 486.953125,
+              "right": 556.328125
+            },
+            {
+              "text": "问题广场",
+              "left": 558.328125,
+              "right": 627.703125
+            },
+            {
+              "text": "支持",
+              "left": 629.703125,
+              "right": 675.390625
+            }
+          ]
+        },
+        {
+          "width": 900,
+          "scrollWidth": 900,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 20,
+              "right": 207.9375
+            },
+            {
+              "text": "下载工具",
+              "left": 289.203125,
+              "right": 358.578125
+            },
+            {
+              "text": "产品介绍",
+              "left": 360.578125,
+              "right": 429.953125
+            },
+            {
+              "text": "软件下载",
+              "left": 431.953125,
+              "right": 501.328125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 503.328125,
+              "right": 582.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 584.671875,
+              "right": 689.5625
+            },
+            {
+              "text": "更新记录",
+              "left": 691.5625,
+              "right": 760.9375
+            },
+            {
+              "text": "问题广场",
+              "left": 762.9375,
+              "right": 832.3125
+            },
+            {
+              "text": "支持",
+              "left": 834.3125,
+              "right": 880
+            }
+          ]
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 120,
+              "right": 307.9375
+            },
+            {
+              "text": "下载工具",
+              "left": 606.203125,
+              "right": 675.578125
+            },
+            {
+              "text": "产品介绍",
+              "left": 677.578125,
+              "right": 746.953125
+            },
+            {
+              "text": "软件下载",
+              "left": 748.953125,
+              "right": 818.328125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 820.328125,
+              "right": 899.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 901.671875,
+              "right": 1006.5625
+            },
+            {
+              "text": "更新记录",
+              "left": 1008.5625,
+              "right": 1077.9375
+            },
+            {
+              "text": "问题广场",
+              "left": 1079.9375,
+              "right": 1149.3125
+            },
+            {
+              "text": "支持",
+              "left": 1151.3125,
+              "right": 1197
+            }
+          ]
+        }
+      ],
+      "qr": {
+        "savedPath": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-vip-8R3AjX/cloudflare-pages-vip-personal-wechat-qr.png",
+        "savedBytes": 178625,
+        "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f"
+      },
+      "staticFallbackVersions": {
+        "desktop": "v1.8.23",
+        "android": "v1.0.7"
+      },
+      "downloadVersions": {
+        "desktop": [
+          "v1.8.23"
+        ],
+        "android": [
+          "v1.0.7"
+        ],
+        "desktopStatus": "已核对最新正式版 v1.8.23，安装包由 GitHub Releases 提供。查看最新发布 ↗",
+        "androidStatus": "已核对安卓正式版 v1.0.7，APK 与 SHA-256 校验文件均已上传。"
+      },
+      "downloadAssets": [
+        {
+          "key": "mac-arm64",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-mac-arm64.dmg",
+          "size": "142.0 MB",
+          "bytes": 141979335
+        },
+        {
+          "key": "mac-x64",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-mac-x64.dmg",
+          "size": "147.7 MB",
+          "bytes": 147721872
+        },
+        {
+          "key": "windows-setup",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-windows-x64-setup.exe",
+          "size": "126.0 MB",
+          "bytes": 126025588
+        },
+        {
+          "key": "windows-portable",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v1.8.23/Brclio-XHS-1.8.23-windows-x64-portable.exe",
+          "size": "125.8 MB",
+          "bytes": 125787085
+        }
+      ],
+      "androidDownload": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.7/Brclio-XHS-Android-1.0.7-release.apk",
+        "checksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.7/Brclio-XHS-Android-1.0.7-release.apk.sha256",
+        "size": "3.9 MB",
+        "bytes": 3942750
+      },
+      "downloadLayouts": [
+        {
+          "width": 390,
+          "scrollWidth": 390,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 20,
+              "right": 193.796875
+            },
+            {
+              "text": "下载工具",
+              "left": 20,
+              "right": 68
+            },
+            {
+              "text": "软件下载",
+              "left": 84.171875,
+              "right": 132.171875
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 148.34375,
+              "right": 205.671875
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 221.828125,
+              "right": 305.828125
+            },
+            {
+              "text": "更新记录",
+              "left": 322,
+              "right": 370
+            },
+            {
+              "text": "问题广场",
+              "left": 20,
+              "right": 68
+            },
+            {
+              "text": "支持",
+              "left": 346,
+              "right": 370
+            }
+          ]
+        },
+        {
+          "width": 600,
+          "scrollWidth": 600,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 20,
+              "right": 193.796875
+            },
+            {
+              "text": "下载工具",
+              "left": 20,
+              "right": 68
+            },
+            {
+              "text": "软件下载",
+              "left": 101.78125,
+              "right": 149.78125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 183.5625,
+              "right": 240.890625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 274.671875,
+              "right": 358.671875
+            },
+            {
+              "text": "更新记录",
+              "left": 392.4375,
+              "right": 440.4375
+            },
+            {
+              "text": "问题广场",
+              "left": 474.21875,
+              "right": 522.21875
+            },
+            {
+              "text": "支持",
+              "left": 556,
+              "right": 580
+            }
+          ]
+        },
+        {
+          "width": 701,
+          "scrollWidth": 701,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 32,
+              "right": 230.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 32,
+              "right": 84
+            },
+            {
+              "text": "软件下载",
+              "left": 125.65625,
+              "right": 177.65625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 219.296875,
+              "right": 281.390625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 323.046875,
+              "right": 414.046875
+            },
+            {
+              "text": "更新记录",
+              "left": 455.703125,
+              "right": 507.703125
+            },
+            {
+              "text": "问题广场",
+              "left": 549.34375,
+              "right": 601.34375
+            },
+            {
+              "text": "支持",
+              "left": 643,
+              "right": 669
+            }
+          ]
+        },
+        {
+          "width": 720,
+          "scrollWidth": 720,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 32,
+              "right": 230.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 32,
+              "right": 84
+            },
+            {
+              "text": "软件下载",
+              "left": 128.8125,
+              "right": 180.8125
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 225.640625,
+              "right": 287.734375
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 332.546875,
+              "right": 423.546875
+            },
+            {
+              "text": "更新记录",
+              "left": 468.359375,
+              "right": 520.359375
+            },
+            {
+              "text": "问题广场",
+              "left": 565.1875,
+              "right": 617.1875
+            },
+            {
+              "text": "支持",
+              "left": 662,
+              "right": 688
+            }
+          ]
+        },
+        {
+          "width": 760,
+          "scrollWidth": 760,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 32,
+              "right": 230.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 32,
+              "right": 84
+            },
+            {
+              "text": "软件下载",
+              "left": 135.484375,
+              "right": 187.484375
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 238.96875,
+              "right": 301.0625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 352.546875,
+              "right": 443.546875
+            },
+            {
+              "text": "更新记录",
+              "left": 495.03125,
+              "right": 547.03125
+            },
+            {
+              "text": "问题广场",
+              "left": 598.515625,
+              "right": 650.515625
+            },
+            {
+              "text": "支持",
+              "left": 702,
+              "right": 728
+            }
+          ]
+        },
+        {
+          "width": 900,
+          "scrollWidth": 900,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 32,
+              "right": 230.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 372.90625,
+              "right": 424.90625
+            },
+            {
+              "text": "软件下载",
+              "left": 442.90625,
+              "right": 494.90625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 512.90625,
+              "right": 575
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 593,
+              "right": 684
+            },
+            {
+              "text": "更新记录",
+              "left": 702,
+              "right": 754
+            },
+            {
+              "text": "问题广场",
+              "left": 772,
+              "right": 824
+            },
+            {
+              "text": "支持",
+              "left": 842,
+              "right": 868
+            }
+          ]
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "links": [
+            {
+              "text": "Brclio 小红书下载器\nXHS MEDIA SAVER",
+              "left": 100,
+              "right": 298.046875
+            },
+            {
+              "text": "下载工具",
+              "left": 514.5625,
+              "right": 566.5625
+            },
+            {
+              "text": "软件下载",
+              "left": 591.5625,
+              "right": 643.5625
+            },
+            {
+              "text": "VIP 交流群",
+              "left": 668.5625,
+              "right": 730.65625
+            },
+            {
+              "text": "编程私教与书籍",
+              "left": 755.65625,
+              "right": 846.65625
+            },
+            {
+              "text": "更新记录",
+              "left": 871.65625,
+              "right": 923.65625
+            },
+            {
+              "text": "问题广场",
+              "left": 948.65625,
+              "right": 1000.65625
+            },
+            {
+              "text": "支持",
+              "left": 1025.65625,
+              "right": 1051.65625
+            },
+            {
+              "text": "GitHub\n↗",
+              "left": 1268.171875,
+              "right": 1340
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "personalQrSha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+  "finishedAt": "2026-09-30T13:30:02.436Z",
+  "rendererErrors": [],
+  "popups": [],
+  "failedLoads": [],
+  "visualReview": {
+    "result": "PASS",
+    "reviewedScreenshots": [
+      "vercel-domain-vip-390.png",
+      "vercel-domain-vip-1440.png",
+      "vercel-domain-vip-390-qr-dialog.png",
+      "cloudflare-pages-vip-390.png",
+      "cloudflare-pages-vip-1440.png",
+      "cloudflare-pages-vip-390-qr-dialog.png"
+    ],
+    "observations": "Both deployed VIP pages show the 99.99 yuan fee and budget/feasibility/early-access terms. Desktop QR is fully visible. Mobile layout and modal fit the viewport, with the QR and close control unobscured. No visual defect found."
+  }
+}
