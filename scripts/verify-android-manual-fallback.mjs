@@ -13,6 +13,18 @@ export const FALLBACK_SHARED_ASSETS = Object.freeze([
   'assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png',
 ]);
 
+export function manualDownloadControl(nodes) {
+  const viewport = nodes.find(node => node.package === 'com.brclio.xhs.debug'
+    && node.class === 'android.webkit.WebView' && node.rect);
+  if (!viewport) return undefined;
+  const [left, top, right, bottom] = viewport.rect;
+  return nodes.find(node => node.package === 'com.brclio.xhs.debug'
+    && node.class === 'android.widget.Button' && node.text === '浏览器下载最新版 APK ↗'
+    && node.enabled === 'true' && node.clickable === 'true' && node.rect
+    && node.rect[0] >= left && node.rect[1] >= top && node.rect[2] <= right && node.rect[3] <= bottom
+    && node.rect[2] > node.rect[0] && node.rect[3] > node.rect[1]);
+}
+
 export function selectPublishedAndroid(releases) {
   const stable = releases.filter(release => release.draft === false && release.prerelease === false
     && /^android-v(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})$/.test(release.tag_name));
@@ -132,14 +144,27 @@ export async function verifyManualFallback({ root, output, run, device, shell, s
     // Package Installer failure. The following click and native network/intent are real.
     await cdp.evaluate(`window.brclioEvent(${JSON.stringify({ type: 'update', status: 'error', canInstallBuild: true,
       error: '验收夹具：安装失败', installerClosed: true, installerResult: 'failed', downloadReady: false })})`);
-    const button = await findText('浏览器下载最新版 APK', true);
-    assert.ok(button, 'The injected failure must expose the real manual download button');
+    const observedButton = await waitFor(async () => {
+      const rendered = await cdp.evaluate(`(() => {
+        const button = document.getElementById('manual-update');
+        button.scrollIntoView({ block: 'center', behavior: 'instant' });
+        const rect = button.getBoundingClientRect();
+        return !button.disabled && rect.width > 0 && rect.height > 0 && rect.top >= 0
+          && rect.bottom <= window.innerHeight && rect.left >= 0 && rect.right <= window.innerWidth;
+      })()`);
+      return rendered ? manualDownloadControl(await snapshot()) : null;
+    }, 'fully visible enabled manual-download Button');
+    assert.ok(observedButton, 'The injected failure must expose the exact clickable native Button');
     const failureUi = await cdp.evaluate(`({ status: document.getElementById('update-status').textContent,
       help: document.getElementById('manual-update-help').textContent,
       visible: !document.getElementById('manual-update-help').hidden })`);
     assert.equal(failureUi.visible, true); assert.match(failureUi.status, /系统返回安装失败/);
     assert.match(failureUi.help, /覆盖安装.*不要卸载.*保留应用数据/);
     await snapshot(); await screenshot('manual-fallback-injected-failure');
+    // Release notes can contain the same phrase. Reacquire the exact enabled
+    // Button after screenshot capture; never tap a substring text node or stale bounds.
+    const button = manualDownloadControl(await snapshot());
+    assert.ok(button, 'The visible manual-download Button must remain available immediately before tapping');
     await tap(button);
     const activityDump = await waitFor(async () => {
       const dump = await shell('dumpsys', 'activity', 'activities');

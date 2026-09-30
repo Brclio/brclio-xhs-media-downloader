@@ -1,4 +1,4 @@
-# Android v1.0.6：新增 VIP 付费交流群
+# Android v1.0.7：新增 VIP 付费交流群
 
 2026 年 9 月 30 日更新。
 
@@ -12,6 +12,6 @@
 
 ## 安装与校验
 
-下载 [Brclio-XHS-Android-1.0.6-release.apk](https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.6/Brclio-XHS-Android-1.0.6-release.apk)，直接覆盖原正式版，不要先卸载。正式包沿用固定签名；按系统提示完成安装。
+下载 [Brclio-XHS-Android-1.0.7-release.apk](https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.7/Brclio-XHS-Android-1.0.7-release.apk)，直接覆盖原正式版，不要先卸载。正式包沿用固定签名；按系统提示完成安装。
 
 同名 `.apk.sha256` 与 `SHA256SUMS.txt` 提供校验值，`android-update.json` 记录源码提交、版本和签名证书指纹。debug 包使用独立应用 ID。

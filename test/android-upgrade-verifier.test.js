@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { captureUiHierarchy, installSourceToggle, packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
-import { FALLBACK_SHARED_ASSETS, selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
+import { FALLBACK_SHARED_ASSETS, manualDownloadControl, selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
 
 test('isolated manual fallback fixture includes every shared asset required by the candidate Gradle bundle', async () => {
   const gradle = await readFile(new URL('../android/app/build.gradle', import.meta.url), 'utf8');
@@ -14,6 +14,23 @@ test('isolated manual fallback fixture includes every shared asset required by t
   for (const file of FALLBACK_SHARED_ASSETS) {
     assert.ok((await readFile(new URL(`../${file}`, import.meta.url))).length > 0, `Shared asset is missing: ${file}`);
   }
+});
+
+test('manual fallback selects the exact visible enabled Button instead of matching its release-note text', () => {
+  // Reproduce run 36716769177: a visible TextView mentioned the button while
+  // the real offscreen Button had an inverted vertical rectangle.
+  const viewport = '<node text="" class="android.webkit.WebView" package="com.brclio.xhs.debug" bounds="[0,63][1080,1859]" />';
+  const notes = '<node text="软件更新区新增「浏览器下载最新版 APK」按钮。" class="android.widget.TextView" package="com.brclio.xhs.debug" clickable="false" enabled="true" bounds="[49,1073][1031,1601]" />';
+  const button = (bounds, enabled = 'true', clickable = 'true') => `<node text="浏览器下载最新版 APK ↗" class="android.widget.Button" package="com.brclio.xhs.debug" clickable="${clickable}" enabled="${enabled}" bounds="${bounds}" />`;
+  assert.equal(manualDownloadControl(uiNodes(viewport + notes + button('[49,1911][580,1859]'))), undefined);
+  assert.equal(manualDownloadControl(uiNodes(viewport + notes + button('[49,1700][580,1930]'))), undefined,
+    'A valid rectangle extending outside the WebView must not be tapped');
+  assert.equal(manualDownloadControl(uiNodes(viewport + notes + button('[49,1400][580,1516]', 'false'))), undefined);
+  assert.equal(manualDownloadControl(uiNodes(viewport + notes + button('[49,1400][580,1516]', 'true', 'false'))), undefined);
+  const visible = uiNodes(viewport + notes + button('[49,1400][580,1516]'));
+  assert.equal(manualDownloadControl(visible), visible[2]);
+  assert.equal(manualDownloadControl(uiNodes(viewport + notes + button('[49,1400][580,1516]').replace(' ↗', ''))), undefined,
+    'Partial text cannot identify a control');
 });
 
 test('emulator acceptance reads signed package identity without confusing user or target SDK numbers', () => {
