@@ -250,6 +250,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     progress('old-application-exited-normally');
     const restarted = await until(async () => (await processes()).find(p => isMain(p, executable) && p.ProcessId !== pid), 'successful NSIS automatic app relaunch', 180000);
     assert.ok((restarted.CommandLine || '').includes('--updated'), 'Automatic relaunch carries update marker');
+    asar.uncache(archive); // The real installer replaced the file at the same path.
     assert.equal(await digest(archive), await digest(path.join(output, 'win-unpacked/resources/app.asar')), 'Installed payload is the reviewed new archive');
     await until(async () => Number(await ps('$p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue; if ($p) { $p.MainWindowHandle.ToInt64() }', { VERIFY_PID: String(restarted.ProcessId) })) > 0, 'restarted app window');
     await stopApp(restarted.ProcessId);
@@ -329,12 +330,23 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
         if (ids.has(processInfo.ParentProcessId)) ids.add(processInfo.ProcessId);
       }
       const relevant = current.filter(p => ids.has(p.ProcessId) || p.Name === `${pkg.build.productName}.exe`);
-      const installed = await exists(archive)
-        ? { sha256: await digest(archive), version: JSON.parse(asar.extractFile(archive, 'package.json')).version }
-        : null;
-      console.error(JSON.stringify({ windowsUpdateFailure: error.message, stage, installed,
+      console.error(JSON.stringify({ windowsUpdateFailure: error.message, stage,
         installerProcesses: [...running].map(child => ({ pid: child.pid, exitCode: child.exitCode, signalCode: child.signalCode })),
-        processes: relevant, windows: await windowSnapshot([...ids]) }, null, 2));
+        explorerPresent: current.some(p => p.Name?.toLowerCase() === 'explorer.exe'), processes: relevant }, null, 2));
+      // Read independently: malformed/transient payloads must not suppress the
+      // window/exit diagnostics that explain the actual installer failure.
+      try {
+        asar.uncache(archive);
+        console.error(JSON.stringify({ installedArchive: await exists(archive)
+          ? { sha256: await digest(archive), version: JSON.parse(asar.extractFile(archive, 'package.json')).version }
+          : null }));
+      } catch (cause) { console.error(JSON.stringify({ installedArchiveError: cause.message })); }
+      try { console.error(JSON.stringify({ installerWindows: await windowSnapshot([...ids]) })); }
+      catch (cause) { console.error(JSON.stringify({ installerWindowError: cause.message })); }
+      try {
+        const log = await readFile(path.join(profile, 'diagnostics/events.ndjson'), 'utf8');
+        console.error(JSON.stringify({ appEvents: log.trim().split(/\r?\n/).slice(-12).map(line => JSON.parse(line)) }));
+      } catch (cause) { console.error(JSON.stringify({ appEventsError: cause.message })); }
     } catch (diagnosticError) { console.error(`Windows failure diagnostics: ${diagnosticError.message}`); }
     throw error;
   } finally {

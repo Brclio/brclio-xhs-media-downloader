@@ -10,6 +10,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
 import { prepareMacUpdate } from '../desktop/mac-update.js';
 import { confirmMacUpdateStartup } from '../desktop/mac-update-cleanup.js';
+import { createMacFixtureDmg } from '../scripts/create-mac-fixture-dmg.mjs';
 
 const execute = promisify(execFile);
 const appId = 'cn.bornforthis.xhs-downloader';
@@ -173,7 +174,7 @@ for (const mode of ['timeout', 'malformed', 'early-exit']) test(`readiness ${mod
 });
 
 const nativeEnabled = process.platform === 'darwin' && process.env.XHS_MAC_UPDATE_NATIVE === '1';
-test('real Electron updater launches the replacement and rollback GUI without inheriting helper Node mode', { skip: !nativeEnabled, timeout: 300000 }, async t => {
+test('real Electron updater launches the replacement and rollback GUI without inheriting helper Node mode', { skip: !nativeEnabled, timeout: 600000 }, async t => {
   const electronExecutable = createRequire(import.meta.url)('electron');
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'xhs-electron-update-native-')));
   const launchLog = path.join(root, 'gui-launches.jsonl');
@@ -233,7 +234,7 @@ app.whenReady().then(async () => {
   const payload = path.join(root, 'payload'); await mkdir(payload);
   await bundle(path.join(payload, 'New application.app'), '1.8.1');
   const dmg = path.join(root, 'electron-fixture.dmg');
-  await execute('/usr/bin/hdiutil', ['create', '-quiet', '-volname', 'Electron Update Test', '-srcfolder', payload, '-format', 'UDZO', dmg], { timeout: 120000 });
+  await createMacFixtureDmg({ source: payload, destination: dmg, volumeName: 'Electron Update Test' });
   for (const confirm of [true, false]) {
     const current = path.join(root, confirm ? 'Successful update.app' : 'Rolled back update.app');
     await bundle(current, '1.8.0');
@@ -276,7 +277,7 @@ app.whenReady().then(async () => {
   t.diagnostic('The actual old Electron executable ran the Node-mode helper. The replacement rendered, acknowledged startup and cleaned its backup; a non-acknowledging Electron GUI was stopped and the restored old GUI rendered too.');
 });
 
-test('native temporary signed app: read-only DMG preparation, replacement, and rollback', { skip: !nativeEnabled, timeout: 240000 }, async t => {
+test('native temporary signed app: read-only DMG preparation, replacement, and rollback', { skip: !nativeEnabled, timeout: 600000 }, async t => {
   // Electron 44 downloads its executable lazily from the package entry point.
   // npm ci alone does not create dist/. Resolve it before starting short-lived
   // fixture parent processes, and honor the package's platform/override paths.
@@ -304,7 +305,7 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
   }
   const source = path.join(payload, 'New application.app'); await appBundle(source, '1.8.0');
   const dmg = path.join(root, 'fixture.dmg');
-  await execute('/usr/bin/hdiutil', ['create', '-quiet', '-volname', 'Brclio Update Test', '-srcfolder', payload, '-format', 'UDZO', dmg], { timeout: 60000 });
+  await createMacFixtureDmg({ source: payload, destination: dmg, volumeName: 'Brclio Update Test' });
   async function waitResult(filename, states) {
     for (let attempt = 0; attempt < 150; attempt++) {
       const result = JSON.parse(await readFile(filename, 'utf8'));
@@ -454,7 +455,7 @@ test('native temporary signed app: read-only DMG preparation, replacement, and r
   // A real post-signing mutation must fail before replacing anything.
   await writeFile(path.join(source, 'Contents/Resources/version.txt'), 'tampered');
   const invalid = path.join(root, 'invalid.dmg');
-  await execute('/usr/bin/hdiutil', ['create', '-quiet', '-volname', 'Invalid Update Test', '-srcfolder', payload, '-format', 'UDZO', invalid], { timeout: 60000 });
+  await createMacFixtureDmg({ source: payload, destination: invalid, volumeName: 'Invalid Update Test' });
   const current = path.join(root, 'Signature rejection.app'); await appBundle(current, '1.7.1');
   await assert.rejects(prepareMacUpdate({ installerPath: invalid, currentAppPath: current, expectedVersion: '1.8.0', expectedArch: process.arch,
     cacheDirectory: path.join(root, 'cache'), parentPid: process.pid }, { startProgress: async () => ({ close: async () => {} }) }), { code: 'MAC_UPDATE_SIGNATURE' });

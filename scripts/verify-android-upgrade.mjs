@@ -33,6 +33,18 @@ export function uiNodes(xml) {
   });
 }
 
+const onScreen = node => node.rect && node.rect[2] > node.rect[0] && node.rect[3] > node.rect[1];
+
+export function installSourceToggle(nodes) {
+  const settings = nodes.filter(node => node.package === 'com.android.settings' && onScreen(node));
+  if (!settings.some(node => node.text === 'Allow from this source')
+    || !settings.some(node => node.text === 'Brclio 小红书下载器')) return undefined;
+  // API 35 Settings uses a Compose checkable android.view.View, not Switch.
+  const toggles = settings.filter(node => node.checkable === 'true' && node.enabled === 'true'
+    && node.clickable === 'true');
+  return toggles.length === 1 ? toggles[0] : undefined;
+}
+
 export function packageState(text) {
   const result = {
     versionCode: Number(text.match(/\bversionCode=(\d+)/)?.[1]),
@@ -109,7 +121,6 @@ export async function verifyAndroidUpgrade() {
     await writeFile(path.join(output, `${name}.png`), png);
     await writeFile(path.join(output, `${name}.xml`), lastXml);
   };
-  const onScreen = node => node.rect && node.rect[2] > node.rect[0] && node.rect[3] > node.rect[1];
   const tap = async node => {
     assert.ok(onScreen(node), 'Only tap an observed UI element with usable bounds');
     const [left, top, right, bottom] = node.rect;
@@ -166,8 +177,7 @@ export async function verifyAndroidUpgrade() {
     // Set a real user-controlled setting through Android's UI. No adb root,
     // run-as, appops mutation or release-app debugging/private-data injection.
     await shell('am', 'start', '-W', '-a', 'android.settings.MANAGE_UNKNOWN_APP_SOURCES', '-d', `package:${APPLICATION}`);
-    const toggle = await until(async () => (await snapshot()).find(node => onScreen(node)
-      && node.checkable === 'true' && /Switch|CompoundButton/.test(node.class)), 'install-source permission switch');
+    const toggle = await until(async () => installSourceToggle(await snapshot()), 'install-source permission switch');
     if (toggle.checked !== 'true') await tap(toggle);
     await until(async () => /REQUEST_INSTALL_PACKAGES:\s*allow/.test(await shell('appops', 'get', APPLICATION, 'REQUEST_INSTALL_PACKAGES')),
       'user-authorized install-source setting');

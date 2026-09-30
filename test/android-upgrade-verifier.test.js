@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
+import { installSourceToggle, packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
 
 test('emulator acceptance reads signed package identity without confusing user or target SDK numbers', () => {
   const value = packageState('Package [com.brclio.xhs]\n userId=10176\n versionCode=10003 minSdk=26 targetSdk=35\n versionName=1.0.3\n firstInstallTime=2026-09-30 01:23:45\n');
@@ -28,4 +28,14 @@ test('release upgrade fixture refuses to run outside disposable GitHub Actions',
     if (previous === undefined) delete process.env.GITHUB_ACTIONS;
     else process.env.GITHUB_ACTIONS = previous;
   }
+});
+
+test('Android 15 Compose install-source control is recognized without assuming the Switch class', () => {
+  // The relevant observed nodes from Android emulator run 36654435742.
+  const nodes = uiNodes('<node text="Brclio 小红书下载器" package="com.android.settings" bounds="[307,740][773,815]"/>'
+    + '<node text="Allow from this source" package="com.android.settings" bounds="[63,963][610,1025]"/>'
+    + '<node text="" class="android.view.View" package="com.android.settings" checkable="true" checked="false" clickable="true" enabled="true" bounds="[0,916][1080,1072]"/>');
+  assert.equal(installSourceToggle(nodes), nodes[2]);
+  assert.equal(installSourceToggle(nodes.slice(1)), undefined, 'An unrelated application setting cannot be selected');
+  assert.equal(installSourceToggle([...nodes, nodes[2]]), undefined, 'An ambiguous settings screen cannot be selected');
 });
