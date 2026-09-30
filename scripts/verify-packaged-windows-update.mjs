@@ -37,6 +37,10 @@ const ps = async (script, extra = {}) => (await run('powershell.exe', ['-NoProfi
   '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $ErrorActionPreference = "Stop"; ' + script],
 { encoding: 'utf8', timeout: 30000, maxBuffer: 2 * 1024 ** 2, windowsHide: true, env: { ...process.env, ...extra } })).stdout.trim();
 const processes = async () => JSON.parse(await ps('@(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine) | ConvertTo-Json -Compress') || '[]');
+// Get-Process -Id on an exited PID sets $? false even with SilentlyContinue,
+// making powershell.exe return 1 after a successful cancellation. An empty
+// filtered process list is ordinary data; unexpected PowerShell errors still stop.
+export const windowsProcessQuery = 'Get-Process | Where-Object { $_.Id -eq [int]$env:VERIFY_PID }';
 export async function findWindowsMainProcess(list, executable, canonicalize = realpath) {
   // Windows TEMP can use RUNNER~1 while CIM reports runneradmin. Resolve both
   // spellings to the actual file, still rejecting sibling apps and subprocesses.
@@ -85,7 +89,7 @@ public static class VerifyWindowSnapshot {
 @([VerifyWindowSnapshot]::Read([uint32[]]($env:VERIFY_PIDS -split ','))) | ConvertTo-Json -Compress`, { VERIFY_PIDS: pids.join(',') }) || '[]');
 }
 async function stopApp(pid) {
-  await ps('$p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue; if ($p) { if (-not $p.CloseMainWindow()) { throw "Application has no closable window" } }', { VERIFY_PID: String(pid) });
+  await ps(`$p = ${windowsProcessQuery}; if ($p) { if (-not $p.CloseMainWindow()) { throw "Application has no closable window" } }`, { VERIFY_PID: String(pid) });
   await until(async () => !(await processes()).some(p => p.ProcessId === pid), 'normal app shutdown', 30000);
 }
 async function port() {
@@ -168,7 +172,7 @@ public static class VerifyWindow {
   }
 }
 '@;
-$p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue;
+$p = ${windowsProcessQuery};
 if ($p) {
   if (-not [VerifyWindow]::ClickAction([uint32]$env:VERIFY_PID, ($env:VERIFY_CANCEL -eq '1'))) {
     throw "Expected enabled Cancel or Finish action is unavailable"
@@ -178,7 +182,7 @@ if ($env:VERIFY_CANCEL -eq '1') {
   $deadline = (Get-Date).AddSeconds(8);
   do {
     Start-Sleep -Milliseconds 100;
-    $p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue;
+    $p = ${windowsProcessQuery};
     if (-not $p) { break }
     [VerifyWindow]::ConfirmCancel([uint32]$env:VERIFY_PID);
   } while ((Get-Date) -lt $deadline)
@@ -294,7 +298,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     assert.ok((restarted.CommandLine || '').includes('--updated'), 'Automatic relaunch carries update marker');
     asar.uncache(archive); // The real installer replaced the file at the same path.
     assert.equal(await digest(archive), await digest(path.join(output, 'win-unpacked/resources/app.asar')), 'Installed payload is the reviewed new archive');
-    await until(async () => Number(await ps('$p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue; if ($p) { $p.MainWindowHandle.ToInt64() }', { VERIFY_PID: String(restarted.ProcessId) })) > 0, 'restarted app window');
+    await until(async () => Number(await ps(`$p = ${windowsProcessQuery}; if ($p) { $p.MainWindowHandle.ToInt64() }`, { VERIFY_PID: String(restarted.ProcessId) })) > 0, 'restarted app window');
     await stopApp(restarted.ProcessId);
     await closeWizard(installer.pid, false);
     progress('upgraded-application-restarted-and-closed');
@@ -348,7 +352,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     // Cancel a visible manual reinstall on its first page, before extraction.
     const beforeCancel = await digest(archive);
     const cancelled = start(target, ['/currentuser']);
-    await until(async () => Number(await ps('$p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue; if ($p) { $p.MainWindowHandle.ToInt64() }', { VERIFY_PID: String(cancelled.pid) })) > 0, 'manual installer first page');
+    await until(async () => Number(await ps(`$p = ${windowsProcessQuery}; if ($p) { $p.MainWindowHandle.ToInt64() }`, { VERIFY_PID: String(cancelled.pid) })) > 0, 'manual installer first page');
     await closeWizard(cancelled.pid, true);
     assert.equal(await digest(archive), beforeCancel, 'Cancellation before install leaves installed files intact');
     assert.deepEqual(await readFile(path.join(profile, 'account/account-v1.enc')), accountBytes);

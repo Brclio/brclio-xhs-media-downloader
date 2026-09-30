@@ -18,6 +18,10 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const temporary = mkdtempSync(path.join(tmpdir(), 'xhs-native-clipboard-smoke-'));
 app.setPath('userData', path.join(temporary, 'profile'));
 app.setPath('sessionData', path.join(temporary, 'session'));
+// Hosted Intel runners can lack a working EGL display. Native clipboard and
+// paste verification do not require GPU acceleration; screenshots still must
+// render successfully through Chromium's software compositor.
+app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-background-networking');
 app.on('window-all-closed', () => {});
 
@@ -202,8 +206,15 @@ async function main() {
     assert.deepEqual(pasted.files.map(file => file.name), files.map(file => path.basename(file)));
     assert.ok(pasted.files.every(file => file.type === 'image/png'));
     assert.deepEqual(pasted.files.map(file => digest(Buffer.from(file.bytes))), fixtures.map(file => digest(file.bytes)));
+    stage = 'multi-paste-screenshot';
+    await win.webContents.executeJavaScript(`(async () => {
+      await Promise.all(Array.from(document.querySelectorAll('#images img'), image => image.decode()));
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    })()`);
     const screenshot = path.join(temporary, 'native-clipboard-10-images.png');
-    await fs.writeFile(screenshot, (await win.webContents.capturePage()).toPNG());
+    const captured = await win.webContents.capturePage();
+    assert.equal(captured.isEmpty(), false, 'Native paste screenshot must contain rendered pixels');
+    await fs.writeFile(screenshot, captured.toPNG());
 
     // A fresh service must retain files currently referenced by the OS clipboard.
     service = new NativeImageClipboard(options);
@@ -255,13 +266,14 @@ async function main() {
     assert.ok(progress.some(item => item.total === 10 && item.completed === 10 && item.phase === 'writing'));
     assert.equal(authorizationChecks, 11);
     summary = { smoke: 'passed', platform: process.platform, electron: process.versions.electron,
+      softwareRendering: true,
       preload: true, nativeItems, pastedImages: 10, distinctImageBytes: true, orderedUnicodeNames: true,
       singleImagePaste: true, failedCopyPreserved: true, recreatedServicePreserved: true,
       jpegRetinaNamePreserved: true, webpOriginalPaste: true, oversizedHeaderFileFallback: true,
       networkRequests: 0, screenshot };
     exitCode = 0;
   } catch (error) {
-    console.error('NATIVE_CLIPBOARD_SMOKE_FAILED', error.stack || String(error));
+    console.error('NATIVE_CLIPBOARD_SMOKE_FAILED', stage, error.stack || String(error));
   } finally {
     clearTimeout(deadline);
     try { await restoreClipboard(); }
