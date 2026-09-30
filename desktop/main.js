@@ -106,16 +106,28 @@ function external(url) {
 }
 
 function openLocalPreview(url) {
-  const isLearningPage = new URL(url).pathname === '/learn.html';
-  const preview = new BrowserWindow({ parent: mainWindow, width: isLearningPage ? 1120 : 720, height: 820,
+  // Catch old links and programmatic window.open calls as well as the sidebar.
+  // Keeping this in the main process prevents stale renderer code from creating
+  // a second window or replacing the downloader and discarding its form state.
+  if (new URL(url).pathname === '/learn.html') {
+    navigateDesktop('learning');
+    return;
+  }
+  const preview = new BrowserWindow({ parent: mainWindow, width: 720, height: 820,
     webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
   preview.removeMenu();
-  preview.webContents.setWindowOpenHandler(({ url: target }) => { external(target); return { action: 'deny' }; });
+  preview.webContents.setWindowOpenHandler(({ url: target }) => {
+    if (isAppUrl(target) && new URL(target).pathname === '/learn.html') {
+      navigateDesktop('learning');
+      preview.close();
+    } else external(target);
+    return { action: 'deny' };
+  });
   preview.webContents.on('will-navigate', (event, target) => {
     if (!isAppUrl(target)) { event.preventDefault(); external(target); }
-    else if (isLearningPage && ['/', '/index.html'].includes(new URL(target).pathname)) {
+    else if (new URL(target).pathname === '/learn.html') {
       event.preventDefault();
-      mainWindow?.focus();
+      navigateDesktop('learning');
       preview.close();
     }
   });
@@ -245,6 +257,10 @@ async function createWindow() {
   });
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!isAppUrl(url)) { event.preventDefault(); external(url); }
+    else if (new URL(url).pathname === '/learn.html') {
+      event.preventDefault();
+      navigateDesktop('learning');
+    }
   });
   mainWindow.webContents.on('will-attach-webview', (event) => event.preventDefault());
   mainWindow.webContents.on('render-process-gone', (_event, details) => {

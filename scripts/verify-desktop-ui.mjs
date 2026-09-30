@@ -2,7 +2,7 @@
 // Run: node_modules/.bin/electron scripts/verify-desktop-ui.mjs
 import { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -318,6 +318,160 @@ app.whenReady().then(async () => {
   await check(`document.body.dataset.desktopReady === 'true'`, 'desktop readiness follows successful info and profile initialization');
   await verifyShortcut(win);
   assert.equal(readyEvents.get(win.webContents.id), 1, 'successful initialization emits exactly one desktop-ready event');
+  // Exercise the real embedded page and its packaged resources, keeping the
+  // downloader's renderer alive throughout navigation and QR saving.
+  const learningScreenshots = {};
+  const learningPopups = [];
+  win.webContents.setWindowOpenHandler(({ url }) => { learningPopups.push(url); return { action: 'deny' }; });
+  assert.equal(await evaluate(`document.querySelector('#desktop-learning-frame').hasAttribute('src')`), false, 'learning page loads only on first selection');
+  assert.equal(await evaluate(`document.querySelectorAll('#desktop-navigation [role="tab"]').length`), 6, 'learning page joins the six-page tablist');
+  const initialMainUrl = win.webContents.getURL();
+  await evaluate(`(() => {
+    window.fixtureLearning = {
+      main: document.querySelector('main'), row: document.querySelector('#profile-items li'),
+      frame: document.querySelector('#desktop-learning-frame'),
+      original: Object.fromEntries(['share-text', 'profile-url', 'desktop-feedback-title', 'desktop-feedback-description']
+        .map(id => [id, document.getElementById(id).value]))
+    };
+    document.querySelector('#share-text').value = '未解析的单篇下载草稿';
+    document.querySelector('#desktop-feedback-title').value = '尚未提交的反馈';
+    document.querySelector('#desktop-feedback-description').value = '查看书籍后继续填写这份反馈。';
+    document.querySelector('#profile-tab').focus();
+  })()`);
+  const press = keyCode => {
+    const nativeKey = keyCode.replace(/^Arrow/, '');
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: nativeKey });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: nativeKey });
+  };
+  const learningDocument = `document.querySelector('#desktop-learning-frame').contentDocument`;
+  const learningWindow = `document.querySelector('#desktop-learning-frame').contentWindow`;
+  const clickLearning = selector => evaluate(`${learningDocument}.querySelector(${JSON.stringify(selector)}).click()`, true);
+  const assertSelectedLearning = async description => assert.equal(await evaluate(`(() => {
+    const tab = document.querySelector('#desktop-learning-link'), page = document.querySelector('#desktop-learning-page');
+    return document.body.dataset.desktopPage === 'learning' && tab.getAttribute('aria-selected') === 'true'
+      && tab.tabIndex === 0 && !page.hidden && page.getAttribute('aria-labelledby') === tab.id
+      && Array.from(document.querySelectorAll('#desktop-navigation [role="tab"]')).filter(t => t.getAttribute('aria-selected') === 'true').length === 1
+      && Array.from(document.querySelectorAll('main > .desktop-page')).filter(p => !p.hidden).length === 1;
+  })()`), true, description);
+  press('End');
+  await check(`document.body.dataset.desktopPage === 'learning' && document.activeElement.id === 'desktop-learning-link'`, 'End selects and focuses the final learning tab');
+  await check(`${learningDocument}?.body.classList.contains('learning-embedded') && ${learningDocument}.querySelector('.book-art').naturalWidth > 0`, 'embedded learning page and book image load from the packaged protocol');
+  await assertSelectedLearning('learning page has consistent selected-tab and visible-panel state');
+  await evaluate(`fixtureLearning.document = ${learningDocument}; fixtureLearning.frameLoads = 0;
+    fixtureLearning.frame.addEventListener('load', () => fixtureLearning.frameLoads++);`);
+  press('ArrowRight');
+  await check(`document.body.dataset.desktopPage === 'single' && document.activeElement.id === 'single-note-tab'`, 'keyboard navigation wraps from learning to single download');
+  press('ArrowLeft');
+  await check(`document.body.dataset.desktopPage === 'learning' && document.activeElement.id === 'desktop-learning-link'`, 'keyboard navigation wraps back to learning');
+  press('Home');
+  await check(`document.body.dataset.desktopPage === 'single' && document.activeElement.id === 'single-note-tab'`, 'Home still selects the first download tab');
+  for (const [tab, page, returnLink] of [
+    ['#profile-tab', 'profile', '#back-to-tool'],
+    ['#single-note-tab', 'single', '.site-header .brand'],
+    ['#feedback-tab', 'feedback', '.footer-links a[href="./index.html"]']
+  ]) {
+    await click(tab);
+    await click('#desktop-learning-link');
+    await assertSelectedLearning(`${page}: selecting promotion remains in the workspace`);
+    await clickLearning(returnLink);
+    await check(`document.body.dataset.desktopPage === ${JSON.stringify(page)} && document.activeElement.id === ${JSON.stringify(tab.slice(1))}`, `${page}: return link restores the previous work page and focus`);
+  }
+  assert.equal(await evaluate(`document.querySelector('main') === fixtureLearning.main && document.querySelector('#profile-items li') === fixtureLearning.row
+    && document.querySelector('#share-text').value === '未解析的单篇下载草稿'
+    && document.querySelector('#profile-url').value === fixtureLearning.original['profile-url']
+    && document.querySelector('#desktop-feedback-title').value === '尚未提交的反馈'
+    && document.querySelector('#desktop-feedback-description').value === '查看书籍后继续填写这份反馈。'`), true, 'embedded navigation preserves download records and unsubmitted form drafts');
+  await click('#desktop-learning-link');
+  const learningFits = `(() => {
+    const frame = document.querySelector('#desktop-learning-frame'), page = document.querySelector('#desktop-learning-page');
+    const child = frame.contentDocument, view = frame.contentWindow, rect = frame.getBoundingClientRect();
+    return {
+      fits: document.documentElement.scrollWidth <= document.documentElement.clientWidth
+        && document.body.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight
+        && page.scrollWidth <= page.clientWidth && page.scrollHeight <= page.clientHeight
+        && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight
+        && child.documentElement.scrollWidth <= child.documentElement.clientWidth && child.body.scrollWidth <= view.innerWidth,
+      parent: { width: innerWidth, height: innerHeight }, frame: rect.toJSON(),
+      child: { width: view.innerWidth, height: view.innerHeight, clientWidth: child.documentElement.clientWidth,
+        scrollWidth: child.documentElement.scrollWidth, bodyWidth: child.body.scrollWidth }
+    };
+  })()`;
+  const captureLearning = async name => {
+    learningScreenshots[name] = path.join(temporary, `desktop-learning-${name}.png`);
+    writeFileSync(learningScreenshots[name], await captureFrame());
+  };
+  for (const [width, height] of [[1320, 980], [900, 900], [760, 900], [390, 844], [320, 760]]) {
+    await resizeViewport(width, height);
+    await evaluate(`${learningDocument}.activeElement?.blur(); ${learningWindow}.scrollTo({ top: 0, behavior: 'instant' })`);
+    await check(`${learningWindow}.scrollY === 0`, `${width}px: embedded page reaches the top before layout capture`);
+    await paint();
+    const geometry = await evaluate(learningFits);
+    assert.equal(geometry.fits, true, `embedded page fits ${width}px without parent or child horizontal overflow: ${JSON.stringify(geometry)}`);
+    assert.equal(await evaluate(`document.querySelector('#desktop-navigation [role="tablist"]').getAttribute('aria-orientation')`), width <= 600 ? 'horizontal' : 'vertical', 'tab orientation follows the compact navigation');
+    if (width <= 600) await check(`(() => {
+      const tabs = document.querySelector('#desktop-navigation [role="tablist"]').getBoundingClientRect();
+      const selected = document.querySelector('#desktop-learning-link').getBoundingClientRect();
+      return selected.left >= tabs.left - 1 && selected.right <= tabs.right + 1;
+    })()`, `${width}px: resize keeps the selected learning tab visible in compact navigation`);
+    await captureLearning(`${width}-top`);
+    await clickLearning('a[href="#contact"]');
+    await check(`${learningWindow}.location.hash === '#contact' && ${learningDocument}.querySelector('#contact').getBoundingClientRect().top >= 0
+      && ${learningDocument}.querySelector('#contact').getBoundingClientRect().top < ${learningWindow}.innerHeight`, `${width}px: consultation anchor reaches the embedded contact section`);
+    await check(`${learningDocument}.querySelector('#qr-open img').naturalWidth > 0`, `${width}px: packaged QR image loads`);
+    if (width === 1320 || width === 320) await captureLearning(`${width}-contact`);
+    await clickLearning('#qr-open');
+    await check(`${learningDocument}.querySelector('#qr-dialog').open`, `${width}px: QR dialog opens inside the iframe`);
+    const qrGeometry = await evaluate(`(() => {
+      const view = ${learningWindow}, dialog = ${learningDocument}.querySelector('#qr-dialog'), rect = dialog.getBoundingClientRect();
+      return { fits: rect.left >= 0 && rect.right <= view.innerWidth && rect.top >= 0 && rect.bottom <= view.innerHeight
+        && dialog.scrollWidth <= dialog.clientWidth, rect: rect.toJSON(), width: view.innerWidth, height: view.innerHeight };
+    })()`);
+    assert.equal(qrGeometry.fits, true, `${width}px: nested QR dialog stays inside its frame: ${JSON.stringify(qrGeometry)}`);
+    assert.equal(await evaluate(`document.querySelectorAll('dialog[open]').length`), 0, 'embedded QR modal never opens a parent dialog');
+    if (width === 1320 || width === 320) await captureLearning(`${width}-qr-dialog`);
+    press('Escape');
+    await check(`!${learningDocument}.querySelector('#qr-dialog').open && ${learningDocument}.activeElement.id === 'qr-open'`, `${width}px: Escape closes nested QR dialog and restores focus`);
+    await assertSelectedLearning(`${width}px: QR dismissal preserves the learning tab`);
+  }
+  await resizeViewport(900, 900);
+  await evaluate(`${learningWindow}.scrollTo({ top: 777, behavior: 'instant' }); fixtureLearning.scrollY = ${learningWindow}.scrollY;`);
+  await click('#profile-tab');
+  await click('#desktop-learning-link');
+  await paint();
+  assert.equal(await evaluate(`fixtureLearning.frame === document.querySelector('#desktop-learning-frame')
+    && fixtureLearning.document === ${learningDocument} && fixtureLearning.frameLoads === 0
+    && Math.abs(fixtureLearning.scrollY - ${learningWindow}.scrollY) < 1`), true, 'switching tabs preserves the existing frame DOM and scroll position');
+  await clickLearning('#qr-open');
+  await clickLearning('#qr-close');
+  await check(`!${learningDocument}.querySelector('#qr-dialog').open && ${learningDocument}.activeElement.id === 'qr-open'`, 'explicit nested QR close restores focus');
+  await clickLearning('#qr-open');
+  const backdropPoint = await evaluate(`(() => {
+    const frame = document.querySelector('#desktop-learning-frame').getBoundingClientRect();
+    return { x: Math.round(frame.left + 2), y: Math.round(frame.top + 2) };
+  })()`);
+  win.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, ...backdropPoint });
+  win.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...backdropPoint });
+  await check(`!${learningDocument}.querySelector('#qr-dialog').open`, 'nested QR backdrop closes the dialog');
+  const savedLearningQr = path.join(temporary, 'embedded-learning-wechat-qr.png');
+  let learningDownload;
+  session.defaultSession.once('will-download', (_event, item) => {
+    item.setSavePath(savedLearningQr);
+    learningDownload = new Promise((resolve, reject) => item.once('done', (_doneEvent, state) => {
+      if (state === 'completed') resolve(); else reject(new Error(`embedded QR download ${state}`));
+    }));
+  });
+  await clickLearning('#qr-save');
+  await check(`${learningDocument}.querySelector('#qr-status').textContent.includes('已发起保存')`, 'embedded QR save reports a download');
+  assert.ok(learningDownload, 'embedded QR save reaches the native download event');
+  await learningDownload;
+  assert.deepEqual(readFileSync(savedLearningQr), readFileSync(path.join(root, 'assets/support/wechat-personal-qr.png')), 'saved embedded QR preserves the original source bytes');
+  assert.equal(win.webContents.getURL(), initialMainUrl, 'promotion and QR saving never reload or navigate the downloader window');
+  assert.equal(readyEvents.get(win.webContents.id), 1, 'embedded navigation does not reinitialize the downloader');
+  assert.deepEqual(learningPopups, [], 'opening and using promotion creates no popup window');
+  await assertSelectedLearning('QR saving keeps the embedded learning page selected');
+  await evaluate(`for (const [id, value] of Object.entries(fixtureLearning.original)) document.getElementById(id).value = value`);
+  await click('#profile-tab');
+  await resizeViewport(1180, 980);
   assert.equal(calls.filter(call => call.method === 'checkForUpdates').length, 0, 'renderer must not automatically check for updates');
   assert.equal(await evaluate(`document.querySelector('#desktop-about-page').hidden && document.querySelector('#desktop-about-update-mount').contains(document.querySelector('#desktop-update-panel'))`), true, 'updater lives inside the independent about page');
   await check(`document.querySelector('#desktop-account-mount #software-account') !== null`, 'account mounted in its own page');
@@ -897,13 +1051,14 @@ app.whenReady().then(async () => {
   // the requested viewport consistently on macOS and Windows.
   await check(`window.innerWidth === 390`, 'narrow viewport');
   assert.equal(await evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true, 'no horizontal overflow');
-  for (const tab of ['#profile-tab', '#single-note-tab', '#account-tab', '#feedback-tab', '#about-tab']) {
+  for (const tab of ['#profile-tab', '#single-note-tab', '#account-tab', '#feedback-tab', '#about-tab', '#desktop-learning-link']) {
     await click(tab);
     assert.equal(await evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true, `${tab} has no narrow horizontal overflow`);
     assert.equal(await evaluate(`document.documentElement.scrollHeight <= window.innerHeight`), true, `${tab} preserves viewport height`);
     assert.equal(await evaluate(`Array.from(document.querySelectorAll('main > .desktop-page')).filter(page => !page.hidden).length`), 1, `${tab} is a distinct page`);
     assert.equal(await evaluate(`document.querySelector('.desktop-page:not([hidden])').scrollWidth <= document.querySelector('.desktop-page:not([hidden])').clientWidth`), true, `${tab} content fits beside scrollbars`);
   }
+  await click('#about-tab');
   const narrowViewport = await evaluate(`({ innerWidth: window.innerWidth, clientWidth: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth })`);
   await paint();
   const narrowScreenshot = path.join(temporary, 'desktop-ui-narrow.png');
@@ -1001,7 +1156,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'five independent pages', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'six independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

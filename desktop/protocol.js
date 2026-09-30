@@ -110,7 +110,10 @@ export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandle
       const body = request.method === 'HEAD' ? null : await readFile(filename);
       return new Response(body, { headers: {
         'Content-Type': MIME_TYPES[path.extname(name)] || 'application/octet-stream',
-        'Content-Security-Policy': CSP, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-cache'
+        // Only the workspace may embed packaged pages. Embedded content retains
+        // the stricter policy and cannot create further frames.
+        'Content-Security-Policy': name === 'index.html' ? CSP.replace("frame-src 'none'", "frame-src 'self'") : CSP,
+        'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-cache'
       } });
     } catch (error) {
       onDiagnostic('single.request_failed', { route, error, durationMs: Date.now() - started }, 'error');

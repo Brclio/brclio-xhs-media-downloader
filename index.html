@@ -121,14 +121,18 @@
             <button id="account-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-account-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">◎</span><span>账号与会员</span></button>
             <button id="feedback-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-feedback-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">✎</span><span>问题反馈</span></button>
             <button id="about-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-about-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">ⓘ</span><span>关于软件</span><span id="desktop-update-badge" class="desktop-nav-count desktop-new-badge" hidden>新版本</span></button>
+            <button id="desktop-learning-link" class="desktop-tab desktop-learning-link" type="button" role="tab" aria-controls="desktop-learning-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">▤</span><span>编程私教与书籍<small>一对一教学 · 长期招生</small></span></button>
           </div>
-          <a id="desktop-learning-link" class="desktop-learning-link" href="/learn.html?source=desktop" target="_blank" rel="noopener"><span class="desktop-nav-icon" aria-hidden="true">↗</span><span>编程私教与书籍<small>一对一教学 · 长期招生</small></span></a>
           <aside id="desktop-update-announcement" class="desktop-update-announcement" aria-live="polite" hidden>
             <strong id="desktop-announcement-title">有新版本可用</strong><p id="desktop-announcement-message">前往关于软件查看并下载更新。</p>
             <div><button id="desktop-announcement-open" type="button">查看更新 ↗</button><button id="desktop-announcement-dismiss" type="button" aria-label="暂时收起更新提醒">稍后</button></div>
           </aside>
           <div class="desktop-sidebar-bottom"><button id="desktop-account-shortcut" class="desktop-account-shortcut" type="button"><span class="desktop-account-avatar" aria-hidden="true">B</span><span><strong id="desktop-account-summary">软件账号</strong><small id="desktop-account-summary-status">点击登录 / 查看会员</small></span></button><div class="desktop-update-tools"><span id="desktop-version" class="desktop-version">本地下载工作台</span><button id="desktop-check-updates" class="desktop-check-updates" type="button">检查更新</button></div><a class="desktop-design-credit" href="https://github.com/Brclio/brclio-design-system" target="_blank" rel="noopener noreferrer">Design by Brclio</a></div>
         </nav>
+
+        <section id="desktop-learning-page" class="desktop-page desktop-learning-page" role="tabpanel" aria-labelledby="desktop-learning-link" tabindex="0" hidden>
+          <iframe id="desktop-learning-frame" title="编程私教与书籍" data-src="./learn.html?source=desktop" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups" referrerpolicy="no-referrer"></iframe>
+        </section>
 
         <section id="desktop-account-page" class="desktop-page" role="tabpanel" aria-labelledby="account-tab" tabindex="0" hidden><div id="desktop-account-mount"></div></section>
 

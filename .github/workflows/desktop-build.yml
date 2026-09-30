@@ -108,6 +108,8 @@ jobs:
         run: npm run desktop:verify:startup
       - name: Verify retry and update controls in the real desktop renderer
         run: npx electron scripts/verify-desktop-ui.mjs
+      - name: Verify public and packaged learning page assets, navigation and QR saving
+        run: npm run build:web && npx electron scripts/verify-learning-ui.cjs
       - name: Verify membership purchase and redemption in the real desktop renderer
         # Isolated fake account bridge; no real emails, payments or account writes.
         run: npm run desktop:verify:membership

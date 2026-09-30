@@ -82,7 +82,29 @@ export async function verifyPackagedMacLaunch(appPath, { version, productName })
             const body = await response.json();
             payloads.push({ status: response.status, success: body.success, images: body.images?.length });
           }
-          return { info, payloads, secureContext: window.isSecureContext, nodeAvailable: typeof require === 'function' };
+          const originalDocument = document;
+          const input = document.getElementById('profile-url');
+          input.value = 'packaged-learning-draft';
+          const frame = document.getElementById('desktop-learning-frame');
+          const lazy = !frame.hasAttribute('src');
+          document.getElementById('desktop-learning-link').click();
+          const deadline = Date.now() + 10000;
+          while (Date.now() < deadline && !frame.contentDocument?.body?.classList.contains('learning-embedded')) {
+            await new Promise(resolve => setTimeout(resolve, 30));
+          }
+          const content = frame.contentDocument;
+          const embedded = content?.body?.classList.contains('learning-embedded') === true;
+          content?.getElementById('contact')?.scrollIntoView({ behavior: 'instant' });
+          while (Date.now() < deadline && !Array.from(content?.images || []).every(image => image.complete && image.naturalWidth > 0)) {
+            await new Promise(resolve => setTimeout(resolve, 30));
+          }
+          const loadedAssets = Array.from(content?.images || []).filter(image => image.complete && image.naturalWidth > 0).length;
+          const localPage = frame.contentWindow.location.href.startsWith('xhs-app://local/learn.html');
+          content?.getElementById('back-to-tool')?.click();
+          const returned = document === originalDocument && document.body.dataset.desktopPage === 'profile'
+            && input.value === 'packaged-learning-draft';
+          return { info, payloads, secureContext: window.isSecureContext, nodeAvailable: typeof require === 'function',
+            learning: { lazy, embedded, loadedAssets, localPage, returned } };
         })()`;
     let result, contextRetries = 0;
     const readyDeadline = Date.now() + 30000;
@@ -107,7 +129,13 @@ export async function verifyPackagedMacLaunch(appPath, { version, productName })
     assert.equal(result.secureContext, true);
     assert.equal(result.nodeAvailable, false);
     assert.deepEqual(result.payloads, [{ status: 200, success: true, images: 1 }, { status: 200, success: true, images: 1 }]);
+    assert.equal(result.learning.lazy, true);
+    assert.equal(result.learning.embedded, true);
+    assert.ok(result.learning.loadedAssets >= 2);
+    assert.equal(result.learning.localPage, true);
+    assert.equal(result.learning.returned, true);
     console.log(JSON.stringify({ packagedMacLaunchVerified: true, version, renderer: true, nodeAndPythonParse: true,
+      embeddedLearningVerified: true,
       profile: 'temporary', keychain: 'mock', startupContextRetries: contextRetries, gatekeeperApprovalTested: false }));
   } finally {
     socket?.close();

@@ -30,6 +30,11 @@ body.learning-web .skip-link { z-index: 110; }
 .header-inner nav a:hover, .back-link:hover, .footer-links a:hover { text-decoration: underline; text-decoration-color: var(--blue); }
 .header-inner nav a:last-child { color: var(--blue-deep); font-weight: 650; }
 .back-link { font-size: 13px; color: var(--ink-light); white-space: nowrap; }
+body.learning-embedded .site-header { position: sticky; top: 0; z-index: 5; }
+body.learning-embedded .header-inner { min-height: 64px; gap: 16px; }
+body.learning-embedded .header-inner > .brand { display: none; }
+body.learning-embedded .hero { min-height: auto; padding-block: clamp(36px, 5vw, 64px); }
+html:has(body.learning-embedded) { scroll-padding-top: 76px; }
 .hero { display: grid; grid-template-columns: .92fr 1.08fr; gap: clamp(32px, 5vw, 80px); align-items: center; min-height: min(840px, calc(100svh - 86px)); padding-block: clamp(56px, 7vw, 104px); }
 .eyebrow { color: var(--blue-deep); font-size: 11px; letter-spacing: .14em; font-weight: 700; line-height: 1.7; }
 .label-dot { display: inline-block; width: 7px; height: 7px; background: var(--red); border-radius: 50%; margin-right: 8px; vertical-align: 1px; }

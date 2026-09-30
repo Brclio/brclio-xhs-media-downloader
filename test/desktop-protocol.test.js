@@ -28,6 +28,18 @@ test('desktop protocol serves the cropped membership QR images locally', async (
   }
 });
 
+test('only the workspace can embed its local learning page and all learning assets are packaged', async () => {
+  const workspace = await handler(new Request('xhs-app://local/'));
+  assert.match(workspace.headers.get('content-security-policy'), /frame-src 'self';/);
+  assert.doesNotMatch(workspace.headers.get('content-security-policy'), /frame-src[^;]*https?:/);
+  for (const name of ['learn.html', 'learn.css', 'learn.js', 'assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png']) {
+    const response = await handler(new Request(`xhs-app://local/${name}`));
+    assert.equal(response.status, 200, name);
+    assert.match(response.headers.get('content-security-policy'), /frame-src 'none';/);
+    assert.ok((await response.arrayBuffer()).byteLength > 0, name);
+  }
+});
+
 test('desktop protocol hides source/backend files and rejects foreign origins', async () => {
   for (const name of ['package.json', 'desktop/main.js', 'api/python_parse.py', 'lib/xhs.js', '.git/config', 'assets/%2e%2e/package.json']) {
     assert.notEqual((await handler(new Request(`xhs-app://local/${name}`))).status, 200, name);

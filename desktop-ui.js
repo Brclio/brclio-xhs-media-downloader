@@ -225,23 +225,49 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     ["profile", ui.profileTab, ui.panel],
     ["account", element("account-tab"), element("desktop-account-page")],
     ["feedback", element("feedback-tab"), element("desktop-feedback-page")],
-    ["about", element("about-tab"), element("desktop-about-page")]
+    ["about", element("about-tab"), element("desktop-about-page")],
+    ["learning", element("desktop-learning-link"), element("desktop-learning-page")]
   ];
   for (const [, , page] of pages) page.classList.add("desktop-page");
   element("desktop-about-update-mount").append(ui.updatePanel);
   element("desktop-about-update-actions").append(ui.updateCheck);
   ui.details.open = true;
   let currentPage = "profile";
+  let returnFromLearning = "profile";
+  const learningFrame = element("desktop-learning-frame");
+  learningFrame.addEventListener("load", () => {
+    const content = learningFrame.contentDocument;
+    if (!content || new URL(content.URL).pathname !== "/learn.html") return;
+    content.body.classList.add("learning-embedded");
+    content.addEventListener("click", event => {
+      const link = event.target.closest?.("a[href]");
+      if (!link) return;
+      const target = new URL(link.href);
+      if (target.protocol === location.protocol && target.host === location.host && ["/", "/index.html"].includes(target.pathname)) {
+        event.preventDefault();
+        navigate(returnFromLearning);
+      }
+    });
+  });
   let dismissedUpdate = "";
   let announcedUpdate = "";
   const compactNavigation = window.matchMedia("(max-width: 600px)");
-  const updateNavigationOrientation = () => ui.navigation.querySelector('[role="tablist"]')
-    .setAttribute("aria-orientation", compactNavigation.matches ? "horizontal" : "vertical");
+  const updateNavigationOrientation = () => {
+    ui.navigation.querySelector('[role="tablist"]')
+      .setAttribute("aria-orientation", compactNavigation.matches ? "horizontal" : "vertical");
+    if (compactNavigation.matches) pages.find(([name]) => name === currentPage)?.[1]
+      .scrollIntoView({ block: "nearest", inline: "nearest" });
+  };
   updateNavigationOrientation();
   compactNavigation.addEventListener("change", updateNavigationOrientation);
-  window.addEventListener("pagehide", () => compactNavigation.removeEventListener("change", updateNavigationOrientation), { once: true });
+  window.addEventListener("resize", updateNavigationOrientation);
+  window.addEventListener("pagehide", () => {
+    compactNavigation.removeEventListener("change", updateNavigationOrientation);
+    window.removeEventListener("resize", updateNavigationOrientation);
+  }, { once: true });
 
   function selectTab(tab, focus = false) {
+    if (tab === element("desktop-learning-link") && currentPage !== "learning") returnFromLearning = currentPage;
     for (const [name, candidate, page] of pages) {
       const selected = candidate === tab;
       candidate.setAttribute("aria-selected", String(selected));
@@ -250,6 +276,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
       if (selected) currentPage = name;
     }
     document.body.dataset.desktopPage = currentPage;
+    if (currentPage === "learning" && !learningFrame.hasAttribute("src")) learningFrame.src = learningFrame.dataset.src;
     if (currentPage === "about") element("desktop-update-announcement").hidden = true;
     if (currentPage === "feedback") { void loadDiagnostics(); void loadFeedbackList(); }
     if (focus) tab.focus();
