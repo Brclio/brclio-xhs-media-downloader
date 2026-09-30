@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { installSourceToggle, packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
+import { captureUiHierarchy, installSourceToggle, packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
 import { selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
 
 test('emulator acceptance reads signed package identity without confusing user or target SDK numbers', () => {
@@ -18,6 +18,30 @@ test('emulator UI clicks can use only observed node bounds, with decoded accessi
   assert.equal(nodes[1].text, 'Allow & install');
   assert.equal(nodes[1].checked, 'false');
   assert.equal(uiNodes('<node text="invalid" bounds="[-1,0][3,4]"/>')[0].rect, undefined);
+});
+
+test('UI capture restarts a crashed UiAutomation process and never reads its stale file', async () => {
+  const calls = [], failures = [];
+  let dumps = 0;
+  const xml = '<hierarchy><node text="Fresh screen" /></hierarchy>';
+  const value = await captureUiHierarchy({
+    shell: async (...args) => { calls.push(args[0]); if (args[0] === 'uiautomator' && ++dumps === 1)
+      throw Object.assign(new Error('dump failed'), { stderr: 'Bad file descriptor' }); },
+    device: async () => { calls.push('read'); return xml; },
+    onRetry: failure => failures.push(failure), wait: async () => {},
+  });
+  assert.equal(value, xml);
+  assert.deepEqual(calls, ['rm', 'uiautomator', 'rm', 'uiautomator', 'read']);
+  assert.match(failures[0].detail, /Bad file descriptor/);
+});
+
+test('UI capture fails closed after three unavailable or invalid fresh snapshots', async () => {
+  let removals = 0, reads = 0;
+  await assert.rejects(captureUiHierarchy({
+    shell: async command => { if (command === 'rm') removals++; },
+    device: async () => { reads++; return ''; }, wait: async () => {},
+  }), /failed after 3 attempts.*Missing fresh Android UI hierarchy/s);
+  assert.equal(removals, 3); assert.equal(reads, 3);
 });
 
 test('release upgrade fixture refuses to run outside disposable GitHub Actions', async () => {

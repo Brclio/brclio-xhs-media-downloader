@@ -34,6 +34,27 @@ export function uiNodes(xml) {
   });
 }
 
+export async function captureUiHierarchy({ shell, device, onRetry = () => {}, wait = delay }) {
+  const file = '/sdcard/brclio-upgrade-ui.xml';
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      // A failed UiAutomation process must never leave a previous screen usable.
+      await shell('rm', '-f', file);
+      await shell('uiautomator', 'dump', file);
+      const xml = await device(['exec-out', 'cat', file]);
+      assert.match(xml, /<hierarchy\b[^>]*>[\s\S]*<\/hierarchy>/, 'Missing fresh Android UI hierarchy');
+      return xml;
+    } catch (error) {
+      const detail = [error.message, error.stdout, error.stderr].filter(Boolean).join('\n').trim();
+      onRetry({ attempt, detail });
+      if (attempt === 3) throw new Error(`Android UI capture failed after ${attempt} attempts: ${detail}`, { cause: error });
+      // Android 15's standalone UiAutomation can lose a binder descriptor during
+      // an activity replacement. Restart only that read, never skip assertions.
+      await wait(1000);
+    }
+  }
+}
+
 const onScreen = node => node.rect && node.rect[2] > node.rect[0] && node.rect[3] > node.rect[1];
 
 export function installSourceToggle(nodes) {
@@ -112,9 +133,12 @@ export async function verifyAndroidUpgrade() {
   }
 
   let lastXml = '';
+  const snapshotRetries = [];
   const snapshot = async () => {
-    await shell('uiautomator', 'dump', '/sdcard/brclio-upgrade-ui.xml');
-    lastXml = await device(['exec-out', 'cat', '/sdcard/brclio-upgrade-ui.xml']);
+    lastXml = await captureUiHierarchy({ shell, device, onRetry: failure => {
+      snapshotRetries.push({ ...failure, at: new Date().toISOString() });
+      console.warn(`Android UI capture attempt ${failure.attempt} failed: ${failure.detail}`);
+    } });
     return uiNodes(lastXml);
   };
   const screenshot = async name => {
@@ -227,6 +251,7 @@ export async function verifyAndroidUpgrade() {
     console.log(JSON.stringify(report));
     return report;
   } finally {
+    await writeFile(path.join(output, 'ui-capture-retries.json'), JSON.stringify(snapshotRetries, null, 2) + '\n').catch(() => {});
     await writeFile(path.join(output, 'last-ui.xml'), lastXml).catch(() => {});
     await screenshot('last-screen').catch(() => {});
     await device(['logcat', '-d']).then(log => writeFile(path.join(output, 'logcat.txt'), log)).catch(() => {});
