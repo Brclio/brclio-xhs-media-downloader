@@ -235,6 +235,22 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   let currentPage = "profile";
   let returnFromLearning = "profile";
   const learningFrame = element("desktop-learning-frame");
+  let learningScroll = null;
+  let learningScrollRevision = 0;
+  let learningScrollPending = false;
+
+  function restoreLearningScroll(revision) {
+    if (!learningScroll || currentPage !== "learning" || !learningFrame.contentDocument?.body?.classList.contains("learning-embedded")) return;
+    learningScrollPending = true;
+    // Chromium can reset a hidden iframe's viewport before laying it out again,
+    // particularly on Windows. Restore after both parent and child are visible.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (revision !== learningScrollRevision || currentPage !== "learning") return;
+      learningFrame.contentWindow.scrollTo({ ...learningScroll, behavior: "instant" });
+      learningScrollPending = false;
+    }));
+  }
+
   learningFrame.addEventListener("load", () => {
     const content = learningFrame.contentDocument;
     if (!content || new URL(content.URL).pathname !== "/learn.html") return;
@@ -248,6 +264,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
         navigate(returnFromLearning);
       }
     });
+    restoreLearningScroll(learningScrollRevision);
   });
   let dismissedUpdate = "";
   let announcedUpdate = "";
@@ -267,7 +284,20 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   }, { once: true });
 
   function selectTab(tab, focus = false) {
-    if (tab === element("desktop-learning-link") && currentPage !== "learning") returnFromLearning = currentPage;
+    const learningTab = element("desktop-learning-link");
+    const enteringLearning = tab === learningTab && currentPage !== "learning";
+    const leavingLearning = currentPage === "learning" && tab !== learningTab;
+    if (leavingLearning && !learningScrollPending) {
+      const content = learningFrame.contentWindow;
+      if (learningFrame.contentDocument?.body?.classList.contains("learning-embedded")) {
+        learningScroll = { left: content.scrollX, top: content.scrollY };
+      }
+    }
+    if (enteringLearning || leavingLearning) {
+      learningScrollRevision++;
+      learningScrollPending = false;
+    }
+    if (enteringLearning) returnFromLearning = currentPage;
     for (const [name, candidate, page] of pages) {
       const selected = candidate === tab;
       candidate.setAttribute("aria-selected", String(selected));
@@ -281,6 +311,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     if (currentPage === "feedback") { void loadDiagnostics(); void loadFeedbackList(); }
     if (focus) tab.focus();
     if (compactNavigation.matches) tab.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (enteringLearning) restoreLearningScroll(learningScrollRevision);
   }
 
   function navigate(page) {

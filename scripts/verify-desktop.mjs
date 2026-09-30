@@ -114,8 +114,14 @@ async function verifyEmbeddedLearning(win) {
     await waitFor(() => evaluate("document.body.dataset.desktopPage === 'learning'"), 'Legacy top-level navigation did not select the embedded page');
     assert.equal(win.webContents.getURL(), mainUrl, 'Main-process routing avoids reloading the tool');
     assert.equal(await evaluate('window.__learningSmokeDocument === document'), true);
-    await waitFor(async () => await evaluateLearning('scrollY') === learningScrollY,
-      'Leaving and reopening promotion did not preserve its scroll position');
+    try {
+      await waitFor(async () => Math.abs(await evaluateLearning('scrollY') - learningScrollY) <= 1,
+        'Leaving and reopening promotion did not preserve its scroll position');
+    } catch (error) {
+      const actual = await evaluateLearning(`({ scrollY, innerWidth, innerHeight, documentHeight: document.documentElement.scrollHeight,
+        url: location.href, contactTop: document.getElementById('contact').getBoundingClientRect().top })`);
+      throw new Error(`${error.message}: expected scrollY ${learningScrollY}, actual ${JSON.stringify(actual)}`);
+    }
 
     for (const [tab, page] of [['account-tab', 'account'], ['feedback-tab', 'feedback'], ['about-tab', 'about'], ['profile-tab', 'profile']]) {
       await evaluate(`document.getElementById(${JSON.stringify(tab)}).click()`);

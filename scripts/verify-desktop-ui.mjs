@@ -250,7 +250,12 @@ app.whenReady().then(async () => {
     preload, contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false, offscreen: true
   } });
   win.webContents.on('console-message', (_event, level, message) => { if (level >= 3) rendererErrors.push(message); });
-  const evaluate = (expression, userGesture = false) => win.webContents.executeJavaScript(expression, userGesture);
+  const evaluate = async (expression, userGesture = false) => {
+    try { return await win.webContents.executeJavaScript(expression, userGesture); }
+    catch (error) {
+      throw new Error(`Renderer evaluation failed: ${expression.slice(0, 700)}; error: ${error.message}; renderer: ${JSON.stringify(rendererErrors)}`, { cause: error });
+    }
+  };
   const check = async (expression, description) => {
     for (let attempt = 0; attempt < 50; attempt++) {
       if (await evaluate(expression)) return;
@@ -355,7 +360,7 @@ app.whenReady().then(async () => {
   })()`), true, description);
   press('End');
   await check(`document.body.dataset.desktopPage === 'learning' && document.activeElement.id === 'desktop-learning-link'`, 'End selects and focuses the final learning tab');
-  await check(`${learningDocument}?.body.classList.contains('learning-embedded') && ${learningDocument}.querySelector('.book-art').naturalWidth > 0`, 'embedded learning page and book image load from the packaged protocol');
+  await check(`${learningDocument}?.body?.classList.contains('learning-embedded') && ${learningDocument}?.querySelector('.book-art')?.naturalWidth > 0`, 'embedded learning page and book image load from the packaged protocol');
   await assertSelectedLearning('learning page has consistent selected-tab and visible-panel state');
   await evaluate(`fixtureLearning.document = ${learningDocument}; fixtureLearning.frameLoads = 0;
     fixtureLearning.frame.addEventListener('load', () => fixtureLearning.frameLoads++);`);
@@ -435,12 +440,50 @@ app.whenReady().then(async () => {
   }
   await resizeViewport(900, 900);
   await evaluate(`${learningWindow}.scrollTo({ top: 777, behavior: 'instant' }); fixtureLearning.scrollY = ${learningWindow}.scrollY;`);
+  assert.ok(await evaluate('fixtureLearning.scrollY > 0'), 'scroll preservation starts from a nonzero reading position');
+  await evaluate(`(() => {
+    const pane = document.querySelector('#desktop-learning-page'), view = ${learningWindow};
+    fixtureLearning.revealResets = [];
+    fixtureLearning.resetObserver = new MutationObserver(() => {
+      if (pane.hidden) return;
+      // Some platforms synchronously recover their native remembered offset
+      // when shown. Force the newly visible viewport to discard it as well,
+      // before the application can restore it in animation frames.
+      view.scrollTo({ top: 0, behavior: 'instant' });
+      fixtureLearning.revealResets.push(view.scrollY);
+    });
+    fixtureLearning.resetObserver.observe(pane, { attributes: true, attributeFilter: ['hidden'] });
+  })()`);
   await click('#profile-tab');
+  // Reproduce Chromium discarding a hidden iframe's viewport even on systems
+  // that normally preserve it, so macOS also exercises Windows' reset path.
+  await evaluate(`${learningWindow}.scrollTo({ top: 0, behavior: 'instant' })`);
+  assert.equal(await evaluate(`${learningWindow}.scrollY`), 0, 'fixture actually resets the hidden child scroll position');
   await click('#desktop-learning-link');
-  await paint();
+  await check(`fixtureLearning.revealResets.length === 1 && fixtureLearning.revealResets[0] === 0`, 'fixture discards native scroll memory before the newly visible frame restores');
+  await check(`Math.abs(fixtureLearning.scrollY - ${learningWindow}.scrollY) <= 1`, 'reopening the learning page restores scroll after the hidden child resets');
   assert.equal(await evaluate(`fixtureLearning.frame === document.querySelector('#desktop-learning-frame')
     && fixtureLearning.document === ${learningDocument} && fixtureLearning.frameLoads === 0
-    && Math.abs(fixtureLearning.scrollY - ${learningWindow}.scrollY) < 1`), true, 'switching tabs preserves the existing frame DOM and scroll position');
+    && Math.abs(fixtureLearning.scrollY - ${learningWindow}.scrollY) <= 1`), true, 'switching tabs preserves the existing frame DOM and restores its reading position');
+  // Keep every switch in one task, ahead of the queued animation frames. A
+  // second entry/exit must not save the reset offset over the original reading
+  // position; activating an already-selected tab must not cancel restoration.
+  await evaluate(`(() => {
+    const frame = ${learningWindow}, profileTab = document.querySelector('#profile-tab');
+    const learningTab = document.querySelector('#desktop-learning-link');
+    fixtureLearning.rapidHiddenResets = [];
+    profileTab.click(); frame.scrollTo({ top: 0, behavior: 'instant' });
+    fixtureLearning.rapidHiddenResets.push(frame.scrollY);
+    learningTab.click(); profileTab.click();
+    frame.scrollTo({ top: 0, behavior: 'instant' });
+    fixtureLearning.rapidHiddenResets.push(frame.scrollY);
+    learningTab.click(); learningTab.click();
+  })()`, true);
+  assert.deepEqual(await evaluate('fixtureLearning.rapidHiddenResets'), [0, 0], 'rapid-switch fixture actually resets both hidden viewports');
+  await check(`fixtureLearning.revealResets.length === 2 && fixtureLearning.revealResets[1] === 0`, 'rapid entry also discards native scroll memory before restoration');
+  await check(`Math.abs(fixtureLearning.scrollY - ${learningWindow}.scrollY) <= 1`, 'rapid hidden resets and repeated learning selection preserve the original reading position');
+  await evaluate('fixtureLearning.resetObserver.disconnect()');
+  await assertSelectedLearning('scroll restoration leaves the correct page selected');
   await clickLearning('#qr-open');
   await clickLearning('#qr-close');
   await check(`!${learningDocument}.querySelector('#qr-dialog').open && ${learningDocument}.activeElement.id === 'qr-open'`, 'explicit nested QR close restores focus');
@@ -1156,7 +1199,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'six independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'six independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {
