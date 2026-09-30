@@ -1,0 +1,310 @@
+{
+  "version": "1.8.19",
+  "tag": "v1.8.19",
+  "sourceSha": "1e420145fe0dea60cf63a45dc278ea20d381f14f",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v1.8.19",
+  "publishedAt": "2026-09-30T04:24:38Z",
+  "verifiedAt": "2026-09-30T04:28:33.468Z",
+  "assetCount": 11,
+  "builds": [
+    {
+      "version": "1.8.19",
+      "sourceSha": "1e420145fe0dea60cf63a45dc278ea20d381f14f",
+      "sourceDirty": false,
+      "platform": "darwin",
+      "arch": "arm64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 61,
+      "bundledPythonVerified": true,
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "macSignatureContainers": [
+        "dmg",
+        "zip"
+      ],
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true,
+      "files": [
+        {
+          "name": "Brclio-XHS-1.8.19-mac-arm64.dmg",
+          "bytes": 141960678,
+          "sha256": "f804cfc1b7ad1a4e55fc986fd6daa276bbe48976ffe865a85cb68dd415f5c30b"
+        },
+        {
+          "name": "Brclio-XHS-1.8.19-mac-arm64.zip",
+          "bytes": 142841130,
+          "sha256": "60902ff8ce3abee012c56dfa0adc89e752d172bb59d16dec58c4d84e4498dfe1"
+        }
+      ]
+    },
+    {
+      "version": "1.8.19",
+      "sourceSha": "1e420145fe0dea60cf63a45dc278ea20d381f14f",
+      "sourceDirty": false,
+      "platform": "darwin",
+      "arch": "x64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 61,
+      "bundledPythonVerified": true,
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "macSignatureContainers": [
+        "dmg",
+        "zip"
+      ],
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true,
+      "files": [
+        {
+          "name": "Brclio-XHS-1.8.19-mac-x64.dmg",
+          "bytes": 147715326,
+          "sha256": "39c2fb7824038841866c8b727816c48679a6d1b8bb40448276999d9722b521fe"
+        },
+        {
+          "name": "Brclio-XHS-1.8.19-mac-x64.zip",
+          "bytes": 148629852,
+          "sha256": "54beff9bbe9cb7a13c804f7f3b24393b64a23e4181d7deac52f0005e10988d09"
+        }
+      ]
+    },
+    {
+      "version": "1.8.19",
+      "sourceSha": "1e420145fe0dea60cf63a45dc278ea20d381f14f",
+      "sourceDirty": false,
+      "platform": "win32",
+      "arch": "x64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 61,
+      "bundledPythonVerified": true,
+      "files": [
+        {
+          "name": "Brclio-XHS-1.8.19-windows-x64-setup.exe",
+          "bytes": 126021158,
+          "sha256": "f74bd1e0cb1dc3458270d3f6f9a05b6f0ec035fa785bfaae41c7c0a5b8ea2b25"
+        },
+        {
+          "name": "Brclio-XHS-1.8.19-windows-x64-portable.exe",
+          "bytes": 125782629,
+          "sha256": "50d322b3214136376e242d052328a92fd7a7659e7c907bac780ac98ca08b20f8"
+        }
+      ],
+      "packagedWindowsUpdateVerified": true,
+      "packagedWindowsPortableVerified": true,
+      "windowsUpdate": {
+        "previousVersion": "1.8.17",
+        "version": "1.8.19",
+        "oldAssets": [
+          {
+            "name": "Brclio-XHS-1.8.17-windows-x64-setup.exe",
+            "bytes": 124073263,
+            "sha256": "5b70613f04365c10a6898fcb7b4e934441137b98b29fe982b1ec130a881956f7"
+          },
+          {
+            "name": "Brclio-XHS-1.8.17-windows-x64-portable.exe",
+            "bytes": 123834736,
+            "sha256": "e47c0d920c6d2f117ab31cdc7443cb0ce2f95f11e84841467f033ad683f966fb"
+          }
+        ],
+        "realPublishedOldInstallers": true,
+        "realCurrentInstallers": true,
+        "sourceArchivesModified": false,
+        "oldParentWaitVerified": true,
+        "installedInPlaceVerified": true,
+        "automaticRelaunchVerified": true,
+        "dpapiCredentialsPreserved": true,
+        "pausedTaskPreserved": true,
+        "rendererStoragePreserved": true,
+        "existingInstallationPortableUpdateVerified": true,
+        "standalonePortableMigrationTested": false,
+        "portableOriginalPreserved": true,
+        "currentPortableLaunchVerified": true,
+        "cancelBeforeInstallVerified": true,
+        "rollbackImplemented": false,
+        "powerLossRecoveryTested": false,
+        "machineWideUacTested": false,
+        "profileIsolation": "fresh disposable GitHub runner account",
+        "installDirectoryIsolation": "temporary"
+      }
+    }
+  ],
+  "updates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "1.8.17",
+      "asset": "Brclio-XHS-1.8.19-mac-arm64.dmg",
+      "bytes": 141960678,
+      "sha256": "f804cfc1b7ad1a4e55fc986fd6daa276bbe48976ffe865a85cb68dd415f5c30b"
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "1.8.17",
+      "asset": "Brclio-XHS-1.8.19-mac-x64.dmg",
+      "bytes": 147715326,
+      "sha256": "39c2fb7824038841866c8b727816c48679a6d1b8bb40448276999d9722b521fe"
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "1.8.17",
+      "asset": "Brclio-XHS-1.8.19-windows-x64-setup.exe",
+      "bytes": 126021158,
+      "sha256": "f74bd1e0cb1dc3458270d3f6f9a05b6f0ec035fa785bfaae41c7c0a5b8ea2b25"
+    },
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "1.8.18",
+      "asset": "Brclio-XHS-1.8.19-mac-arm64.dmg",
+      "bytes": 141960678,
+      "sha256": "f804cfc1b7ad1a4e55fc986fd6daa276bbe48976ffe865a85cb68dd415f5c30b"
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "1.8.18",
+      "asset": "Brclio-XHS-1.8.19-mac-x64.dmg",
+      "bytes": 147715326,
+      "sha256": "39c2fb7824038841866c8b727816c48679a6d1b8bb40448276999d9722b521fe"
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "1.8.18",
+      "asset": "Brclio-XHS-1.8.19-windows-x64-setup.exe",
+      "bytes": 126021158,
+      "sha256": "f74bd1e0cb1dc3458270d3f6f9a05b6f0ec035fa785bfaae41c7c0a5b8ea2b25"
+    }
+  ],
+  "legacyAliases": [
+    {
+      "name": "XHS-Downloader-1.8.19-mac-arm64.dmg",
+      "sourceName": "Brclio-XHS-1.8.19-mac-arm64.dmg",
+      "bytes": 141960678,
+      "sha256": "f804cfc1b7ad1a4e55fc986fd6daa276bbe48976ffe865a85cb68dd415f5c30b"
+    },
+    {
+      "name": "XHS-Downloader-1.8.19-mac-x64.dmg",
+      "sourceName": "Brclio-XHS-1.8.19-mac-x64.dmg",
+      "bytes": 147715326,
+      "sha256": "39c2fb7824038841866c8b727816c48679a6d1b8bb40448276999d9722b521fe"
+    },
+    {
+      "name": "XHS-Downloader-1.8.19-windows-x64-setup.exe",
+      "sourceName": "Brclio-XHS-1.8.19-windows-x64-setup.exe",
+      "bytes": 126021158,
+      "sha256": "f74bd1e0cb1dc3458270d3f6f9a05b6f0ec035fa785bfaae41c7c0a5b8ea2b25"
+    }
+  ],
+  "compatibilityAliasesVerified": true,
+  "remoteDigestsVerified": true,
+  "publicManifestsVerified": true,
+  "publicManifestAssets": [
+    {
+      "name": "build-evidence.json",
+      "bytes": 5054,
+      "sha256": "b6dee3c653078b6419a4f2ab88522f34a7a71a16b6e07d5ea615de7da08b6dce",
+      "status": 200
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 915,
+      "sha256": "a278aaa7c249333f0c0d90f89954a8f10de148af9448927a0140d742bf18a3c3",
+      "status": 200
+    }
+  ],
+  "anonymousUpdaterVisible": true,
+  "latestTag": "v1.8.19",
+  "releaseNotesMatchSource": true,
+  "publicInstallerProbes": [
+    {
+      "name": "Brclio-XHS-1.8.19-mac-arm64.dmg",
+      "bytes": 141960678,
+      "sha256": "f804cfc1b7ad1a4e55fc986fd6daa276bbe48976ffe865a85cb68dd415f5c30b",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 141960678
+    },
+    {
+      "name": "Brclio-XHS-1.8.19-mac-arm64.zip",
+      "bytes": 142841130,
+      "sha256": "60902ff8ce3abee012c56dfa0adc89e752d172bb59d16dec58c4d84e4498dfe1",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 142841130
+    },
+    {
+      "name": "Brclio-XHS-1.8.19-mac-x64.dmg",
+      "bytes": 147715326,
+      "sha256": "39c2fb7824038841866c8b727816c48679a6d1b8bb40448276999d9722b521fe",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 147715326
+    },
+    {
+      "name": "Brclio-XHS-1.8.19-mac-x64.zip",
+      "bytes": 148629852,
+      "sha256": "54beff9bbe9cb7a13c804f7f3b24393b64a23e4181d7deac52f0005e10988d09",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 148629852
+    },
+    {
+      "name": "Brclio-XHS-1.8.19-windows-x64-setup.exe",
+      "bytes": 126021158,
+      "sha256": "f74bd1e0cb1dc3458270d3f6f9a05b6f0ec035fa785bfaae41c7c0a5b8ea2b25",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 126021158
+    },
+    {
+      "name": "Brclio-XHS-1.8.19-windows-x64-portable.exe",
+      "bytes": 125782629,
+      "sha256": "50d322b3214136376e242d052328a92fd7a7659e7c907bac780ac98ca08b20f8",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 125782629
+    },
+    {
+      "name": "XHS-Downloader-1.8.19-mac-arm64.dmg",
+      "sourceName": "Brclio-XHS-1.8.19-mac-arm64.dmg",
+      "bytes": 141960678,
+      "sha256": "f804cfc1b7ad1a4e55fc986fd6daa276bbe48976ffe865a85cb68dd415f5c30b",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 141960678
+    },
+    {
+      "name": "XHS-Downloader-1.8.19-mac-x64.dmg",
+      "sourceName": "Brclio-XHS-1.8.19-mac-x64.dmg",
+      "bytes": 147715326,
+      "sha256": "39c2fb7824038841866c8b727816c48679a6d1b8bb40448276999d9722b521fe",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 147715326
+    },
+    {
+      "name": "XHS-Downloader-1.8.19-windows-x64-setup.exe",
+      "sourceName": "Brclio-XHS-1.8.19-windows-x64-setup.exe",
+      "bytes": 126021158,
+      "sha256": "f74bd1e0cb1dc3458270d3f6f9a05b6f0ec035fa785bfaae41c7c0a5b8ea2b25",
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 126021158
+    }
+  ],
+  "limitation": "Public availability and digest checks supplement native CI acceptance. Old Mac clients with the Xcode architecture error require one manual full-DMG replacement.",
+  "workflow": {
+    "runId": 36667917751,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36667917751",
+    "conclusion": "success",
+    "sourceSha": "1e420145fe0dea60cf63a45dc278ea20d381f14f"
+  },
+  "releaseNotesUpdatedAfterBuild": {
+    "change": "Repair Android release hyperlink; installer bytes and source tag unchanged.",
+    "bodySha256": "70cf162a12074ec1f870b0cf0a598f51c749a57249fd84a8dd899d30b0b32a8d"
+  }
+}
