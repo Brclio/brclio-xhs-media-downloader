@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { installSourceToggle, packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
+import { selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
 
 test('emulator acceptance reads signed package identity without confusing user or target SDK numbers', () => {
   const value = packageState('Package [com.brclio.xhs]\n userId=10176\n versionCode=10003 minSdk=26 targetSdk=35\n versionName=1.0.3\n firstInstallTime=2026-09-30 01:23:45\n');
@@ -38,4 +39,16 @@ test('Android 15 Compose install-source control is recognized without assuming t
   assert.equal(installSourceToggle(nodes), nodes[2]);
   assert.equal(installSourceToggle(nodes.slice(1)), undefined, 'An unrelated application setting cannot be selected');
   assert.equal(installSourceToggle([...nodes, nodes[2]]), undefined, 'An ambiguous settings screen cannot be selected');
+});
+
+test('manual fallback acceptance selects a real stable Android APK and rejects a redirected asset URL', () => {
+  const release = version => ({ tag_name: `android-v${version}`, draft: false, prerelease: false,
+    assets: [{ name: `Brclio-XHS-Android-${version}-release.apk`, state: 'uploaded', size: 123,
+      browser_download_url: `https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v${version}/Brclio-XHS-Android-${version}-release.apk` }] });
+  assert.equal(selectPublishedAndroid([release('1.0.2'), release('1.0.10'),
+    { ...release('1.0.11'), draft: true }, { ...release('1.0.12'), prerelease: true },
+    { ...release('1.0.13'), tag_name: 'v1.0.13' }]).version, '1.0.10');
+  const invalid = release('1.0.3'); invalid.assets[0].browser_download_url = 'https://attacker.test/app.apk';
+  assert.throws(() => selectPublishedAndroid([invalid]));
+  assert.throws(() => selectPublishedAndroid([{ ...release('1.0.3'), draft: undefined }]));
 });

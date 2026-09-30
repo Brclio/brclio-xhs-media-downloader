@@ -1,6 +1,7 @@
 package com.brclio.xhs;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -124,10 +125,12 @@ final class UpdateManager {
     private static final class Job {
         final NativeTransfer.Cancellation cancellation = new NativeTransfer.Cancellation();
         final long startedAt = System.nanoTime();
+        final long deadlineMs;
         Download output;
+        Job(long deadlineMs) { this.deadlineMs = deadlineMs; }
         void check() throws IOException {
             cancellation.check();
-            if ((System.nanoTime() - startedAt) / 1_000_000 > DEADLINE_MS) throw new IOException("更新操作超时，请检查网络后重试。");
+            if ((System.nanoTime() - startedAt) / 1_000_000 > deadlineMs) throw new IOException("更新操作超时，请检查网络后重试。");
         }
     }
 
@@ -197,22 +200,8 @@ final class UpdateManager {
         if (job == null) return;
         worker.execute(() -> {
             try {
-                byte[] response = fetchBytes(URI.create(UpdatePolicy.RELEASES_API), MAX_METADATA_BYTES, -1, false, job);
-                JSONArray releases;
-                try { releases = new JSONArray(new String(response, StandardCharsets.UTF_8)); }
-                catch (JSONException invalid) { throw new IOException("版本服务返回无效内容，请稍后重试。"); }
-                JSONObject latest = null;
-                String latestVersion = null;
-                for (int index = 0; index < releases.length(); index++) {
-                    JSONObject release = releases.optJSONObject(index);
-                    if (release == null || release.optBoolean("draft", true) || release.optBoolean("prerelease", true)) continue;
-                    String version = UpdatePolicy.versionFromTag(release.optString("tag_name"));
-                    if (version != null && (latestVersion == null || UpdatePolicy.compareVersions(version, latestVersion) > 0)) {
-                        latest = release;
-                        latestVersion = version;
-                    }
-                }
-                job.check();
+                JSONObject latest = latestRelease(job);
+                String latestVersion = latest == null ? null : UpdatePolicy.versionFromTag(latest.optString("tag_name"));
                 String current = BuildConfig.VERSION_NAME.replaceFirst("-debug$", "");
                 Release update = latest != null && UpdatePolicy.compareVersions(latestVersion, current) > 0 ? new Release(latest) : null;
                 Download stale = null;
@@ -230,6 +219,89 @@ final class UpdateManager {
                 if (stale != null) stale.file.delete();
                 finish(job, callback, null);
             } catch (Exception failure) { finish(job, callback, failure); }
+        });
+    }
+
+    private JSONObject latestRelease(Job job) throws IOException, JSONException {
+        byte[] response = fetchBytes(URI.create(UpdatePolicy.RELEASES_API), MAX_METADATA_BYTES, -1, false, job);
+        JSONArray releases;
+        try { releases = new JSONArray(new String(response, StandardCharsets.UTF_8)); }
+        catch (JSONException invalid) { throw new IOException("版本服务返回无效内容，请稍后重试。"); }
+        JSONObject latest = null;
+        String latestVersion = null;
+        for (int index = 0; index < releases.length(); index++) {
+            JSONObject release = releases.optJSONObject(index);
+            if (release == null || release.optBoolean("draft", true) || release.optBoolean("prerelease", true)) continue;
+            String version = UpdatePolicy.versionFromTag(release.optString("tag_name"));
+            if (version != null && (latestVersion == null || UpdatePolicy.compareVersions(version, latestVersion) > 0)) {
+                latest = release;
+                latestVersion = version;
+            }
+        }
+        job.check();
+        return latest;
+    }
+
+    /** Resolves a fresh official APK; the renderer cannot supply a URL or choose an asset. */
+    void openManualDownload(Callback callback) {
+        final String previousStatus;
+        final Job job;
+        synchronized (lock) {
+            previousStatus = status;
+            job = begin("manual_download", callback);
+        }
+        if (job == null) return;
+        worker.execute(() -> {
+            try {
+                JSONObject metadata = latestRelease(job);
+                if (metadata == null) throw new IOException("暂未找到可用的安卓正式版，请稍后重试。");
+                Release release = new Release(metadata);
+                String current = BuildConfig.VERSION_NAME.replaceFirst("-debug$", "");
+                if (UpdatePolicy.compareVersions(release.version, current) < 0) {
+                    throw new IOException("公开安装包低于当前版本，已阻止打开旧版下载。");
+                }
+                byte[] checksum = fetchBytes(release.checksumUrl, 4096, release.checksumSize, true, job);
+                UpdatePolicy.checksum(new String(checksum, StandardCharsets.UTF_8), release.filename);
+                job.check();
+                activity.runOnUiThread(() -> {
+                    try {
+                        job.check();
+                        if (closed || activity.isFinishing() || activity.isDestroyed()) {
+                            throw new IOException("应用已关闭，下载链接未打开。");
+                        }
+                        activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(release.apkUrl.toString()))
+                                .addCategory(Intent.CATEGORY_BROWSABLE));
+                        finishManualDownload(job, previousStatus, callback, release.version, null);
+                    } catch (ActivityNotFoundException failure) {
+                        finishManualDownload(job, previousStatus, callback, null,
+                                new IOException("未找到可用浏览器，请先安装或启用浏览器后重试。"));
+                    } catch (SecurityException failure) {
+                        finishManualDownload(job, previousStatus, callback, null,
+                                new IOException("系统未允许打开下载链接，请检查浏览器设置后重试。"));
+                    } catch (Exception failure) { finishManualDownload(job, previousStatus, callback, null, failure); }
+                });
+            } catch (Exception failure) { finishManualDownload(job, previousStatus, callback, null, failure); }
+        });
+    }
+
+    private void finishManualDownload(Job job, String previousStatus, Callback callback, String version, Exception failure) {
+        synchronized (lock) {
+            if (active != job) return;
+            active = null;
+            // Keep the original installation error, downloaded APK, and any later installer result.
+            if (status.equals("manual_download")) status = previousStatus;
+        }
+        if (closed) return;
+        JSONObject result = state();
+        emit();
+        activity.runOnUiThread(() -> {
+            if (closed) return;
+            if (failure != null) callback.failure(friendlyError(failure));
+            else {
+                put(result, "manualDownloadOpened", true);
+                put(result, "manualDownloadVersion", version);
+                callback.success(result);
+            }
         });
     }
 
@@ -378,9 +450,17 @@ final class UpdateManager {
         JSONObject event = state();
         put(event, "type", "update");
         put(event, "installerClosed", true);
-        put(event, "installerCancelled", resultCode != Activity.RESULT_OK);
+        put(event, "installerCancelled", resultCode == Activity.RESULT_CANCELED);
+        put(event, "installerResult", installerResult(resultCode));
         events.emit(event);
         return true;
+    }
+
+    static String installerResult(int resultCode) {
+        if (resultCode == Activity.RESULT_OK) return "success";
+        if (resultCode == Activity.RESULT_FIRST_USER) return "failed";
+        if (resultCode == Activity.RESULT_CANCELED) return "cancelled";
+        return "unknown";
     }
 
     void close() {
@@ -392,11 +472,15 @@ final class UpdateManager {
     private Job begin(String nextStatus, Callback callback) {
         synchronized (lock) {
             if (closed) { callback.failure("应用已关闭。"); return null; }
-            if (installerOpen) { callback.failure("请先完成或关闭系统安装器。"); return null; }
+            // Some installers never return a result; a user-requested browser fallback remains usable.
+            if (installerOpen && !nextStatus.equals("manual_download")) {
+                callback.failure("请先完成或关闭系统安装器。"); return null;
+            }
             if (active != null) { callback.failure("已有版本检查或更新任务正在进行，请稍候。"); return null; }
-            active = new Job();
+            // Never launch a browser after the renderer's 90-second request has expired.
+            active = new Job(nextStatus.equals("manual_download") ? 60_000L : DEADLINE_MS);
             status = nextStatus;
-            error = null;
+            if (!nextStatus.equals("manual_download")) error = null;
             if (nextStatus.equals("downloading")) { bytes = 0; total = available == null ? 0 : available.size; }
             emit();
             return active;

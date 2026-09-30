@@ -14,6 +14,11 @@ let updater = { status: 'idle', update: null, canInstallBuild: true };
 let checkingUpdate = false;
 let downloadingUpdate = false;
 let installingUpdate = false;
+let openingManualUpdate = false;
+let installationNeedsHelp = false;
+let installerNoticeGeneration = 0;
+let manualNotice = '';
+let manualTone = '';
 let updateNotice = '';
 let updateTone = '';
 
@@ -111,6 +116,7 @@ function renderUpdater() {
   const update = updater.update;
   const verifying = updater.status === 'verifying';
   const downloading = downloadingUpdate || updater.status === 'downloading' || verifying;
+  const openingManual = openingManualUpdate || updater.status === 'manual_download';
   const downloaded = updater.downloadReady === undefined
     ? ['downloaded', 'permission_required', 'installer_opened'].includes(updater.status)
     : updater.downloadReady === true;
@@ -118,15 +124,21 @@ function renderUpdater() {
   $('update-current').textContent = updater.currentVersion || $('version').textContent;
   $('update-banner').hidden = !update;
   $('show-update').textContent = update ? `发现新版本 ${update.versionName}，查看更新 ↓` : '查看软件更新 ↓';
-  $('check-update').disabled = !native || checkingUpdate || downloading;
+  $('check-update').disabled = !native || checkingUpdate || downloading || openingManual;
   $('check-update').textContent = checkingUpdate ? '正在检查…' : '检查更新';
   $('update-details').hidden = !update;
   $('update-version').textContent = update ? `Android ${update.versionName}${update.size ? ` · ${(update.size / 1048576).toFixed(1)} MB` : ''}` : '';
   $('update-notes').textContent = update?.notes || '';
   $('download-update').hidden = !update || downloaded || downloading;
-  $('download-update').disabled = !mayInstall || checkingUpdate;
+  $('download-update').disabled = !mayInstall || checkingUpdate || openingManual;
   $('install-update').hidden = !downloaded || downloading || checkingUpdate || updater.status === 'checking';
-  $('install-update').disabled = busy || installingUpdate || !mayInstall;
+  $('install-update').disabled = busy || installingUpdate || openingManual || !mayInstall;
+  $('manual-update-help').hidden = !mayInstall || (!update && !installationNeedsHelp);
+  $('manual-update').disabled = !native || checkingUpdate || downloading || installingUpdate || openingManual;
+  $('manual-update').textContent = openingManual ? '正在获取最新版安装包…' : '浏览器下载最新版 APK ↗';
+  $('manual-update-status').hidden = !manualNotice;
+  $('manual-update-status').textContent = manualNotice;
+  $('manual-update-status').dataset.tone = manualTone;
   $('cancel-update').hidden = !downloading;
   $('cancel-update').disabled = false;
   $('update-progress').hidden = !downloading;
@@ -141,6 +153,7 @@ function renderUpdater() {
     permission_required: '请在系统设置中允许 Brclio 安装应用，返回后再次点击「安装更新」。',
     installer_opened: '已打开系统安装界面，请按系统提示确认。',
     cancelled: '更新下载已取消，可重新下载。',
+    manual_download: '正在获取最新安卓正式版安装包的下载地址…',
   };
   let text = updateNotice || messages[updater.status] || '可重新检查版本或重试下载。';
   if (downloading) text = `正在下载更新：${((updater.bytes || 0) / 1048576).toFixed(1)}${total ? ` / ${(total / 1048576).toFixed(1)}` : ''} MB。`;
@@ -152,8 +165,22 @@ function renderUpdater() {
 
 function applyUpdateState(next) {
   updater = { ...updater, ...next };
-  updateNotice = next.error || '';
-  updateTone = next.error ? 'error' : '';
+  if (!openingManualUpdate && next.status !== 'manual_download') {
+    updateNotice = next.error || '';
+    updateTone = next.error ? 'error' : '';
+  }
+  if (next.installerClosed) {
+    installerNoticeGeneration++;
+    manualNotice = '';
+    const result = next.installerResult || (next.installerCancelled ? 'cancelled' : 'unknown');
+    installationNeedsHelp = result !== 'success';
+    updateNotice = result === 'failed' ? '系统返回安装失败。可重试安装，或手动下载最新版覆盖安装。'
+      : result === 'cancelled' ? '安装已取消或未完成。可重试安装，或手动下载最新版覆盖安装。'
+        : result === 'success' ? '系统已返回安装成功，请重新打开应用确认版本。'
+          : '系统安装界面已关闭，未收到明确安装结果。若更新未完成，可重试或手动下载安装。';
+    updateTone = result === 'failed' ? 'error' : '';
+  }
+  if (next.status === 'latest' && !next.update) installationNeedsHelp = false;
   renderUpdater();
 }
 
@@ -184,10 +211,28 @@ $('cancel-update').addEventListener('click', async () => {
 });
 $('install-update').addEventListener('click', async () => {
   if (busy || installingUpdate) return;
+  installerNoticeGeneration++; manualNotice = '';
   installingUpdate = true; renderUpdater();
   try { applyUpdateState(await call('installUpdate')); }
-  catch (error) { updateNotice = error.message; updateTone = 'error'; }
+  catch (error) { installationNeedsHelp = true; updateNotice = `安装未完成：${error.message}。可重试，或手动下载最新版覆盖安装。`; updateTone = 'error'; }
   finally { installingUpdate = false; renderUpdater(); }
+});
+
+$('manual-update').addEventListener('click', async () => {
+  if (openingManualUpdate || checkingUpdate || downloadingUpdate || installingUpdate) return;
+  const noticeGeneration = installerNoticeGeneration;
+  openingManualUpdate = true; manualNotice = ''; manualTone = ''; renderUpdater();
+  try {
+    const result = await call('openManualUpdate');
+    if (noticeGeneration === installerNoticeGeneration) {
+      manualNotice = result.manualDownloadOpened
+        ? `已打开 Android ${result.manualDownloadVersion} 最新正式版下载链接。下载后直接覆盖安装，不要卸载当前应用。`
+        : '未确认下载链接已打开，请重试。';
+    }
+  } catch (error) {
+    if (noticeGeneration === installerNoticeGeneration) { manualNotice = `手动下载链接未打开：${error.message}`; manualTone = 'error'; }
+  }
+  finally { openingManualUpdate = false; renderUpdater(); }
 });
 
 async function action(work, transfer = false) {

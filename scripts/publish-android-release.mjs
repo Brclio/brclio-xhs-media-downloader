@@ -51,6 +51,9 @@ export function validateReleaseProof(proof, { tag, sourceCommit, certificateSha2
       assert.equal(check[key], true, `Emulator upgrade did not verify ${key}`);
     }
     assert.equal(check.inAppInstallerConfirmationTested, false, 'ADB replacement is not system-installer confirmation testing');
+    if (major > 1 || (major === 1 && (minor > 0 || patch >= 4))) {
+      assert.equal(check.manualFallbackFixtureVerified, true, 'Android 1.0.4+ requires the isolated manual-fallback acceptance');
+    }
   }
   return version;
 }

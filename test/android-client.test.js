@@ -484,3 +484,77 @@ test('Android distinguishes unavailable releases and debug builds from a confirm
   assert.equal(ui.element('download-update').disabled, true);
   assert.match(ui.element('update-status').textContent, /调试包/);
 });
+
+test('Android installation failure offers a fresh native browser download while retaining cached installation retry', async t => {
+  const ui = await clientFixture(t);
+  await ui.respond(ui.next('checkUpdate'), { ...newAndroidRelease(), status: 'downloaded', downloadReady: true });
+  ui.click('install-update');
+  ui.update({ status: 'error', downloadReady: true, error: '系统安装器暂不可用' });
+  await ui.respond(ui.next('installUpdate'), {}, '系统安装器暂不可用');
+  assert.equal(ui.element('manual-update-help').hidden, false);
+  assert.match(ui.element('update-status').textContent, /手动下载最新版覆盖安装/);
+  assert.equal(ui.element('install-update').hidden, false);
+  ui.click('manual-update');
+  assert.equal(ui.element('manual-update').disabled, true);
+  assert.equal(ui.element('install-update').disabled, true);
+  const request = ui.next('openManualUpdate');
+  assert.deepEqual(request.params, {}, 'The renderer cannot choose a URL, tag or asset');
+  assert.equal(ui.next('downloadUpdate'), undefined, 'Fallback delegates downloading to the browser');
+  await ui.respond(request, { status: 'error', downloadReady: true, manualDownloadOpened: true, manualDownloadVersion: '1.0.9' });
+  assert.match(ui.element('manual-update-status').textContent, /Android 1\.0\.9/);
+  assert.match(ui.element('manual-update-status').textContent, /覆盖安装.*不要卸载/);
+  assert.equal(ui.element('install-update').hidden, false);
+  assert.equal(ui.element('install-update').disabled, false);
+  assert.equal(ui.element('download-update').hidden, true, 'A manually opened newer release must not discard the existing verified cache');
+});
+
+test('Android keeps retry available when manual release lookup or browser opening fails', async t => {
+  const ui = await clientFixture(t);
+  await ui.respond(ui.next('checkUpdate'), { ...newAndroidRelease(), status: 'downloaded', downloadReady: true });
+  for (const error of ['无法连接 GitHub 版本服务', '未找到可用浏览器']) {
+    ui.click('manual-update');
+    ui.update({ status: 'error', downloadReady: true, error });
+    await ui.respond(ui.next('openManualUpdate'), {}, error);
+    assert.match(ui.element('manual-update-status').textContent, /手动下载链接未打开/);
+    assert.equal(ui.element('install-update').hidden, false);
+    assert.equal(ui.element('install-update').disabled, false);
+    assert.equal(ui.element('manual-update').disabled, false);
+  }
+});
+
+test('Android distinguishes returned installer failure, cancellation and unknown results without assuming success', async t => {
+  const ui = await clientFixture(t);
+  await ui.respond(ui.next('checkUpdate'), { ...newAndroidRelease(), status: 'downloaded', downloadReady: true });
+  for (const [installerResult, expected] of [['failed', /系统返回安装失败/], ['cancelled', /取消或未完成/], ['unknown', /未收到明确安装结果/]]) {
+    ui.update({ status: 'downloaded', downloadReady: true, installerClosed: true, installerResult });
+    assert.match(ui.element('update-status').textContent, expected);
+    assert.equal(ui.element('update-status').dataset.tone, installerResult === 'failed' ? 'error' : '');
+    assert.equal(ui.element('manual-update-help').hidden, false);
+    assert.equal(ui.element('install-update').hidden, false);
+  }
+  ui.update({ status: 'downloaded', installerClosed: true, installerResult: 'success' });
+  assert.match(ui.element('update-status').textContent, /系统已返回安装成功.*确认版本/);
+});
+
+test('Android browser fallback remains available when the installer never returns a result', async t => {
+  const ui = await clientFixture(t);
+  await ui.respond(ui.next('checkUpdate'), { ...newAndroidRelease(), status: 'installer_opened', downloadReady: true });
+  assert.doesNotMatch(ui.element('update-status').textContent, /安装失败/);
+  assert.equal(ui.element('manual-update-help').hidden, false);
+  ui.click('manual-update');
+  await ui.respond(ui.next('openManualUpdate'), { status: 'installer_opened', downloadReady: true, manualDownloadOpened: true, manualDownloadVersion: '1.0.2' });
+  assert.match(ui.element('manual-update-status').textContent, /已打开.*下载链接/);
+  assert.doesNotMatch(ui.element('manual-update-status').textContent, /下载成功|安装成功/);
+});
+
+
+test('Android a late manual download response cannot erase a newly returned installer failure', async t => {
+  const ui = await clientFixture(t);
+  await ui.respond(ui.next('checkUpdate'), { ...newAndroidRelease(), status: 'installer_opened', downloadReady: true });
+  ui.click('manual-update');
+  ui.update({ status: 'downloaded', downloadReady: true, installerClosed: true, installerResult: 'failed' });
+  await ui.respond(ui.next('openManualUpdate'), { status: 'installer_opened', manualDownloadOpened: true, manualDownloadVersion: '1.0.2' });
+  assert.match(ui.element('update-status').textContent, /系统返回安装失败/);
+  assert.equal(ui.element('manual-update-status').hidden, true);
+  assert.equal(ui.element('install-update').hidden, false);
+});

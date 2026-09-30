@@ -290,6 +290,7 @@ public final class MainActivity extends Activity {
                 case "shareImages": startImages(request, params, true); break;
                 case "checkUpdate": updater.check(updateCallback(request)); break;
                 case "downloadUpdate": updater.download(updateCallback(request)); break;
+                case "openManualUpdate": updater.openManualDownload(updateCallback(request)); break;
                 case "installUpdate":
                     if (parsing != null || transfer != null) request.failure("请先完成当前解析或保存任务，再安装更新。");
                     else updater.install(updateCallback(request));

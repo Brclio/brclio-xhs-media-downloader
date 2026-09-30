@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
 import { androidVersion, validateReleaseFiles } from './publish-android-release.mjs';
+import { verifyManualFallback } from './verify-android-manual-fallback.mjs';
 
 const execute = promisify(execFile);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -194,6 +195,8 @@ export async function verifyAndroidUpgrade() {
     const userSettingAfter = (await shell('appops', 'get', APPLICATION, 'REQUEST_INSTALL_PACKAGES')).trim();
     assert.match(userSettingAfter, /REQUEST_INSTALL_PACKAGES:\s*allow/, 'Upgrade lost the user-selected install-source permission');
     const afterUi = await checkUpdateUi('after');
+    const manualFallback = await verifyManualFallback({ root: ROOT, output, run, device, shell,
+      snapshot, screenshot, findText, tap });
     const crashes = await device(['logcat', '-d', '-b', 'crash']);
     assert.ok(!crashes.includes(APPLICATION), 'The old or replacement application crashed');
     const report = {
@@ -205,6 +208,7 @@ export async function verifyAndroidUpgrade() {
       retainedUserSetting: { name: 'Allow from this source', setThroughSystemUi: true,
         before: userSettingBefore, after: userSettingAfter, preserved: true },
       updateUi: { before: beforeUi, after: afterUi }, oldAndNewLaunchVerified: true, appCrashDetected: false,
+      manualFallback,
       limitations: ['The actual system Package Manager replacement was tested. In-app APK download and system installer confirmation were not automated; no newer public release exists for the unpublished candidate.'],
     };
     await writeFile(path.join(output, 'verification.json'), JSON.stringify(report, null, 2) + '\n');
@@ -217,6 +221,7 @@ export async function verifyAndroidUpgrade() {
       signaturesVerified: true, oldAndNewLaunchVerified: true, uidPreserved: true,
       firstInstallTimePreserved: true, userSettingPreserved: true, updateCheckUiVerified: true,
       inAppInstallerConfirmationTested: false,
+      manualFallbackFixtureVerified: manualFallback.actualBrowserIntentVerified,
     };
     await writeFile(path.join(ROOT, 'dist-android/android-update.json'), JSON.stringify(proof, null, 2) + '\n');
     console.log(JSON.stringify(report));

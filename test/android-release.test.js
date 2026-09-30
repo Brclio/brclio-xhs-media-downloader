@@ -45,6 +45,12 @@ test('Android 1.0.3 publication requires an emulator acceptance result bound to 
     userSettingPreserved: true, updateCheckUiVerified: true, inAppInstallerConfirmationTested: false,
   };
   assert.equal(validateReleaseProof(release, checked), '1.0.3');
+  const next = { ...release, version: '1.0.4', versionCode: 10004,
+    apk: { ...release.apk, name: 'Brclio-XHS-Android-1.0.4-release.apk' },
+    emulatorUpgrade: { ...release.emulatorUpgrade, targetVersion: '1.0.4', targetVersionCode: 10004 } };
+  assert.throws(() => validateReleaseProof(next, { ...checked, tag: 'android-v1.0.4' }), /manual-fallback acceptance/);
+  next.emulatorUpgrade.manualFallbackFixtureVerified = true;
+  assert.equal(validateReleaseProof(next, { ...checked, tag: 'android-v1.0.4' }), '1.0.4');
   for (const [key, value] of Object.entries({ apkSha256: 'c'.repeat(64), sourceCommit: 'd'.repeat(40),
     targetVersionCode: 10002, baselineVersionCode: 10003, oldAndNewLaunchVerified: false,
     userSettingPreserved: false, inAppInstallerConfirmationTested: true })) {

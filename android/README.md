@@ -1,6 +1,6 @@
 # Brclio 小红书下载器 · Android
 
-Android 客户端版本独立编号，当前为 `1.0.3`，`versionCode` 为 `10003`（首版为 `1.0.0 / 10000`），支持 Android 8.0（API 26）及以上。安装 APK 后可粘贴小红书单篇笔记链接或分享文案，也可以在其他应用中通过系统「分享」将文字交给 Brclio。
+Android 客户端版本独立编号，当前为 `1.0.4`，`versionCode` 为 `10004`（首版为 `1.0.0 / 10000`），支持 Android 8.0（API 26）及以上。安装 APK 后可粘贴小红书单篇笔记链接或分享文案，也可以在其他应用中通过系统「分享」将文字交给 Brclio。
 
 本版聚焦单篇笔记：标题与正文、原图、实况静态图与动态片段、视频清晰度选择、勾选图片与 ZIP、图片复制及系统分享。保存文件时使用 Android 系统文件选择器，由用户选择位置；无需「所有文件访问权限」或相册读取权限。不同目标应用对多图剪贴板支持不同，可改用系统分享或 ZIP。
 
@@ -26,6 +26,8 @@ Gradle 在构建时将根目录的 `learn.html`、`learn.css`、`learn.js` 与�
 
 已经下载并校验完成的 APK 在当前进程中继续保留。断网导致检查更新失败，或系统安装器未能启动后，仍可直接重试安装，无需重新下载。
 
+安装失败、取消或未完成时，也可点击「浏览器下载最新版 APK」。应用会重新读取官方 Android 正式发布信息，校验安装包地址与对应校验文件，再交给浏览器下载。下载后直接打开 APK 覆盖安装，不要卸载当前应用，以保留应用数据；已有的应用内安装重试入口继续保留。系统明确返回失败时会显示失败提示；取消或未知结果分别说明，不将未回传的安装结果当作已知失败。
+
 ## 本地构建测试包
 
 需要 Node.js 22+、JDK 17 或 21，以及 Android SDK。可通过 Android Studio 的 SDK Manager 安装：
@@ -46,8 +48,8 @@ npm run android:build
 构建脚本只使用 Node.js 内置模块，不要求安装桌面版依赖。首次构建需要联网下载 Gradle 和 Android 依赖。脚本先核对完整 JDK（包含 `javac`、`jlink`）、SDK 与 Gradle Wrapper 校验值，再运行 Android 前端 Node.js 测试、Java 单元测试、Android lint 和 APK 构建。成功后才导出：
 
 ```text
-dist-android/Brclio-XHS-Android-1.0.3-debug.apk
-dist-android/Brclio-XHS-Android-1.0.3-debug.apk.sha256
+dist-android/Brclio-XHS-Android-1.0.4-debug.apk
+dist-android/Brclio-XHS-Android-1.0.4-debug.apk.sha256
 ```
 
 `debug` 包使用构建机的调试密钥，应用 ID 为 `com.brclio.xhs.debug`；正式包应用 ID 为 `com.brclio.xhs`，可并存。不同构建机产生的调试密钥可能不同，因此来自不同构建机的 debug 包不一定能覆盖安装。
@@ -55,7 +57,7 @@ dist-android/Brclio-XHS-Android-1.0.3-debug.apk.sha256
 连接已开启 USB 调试的设备后，可安装测试包：
 
 ```bash
-adb install -r dist-android/Brclio-XHS-Android-1.0.3-debug.apk
+adb install -r dist-android/Brclio-XHS-Android-1.0.4-debug.apk
 ```
 
 也可用 Android Studio 打开 `android/` 目录构建及运行。构建成功仅说明代码、资源与静态检查通过，不等于完成真机解析、文件保存或图片粘贴验证。
@@ -80,7 +82,7 @@ adb install -r dist-android/Brclio-XHS-Android-1.0.3-debug.apk
 npm run android:build:release
 ```
 
-成功后输出 `dist-android/Brclio-XHS-Android-1.0.3-release.apk`、同名 `.apk.sha256`、`SHA256SUMS.txt` 与 `android-update.json`。APK 使用 Android SDK 的 `apksigner` 校验真实签名，并以 `aapt` 读取并核对包名与版本；缺少签名配置、使用 Android Debug 证书、证书不符或 APK 版本不符都会失败。JSON 记录源码提交、工作区是否干净、版本、APK 字节数、校验值与签名证书指纹，供发布前核对。
+成功后输出 `dist-android/Brclio-XHS-Android-1.0.4-release.apk`、同名 `.apk.sha256`、`SHA256SUMS.txt` 与 `android-update.json`。APK 使用 Android SDK 的 `apksigner` 校验真实签名，并以 `aapt` 读取并核对包名与版本；缺少签名配置、使用 Android Debug 证书、证书不符或 APK 版本不符都会失败。JSON 记录源码提交、工作区是否干净、版本、APK 字节数、校验值与签名证书指纹，供发布前核对。
 
 后续升级继续使用同一签名密钥，并提高 `android/app/build.gradle` 中的 `versionCode` 与 `versionName`。`versionCode` 只要求严格递增，不根据版本名硬编码推算；Android 版本独立于根目录的桌面版版本号。
 
@@ -89,6 +91,8 @@ npm run android:build:release
 `.github/workflows/android-release.yml` 仅由 `android-v*` 标签或手动输入已有 Android 标签触发。它从标签指向的提交重新完成前端测试、Java 测试、lint、签名构建和签名核验，然后在 Android 15 模拟器上安装已公开的 `1.0.2`，通过系统界面允许本应用安装更新，再以 `adb install -r` 覆盖为新签名包。测试要求旧版与新版都能启动、更新检查界面可用，并保留应用 UID、首次安装时间与上述用户设置。失败会阻止发布。
 
 模拟器成功后才导出供发布使用的正式附件，并将绑定源码提交和 APK SHA256 的验证结果写入 `android-update.json`。从 `1.0.3` 起，发布脚本拒绝缺少这项证明的正式包。完整界面截图、UI XML 和日志另存为工作流附件；这项测试验证 Android 包管理器的实际覆盖安装，不代表已自动确认应用内下载后弹出的系统安装器，也不代替真机验证。
+
+从 `1.0.4` 起，还在模拟器中安装临时源码副本生成的独立 debug 夹具：仅该副本的版本设为 `0.0.0-debug`，通过既有 debug WebView 调试能力注入标记清楚的失败界面状态，再真实点击手动下载按钮。原生代码联网校验最新公开 APK 与校验文件，并将官方 APK 地址交给实际浏览器；验收记录浏览器收到的 Intent。正式 APK 不开启调试或注入接口。这项检查不冒称触发了真实安装器失败，也不将浏览器地址跳转当作文件下载完成。
 
 维护者首次准备并妥善保管固定签名密钥后，在 GitHub 仓库配置以下 Secrets：
 
@@ -99,12 +103,12 @@ npm run android:build:release
 
 另配置公开仓库变量 `ANDROID_SIGNING_CERT_SHA256` 为正式签名证书的 SHA256 指纹。工作流把密钥解码到临时目录，以 `ANDROID_SIGNING_STORE_FILE` 传给构建，完成后清除临时文件。发布升级所需的原始密钥和密码应另行备份，不要为每个版本重新生成密钥。
 
-发布前先提交最终代码与该版本说明，例如 `docs/releases/android-v1.0.3.md`，再把 `android-v1.0.3` 标签推送到同一提交。发布脚本要求构建时工作区干净，且 APK 记录的提交与本地标签、远端标签及当前检出提交完全相同。它先创建草稿，上传并重新下载全部四个附件核对字节，再以 `--latest=false` 公开；Android 不占用桌面版的 GitHub Latest，原 Mac / Windows 自动更新仍使用桌面发布。
+发布前先提交最终代码与该版本说明，例如 `docs/releases/android-v1.0.4.md`，再把 `android-v1.0.4` 标签推送到同一提交。发布脚本要求构建时工作区干净，且 APK 记录的提交与本地标签、远端标签及当前检出提交完全相同。它先创建草稿，上传并重新下载全部四个附件核对字节，再以 `--latest=false` 公开；Android 不占用桌面版的 GitHub Latest，原 Mac / Windows 自动更新仍使用桌面发布。
 
 同一标签的发布作业串行执行。已公开的 Android Release 不覆盖；失败留下的草稿只有在提交和附件名称一致时才可由同一标签重试。若正式版本需要修复，请增加版本名和 `versionCode` 后发布新标签。手动运行同一发布流程可用：
 
 ```bash
-ANDROID_RELEASE_TAG=android-v1.0.3 node scripts/publish-android-release.mjs
+ANDROID_RELEASE_TAG=android-v1.0.4 node scripts/publish-android-release.mjs
 ```
 
 此命令需要已通过完整构建的正式附件、公开证书变量和已登录的 GitHub CLI；它会实际发布 Release。普通本地构建与 debug CI 均不会发布。
