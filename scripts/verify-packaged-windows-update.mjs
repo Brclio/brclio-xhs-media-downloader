@@ -38,6 +38,39 @@ const ps = async (script, extra = {}) => (await run('powershell.exe', ['-NoProfi
 { encoding: 'utf8', timeout: 30000, maxBuffer: 2 * 1024 ** 2, windowsHide: true, env: { ...process.env, ...extra } })).stdout.trim();
 const processes = async () => JSON.parse(await ps('@(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine) | ConvertTo-Json -Compress') || '[]');
 const isMain = (p, executable) => p.ExecutablePath?.toLowerCase() === executable.toLowerCase() && !/--type[= ]/.test(p.CommandLine || '');
+async function windowSnapshot(pids) {
+  return JSON.parse(await ps(`Add-Type @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class VerifyWindowSnapshot {
+  private delegate bool EnumCallback(IntPtr window, IntPtr unused);
+  [DllImport("user32.dll")] private static extern bool EnumWindows(EnumCallback callback, IntPtr unused);
+  [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr window, EnumCallback callback, IntPtr unused);
+  [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int maximum);
+  [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
+  public static string[] Read(uint[] processes) {
+    var rows = new List<string>();
+    EnumWindows(delegate(IntPtr window, IntPtr unused) {
+      uint pid; GetWindowThreadProcessId(window, out pid);
+      if (Array.IndexOf(processes, pid) >= 0 && IsWindowVisible(window)) {
+        var title = new StringBuilder(1024); GetWindowText(window, title, title.Capacity);
+        rows.Add(pid.ToString() + " window: " + title.ToString());
+        EnumChildWindows(window, delegate(IntPtr child, IntPtr unusedChild) {
+          if (IsWindowVisible(child)) { var text = new StringBuilder(1024); GetWindowText(child, text, text.Capacity); if (text.Length > 0) rows.Add("control: " + text.ToString()); }
+          return true;
+        }, IntPtr.Zero);
+      }
+      return true;
+    }, IntPtr.Zero);
+    return rows.ToArray();
+  }
+}
+'@;
+@([VerifyWindowSnapshot]::Read([uint32[]]($env:VERIFY_PIDS -split ','))) | ConvertTo-Json -Compress`, { VERIFY_PIDS: pids.join(',') }) || '[]');
+}
 async function stopApp(pid) {
   await ps('$p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue; if ($p) { if (-not $p.CloseMainWindow()) { throw "Application has no closable window" } }', { VERIFY_PID: String(pid) });
   await until(async () => !(await processes()).some(p => p.ProcessId === pid), 'normal app shutdown', 30000);
@@ -143,6 +176,8 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
   const running = new Set();
   let connection;
   const assetEvidence = [];
+  let stage = 'initialization';
+  const progress = value => { stage = value; console.log(JSON.stringify({ windowsUpdateStage: value })); };
   const env = { ...process.env };
   for (const name of ['ELECTRON_RUN_AS_NODE', 'ELECTRON_NO_ASAR', 'NODE_OPTIONS', 'NODE_PATH']) delete env[name];
   function start(file, args, options = {}) {
@@ -209,14 +244,17 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
       assert.ok(current.some(p => p.ProcessId === pid), 'Installer must not force-kill the old parent');
       assert.equal(await digest(archive), beforeDigest, 'Installer must wait before modifying installed files');
     }
+    progress('installer-waited-for-parent');
     connection.close(); connection = null;
     await stopApp(pid);
+    progress('old-application-exited-normally');
     const restarted = await until(async () => (await processes()).find(p => isMain(p, executable) && p.ProcessId !== pid), 'successful NSIS automatic app relaunch', 180000);
     assert.ok((restarted.CommandLine || '').includes('--updated'), 'Automatic relaunch carries update marker');
     assert.equal(await digest(archive), await digest(path.join(output, 'win-unpacked/resources/app.asar')), 'Installed payload is the reviewed new archive');
     await until(async () => Number(await ps('$p = Get-Process -Id ([int]$env:VERIFY_PID) -ErrorAction SilentlyContinue; if ($p) { $p.MainWindowHandle.ToInt64() }', { VERIFY_PID: String(restarted.ProcessId) })) > 0, 'restarted app window');
     await stopApp(restarted.ProcessId);
     await closeWizard(installer.pid, false);
+    progress('upgraded-application-restarted-and-closed');
   }
   try {
     const oldSetup = await oldAsset('setup');
@@ -228,6 +266,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     });
     await until(() => { if (setup.launchError) throw setup.launchError; return setup.exitCode !== null; }, 'old silent installation', 180000);
     assert.equal(setup.exitCode, 0);
+    progress('published-old-setup-installed');
     const extract = name => asar.extractFile(archive, path.normalize(name));
     assert.equal(JSON.parse(extract('package.json')).version, previousVersion);
     const originalLauncher = path.join(temporary, 'old-windows-update.mjs');
@@ -243,16 +282,19 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     const accountBytes = await readFile(path.join(profile, 'account/account-v1.enc'));
     assert.ok(accountBytes.length > 100);
     await assertState(accountBytes);
+    progress('published-old-app-fixtures-verified');
     await upgrade(pid, oldLauncher, await digest(archive));
     await verifyAsar(archive, root, pkg.version);
     pid = await launch(executable, pkg.version, false);
     await assertState(accountBytes);
+    progress('new-installed-app-fixtures-verified');
     connection.close(); connection = null; await stopApp(pid);
     // Actual published portable v1.8.17 migrates through the SAME setup launcher.
     // Its original exe remains untouched; the registered installed app restarts.
     const portableBefore = await digest(oldPortable);
     pid = await launch(oldPortable, previousVersion, true);
     await assertState(accountBytes);
+    progress('published-old-portable-fixtures-verified');
     await upgrade(pid, oldLauncher, await digest(archive));
     assert.equal(await digest(oldPortable), portableBefore);
     pid = await launch(portable, pkg.version, true);
@@ -277,6 +319,24 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
       machineWideUacTested: false, profileIsolation: 'fresh disposable GitHub runner account', installDirectoryIsolation: 'temporary' };
     await writeFile(proofPath, JSON.stringify({ ...proof, packagedWindowsUpdateVerified: true, packagedWindowsPortableVerified: true, windowsUpdate: result }, null, 2) + '\n');
     console.log(JSON.stringify(result, null, 2));
+  } catch (error) {
+    // Report the actual NSIS error/wizard state BEFORE cleanup. A timeout alone
+    // cannot distinguish a blocked installer from a failed automatic relaunch.
+    try {
+      const current = await processes();
+      const ids = new Set([...running].map(child => child.pid).filter(Boolean));
+      for (let round = 0; round < 4; round++) for (const processInfo of current) {
+        if (ids.has(processInfo.ParentProcessId)) ids.add(processInfo.ProcessId);
+      }
+      const relevant = current.filter(p => ids.has(p.ProcessId) || p.Name === `${pkg.build.productName}.exe`);
+      const installed = await exists(archive)
+        ? { sha256: await digest(archive), version: JSON.parse(asar.extractFile(archive, 'package.json')).version }
+        : null;
+      console.error(JSON.stringify({ windowsUpdateFailure: error.message, stage, installed,
+        installerProcesses: [...running].map(child => ({ pid: child.pid, exitCode: child.exitCode, signalCode: child.signalCode })),
+        processes: relevant, windows: await windowSnapshot([...ids]) }, null, 2));
+    } catch (diagnosticError) { console.error(`Windows failure diagnostics: ${diagnosticError.message}`); }
+    throw error;
   } finally {
     connection?.close();
     // Cleanup is restricted to this disposable runner's fixture processes.
