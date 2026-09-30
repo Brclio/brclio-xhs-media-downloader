@@ -10,6 +10,7 @@ import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } fro
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { finished } from 'node:stream/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -18,6 +19,13 @@ import { readMacArchitectures } from '../desktop/mac-architecture.js';
 
 const run = promisify(execFile);
 const asar = createRequire(import.meta.url)('@electron/asar');
+export async function createFixtureArchive(source, destination) {
+  // ASAR 3.4 returns its writable after end(), before the final writes finish.
+  // Reading or signing it earlier can observe a partially written last file.
+  const output = await asar.createPackage(source, destination);
+  await finished(output);
+  asar.uncache(destination);
+}
 const command = (file, args) => run(file, args, { timeout: 120000, maxBuffer: 4 * 1024 ** 2 });
 const digest = async file => {
   const hash = createHash('sha256');
@@ -157,7 +165,7 @@ export async function verifyPackagedMacUpdate(input) {
     await writeFile(path.join(tree, 'package.json'), JSON.stringify({ ...packaged, version, main: 'update-fixture-bootstrap.mjs' }));
     await writeFile(path.join(tree, 'update-fixture-bootstrap.mjs'), fixtureSource);
     const archive = path.join(destination, 'Contents/Resources/app.asar');
-    await rm(archive); await asar.createPackage(tree, archive); asar.uncache(archive);
+    await rm(archive); await createFixtureArchive(tree, archive);
     for (const file of files) assert.ok(asar.extractFile(archive, file).equals(asar.extractFile(inputArchive, file)), `Fixture changed product source: ${file}`);
     const info = { ...inputInfo, CFBundleShortVersionString: version, CFBundleVersion: version };
     if (info.ElectronAsarIntegrity) info.ElectronAsarIntegrity = { ...info.ElectronAsarIntegrity,

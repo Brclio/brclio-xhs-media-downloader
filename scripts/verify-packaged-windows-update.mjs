@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { spawn, execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdtemp, mkdir, readFile, writeFile, lstat, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, lstat, realpath, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -37,7 +37,20 @@ const ps = async (script, extra = {}) => (await run('powershell.exe', ['-NoProfi
   '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $ErrorActionPreference = "Stop"; ' + script],
 { encoding: 'utf8', timeout: 30000, maxBuffer: 2 * 1024 ** 2, windowsHide: true, env: { ...process.env, ...extra } })).stdout.trim();
 const processes = async () => JSON.parse(await ps('@(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine) | ConvertTo-Json -Compress') || '[]');
-const isMain = (p, executable) => p.ExecutablePath?.toLowerCase() === executable.toLowerCase() && !/--type[= ]/.test(p.CommandLine || '');
+export async function findWindowsMainProcess(list, executable, canonicalize = realpath) {
+  // Windows TEMP can use RUNNER~1 while CIM reports runneradmin. Resolve both
+  // spellings to the actual file, still rejecting sibling apps and subprocesses.
+  let expected;
+  try { expected = (await canonicalize(executable)).toLowerCase(); }
+  catch (error) { if (['ENOENT', 'EACCES', 'EPERM'].includes(error.code)) return; throw error; }
+  for (const candidate of list) {
+    if (!candidate.ExecutablePath || /--type[= ]/.test(candidate.CommandLine || '')
+      || path.win32.basename(candidate.ExecutablePath).toLowerCase() !== path.win32.basename(executable).toLowerCase()) continue;
+    try {
+      if ((await canonicalize(candidate.ExecutablePath)).toLowerCase() === expected) return candidate;
+    } catch (error) { if (!['ENOENT', 'EACCES', 'EPERM'].includes(error.code)) throw error; }
+  }
+}
 async function windowSnapshot(pids) {
   return JSON.parse(await ps(`Add-Type @'
 using System;
@@ -167,7 +180,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
   for (const hive of ['HKCU', 'HKLM']) {
     assert.equal(await ps(`Test-Path -LiteralPath '${hive}:\\Software\\${guid}'`), 'False', 'Refuse to change an existing installation');
   }
-  const temporary = await mkdtemp(path.join(tmpdir(), 'brclio-windows-upgrade-'));
+  const temporary = await realpath(await mkdtemp(path.join(tmpdir(), 'brclio-windows-upgrade-')));
   // Deliberately omit APP_FILENAME: an update must preserve even a custom /D
   // destination, instead of appending a new package-name subdirectory.
   const installDirectory = path.join(temporary, '安装路径 with spaces');
@@ -248,7 +261,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     connection.close(); connection = null;
     await stopApp(pid);
     progress('old-application-exited-normally');
-    const restarted = await until(async () => (await processes()).find(p => isMain(p, executable) && p.ProcessId !== pid), 'successful NSIS automatic app relaunch', 180000);
+    const restarted = await until(async () => findWindowsMainProcess((await processes()).filter(p => p.ProcessId !== pid), executable), 'successful NSIS automatic app relaunch', 180000);
     assert.ok((restarted.CommandLine || '').includes('--updated'), 'Automatic relaunch carries update marker');
     asar.uncache(archive); // The real installer replaced the file at the same path.
     assert.equal(await digest(archive), await digest(path.join(output, 'win-unpacked/resources/app.asar')), 'Installed payload is the reviewed new archive');
@@ -300,8 +313,9 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     assert.equal(await digest(oldPortable), portableBefore);
     pid = await launch(portable, pkg.version, true);
     await assertState(accountBytes);
+    progress('current-portable-fixtures-verified');
     connection.close(); connection = null; await stopApp(pid);
-    await until(async () => !(await processes()).some(p => p.ExecutablePath?.toLowerCase() === portable.toLowerCase()), 'portable wrapper cleanup');
+    await until(async () => !await findWindowsMainProcess(await processes(), portable), 'portable wrapper cleanup');
     // Cancel a visible manual reinstall on its first page, before extraction.
     const beforeCancel = await digest(archive);
     const cancelled = start(target, ['/currentuser']);
@@ -309,7 +323,8 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     await closeWizard(cancelled.pid, true);
     assert.equal(await digest(archive), beforeCancel, 'Cancellation before install leaves installed files intact');
     assert.deepEqual(await readFile(path.join(profile, 'account/account-v1.enc')), accountBytes);
-    assert.equal((await processes()).filter(p => isMain(p, executable)).length, 0, 'Cancelled installer must not launch the app');
+    assert.equal(await findWindowsMainProcess(await processes(), executable), undefined, 'Cancelled installer must not launch the app');
+    progress('manual-install-cancelled-before-copy');
     const result = { previousVersion, version: pkg.version, oldAssets: assetEvidence,
       realPublishedOldInstallers: true, realCurrentInstallers: true, sourceArchivesModified: false,
       oldParentWaitVerified: true, installedInPlaceVerified: true, automaticRelaunchVerified: true,
@@ -330,7 +345,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
         if (ids.has(processInfo.ParentProcessId)) ids.add(processInfo.ProcessId);
       }
       const relevant = current.filter(p => ids.has(p.ProcessId) || p.Name === `${pkg.build.productName}.exe`);
-      console.error(JSON.stringify({ windowsUpdateFailure: error.message, stage,
+      console.error(JSON.stringify({ windowsUpdateFailure: error.message, stage, expectedExecutable: executable,
         installerProcesses: [...running].map(child => ({ pid: child.pid, exitCode: child.exitCode, signalCode: child.signalCode })),
         explorerPresent: current.some(p => p.Name?.toLowerCase() === 'explorer.exe'), processes: relevant }, null, 2));
       // Read independently: malformed/transient payloads must not suppress the
