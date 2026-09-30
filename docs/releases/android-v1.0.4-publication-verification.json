@@ -1,0 +1,343 @@
+{
+  "verifiedAt": "2026-09-30T07:13:34.153Z",
+  "repository": "Brclio/brclio-xhs-media-downloader",
+  "tag": "android-v1.0.4",
+  "sourceCommit": "c9c700afe9e03dfe28a751a03acc6f217305b28f",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.4",
+  "publishedAt": "2026-09-30T07:03:09Z",
+  "draft": false,
+  "prerelease": false,
+  "workflow": {
+    "runId": 36680959289,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36680959289",
+    "conclusion": "success",
+    "sourceCommit": "c9c700afe9e03dfe28a751a03acc6f217305b28f",
+    "jobs": [
+      {
+        "name": "build",
+        "conclusion": "success",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36680959289/job/109776078774"
+      },
+      {
+        "name": "upgrade-emulator",
+        "conclusion": "success",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36680959289/job/109776381639"
+      },
+      {
+        "name": "publish",
+        "conclusion": "success",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/36680959289/job/109777744949"
+      }
+    ]
+  },
+  "package": {
+    "applicationId": "com.brclio.xhs",
+    "versionName": "1.0.4",
+    "versionCode": 10004,
+    "minSdk": 26,
+    "targetSdk": 35,
+    "learningActivityExported": false
+  },
+  "signature": {
+    "tool": "Android apksig 8.9.2",
+    "verified": true,
+    "v2": true,
+    "v3": false,
+    "certificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b"
+  },
+  "sourceProof": {
+    "file": "android-update.json",
+    "matchesReleaseTag": true,
+    "sourceDirty": false,
+    "emulatorAcceptanceBoundToExactApkAndCommit": true
+  },
+  "releaseAssets": [
+    {
+      "name": "Brclio-XHS-Android-1.0.4-release.apk",
+      "bytes": 3936818,
+      "sha256": "51533f3b54f1865d4b98d0866ca543852667b92a6778b9b3fe631edb3f21a7d0",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/Brclio-XHS-Android-1.0.4-release.apk"
+    },
+    {
+      "name": "Brclio-XHS-Android-1.0.4-release.apk.sha256",
+      "bytes": 103,
+      "sha256": "d5f2f223e102aeb16d454a37b73145ee0378ace02ed0ce22d2dd61e355d3197d",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/Brclio-XHS-Android-1.0.4-release.apk.sha256"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 103,
+      "sha256": "d5f2f223e102aeb16d454a37b73145ee0378ace02ed0ce22d2dd61e355d3197d",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/SHA256SUMS.txt"
+    },
+    {
+      "name": "android-update.json",
+      "bytes": 1240,
+      "sha256": "52c198141c493fec2d335f579336f43a1a0b6a2db0f175ddc30bab2a71615bf7",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.4/android-update.json"
+    }
+  ],
+  "bundledPromotionAssets": [
+    {
+      "path": "assets/www/learn.html",
+      "bytes": 10041,
+      "sha256": "72824564b06cd13a662e042dca2381d6a5aa70b0a621a2e5f60778763d02c104",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/learn.css",
+      "bytes": 14521,
+      "sha256": "40e0925e8da4768b67bd0a8cde2e075930e55ed3d58163d990c3c52709dbc3fb",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/learn.js",
+      "bytes": 3180,
+      "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/aiyc.svg",
+      "bytes": 3913,
+      "sha256": "6c9919d43f082026aee9a4a57243f3d12b6ac94b38d68fc3653ef718c3362b50",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/favicon.svg",
+      "bytes": 370,
+      "sha256": "829b051b8ef0a80fa95d7f1909af52af9e4c32bad4ce82c70618a5c901d0719b",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/assets/learning/book-promo.png",
+      "bytes": 1951638,
+      "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/assets/support/wechat-personal-qr.png",
+      "bytes": 178625,
+      "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+      "matchesTaggedSource": true
+    }
+  ],
+  "bundledClientAssets": [
+    {
+      "path": "assets/www/index.html",
+      "bytes": 9340,
+      "sha256": "d4e8cbf54a1f04868a9a21f1dc1b6ad579f1e70d3b2938727b167ac270c3cefe",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/client.js",
+      "bytes": 21129,
+      "sha256": "7cc90125a25d99f507af44cf00bbf06717dd170c344f22a43ad743b025c771dd",
+      "matchesTaggedSource": true
+    },
+    {
+      "path": "assets/www/client.css",
+      "bytes": 9250,
+      "sha256": "cdd92d2c1b00300d0cbc8bfff96f1f55a01d802dfe801470579dff9d801be277",
+      "matchesTaggedSource": true
+    }
+  ],
+  "clientEntryVerified": true,
+  "legacyCompatibility": {
+    "verifiedAt": "2026-09-30T07:13:32.025Z",
+    "sourcePolicySha256": {
+      "UpdatePolicy.java": {
+        "1.0.0": "1bd226768a2dd18a9a2402a80471d7c222be6e2e6592620606b925a2f20be241",
+        "1.0.1": "1bd226768a2dd18a9a2402a80471d7c222be6e2e6592620606b925a2f20be241",
+        "1.0.2": "1bd226768a2dd18a9a2402a80471d7c222be6e2e6592620606b925a2f20be241",
+        "1.0.3": "1bd226768a2dd18a9a2402a80471d7c222be6e2e6592620606b925a2f20be241"
+      },
+      "NativePolicy.java": {
+        "1.0.0": "8777f978117eac0a75807fc39086b00795f1a86c73253778193080f423290d1f",
+        "1.0.1": "8777f978117eac0a75807fc39086b00795f1a86c73253778193080f423290d1f",
+        "1.0.2": "8777f978117eac0a75807fc39086b00795f1a86c73253778193080f423290d1f",
+        "1.0.3": "8777f978117eac0a75807fc39086b00795f1a86c73253778193080f423290d1f"
+      }
+    },
+    "compiledTaggedPolicyResult": "PASS: published 1.0.0/1.0.1/1.0.2/1.0.3 policy accepts 1.0.4 tag, assets, hash and versionCode10004",
+    "deviceUpgradeFromEveryLegacyVersionTested": false
+  },
+  "desktopLatestPreserved": "v1.8.20",
+  "desktopLatestAtPublication": {
+    "before": "v1.8.20",
+    "after": "v1.8.20"
+  },
+  "emulatorUpgrade": {
+    "verifiedAt": "2026-09-30T07:02:49.331Z",
+    "emulator": {
+      "api": "35",
+      "abi": "x86_64",
+      "disposable": true
+    },
+    "baseline": {
+      "tag": "android-v1.0.2",
+      "versionCode": 10002,
+      "versionName": "1.0.2",
+      "userId": 10209,
+      "firstInstallTime": "2026-09-30 07:00:13",
+      "sha256": "a1db01b7a6baa671b6df1fbfd0089b4c0721f1eadb63567b328a29989850150c",
+      "checksumAndSignatureVerified": true
+    },
+    "candidate": {
+      "tag": "android-v1.0.4",
+      "versionCode": 10004,
+      "versionName": "1.0.4",
+      "userId": 10209,
+      "firstInstallTime": "2026-09-30 07:00:13",
+      "sha256": "51533f3b54f1865d4b98d0866ca543852667b92a6778b9b3fe631edb3f21a7d0",
+      "sourceCommit": "c9c700afe9e03dfe28a751a03acc6f217305b28f",
+      "signatureVerified": true
+    },
+    "installation": {
+      "method": "adb install -r",
+      "succeeded": true,
+      "uidPreserved": true,
+      "firstInstallTimePreserved": true
+    },
+    "retainedUserSetting": {
+      "name": "Allow from this source",
+      "setThroughSystemUi": true,
+      "before": "REQUEST_INSTALL_PACKAGES: allow",
+      "after": "REQUEST_INSTALL_PACKAGES: allow",
+      "preserved": true
+    },
+    "updateUi": {
+      "before": {
+        "clicked": true,
+        "nativeResponseVisible": true,
+        "installButtonVisible": true
+      },
+      "after": {
+        "clicked": true,
+        "nativeResponseVisible": true,
+        "installButtonVisible": false
+      }
+    },
+    "oldAndNewLaunchVerified": true,
+    "appCrashDetected": false,
+    "manualFallback": {
+      "verifiedAt": "2026-09-30T07:02:49.301Z",
+      "fixture": {
+        "applicationId": "com.brclio.xhs.debug",
+        "version": "0.0.0-debug",
+        "sourceCopyOnly": true,
+        "productionApkModified": false,
+        "injectedInstallationFailure": true,
+        "injectedCanInstallBuildUiState": true,
+        "nativeNetworkMocked": false,
+        "nativeUrlOverride": false
+      },
+      "failureUi": {
+        "status": "系统返回安装失败。可重试安装，或手动下载最新版覆盖安装。",
+        "help": "安装失败或未完成时，可手动下载最新版 APK，打开后直接覆盖安装。不要卸载当前应用，以保留应用数据。浏览器下载最新版 APK ↗",
+        "visible": true
+      },
+      "expectedPublicRelease": {
+        "tag": "android-v1.0.3",
+        "version": "1.0.3",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.3/Brclio-XHS-Android-1.0.3-release.apk"
+      },
+      "browserComponent": "com.android.chrome/com.google.android.apps.chrome.IntentDispatcher",
+      "actualBrowserIntentVerified": true,
+      "sourceJavaAndWebUiUnmodified": true,
+      "debugApkSha256": "af269e9bfbe660e36d68d7f76ccda381271c83c40e574686f36518053273b931",
+      "limitations": [
+        "The installer failure was a debug-WebView UI fixture. No production installer failure or browser download completion is claimed.",
+        "The real native method fetched public release metadata and its checksum and dispatched the observed browser APK intent."
+      ]
+    },
+    "limitations": [
+      "The actual system Package Manager replacement was tested. In-app APK download and system installer confirmation were not automated; no newer public release exists for the unpublished candidate."
+    ],
+    "evidenceArtifact": "Android-upgrade-emulator-36680959289-1",
+    "verificationJsonSha256": "aa92945129ad664bf4f34235599d234053b0ef228cfc0d27beef49332fc89465",
+    "afterUpdateScreenshotReviewed": true,
+    "manualFallbackButtonScreenshotReviewed": true,
+    "manualFallbackBrowserIntentSha256": "a447b63b4e379e31657931ba15dc2b8eeee679e99f9cac40946dd33e4a9e0716",
+    "uiCaptureRetries": [
+      {
+        "attempt": 1,
+        "detail": "Missing fresh Android UI hierarchy",
+        "at": "2026-09-30T07:00:57.557Z"
+      }
+    ]
+  },
+  "anonymousUpdateDiscovery": {
+    "endpoint": "https://api.github.com/repos/Brclio/brclio-xhs-media-downloader/releases?per_page=100",
+    "method": "Unauthenticated HTTP responses checked with the unchanged legacy tag and asset selection rules; compiled published 1.0.0 through 1.0.3 UpdatePolicy separately accepts version 1.0.4 and code 10004.",
+    "clients": [
+      {
+        "currentVersion": "1.0.0",
+        "userAgent": "Brclio-Android/1.0.0",
+        "authenticated": false,
+        "selectedTag": "android-v1.0.4",
+        "releaseCount": 29,
+        "requiredAssetsPresent": true
+      },
+      {
+        "currentVersion": "1.0.1",
+        "userAgent": "Brclio-Android/1.0.1",
+        "authenticated": false,
+        "selectedTag": "android-v1.0.4",
+        "releaseCount": 29,
+        "requiredAssetsPresent": true
+      },
+      {
+        "currentVersion": "1.0.2",
+        "userAgent": "Brclio-Android/1.0.2",
+        "authenticated": false,
+        "selectedTag": "android-v1.0.4",
+        "releaseCount": 29,
+        "requiredAssetsPresent": true
+      },
+      {
+        "currentVersion": "1.0.3",
+        "userAgent": "Brclio-Android/1.0.3",
+        "authenticated": false,
+        "selectedTag": "android-v1.0.4",
+        "releaseCount": 29,
+        "requiredAssetsPresent": true
+      }
+    ]
+  },
+  "anonymousApkDownload": {
+    "httpStatus": 200,
+    "finalHost": "release-assets.githubusercontent.com",
+    "bytes": 3936818,
+    "sha256": "51533f3b54f1865d4b98d0866ca543852667b92a6778b9b3fe631edb3f21a7d0",
+    "matchesPublishedArtifact": true
+  },
+  "validation": {
+    "nodeTests": 47,
+    "nodeFailures": 0,
+    "javaUnitTests": 21,
+    "javaFailures": 0,
+    "ciLint": {
+      "status": "passed",
+      "warnings": 5,
+      "errors": 0,
+      "warningTypes": [
+        "DataExtractionRules",
+        "UsableSpace",
+        "MonochromeLauncherIcon",
+        "SetTextI18n"
+      ]
+    },
+    "ciSignedBuild": "passed",
+    "independentApkSignature": "passed",
+    "bundledAssetByteComparison": "passed",
+    "emulatorInPlaceUpgrade": "passed",
+    "debugFixtureFailureUiAndNativeBrowserIntent": "passed"
+  },
+  "limitations": [
+    "Upgrade installation was exercised on a disposable Android 15 x86_64 emulator with adb install -r, not a physical Android device.",
+    "The gate verified 1.0.2 to 1.0.4 package replacement and preserved a system user setting. In-app APK download and the final system installer confirmation were not automated.",
+    "Legacy 1.0.0, 1.0.1 and 1.0.3 compatibility was checked through unchanged release-policy source, version/signature rules, and anonymous discovery responses; separate device upgrades from those versions were not performed.",
+    "Manual fallback failure was injected only in a disposable debug UI with version 0.0.0-debug; the candidate source stayed unchanged. Its real native request fetched the latest public APK (1.0.3 at gate time) and opened Chrome. Browser first-run UI appeared; completion of browser download and a real production installer failure were not claimed.",
+    "No new real-device media parsing, file saving, or QR save interaction was performed in this release verification."
+  ]
+}
