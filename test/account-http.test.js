@@ -86,6 +86,24 @@ test('HTTP rejects malformed, oversized, mixed credentials and non-JSON requests
   assert.equal(mixed.calls.length, 0);
 });
 
+test('HTTP rejects a throwing lazy JSON body getter before configuration or account service access', async () => {
+  let reads = 0;
+  const req = { method: 'POST', headers: { 'content-type': 'application/json' } };
+  Object.defineProperty(req, 'body', { get() { reads++; throw new SyntaxError('private-invalid-body-sentinel'); } });
+  const res = { code: 200, headers: {}, setHeader(key, value) { this.headers[key.toLowerCase()] = value; }, status(code) { this.code = code; return this; }, json(value) { this.body = value; return this; } };
+  const handler = createAccountHandler({
+    env: new Proxy({}, { get() { assert.fail('Malformed lazy JSON reached account configuration'); } }),
+    service: { execute() { assert.fail('Malformed lazy JSON reached account service'); } },
+  });
+  await handler(req, res);
+  assert.equal(reads, 1);
+  assert.equal(res.code, 400);
+  assert.equal(res.body.ok, false);
+  assert.equal(res.body.error.code, 'INVALID_JSON');
+  assert.equal(res.headers['cache-control'], 'no-store');
+  assert.doesNotMatch(JSON.stringify(res.body), /private-invalid-body-sentinel/);
+});
+
 test('HTTP role denial and storage failures never become success or expose internal errors', async () => {
   const denied = await request({ body: { action: 'admin-membership', input: {} }, headers: { origin }, execute: async () => { throw new AccountError('FORBIDDEN', '权限不足', 403); } });
   assert.equal(denied.code, 403);
