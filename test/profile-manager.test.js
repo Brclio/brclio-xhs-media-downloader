@@ -13,7 +13,7 @@ const A = "111111111111111111111111";
 const B = "222222222222222222222222";
 const note = (id = A) => ({ id, url: `https://www.xiaohongshu.com/explore/${id}`, title: `标题 ${id}` });
 const imageUrl = (key = "image") => `https://ci.xiaohongshu.com/${key}?imageView2/format/jpg`;
-const videoUrl = (key = "video") => `https://sns-video-bd.xhscdn.com/${key}.mp4`;
+const videoUrl = (key = "video") => `https://sns-video-bd.xhscdn.com/stream/${key}.mp4`;
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 2, 4, 5, 6, 0xff, 0xd9]);
 const MP4 = mp4Fixture();
 function noteFolder(fixture, id = A) {
@@ -86,6 +86,69 @@ test("profile queue deduplicates notes and saves images, paired live MP4, defaul
   assert.equal(f.requests.some((item) => item.url === videoUrl("low")), false);
   for (let index = 1; index < f.requests.length; index++) assert.ok(f.requests[index].at - f.requests[index - 1].at >= 4500);
   assert.ok(f.requests.filter((item) => item.type === "media").every((item) => item.redirect === "manual"));
+});
+
+test('profile videos prefer declared original sources and recheck the original-video feature before saving', async t => {
+  const original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  const features = [];
+  const f = await fixture(t, { authorize: async feature => { features.push(feature); return { authorized: true }; } });
+  f.manager.browser.resolveNote = async () => parsed({ images: [],
+    videos: [{ url: videoUrl('playback'), isDefault: true }], originalVideos: [{ url: original, hasAudio: true }] });
+  await f.start();
+  assert.equal((await f.settle()).completed, 1);
+  assert.equal(f.requests.some(request => request.url === original), true);
+  assert.equal(f.requests.some(request => request.url === videoUrl('playback')), false);
+  assert.equal(features.filter(feature => feature === 'watermark-free-video').length, 2);
+  const manifest = JSON.parse(await fs.readFile(path.join(noteFolder(f), '.xhs-download.json'), 'utf8'));
+  assert.equal(manifest.files.find(file => file.key === 'video').watermarkFree, true);
+});
+
+test('denied original-video authorization pauses a profile without fetching or substituting ordinary playback', async t => {
+  const original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  const f = await fixture(t, { authorize: async feature => {
+    if (feature === 'watermark-free-video') throw Object.assign(new Error('会员已到期'), { code: 'MEMBERSHIP_EXPIRED', status: 403 });
+    return { authorized: true };
+  } });
+  f.manager.browser.resolveNote = async () => parsed({ images: [],
+    videos: [{ url: videoUrl('playback') }], originalVideos: [{ url: original, hasAudio: true }] });
+  await f.start();
+  const result = await f.settle();
+  assert.equal(result.status, 'paused');
+  assert.equal(result.items[0].status, 'pending');
+  assert.match(result.message, /会员已到期/);
+  assert.equal(f.requests.filter(request => request.type === 'media').length, 0);
+});
+
+test('ordinary stream videos stay free, while unmarked original URLs and redirects require authorization', async t => {
+  const f = await fixture(t), original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  const free = await downloadMedia({ root: f.directory, directory: f.directory,
+    asset: { key: 'free', kind: 'video', url: videoUrl(), requireAudio: true }, beforeRequest: async () => {}, fetchImpl: async url => mediaResponse(url) });
+  assert.equal(free.watermarkFree, undefined);
+  let calls = 0;
+  await assert.rejects(downloadMedia({ root: f.directory, directory: f.directory,
+    asset: { key: 'denied', kind: 'video', url: original }, beforeRequest: async () => {},
+    fetchImpl: async () => { calls++; return mediaResponse(original); } }), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED' });
+  assert.equal(calls, 0, 'a missing renderer marker cannot bypass the main-process URL check');
+  await assert.rejects(downloadMedia({ root: f.directory, directory: f.directory,
+    asset: { key: 'forged', kind: 'metadata', url: original }, beforeRequest: async () => {},
+    fetchImpl: async () => { calls++; return mediaResponse(original); } }), /媒体类型无效/);
+  assert.equal(calls, 0, 'a forged media kind cannot avoid the video authorization path');
+  await assert.rejects(downloadMedia({ root: f.directory, directory: f.directory,
+    asset: { key: 'redirect', kind: 'video', url: videoUrl() }, beforeRequest: async () => {},
+    fetchImpl: async () => { calls++; return new Response(null, { status: 302, headers: { location: original } }); } }), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED' });
+  assert.equal(calls, 1, 'the protected redirect target is never fetched without membership');
+  assert.deepEqual(await fs.readdir(f.directory), ['free.mp4']);
+});
+
+test('a revoked original-video grant during streaming removes temporary bytes and never publishes a final file', async t => {
+  const f = await fixture(t), original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  let checks = 0;
+  await assert.rejects(downloadMedia({ root: f.directory, directory: f.directory,
+    asset: { key: 'original', kind: 'video', url: original, requireAudio: true }, beforeRequest: async () => {},
+    authorize: async feature => { assert.equal(feature, 'watermark-free-video'); if (++checks > 1) throw Error('会员已取消'); },
+    fetchImpl: async () => mediaResponse(original) }), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED' });
+  assert.equal(checks, 2);
+  assert.deepEqual(await fs.readdir(f.directory), []);
 });
 
 test("restart performs no network and skips only files whose size and SHA-256 both verify", async (t) => {

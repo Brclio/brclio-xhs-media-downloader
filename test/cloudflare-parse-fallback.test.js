@@ -12,6 +12,50 @@ const input = (path = '/api/parse', body = { text: note }, headers = {}) => new 
   body: typeof body === 'string' ? body : JSON.stringify(body),
 });
 
+test('older fallback cannot leak original URLs in primary, backup, live-photo or extra original fields', async () => {
+  const original = 'https://sns-video-bd.xhscdn.com/spectrum/private-upload';
+  const stream = 'https://sns-video-bd.xhscdn.com/stream/play.mp4';
+  const old = { ...payload('node'), videoCount: 2, videos: [{ url: original }, { url: stream, backupUrls: [original] }],
+    originalVideos: [{ url: original }], images: [{ ...payload('node').images[0], livePhoto: true, liveVideo: { url: original } }] };
+  const run = createParseFallback({ fetchImpl: async () => Response.json(old) });
+  const response = await run(input(), env, primaryFailure);
+  const data = await response.json();
+  assert.equal(JSON.stringify(data).includes(original), false);
+  assert.equal(data.originalVideos, undefined);
+  assert.equal(data.hasOriginalVideo, true);
+  assert.equal(data.videoCount, 1);
+  assert.equal(data.videos[0].url, stream);
+  assert.equal(data.images[0].liveVideo, null);
+});
+
+test('undeclared protected fallback paths preserve the native failure when no public media remains', async () => {
+  const protectedUrl = 'https://sns-video-bd.xhscdn.com/spectrum/undeclared-upload';
+  const old = { ...payload('node'), images: [], count: 0, videoCount: 1,
+    videos: [{ url: protectedUrl, source: 'media-stream' }] };
+  const run = createParseFallback({ fetchImpl: async () => Response.json(old) });
+  const primary = primaryFailure();
+  const response = await run(input(), env, async () => primary);
+  assert.equal(response, primary);
+  assert.equal(response.status, 422);
+  assert.equal((await response.json()).message, '无法从分享链接中识别当前笔记 ID。', 'native body must remain unread and uncancelled');
+});
+
+test('undeclared protected fallback paths may promote playback backups without claiming original availability', async () => {
+  const protectedUrl = 'https://sns-video-bd.xhscdn.com/spectrum/undeclared-upload';
+  const safeUrl = 'https://sns-video-bd.xhscdn.com/stream/playback.mp4';
+  const old = { ...payload('node'), videoCount: 1, videos: [{ url: protectedUrl, backupUrls: [safeUrl, protectedUrl], source: 'media-stream' }],
+    images: [{ ...payload('node').images[0], livePhoto: true, liveVideo: { url: protectedUrl } }] };
+  const run = createParseFallback({ fetchImpl: async () => Response.json(old) });
+  const data = await (await run(input(), env, primaryFailure)).json();
+  assert.equal(data.videos[0].url, safeUrl);
+  assert.deepEqual(data.videos[0].backupUrls, []);
+  assert.equal(data.images[0].liveVideo, null);
+  assert.equal(data.originalVideoCount, 0);
+  assert.equal(data.hasOriginalVideo, false);
+  assert.equal(data.type, 'mixed');
+  assert.equal(JSON.stringify(data).includes(protectedUrl), false);
+});
+
 test('same-engine fallback preserves payload and isolates credentials, request fields and response headers', async () => {
   for (const [path, engine] of [['/api/parse', 'node'], ['/api/python_parse', 'python']]) {
     let nativeCalls = 0;
@@ -152,4 +196,16 @@ test('a failed Python service binding can fallback, and a failed fallback retain
   assert.deepEqual(await response.json(), payload('python'));
   const failing = createParseFallback({ fetchImpl: async () => { throw new Error('upstream down'); } });
   await assert.rejects(failing(input('/api/python_parse'), env, async () => { throw nativeError; }), error => error === nativeError);
+});
+
+
+test('fallback removes explicitly declared original sources even in an ambiguous stream namespace', async () => {
+  const original = 'https://sns-video-bd.xhscdn.com/stream/reported-original.mp4';
+  const old = { ...payload('node'), videoCount: 1, videos: [{ url: original, source: 'origin-video-key' }] };
+  const run = createParseFallback({ fetchImpl: async () => Response.json(old) });
+  const response = await run(input(), env, primaryFailure);
+  const data = await response.json();
+  assert.equal(JSON.stringify(data).includes(original), false);
+  assert.equal(data.videoCount, 0);
+  assert.equal(data.hasOriginalVideo, true);
 });

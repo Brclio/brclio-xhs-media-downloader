@@ -144,14 +144,17 @@ export class AccountClient {
     if (!PROTECTED_FEATURES.includes(feature)) return { authorized: true, free: true };
     this._requireStorage();
     if (!this.endpoint) throw accountError('CONFIGURATION_REQUIRED', '授权服务尚未配置，会员功能暂不可用。');
-    if (!this.credentials.token) throw accountError('ACCOUNT_REQUIRED', '请先登录软件账号，再使用主页批量下载。', 401);
+    if (!this.credentials.token) throw accountError('ACCOUNT_REQUIRED', feature === 'watermark-free-video'
+      ? '请先登录软件账号，再下载会员专享无水印视频。'
+      : '请先登录软件账号，再使用主页批量下载。', 401);
     const token = this.credentials.token;
     try {
       const result = await this._request('authorize', { feature }, { token });
       if (this.credentials.token !== token) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请重新确认授权。', 401);
       if (result.authorized !== true) throw accountError('AUTHORIZATION_DENIED', '当前账号或设备没有此功能的授权。', 403);
       if (result.account) this.account = result.account;
-      this.status = 'ready'; this.error = null; this._emit(); return { authorized: true };
+      this.status = 'ready'; this.error = null; this._emit();
+      return { authorized: true, ...(this.account?.user?.id ? { userId: this.account.user.id } : {}) };
     } catch (error) { this.status = 'authorization_denied'; this._recordError(error); throw error; }
   }
   async feedbackRequest(action, input, expectedUserId) {

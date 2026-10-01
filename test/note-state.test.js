@@ -104,7 +104,19 @@ test('duplicate shared image items preserve ordering and explicit legacy video k
   const image = { urlDefault: imageUrl('same') };
   const result = parsed(read(state(note({ imageList: [image, image], video: { consumer: { originVideoKey: 'legacy/video' } } }))));
   assert.equal(result.images.length, 2);
-  assert.equal(result.videos[0].url, 'https://sns-video-bd.xhscdn.com/legacy/video');
+  assert.equal(result.originalVideos[0].url, 'https://sns-video-bd.xhscdn.com/legacy/video');
+  assert.equal(result.videos.length, 0);
+});
+
+test('snapshot preserves current mediaV2 metadata for original sources with its original-key provenance', () => {
+  for (const mediaV2 of [{ video: { width: 1920, height: 1080, duration: 469, md5: '3d8c06fa6cb6a8c5524548b3be0d2db4' } },
+    JSON.stringify({ video: { width: 1920, height: 1080, duration: 469, md5: '3d8c06fa6cb6a8c5524548b3be0d2db4' } })]) {
+    const result = parsed(read(state(note({ video: { consumer: { originVideoKey: 'spectrum/current-source' }, mediaV2 } }))));
+    assert.equal(result.originalVideos[0].width, 1920);
+    assert.equal(result.originalVideos[0].height, 1080);
+    assert.equal(result.originalVideos[0].declaredMd5, '3d8c06fa6cb6a8c5524548b3be0d2db4');
+    assert.equal(result.originalVideos[0].sourceWatermark, 'unknown');
+  }
 });
 
 test('visible challenge/login gates retain the existing response flags', () => {

@@ -11,15 +11,19 @@ import {
 import { initializeDesktopUI } from "./desktop-ui.js";
 import { inspectVideoBlob } from "./lib/media-tracks.js";
 import { imageDimensionsFromHeader, validateImageDimensions } from "./lib/image-dimensions.js";
+import { getAccountBridge } from "./lib/browser-account.js";
+import { openAccountUI } from "./account-ui.js";
 
 const state = {
   title: "小红书图片",
   content: "",
   noteId: "",
   sourceUrl: "",
+  shareText: "",
   parseEngine: "node",
   images: [],
   videos: [],
+  hasOriginalVideo: null,
   selected: new Set(),
   busy: false,
   multipleClipboardItemsSupported: null,
@@ -62,6 +66,8 @@ const elements = {
   videoQuality: document.querySelector("#video-quality"),
   videoMeta: document.querySelector("#video-meta"),
   downloadVideoButton: document.querySelector("#download-video-button"),
+  downloadOriginalVideoButton: document.querySelector("#download-original-video-button"),
+  originalVideoHint: document.querySelector("#original-video-hint"),
   openVideoLink: document.querySelector("#open-video-link"),
   selectAllButton: document.querySelector("#select-all-button"),
   copySelectedImagesButton: document.querySelector("#copy-selected-images-button"),
@@ -1028,6 +1034,10 @@ function videoFilename() {
 }
 
 function videoApiUrl(action, sourceUrl, extra = {}) {
+  if (String(sourceUrl).startsWith("member-video:")) {
+    const params = new URLSearchParams({ action, ticket: sourceUrl.slice("member-video:".length), ...extra });
+    return `/api/member_video?${params.toString()}`;
+  }
   const endpoint = state.engine === "python" ? "/api/python_video" : "/api/video";
   const params = new URLSearchParams({ action, url: sourceUrl, ...extra });
   return `${endpoint}?${params.toString()}`;
@@ -1048,11 +1058,17 @@ function updateVideoSelection() {
 
 function renderVideo() {
   const hasVideo = state.videos.length > 0;
-  elements.videoSection.hidden = !hasVideo;
+  elements.videoSection.hidden = !hasVideo && state.hasOriginalVideo !== true;
+  elements.videoQuality.closest("label").hidden = !hasVideo;
+  elements.downloadVideoButton.hidden = !hasVideo;
+  elements.openVideoLink.hidden = !hasVideo;
+  updateMemberVideoUI();
   if (!hasVideo) {
     elements.videoPlayer.removeAttribute("src");
     elements.videoPlayer.load();
     elements.videoQuality.replaceChildren();
+    elements.videoPlayer.poster = state.images[0]?.url || "";
+    elements.videoMeta.textContent = state.hasOriginalVideo === true ? "网页提供原视频 · 会员可下载" : "视频信息";
     return;
   }
 
@@ -1068,17 +1084,19 @@ function renderVideo() {
 }
 
 async function readVideoApiError(response) {
+  let body = {};
   try {
-    const body = await response.json();
-    return body.message || `视频请求失败：HTTP ${response.status}`;
-  } catch {
-    return `视频请求失败：HTTP ${response.status}`;
-  }
+    body = await response.json() || {};
+  } catch { /* Include the HTTP status when a proxy cannot return JSON. */ }
+  const error = new Error(body.message || body.error?.message || `视频请求失败：HTTP ${response.status}`);
+  error.code = body.code || body.error?.code;
+  error.status = response.status;
+  return error;
 }
 
 async function getVideoMeta(sourceUrl, fallbackSize = 0) {
   const response = await fetch(videoApiUrl("meta", sourceUrl));
-  if (!response.ok) throw new Error(await readVideoApiError(response));
+  if (!response.ok) throw await readVideoApiError(response);
   const meta = await response.json();
   const size = Number(meta.size || fallbackSize || 0);
   if (!Number.isSafeInteger(size) || size <= 0) {
@@ -1163,7 +1181,7 @@ async function downloadVideoByChunks(
           end: String(end)
         })
       );
-      if (!response.ok) throw new Error(await readVideoApiError(response));
+      if (!response.ok) throw await readVideoApiError(response);
 
       const declaredChunkLength = Number(
         response.headers.get("content-length") || 0
@@ -1208,6 +1226,7 @@ async function tryDirectVideoDownload(
   sourceUrl,
   { maxBytes = 0, limitErrorFactory = null } = {}
 ) {
+  if (String(sourceUrl).startsWith("member-video:")) throw new Error("会员原视频需要通过授权下载接口读取。");
   const response = await fetch(sourceUrl, {
     mode: "cors",
     referrerPolicy: "no-referrer"
@@ -1508,7 +1527,89 @@ async function downloadCurrentVideo() {
   }
 }
 
+function updateMemberVideoUI() {
+  if (!elements.downloadOriginalVideoButton) return;
+  elements.downloadOriginalVideoButton.disabled = state.busy || state.hasOriginalVideo === false;
+  elements.originalVideoHint.textContent = state.hasOriginalVideo === false
+    ? "当前页面未提供原视频，暂不能下载无水印原视频；可保存上方播放视频。"
+    : state.hasOriginalVideo === true
+      ? "页面提供了原视频。有效会员可下载；作者写入画面的水印可能仍保留。"
+      : "无水印原视频需要有效会员。能否下载取决于笔记页面是否提供原视频。";
+}
+
+async function downloadOriginalVideo() {
+  if (state.busy || state.hasOriginalVideo === false) return;
+  if (!state.shareText) {
+    showToast("请先解析小红书笔记，再下载原视频。", "error");
+    return;
+  }
+  const trigger = elements.downloadOriginalVideoButton;
+  setLiveDownloadBusy(true, trigger);
+  try {
+    const bridge = getAccountBridge();
+    const accountState = await bridge.getAccountState();
+    if (!accountState?.authenticated) {
+      showToast("请先登录软件账号；无水印原视频仅限会员下载。");
+      await openAccountUI();
+      return;
+    }
+    if (accountState.verified && !accountState.account?.membership?.active) {
+      showToast("无水印原视频是会员权益，请先开通或兑换会员。");
+      await openAccountUI({ purchase: true });
+      return;
+    }
+    setProgress(0, 1, "正在验证会员并读取网页原视频");
+    const response = await fetch("/api/member_video", {
+      method: "POST", credentials: "same-origin", cache: "no-store",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: state.shareText })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.success) {
+      const error = new Error(payload.message || payload.error?.message || `原视频读取失败：HTTP ${response.status}`);
+      error.code = payload.code || payload.error?.code;
+      error.status = response.status;
+      throw error;
+    }
+    const videos = Array.isArray(payload.videos) ? payload.videos.filter(video => video.hasAudio !== false) : [];
+    if (!videos.length) throw new Error("当前页面未提供可下载的原视频，请保存播放视频或换一篇笔记。");
+    const preferred = videos.find(video => video.isDefault) || videos[0];
+    const candidates = [preferred, ...videos.filter(video => video !== preferred)];
+    let lastError;
+    for (const video of candidates) {
+      for (const sourceUrl of [...new Set([video.url, ...(video.backupUrls || [])].filter(Boolean))]) {
+        if (!String(sourceUrl).startsWith("member-video:")) throw new Error("原视频授权响应无效，请更新客户端后重试。");
+        try {
+          const blob = await downloadVideoByChunks(sourceUrl, video, { maxBytes: MAX_VIDEO_DOWNLOAD_BYTES });
+          await inspectVideoBlob(blob, { requireAudio: true });
+          const finalMeta = await getVideoMeta(sourceUrl, blob.size);
+          if (finalMeta.size !== blob.size) throw new Error("原视频大小在保存前发生变化，已停止保存，请重新下载。");
+          triggerBlobDownload(blob, `${sanitizeFilename(state.title || "小红书视频")}-原视频.mp4`);
+          showToast("网页原视频已完成并开始保存；作者写入画面的水印可能仍保留。", "success", 6200);
+          return;
+        } catch (error) {
+          if (error?.name === "VideoTooLargeError" || error.status === 401 || ["MEMBERSHIP_REQUIRED", "MEMBERSHIP_INACTIVE", "MEMBERSHIP_EXPIRED"].includes(error.code)) throw error;
+          lastError = error;
+        }
+      }
+    }
+    throw lastError || new Error("原视频下载失败，请稍后重试。");
+  } catch (error) {
+    showToast(error.message || "原视频下载失败，请稍后重试。", "error", 6200);
+    if (error.status === 401 || ["UNAUTHENTICATED", "SESSION_INVALID", "SESSION_REVOKED"].includes(error.code)) {
+      await openAccountUI();
+    } else if (["MEMBERSHIP_REQUIRED", "MEMBERSHIP_INACTIVE", "MEMBERSHIP_EXPIRED"].includes(error.code)) {
+      await openAccountUI({ purchase: true });
+    }
+  } finally {
+    setLiveDownloadBusy(false, trigger);
+    hideProgress();
+    if (!document.querySelector("dialog[open]")) trigger?.focus({ preventScroll: true });
+  }
+}
+
 function updateSelectionUI() {
+  updateMemberVideoUI();
   const checkboxes = elements.imageGrid.querySelectorAll(
     'input[type="checkbox"]'
   );
@@ -1892,11 +1993,17 @@ elements.form.addEventListener("submit", async (event) => {
     state.content = typeof payload.content === "string" ? payload.content.trim() : "";
     state.noteId = String(payload.noteId || "");
     state.sourceUrl = extractSourceUrl(text);
+    state.shareText = text;
     state.parseEngine = payload.engine === "python" ? "python" : "node";
     state.images = payload.images || [];
     state.videos = payload.videos || [];
+    state.hasOriginalVideo = typeof payload.hasOriginalVideo === "boolean"
+      ? payload.hasOriginalVideo
+      : typeof payload.originalVideoCount === "number" ? payload.originalVideoCount > 0 : null;
     state.strategy = payload.strategy || "";
     state.selected = new Set(state.images.map((image) => image.index));
+    const entryHint = document.querySelector("#member-video-entry-hint");
+    if (entryHint) entryHint.hidden = true;
     renderResults();
     const parsedLivePhotoCount = livePhotoCount();
     const summary = [
@@ -1988,8 +2095,31 @@ elements.copyLinksButton.addEventListener("click", (event) => {
 
 elements.videoQuality.addEventListener("change", updateVideoSelection);
 elements.downloadVideoButton.addEventListener("click", downloadCurrentVideo);
+elements.downloadOriginalVideoButton?.addEventListener("click", downloadOriginalVideo);
 
 elements.downloadZipButton.addEventListener("click", downloadSelectedZip);
+
+// Android opens this ordinary website entry so its account remains in the
+// external browser's same-origin HttpOnly cookie. Prefill never starts a paid action.
+if (typeof location !== "undefined") {
+  const entryUrl = new URL(location.href);
+  const note = entryUrl.searchParams.get("note") || "";
+  if (note && note.length <= 3000) {
+    try {
+      const parsed = new URL(note);
+      const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+      const allowedHost = ["xiaohongshu.com", "xhslink.com", "xhslink.cn"].some(value => host === value || host.endsWith(`.${value}`));
+      if (parsed.protocol === "https:" && allowedHost && !parsed.username && !parsed.password && (!parsed.port || parsed.port === "443")) {
+        elements.textarea.value = parsed.href;
+        const hint = document.querySelector("#member-video-entry-hint");
+        if (hint) hint.hidden = entryUrl.searchParams.get("memberVideo") !== "1";
+        // Do not retain the signed note link in navigation URLs after prefill.
+        entryUrl.searchParams.delete("note"); entryUrl.searchParams.delete("memberVideo");
+        history.replaceState(null, "", `${entryUrl.pathname}${entryUrl.search}${entryUrl.hash}`);
+      }
+    } catch { /* Invalid external entry leaves the normal paste form available. */ }
+  }
+}
 
 void initializeDesktopUI({
   onCopyNoteLink(text, trigger) {
@@ -2009,8 +2139,10 @@ void initializeDesktopUI({
     state.content = "";
     state.noteId = "";
     state.sourceUrl = "";
+    state.shareText = "";
     state.images = [];
     state.videos = [];
+    state.hasOriginalVideo = null;
     state.selected.clear();
     state.strategy = "";
     elements.imageGrid.replaceChildren();

@@ -2,10 +2,13 @@
 // Anonymous, non-mutating deployment checks. Never print request values or response bodies.
 import { pathToFileURL } from 'node:url';
 import { isXhsVideoUrl, validateAssetToken } from '../lib/xhs.js';
+import { isMemberVideoUrl } from '../lib/video-policy.js';
 
 const DIRECT_TOKEN = 'smoke-fixture/original_image';
 const DIRECT_URL = `https://ci.xiaohongshu.com/${DIRECT_TOKEN}?imageView2/format/jpg`;
-const FIXTURE_VIDEO = 'https://sns-video-bd.xhscdn.com/smoke-fixture.mp4';
+const FIXTURE_VIDEO = 'https://sns-video-bd.xhscdn.com/stream/smoke-fixture.mp4';
+const FIXTURE_ORIGINAL_VIDEO = 'https://sns-video-bd.xhscdn.com/spectrum/smoke-fixture.mp4';
+const FIXTURE_NOTE = 'https://www.xiaohongshu.com/explore/aaaaaaaaaaaaaaaaaaaaaaaa';
 const JSON_HEADERS = { 'content-type': 'application/json' };
 const LIMIT = 512 * 1024;
 const TIMEOUT = 25_000;
@@ -72,6 +75,27 @@ function adminHeaders(response) {
   }
 }
 
+function requirePublicVideoSources(data) {
+  // Originals are represented only by availability/count. Ordinary image URLs
+  // remain valid even though image and video domains both use xhscdn.com.
+  requireCheck(!data.originalVideos?.length && !data.originalVideoUrl && !data.originalVideoUrls?.length
+    && !data.originVideoKey && !data.origin_video_key, 'Anonymous parse exposed an original video source.');
+  const videos = [...data.videos, ...data.images.map(image => image.liveVideo).filter(Boolean)];
+  for (const video of videos) {
+    for (const url of [video.url, ...(video.backupUrls || [])].filter(Boolean)) {
+      requireCheck(isXhsVideoUrl(url) && !isMemberVideoUrl(url), 'Anonymous parse exposed an original video source.');
+    }
+  }
+  for (const image of data.images) {
+    if (typeof image.url !== 'string') continue;
+    let url;
+    try { url = new URL(image.url); } catch { continue; }
+    if (/^sns-video(?:-[a-z0-9]+)?\.xhscdn\.com$/i.test(url.hostname)) {
+      requireCheck(!isMemberVideoUrl(image.url), 'Anonymous parse exposed an original video source as an image.');
+    }
+  }
+}
+
 export function buildChecks(options = {}) {
   const checks = [];
   const add = (name, path, init, verify, extra = {}) => checks.push({ name, path, init, verify, ...extra });
@@ -84,6 +108,7 @@ export function buildChecks(options = {}) {
     ['main-script', '/app.js', /(?:javascript|ecmascript)/i],
     ['main-style', '/style.css', /text\/css/i],
     ['account-script', '/account-ui.js', /(?:javascript|ecmascript)/i],
+    ['browser-account-module', '/lib/browser-account.js', /(?:javascript|ecmascript)/i, 'getAccountBridge'],
     ['archive-module', '/lib/archive.js', /(?:javascript|ecmascript)/i],
     ['favicon', '/favicon.svg', /image\/svg\+xml/i],
     ['admin', '/admin', /text\/html/i, 'id="login-form"'],
@@ -120,10 +145,16 @@ export function buildChecks(options = {}) {
     add(`${engine}/video/untrusted-url`, `/api/${prefix}video?url=${encodeURIComponent('https://example.invalid/video.mp4')}`, {}, response => apiJson(response, 400));
     add(`${engine}/video/invalid-range`, `/api/${prefix}video?${new URLSearchParams({ url: FIXTURE_VIDEO, action: 'chunk', start: '10', end: '9' })}`, {}, response => apiJson(response, 400));
     add(`${engine}/video/oversize-range`, `/api/${prefix}video?${new URLSearchParams({ url: FIXTURE_VIDEO, action: 'chunk', start: '0', end: '3500000' })}`, {}, response => apiJson(response, 413));
+    for (const action of ['meta', 'chunk']) add(`${engine}/video/original-${action}-denied`, `/api/${prefix}video?${new URLSearchParams({ url: FIXTURE_ORIGINAL_VIDEO, action,
+      ...(action === 'chunk' ? { start: '0', end: '4095' } : {}) })}`, {}, response => apiJson(response, 403));
 
     if (options.noteUrl) add(`${engine}/upstream/note`, parsePath, jsonRequest({ text: options.noteUrl }), response => {
       const data = apiJson(response, 200, { success: true });
-      requireCheck(data.engine === engine && Array.isArray(data.images) && Array.isArray(data.videos) && data.images.length + data.videos.length > 0, 'Note did not produce media.');
+      requireCheck(data.engine === engine && Array.isArray(data.images) && Array.isArray(data.videos), 'Note media response contract did not match.');
+      const originalCount = Number(data.originalVideoCount || 0);
+      requireCheck(Number.isSafeInteger(originalCount) && originalCount >= 0 && data.images.length + data.videos.length + originalCount > 0, 'Note did not produce media.');
+      if (originalCount) requireCheck(data.hasOriginalVideo === true, 'Original video availability contract did not match.');
+      requirePublicVideoSources(data);
     });
     if (options.imageToken) add(`${engine}/upstream/image`, `/api/${prefix}image?${new URLSearchParams({ token: options.imageToken, name: 'smoke.jpg' })}`, {}, response => {
       requireCheck(response.status === 200 && /^image\//i.test(response.headers.get('content-type') || '') && response.bytes.length > 16, 'Image download contract did not match.');
@@ -131,17 +162,30 @@ export function buildChecks(options = {}) {
       requireCheck(/^attachment;/i.test(response.headers.get('content-disposition') || ''), 'Image attachment header was missing.');
     }, { maxBytes: 4_200_000 });
     if (options.videoUrl) {
+      const protectedSource = isMemberVideoUrl(options.videoUrl);
       add(`${engine}/upstream/video-meta`, `/api/${prefix}video?${new URLSearchParams({ url: options.videoUrl, action: 'meta' })}`, {}, response => {
+        if (protectedSource) { apiJson(response, 403); return; }
         const data = apiJson(response, 200, { success: true });
         requireCheck(data.engine === engine && Number.isSafeInteger(data.size) && data.size > 0 && data.chunkSize === 3_500_000, 'Video metadata contract did not match.');
       });
       add(`${engine}/upstream/video-chunk`, `/api/${prefix}video?${new URLSearchParams({ url: options.videoUrl, action: 'chunk', start: '0', end: '4095' })}`, {}, response => {
+        if (protectedSource) { apiJson(response, 403); return; }
         requireCheck([200, 206].includes(response.status) && response.bytes.length === 4096, 'Video chunk contract did not match.');
         requireCheck(/^(?:video\/|application\/octet-stream)/i.test(response.headers.get('content-type') || ''), 'Video chunk content type did not match.');
         requireCheck(response.headers.get('x-xhs-engine') === engine, 'Video engine header did not match.');
       }, { maxBytes: 4096 });
     }
   }
+
+  for (const [name, path, init] of [
+    ['resolve', '/api/member_video', jsonRequest({ text: FIXTURE_NOTE })],
+    ['ticket-meta', '/api/member_video?action=meta&ticket=anonymous-smoke-ticket', {}],
+    ['ticket-chunk', '/api/member_video?action=chunk&ticket=anonymous-smoke-ticket&start=0&end=4095', {}],
+  ]) add(`member-video/guest-${name}`, path, init, response => {
+    requireCheck([401, 403].includes(response.status), 'Guest member gateway must return HTTP 401 or 403.');
+    const data = apiJson(response, response.status);
+    requireCheck(!data.videos?.length && !data.url && !data.ticket, 'Guest member gateway exposed a source or download ticket.');
+  });
 
   // These fail at the HTTP boundary before config, storage, rate limits or mailer access.
   for (const [name, init, status, errorCode] of [
@@ -221,7 +265,7 @@ export async function main(args = process.argv.slice(2)) {
   try {
     const options = parseArgs(args);
     if (options.help) {
-      console.log('Usage: node scripts/verify-cloudflare.mjs [BASE_ORIGIN] [--json] [--note-url URL] [--image-token TOKEN] [--video-url URL]\nDefault checks are anonymous and do not access account storage or send mail. Optional media checks fetch a supplied public note, image, or the first 4096 video bytes. JSON output contains only check names, statuses and fixed failure reasons.');
+      console.log('Usage: node scripts/verify-cloudflare.mjs [BASE_ORIGIN] [--json] [--note-url URL] [--image-token TOKEN] [--video-url URL]\nDefault checks are anonymous and do not access account storage or send mail. Optional media checks fetch a supplied public note, image, or the first 4096 playback video bytes; original video URLs must be denied. Note checks accept original-only availability and reject exposed original source URLs. JSON output contains only check names, statuses and fixed failure reasons.');
       return 0;
     }
     const report = await runSmoke(options, { onResult: result => {

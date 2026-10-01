@@ -68,7 +68,8 @@ jobs:
           assert.ok(key.length > 0 && key.toString('base64') === encoded, 'Invalid signing key encoding');
           writeFileSync(join(process.env.RUNNER_TEMP, 'brclio-android-release.keystore'), key, { mode: 0o600 });
           NODE
-      - name: Test, lint, build and verify the signed APK
+      - name: Test member browser entry and native video policy, lint and verify the signed APK
+        # build-android runs every android*.test.js and :app:testReleaseUnitTest before assembly.
         run: npm run android:build:release
         env:
           ANDROID_SIGNING_STORE_FILE: ${{ runner.temp }}/brclio-android-release.keystore
@@ -76,6 +77,16 @@ jobs:
           ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
           ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
           ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+      - name: Confirm the original-video and redirect JUnit gate ran
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const xml = readFileSync('android/app/build/test-results/testReleaseUnitTest/TEST-com.brclio.xhs.NativePolicyTest.xml', 'utf8');
+          const result = xml.match(/<testcase\b[^>]*\bname="nativeVideoTransfersOnlyAcceptOrdinaryPlaybackIncludingEveryRedirectTarget"[^>]*(?:\/>|>[\s\S]*?<\/testcase>)/)?.[0];
+          assert.ok(result, 'The native original-video/redirect policy test did not execute');
+          assert.doesNotMatch(result, /<(?:skipped|failure|error)\b/, 'The native policy test must pass without being skipped');
+          NODE
       - name: Upload signed build for emulator acceptance
         uses: actions/upload-artifact@v4
         with:
@@ -94,6 +105,7 @@ jobs:
           name: Android-release-checks-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             android/app/build/reports/tests/
+            android/app/build/test-results/
             android/app/build/reports/lint-results-*.html
           if-no-files-found: ignore
           retention-days: 14

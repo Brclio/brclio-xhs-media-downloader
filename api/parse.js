@@ -9,6 +9,7 @@ import {
   parseNoteHtml,
   validateAssetToken
 } from "../lib/xhs.js";
+import { publicPlaybackVideo } from "../lib/video-policy.js";
 
 function readJsonBody(req) {
   if (typeof req.body === "string") {
@@ -73,15 +74,17 @@ export default async function handler(req, res) {
     }
 
     const parsed = parseNoteHtml(html, { noteId });
+    const publicImages = parsed.images.map(image => ({ ...image, liveVideo: publicPlaybackVideo(image.liveVideo) }));
+    const publicVideos = parsed.videos.map(publicPlaybackVideo).filter(Boolean);
 
-    if (parsed.images.length === 0 && parsed.videos.length === 0) {
+    if (publicImages.length === 0 && publicVideos.length === 0 && !parsed.originalVideos?.length) {
       throw new XhsError(
         "没有解析到图片或视频。笔记可能已删除、需要登录，或者小红书页面结构已更新。",
         422
       );
     }
 
-    const images = parsed.images.map((image, index) => ({
+    const images = publicImages.map((image, index) => ({
       index: index + 1,
       token: image.token,
       url: image.url,
@@ -102,7 +105,7 @@ export default async function handler(req, res) {
           }
         : null
     }));
-    const videos = parsed.videos.map((video, index) => ({
+    const videos = publicVideos.map((video, index) => ({
       index: index + 1,
       url: video.url,
       backupUrls: Array.isArray(video.backupUrls) ? video.backupUrls : [],
@@ -117,7 +120,7 @@ export default async function handler(req, res) {
       audioBitrate: video.audioBitrate,
       qualityType: video.qualityType,
       label: video.label,
-      isDefault: Boolean(video.isDefault)
+      isDefault: index === 0
     }));
 
     return res.status(200).json({
@@ -127,10 +130,12 @@ export default async function handler(req, res) {
       content: parsed.content,
       noteId,
       strategy: parsed.strategy,
-      type: videos.length > 0 ? (images.length > 0 ? "mixed" : "video") : "image",
+      type: videos.length > 0 || parsed.originalVideos?.length > 0 ? (images.length > 0 ? "mixed" : "video") : "image",
       count: images.length,
       livePhotoCount: images.filter((image) => image.liveVideo).length,
       videoCount: videos.length,
+      originalVideoCount: parsed.originalVideos?.length || 0,
+      hasOriginalVideo: Boolean(parsed.originalVideos?.length),
       images,
       videos
     });

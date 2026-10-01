@@ -1,9 +1,11 @@
 import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { PROTECTED_FEATURES } from '../lib/membership-policy.js';
+import { isMemberVideoUrl } from '../lib/video-policy.js';
+import { createMemberVideoHandler } from '../lib/member-video-handler.js';
 import parseHandler from '../api/parse.js';
 import imageHandler from '../api/image.js';
-import videoHandler from '../api/video.js';
+import { createVideoHandler } from '../api/video.js';
 
 export const APP_URL = 'xhs-app://local';
 const STATIC_FILES = new Set([
@@ -14,12 +16,12 @@ const STATIC_FILES = new Set([
   'learn.html', 'learn.css', 'learn.js',
   'vip.html', 'vip.css', 'vip.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
-  'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js'
+  'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'lib/browser-account.js', 'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js'
 ]);
 const MIME_TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
-const NODE_HANDLERS = { '/api/parse': parseHandler, '/api/image': imageHandler, '/api/video': videoHandler };
+const NODE_HANDLERS = { '/api/parse': parseHandler, '/api/image': imageHandler };
 const PYTHON_ROUTES = new Set(['/api/python_parse', '/api/python_image', '/api/python_video']);
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.xhscdn.com https://ci.xiaohongshu.com; media-src 'self' blob: https://*.xhscdn.com; connect-src 'self' https://*.xhscdn.com https://ci.xiaohongshu.com; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'none'";
 
@@ -74,7 +76,15 @@ async function defaultAuthorization(feature) {
   if (PROTECTED_FEATURES.includes(feature)) throw Object.assign(new Error('软件账号授权服务不可用。'), { status: 503 });
 }
 
-export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandlers = NODE_HANDLERS, authorize = defaultAuthorization, onDiagnostic = () => {} }) {
+export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandlers, authorize = defaultAuthorization, onDiagnostic = () => {} }) {
+  const handlers = nodeHandlers ?? {
+    ...NODE_HANDLERS,
+    '/api/video': createVideoHandler({ authorizeOriginal: () => authorize('watermark-free-video') }),
+    '/api/member_video': createMemberVideoHandler({ authorize: async () => {
+      const principal = await authorize('watermark-free-video');
+      return { userId: principal?.userId || 'desktop' };
+    } })
+  };
   return async (request) => {
     const started = Date.now();
     let route;
@@ -83,14 +93,15 @@ export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandle
       if (!isAppUrl(request.url)) return jsonError('不受支持的应用地址。', 403);
       const url = new URL(request.url);
       route = url.pathname.replace(/\.(?:js|py)$/, '');
-      if (nodeHandlers[route]) {
+      if (handlers[route]) {
         await authorize('single-download');
-        const response = await invokeNodeHandler(nodeHandlers[route], request, url);
+        const response = await invokeNodeHandler(handlers[route], request, url);
         onDiagnostic('single.response', { route, status: response.status, durationMs: Date.now() - started });
         return response;
       }
       if (PYTHON_ROUTES.has(route)) {
         await authorize('single-download');
+        if (route === '/api/python_video' && isMemberVideoUrl(url.searchParams.get('url'))) await authorize('watermark-free-video');
         if (!pythonBackend?.available) return jsonError('Python 后台不可用，请使用完整安装包。', 503);
         const response = await pythonBackend.request({ path: `${route}${url.search}`, method: request.method,
           headers: Object.fromEntries(request.headers), body: await readBody(request) }, request.signal);

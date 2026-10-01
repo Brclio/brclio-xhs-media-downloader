@@ -205,6 +205,25 @@ test('server expiry and device revocation override stored account; refresh never
   assert.equal(f.requests.filter(request => request.action === 'verify-code').length, 1);
 });
 
+test('original-video desktop feature rechecks live authorization and keeps ordinary downloads free', async t => {
+  const f = await fixture(t);
+  assert.deepEqual(await f.client.authorize('single-download'), { authorized: true, free: true });
+  await assert.rejects(f.client.authorize('watermark-free-video'), error => error.code === 'ACCOUNT_REQUIRED' && /无水印视频/.test(error.message));
+  await f.login();
+  await f.client.authorize('watermark-free-video');
+  await f.client.authorize('watermark-free-video');
+  assert.equal(f.requests.filter(request => request.action === 'authorize' && request.input.feature === 'watermark-free-video').length, 2);
+  f.membership({ type: 'duration', active: false });
+  await assert.rejects(f.client.authorize('watermark-free-video'), { code: 'MEMBERSHIP_EXPIRED' });
+  f.membership({ type: 'permanent', active: true });
+  f.device('revoked');
+  await assert.rejects(f.client.authorize('watermark-free-video'), { code: 'DEVICE_REVOKED' });
+  assert.equal(f.client.snapshot().protectedFeatures.includes('watermark-free-video'), true);
+  f.offline(true);
+  await assert.rejects(f.client.authorize('watermark-free-video'), { code: 'SERVICE_UNAVAILABLE' });
+  assert.deepEqual(await f.client.authorize('single-download'), { authorized: true, free: true });
+});
+
 test('logout revokes remote token, clears local active token, and keeps stable device key', async t => {
   const f = await fixture(t); await f.login();
   const before = await f.store.load(); await f.client.logout(); const after = await f.store.load();

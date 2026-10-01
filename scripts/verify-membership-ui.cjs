@@ -216,10 +216,11 @@ app.whenReady().then(async () => {
   assert.deepEqual(await evaluate('window.fixtureCalls'), [['redeem', 'INVALID'], ['redeem', 'Brclio-TEST-ONLY']]);
   await capture('membership-redeemed');
 
-  // The same module loaded on the free web surface must remain inert.
+  // Browser login now shares the account UI, inside its closed account dialog.
   await evaluate(`document.getElementById('software-account').remove(); delete window.xhsDesktop; import('/account-ui.js').then(module => module.initializeAccountUI())`);
-  assert.equal(await evaluate(`Boolean(document.getElementById('software-account'))`), false);
+  assert.equal(await evaluate(`Boolean(document.querySelector('#browser-account-mount #software-account'))`), true);
+  assert.equal(await evaluate(`document.getElementById('browser-account-dialog').open`), false);
   assert.deepEqual(rendererErrors, []);
-  console.log(JSON.stringify({ ok: true, checks: ['logged-out guidance', 'plan prices and durations', 'payment method switching', 'all QR images load and decode as images', 'copy success/failure', 'no implicit purchase requests', 'native focus trap and Escape', 'offline/storage errors', 'permanent member guard', 'account switch', 'mobile layout', 'redeem failure/success', 'free web guard'], screenshots }, null, 2));
+  console.log(JSON.stringify({ ok: true, checks: ['logged-out guidance', 'plan prices and durations', 'payment method switching', 'all QR images load and decode as images', 'copy success/failure', 'no implicit purchase requests', 'native focus trap and Escape', 'offline/storage errors', 'permanent member guard', 'account switch', 'mobile layout', 'redeem failure/success', 'browser account mount'], screenshots }, null, 2));
   await finish(0);
 }).catch(error => finish(1, error));

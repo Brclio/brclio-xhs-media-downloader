@@ -1,6 +1,7 @@
 import parse from '../api/parse.js';
 import image from '../api/image.js';
 import video from '../api/video.js';
+import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
 import packageInfo from '../package.json' with { type: 'json' };
 import { parseWithFallback } from './parse-fallback.js';
@@ -52,6 +53,13 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
           response = env.ACCOUNT_RUNTIME
             ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)
             : await invokeHandler(accountFactory({ env, clientIp: cloudflareClientIp }), request, { maxBodyBytes: MAX_ACCOUNT_BODY_BYTES });
+        } else if (path === '/api/member_video' && env.PARSE_RUNTIME) {
+          response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName('parsing-v1')).fetch(request);
+        } else if (path === '/api/member_video') {
+          const accountFetch = env.ACCOUNT_RUNTIME
+            ? nativeRequest => env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(nativeRequest)
+            : nativeRequest => invokeHandler(accountFactory({ env, clientIp: cloudflareClientIp }), nativeRequest, { maxBodyBytes: MAX_ACCOUNT_BODY_BYTES });
+          response = await invokeHandler(createHostedMemberVideoHandler({ env, accountFetch }), request);
         } else if (['/api/parse', '/api/python_parse'].includes(path) && env.PARSE_RUNTIME) {
           response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName('parsing-v1')).fetch(request);
         } else if (Object.hasOwn(nodeRoutes, path)) {

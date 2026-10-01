@@ -75,10 +75,13 @@ function mediaAssets(note) {
     assets.push({ key: `image-${number}`, kind: "image", url: image.url });
     if (image.liveVideo?.url) assets.push({ key: `live-${number}`, kind: "video", url: image.liveVideo.url, backupUrls: image.liveVideo.backupUrls });
   }
-  const video = (note.videos || []).find((item) => item.isDefault) || (note.videos || [])[0];
+  const originalVideos = (note.originalVideos || []).filter(candidate => candidate.hasAudio !== false);
+  const videos = originalVideos.length ? originalVideos : (note.videos || []);
+  const video = videos.find((item) => item.isDefault) || videos[0];
   if (video?.url) {
-    const other = (note.videos || []).filter(candidate => candidate !== video && candidate.hasAudio !== false);
+    const other = videos.filter(candidate => candidate !== video && candidate.hasAudio !== false);
     assets.push({ key: "video", kind: "video", url: video.url, requireAudio: true,
+      ...(originalVideos.length ? { watermarkFree: true } : {}),
       backupUrls: [...other.map(candidate => candidate.url), ...(video.backupUrls || []),
         ...other.flatMap(candidate => candidate.backupUrls || [])] });
   }
@@ -526,6 +529,7 @@ export class ProfileManager {
         const result = await downloadMedia({
           ...this.mediaOptions, root, directory, asset: { ...asset, url: urls[attempt % urls.length] }, signal,
           fetchImpl: this.fetchImpl, beforeRequest: (requestSignal) => this._pace(requestSignal),
+          authorize: feature => this.authorize(feature),
           onDiagnostic: (event, fields) => this._diagnostic(event, { ...fields, noteId: item.id, sequence: item.sequence })
         });
         return { ...result, url: asset.url, downloadedUrl: result.url };
@@ -538,7 +542,7 @@ export class ProfileManager {
     const metadata = Buffer.from(JSON.stringify({
       id: item.id, title: item.title, content: note.content || "", sourceUrl: item.url,
       profileUrl: this.state.profileUrl, strategy: item.strategy, downloadedAt: new Date(this.now()).toISOString(),
-      images: note.images || [], videos: note.videos || [], files: item.files
+      images: note.images || [], videos: note.videos || [], originalVideos: note.originalVideos || [], files: item.files
     }, null, 2));
     for (const [name, data] of [["笔记.txt", noteText], ["笔记.json", metadata]]) {
       await atomicWrite(root, directory, name, data);

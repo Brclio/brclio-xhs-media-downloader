@@ -27,3 +27,7 @@ android/local.properties
 android/*.iml
 *.jks
 *.keystore
+
+# Python Worker dependency cache (also covers linked development runtimes).
+cloudflare/python/.venv
+cloudflare/python/python_modules

@@ -523,6 +523,7 @@ def extract_streams_from_root(
                         or ""
                     ),
                     "source": source,
+                    "sourceWatermark": "unknown",
                     **stream_audio_metadata(item),
                 }
             )
@@ -537,44 +538,124 @@ def extract_streams_from_root(
     return sorted(deduped.values(), key=video_quality_score, reverse=True)
 
 
-def extract_video_streams_from_note(note: Any) -> list[dict[str, Any]]:
-    """只从当前笔记对象读取视频流，不扫描相关推荐。"""
-    if not isinstance(note, dict):
-        return []
+def original_video_url(value: Any) -> str | None:
+    if not isinstance(value, str) or not value.strip() or len(value) > 4096:
+        return None
+    if re.search(r"[\x00-\x20\x7f]", value.strip()):
+        return None
+    normalized = normalize_image_url(value).split("#", 1)[0]
+    if re.match(r"(?:[A-Za-z][A-Za-z0-9+.-]*:|//)", value.strip()) or normalized.startswith("https://"):
+        if value.strip().lower().startswith("http:") or "\\" in normalized or not is_xhs_video_url(normalized):
+            return None
+        return normalized
+    key = normalized.lstrip("/")
+    if not re.fullmatch(r"[A-Za-z0-9/_~.\-]+", key) or any(part in (".", "..") for part in key.split("/")):
+        return None
+    return f"https://sns-video-bd.xhscdn.com/{key}"
 
-    video = note.get("video")
+
+def declared_original_video_fields(note: Any) -> list[dict[str, str]]:
+    video = note.get("video") if isinstance(note, dict) else None
+    if not isinstance(video, dict):
+        return []
+    consumer = video.get("consumer")
+    consumer = consumer if isinstance(consumer, dict) else {}
+    fields = ((consumer.get("originVideoKey"), "video.consumer.originVideoKey"),
+              (consumer.get("origin_video_key"), "video.consumer.origin_video_key"),
+              (video.get("originVideoKey"), "video.originVideoKey"),
+              (video.get("origin_video_key"), "video.origin_video_key"))
+    results: list[dict[str, str]] = []
+    for value, field in fields:
+        url = original_video_url(value)
+        if url:
+            results.append({"url": url, "sourceField": field})
+    return results
+
+
+def supported_original_video_url(url: str) -> bool:
+    try:
+        return not unquote(urlparse(url).path, errors="strict").startswith("/stream/")
+    except ValueError:
+        return False
+
+
+def extract_original_videos_from_note(note: Any) -> list[dict[str, Any]]:
+    """Read published origin keys only on the selected note; origin does not prove no watermark."""
+    video = note.get("video") if isinstance(note, dict) else None
+    if not isinstance(video, dict):
+        return []
+    media_v2 = video.get("mediaV2")
+    if isinstance(media_v2, str):
+        try:
+            media_v2 = json.loads(media_v2) if len(media_v2) <= 1024 * 1024 else None
+        except (ValueError, RecursionError):
+            media_v2 = None
+    original_metadata = media_v2.get("video") if isinstance(media_v2, dict) else None
+    original_metadata = original_metadata if isinstance(original_metadata, dict) else {}
+    declared_md5 = original_metadata.get("md5")
+    declared_md5 = declared_md5.lower() if isinstance(declared_md5, str) and re.fullmatch(r"[a-fA-F0-9]{32}", declared_md5) else ""
+    sources: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for field in declared_original_video_fields(note):
+        url, source_field = field["url"], field["sourceField"]
+        if not supported_original_video_url(url) or url in seen:
+            continue
+        seen.add(url)
+        sources.append({
+            "url": url, "backupUrls": [], "codec": "", "width": normalize_number(original_metadata.get("width")),
+            "height": normalize_number(original_metadata.get("height")),
+            "duration": normalize_number(original_metadata.get("duration")) * 1000,
+            "declaredMd5": declared_md5, "metadataSource": "video.mediaV2.video" if original_metadata else "",
+            "bitrate": 0, "size": 0, "qualityType": "origin", "hasAudio": None,
+            "source": "origin-video-key", "sourceField": source_field,
+            "sourceWatermark": "unknown",
+        })
+    return sources
+
+
+def video_url_identity(url: str) -> str:
+    parsed = urlparse(normalize_image_url(url))
+    host = (parsed.hostname or "").lower()
+    port = parsed.port
+    authority = host if port in (None, 443) else f"{host}:{port}"
+    return f"{parsed.scheme}://{authority}{parsed.path}" + (f"?{parsed.query}" if parsed.query else "")
+
+
+def exclude_original_video_urls(streams: list[dict[str, Any]], originals: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    original_urls = {video_url_identity(video["url"]) for video in originals}
+    results: list[dict[str, Any]] = []
+    for stream in streams:
+        urls = [url for url in [stream["url"], *stream.get("backupUrls", [])]
+                if video_url_identity(url) not in original_urls]
+        if urls:
+            results.append({**stream, "url": urls[0], "backupUrls": urls[1:]})
+    return results
+
+
+def extract_video_streams_from_note(note: Any) -> list[dict[str, Any]]:
+    """Ordinary playback streams are separate from member-only original candidates."""
+    video = note.get("video") if isinstance(note, dict) else None
     media = video.get("media") if isinstance(video, dict) else None
     stream_root = media.get("stream") if isinstance(media, dict) else None
-    streams = extract_streams_from_root(stream_root, "media-stream")
+    return exclude_original_video_urls(extract_streams_from_root(stream_root, "media-stream"),
+                                       declared_original_video_fields(note))
 
-    if isinstance(video, dict):
-        consumer = video.get("consumer")
-        key = None
-        if isinstance(consumer, dict):
-            key = consumer.get("originVideoKey") or consumer.get("origin_video_key")
-        key = key or video.get("originVideoKey") or video.get("origin_video_key")
-        if isinstance(key, str) and key.strip():
-            clean_key = key.strip().lstrip("/")
-            url = normalize_image_url(
-                f"https://sns-video-bd.xhscdn.com/{clean_key}"
-            )
-            if is_xhs_video_url(url) and not any(stream["url"] == url for stream in streams):
-                streams.append(
-                    {
-                        "url": url,
-                        "backupUrls": [],
-                        "codec": "h264",
-                        "width": 0,
-                        "height": 0,
-                        "bitrate": 0,
-                        "size": 0,
-                        "qualityType": "origin",
-                        "source": "origin-video-key",
-                        "hasAudio": None,
-                    }
-                )
 
-    return streams
+def exclude_original_live_videos(images: list[dict[str, Any]], originals: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for image in images:
+        if image.get("liveVideo"):
+            remaining = exclude_original_video_urls([image["liveVideo"]], originals)
+            results.append({**image, "liveVideo": remaining[0] if remaining else None})
+        else:
+            results.append(image)
+    return results
+
+
+def prepare_original_video_results(videos: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{**video, "label": (f'{video["width"]}×{video["height"]} · ' if video["width"] and video["height"] else "")
+             + f"平台原文件 · 水印状态未核验 · 线路 {index + 1}", "isDefault": index == 0}
+            for index, video in enumerate(videos[:12])]
 
 
 def format_video_label(video: dict[str, Any], index: int) -> str:
@@ -833,14 +914,17 @@ def select_exact_note_from_states(
     for state in extract_initial_states(page_html):
         for candidate in find_exact_note_candidates(state, note_id):
             image_list = direct_image_list(candidate)
-            images = choose_image_assets(image_list) if image_list is not None else []
+            original_videos = extract_original_videos_from_note(candidate)
+            declared_originals = declared_original_video_fields(candidate)
+            images = exclude_original_live_videos(choose_image_assets(image_list) if image_list is not None else [], declared_originals)
             videos = extract_video_streams_from_note(candidate)
-            if not images and not videos:
+            if not images and not videos and not original_videos and not declared_originals:
                 continue
             matches.append(
                 {
                     "images": images,
                     "videos": videos,
+                    "originalVideos": original_videos,
                     "title": extract_title_from_note_object(candidate),
                     "content": extract_content_from_note_object(candidate),
                     "exact_id": object_has_target_id(candidate, note_id),
@@ -853,6 +937,7 @@ def select_exact_note_from_states(
             int(bool(item["exact_id"])),
             len(item["images"])
             + len(item["videos"])
+            + len(item["originalVideos"])
             + sum(1 for image in item["images"] if image.get("liveVideo")),
             len(item["images"]),
         ),
@@ -1031,12 +1116,12 @@ def find_video_objects_with_positions(text: str) -> list[dict[str, Any]]:
     return objects
 
 
-def extract_target_local_video_streams(
+def extract_target_local_video_assets(
     page_html: str, note_id: str
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     note_ranges = target_note_object_ranges(page_html, note_id)
     if not note_ranges:
-        return []
+        return {"videos": [], "originalVideos": []}
 
     objects = find_video_objects_with_positions(page_html)
     owner_ranges = object_ranges_at_positions(
@@ -1058,13 +1143,15 @@ def extract_target_local_video_streams(
         if not isinstance(parsed, dict):
             continue
         videos = extract_video_streams_from_note({"video": parsed})
-        if videos:
-            candidates.append({"distance": distance, "videos": videos})
+        original_videos = extract_original_videos_from_note({"video": parsed})
+        declared_originals = declared_original_video_fields({"video": parsed})
+        if videos or original_videos or declared_originals:
+            candidates.append({"distance": distance, "videos": videos, "originalVideos": original_videos, "declaredOriginals": declared_originals})
 
     if not candidates:
-        return []
-    candidates.sort(key=lambda item: (item["distance"], -len(item["videos"])))
-    return candidates[0]["videos"]
+        return {"videos": [], "originalVideos": []}
+    candidates.sort(key=lambda item: (item["distance"], -len(item["videos"]) - len(item["originalVideos"])))
+    return candidates[0]
 
 
 def extract_primary_meta_video(page_html: str) -> dict[str, Any] | None:
@@ -1091,6 +1178,7 @@ def extract_primary_meta_video(page_html: str) -> dict[str, Any] | None:
                 "bitrate": 0,
                 "size": 0,
                 "qualityType": "meta",
+                "sourceWatermark": "unknown",
                 "source": "primary-meta",
             }
     return None
@@ -1213,6 +1301,26 @@ def convert_image_assets(image_assets: Iterable[Any]) -> list[dict[str, Any]]:
     return images
 
 
+def is_public_playback_video_url(url: Any) -> bool:
+    if not isinstance(url, str) or not is_xhs_video_url(url):
+        return False
+    try:
+        path = unquote(urlparse(normalize_image_url(url)).path, errors="strict")
+        return path.startswith("/stream/") and "\\" not in path and ".." not in path.split("/")
+    except (ValueError, UnicodeError):
+        return False
+
+
+def public_playback_video(video: Any) -> dict[str, Any] | None:
+    """Expose only public playback paths; no origin claim is inferred from a blocked URL."""
+    if not isinstance(video, dict):
+        return None
+    backups = video.get("backupUrls")
+    backups = backups if isinstance(backups, list) else []
+    urls = [url for url in [video.get("url"), *backups] if is_public_playback_video_url(url)]
+    return {**video, "url": urls[0], "backupUrls": urls[1:]} if urls else None
+
+
 def parse_note_html(page_html: str, note_id: str) -> dict[str, Any]:
     if not note_id:
         return {
@@ -1220,6 +1328,7 @@ def parse_note_html(page_html: str, note_id: str) -> dict[str, Any]:
             "content": "",
             "images": [],
             "videos": [],
+            "originalVideos": [],
             "strategy": "missing-note-id",
         }
 
@@ -1230,24 +1339,29 @@ def parse_note_html(page_html: str, note_id: str) -> dict[str, Any]:
             "content": exact["content"],
             "images": convert_image_assets(exact["images"])[:50],
             "videos": prepare_video_results(exact["videos"]),
+            "originalVideos": prepare_original_video_results(exact["originalVideos"]),
             "strategy": "exact-initial-state",
         }
 
     local_images = extract_target_local_image_list(page_html, note_id)
-    local_videos = extract_target_local_video_streams(page_html, note_id)
-    if local_images or local_videos:
+    local_video_assets = extract_target_local_video_assets(page_html, note_id)
+    local_videos = local_video_assets["videos"]
+    local_original_videos = local_video_assets["originalVideos"]
+    has_local_video = bool(local_videos or local_original_videos or local_video_assets.get("declaredOriginals"))
+    if local_images or has_local_video:
         return {
             "title": (
                 local_images.get("title", "") if local_images else ""
             ) or extract_page_title(page_html),
             "content": "",
             "images": convert_image_assets(
-                local_images.get("images", []) if local_images else []
+                exclude_original_live_videos(local_images.get("images", []) if local_images else [], local_video_assets.get("declaredOriginals", []))
             )[:50],
             "videos": prepare_video_results(local_videos),
+            "originalVideos": prepare_original_video_results(local_original_videos),
             "strategy": (
                 "note-id-local-media"
-                if local_images and local_videos
+                if local_images and has_local_video
                 else "note-id-local-image-list"
                 if local_images
                 else "note-id-local-video"
@@ -1261,6 +1375,7 @@ def parse_note_html(page_html: str, note_id: str) -> dict[str, Any]:
         "content": "",
         "images": convert_image_assets([primary_image]) if primary_image else [],
         "videos": prepare_video_results([primary_video]) if primary_video else [],
+        "originalVideos": [],
         "strategy": (
             "primary-meta-media"
             if primary_image and primary_video
@@ -1390,6 +1505,8 @@ class handler(BaseHTTPRequestHandler):
                         "count": 1,
                         "livePhotoCount": 0,
                         "videoCount": 0,
+                        "originalVideoCount": 0,
+                        "hasOriginalVideo": False,
                         "images": [
                             {
                                 "index": 1,
@@ -1410,7 +1527,9 @@ class handler(BaseHTTPRequestHandler):
                 raise XhsError("无法从分享链接中识别当前笔记 ID。", 422)
 
             parsed = parse_note_html(page_html, note_id)
-            if not parsed["images"] and not parsed["videos"]:
+            public_images = [{**image, "liveVideo": public_playback_video(image.get("liveVideo"))} for image in parsed["images"]]
+            public_videos = [video for item in parsed["videos"] if (video := public_playback_video(item))]
+            if not public_images and not public_videos and not parsed["originalVideos"]:
                 raise XhsError(
                     "没有解析到图片或视频。笔记可能已删除、需要登录，或者小红书页面结构已更新。",
                     422,
@@ -1438,7 +1557,7 @@ class handler(BaseHTTPRequestHandler):
                         else None
                     ),
                 }
-                for index, image in enumerate(parsed["images"], start=1)
+                for index, image in enumerate(public_images, start=1)
             ]
             videos = [
                 {
@@ -1455,10 +1574,11 @@ class handler(BaseHTTPRequestHandler):
                     "audioChannels": video.get("audioChannels", 0),
                     "audioBitrate": video.get("audioBitrate", 0),
                     "qualityType": video.get("qualityType", ""),
+                    "sourceWatermark": video.get("sourceWatermark", "unknown"),
                     "label": video.get("label", ""),
-                    "isDefault": bool(video.get("isDefault")),
+                    "isDefault": index == 1,
                 }
-                for index, video in enumerate(parsed["videos"], start=1)
+                for index, video in enumerate(public_videos, start=1)
             ]
             self._send_json(
                 200,
@@ -1470,13 +1590,16 @@ class handler(BaseHTTPRequestHandler):
                     "noteId": note_id,
                     "strategy": parsed["strategy"],
                     "type": (
-                        "mixed" if images and videos else "video" if videos else "image"
+                        "mixed" if images and (videos or parsed["originalVideos"])
+                        else "video" if videos or parsed["originalVideos"] else "image"
                     ),
                     "count": len(images),
                     "livePhotoCount": sum(
                         1 for image in images if image.get("liveVideo")
                     ),
                     "videoCount": len(videos),
+                    "originalVideoCount": len(parsed["originalVideos"]),
+                    "hasOriginalVideo": bool(parsed["originalVideos"]),
                     "images": images,
                     "videos": videos,
                 },

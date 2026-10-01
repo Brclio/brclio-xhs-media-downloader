@@ -278,9 +278,9 @@ export class XhsBrowser {
     const win = await this.window('detail');
     await this.navigate(win, note.url, signal);
     let noteType;
-    const complete = parsed => parsed.strategy === 'exact-initial-state' && (parsed.images.length || parsed.videos.length)
+    const complete = parsed => parsed.strategy === 'exact-initial-state' && (parsed.images.length || parsed.videos.length || parsed.originalVideos?.length)
       && !parsed.images.some(image => image.livePhoto && !image.liveVideo?.url)
-      && ((parsed.noteType || noteType) !== 'video' || parsed.videos.length);
+      && ((parsed.noteType || noteType) !== 'video' || parsed.videos.length || parsed.originalVideos?.length);
     for (let attempt = 0; attempt < 20; attempt++) {
       signal?.throwIfAborted();
       const result = await this.execute(win, `(${readNoteSnapshot.toString()})(${JSON.stringify(note.id)})`, signal);
@@ -294,7 +294,7 @@ export class XhsBrowser {
       // precede the video payload. Wait for complete media instead of saving early.
       const pendingLiveVideo = parsed.images.some(image => image.livePhoto && !image.liveVideo?.url);
       this.diagnostic('note.extraction', { noteId: note.id, attempt: attempt + 1, source: 'browser',
-        images: parsed.images.length, videos: parsed.videos.length, pendingLiveVideo });
+        images: parsed.images.length, videos: parsed.videos.length, originalVideos: parsed.originalVideos?.length || 0, pendingLiveVideo });
       if (complete(parsed)) return parsed;
       await this.wait(500, undefined, { signal });
     }
@@ -316,7 +316,8 @@ export class XhsBrowser {
         signal?.throwIfAborted();
         if (page && extractNoteId(page.finalUrl) === note.id) {
           const parsed = parseNoteHtml(page.html, { noteId: note.id });
-          this.diagnostic('note.extraction', { noteId: note.id, source: 'mobile-page', images: parsed.images.length, videos: parsed.videos.length });
+          this.diagnostic('note.extraction', { noteId: note.id, source: 'mobile-page', images: parsed.images.length, videos: parsed.videos.length,
+            originalVideos: parsed.originalVideos?.length || 0 });
           if (complete(parsed)) return parsed;
         }
       } catch (error) {

@@ -1,6 +1,7 @@
 // Keep high-bandwidth downloads on Cloudflare. Only an unsuccessful, validated
 // note parse may use the existing same-engine Vercel JSON endpoint.
 import { extractInputUrl, isDirectImageUrl } from '../lib/xhs.js';
+import { isMemberVideoUrl } from '../lib/video-policy.js';
 import { readBoundedBody, MAX_API_BODY_BYTES } from './http-adapter.js';
 
 export const PARSE_FALLBACK_ORIGIN = 'https://xhs-images-video-vercel-downloader.vercel.app';
@@ -74,8 +75,40 @@ function validParsePayload(bytes, engine) {
     return data?.success === true && data.engine === engine
       && Array.isArray(data.images) && Array.isArray(data.videos)
       && data.count === data.images.length && data.videoCount === data.videos.length
-      && data.images.length + data.videos.length > 0;
+      && (data.images.length + data.videos.length > 0 || data.originalVideoCount > 0);
   } catch { return false; }
+}
+
+// The optional older deployment may still mix upload URLs into playback results.
+// Rebuild its response rather than forwarding those original sources to guests.
+export function redactFallbackOriginals(bytes) {
+  const data = JSON.parse(new TextDecoder().decode(bytes));
+  const originals = Array.isArray(data.originalVideos) ? data.originalVideos : [];
+  const identity = url => { try { return new URL(url).href; } catch { return String(url || ''); } };
+  const protectedUrls = new Set(originals.flatMap(item => [item.url, ...(item.backupUrls || [])]).map(identity));
+  const protectedSource = url => protectedUrls.has(identity(url)) || isMemberVideoUrl(url);
+  const declaredOriginal = item => item?.source === 'origin-video-key' || /^video(?:\.consumer)?\.origin_?Video_?Key$/i.test(item?.sourceField || '');
+  if (!Object.hasOwn(data, 'originalVideos') && !data.videos.some(item => declaredOriginal(item) || [item.url, ...(item.backupUrls || [])].some(protectedSource))
+      && !data.images.some(item => item.liveVideo && (declaredOriginal(item.liveVideo) || [item.liveVideo.url, ...(item.liveVideo.backupUrls || [])].some(protectedSource)))) return bytes;
+  let removed = originals.length;
+  const playback = item => {
+    if (!item || typeof item !== 'object') return null;
+    if (declaredOriginal(item)) { removed++; return null; }
+    const urls = [item.url, ...(item.backupUrls || [])].filter(url => !protectedSource(url));
+    if (!urls.length) return null;
+    return { ...item, url: urls[0], backupUrls: urls.slice(1) };
+  };
+  const videos = data.videos.map(playback).filter(Boolean);
+  const images = data.images.map(item => ({ ...item, liveVideo: item.liveVideo ? playback(item.liveVideo) : null }));
+  const { originalVideos: ignored, ...publicData } = data;
+  // A protected-looking path alone is a reason to redact, never proof that the
+  // selected note declared an original candidate the member gateway can resolve.
+  publicData.originalVideoCount = Math.max(Number(data.originalVideoCount) || 0, removed);
+  publicData.hasOriginalVideo = publicData.originalVideoCount > 0;
+  publicData.type = images.length && (videos.length || publicData.hasOriginalVideo) ? 'mixed'
+    : videos.length || publicData.hasOriginalVideo ? 'video' : 'image';
+  return new TextEncoder().encode(JSON.stringify({ ...publicData, videos, images, videoCount: videos.length,
+    count: images.length, livePhotoCount: images.filter(item => item.liveVideo).length }));
 }
 
 export function createParseFallback({ fetchImpl = globalThis.fetch, timeoutMs = FALLBACK_TIMEOUT_MS } = {}) {
@@ -110,10 +143,15 @@ export function createParseFallback({ fetchImpl = globalThis.fetch, timeoutMs = 
       if (response.status === 200) {
         const bytes = await readFallbackBody(response);
         if (bytes && validParsePayload(bytes, engine)) {
+          const publicBytes = redactFallbackOriginals(bytes);
+          if (!validParsePayload(publicBytes, engine)) {
+            if (primaryError) throw primaryError;
+            return primary;
+          }
           // Rebuild an allowlisted response; fallback Set-Cookie, CORS and
           // infrastructure headers must not cross the account origin boundary.
           if (primary?.body) await primary.body.cancel().catch(() => {});
-          return new Response(bytes, { status: 200, headers: {
+          return new Response(publicBytes, { status: 200, headers: {
             'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store',
             'X-Content-Type-Options': 'nosniff', 'X-XHS-Engine': engine,
             'X-XHS-Parse-Backend': 'vercel-fallback',

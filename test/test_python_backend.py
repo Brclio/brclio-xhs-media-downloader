@@ -17,6 +17,11 @@ assert SPEC and SPEC.loader
 python_parse = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(python_parse)
 
+WORKER_SPEC = importlib.util.spec_from_file_location("worker_parser", ROOT / "cloudflare/python/src/parser_core.py")
+assert WORKER_SPEC and WORKER_SPEC.loader
+worker_parser = importlib.util.module_from_spec(WORKER_SPEC)
+WORKER_SPEC.loader.exec_module(worker_parser)
+
 VIDEO_MODULE_PATH = ROOT / "api" / "python_video.py"
 VIDEO_SPEC = importlib.util.spec_from_file_location("python_video", VIDEO_MODULE_PATH)
 assert VIDEO_SPEC and VIDEO_SPEC.loader
@@ -92,7 +97,49 @@ def make_live_photo_image(
 
 
 class PythonBackendTests(unittest.TestCase):
-    def test_audio_stream_preference_and_original_fallback(self) -> None:
+    def test_public_parse_hides_undeclared_protected_paths_and_preserves_safe_backup_or_explicit_origin_only(self) -> None:
+        note_id = "abcdef1234567890abcdef12"
+        protected = "https://sns-video-bd.xhscdn.com/spectrum/undeclared-upload"
+        safe = "https://sns-video-bd.xhscdn.com/stream/ordinary.mp4"
+        def call(note):
+            html = '<script>window.__INITIAL_STATE__=' + json.dumps({"noteData": {"data": note}}) + '</script>'
+            body = json.dumps({"text": f"https://www.xiaohongshu.com/explore/{note_id}"}).encode()
+            request = object.__new__(python_parse.handler)
+            request.headers = {"Content-Length": str(len(body))}; request.rfile = io.BytesIO(body)
+            captured = {}
+            request._send_json = lambda status, payload: captured.update(status=status, payload=payload)
+            with patch.object(python_parse, "fetch_note_page", return_value=(f"https://www.xiaohongshu.com/explore/{note_id}", html)):
+                request.do_POST()
+            return captured, html
+        note = {"noteId": note_id, "video": {"media": {"stream": {"h264": [{"masterUrl": protected, "backupUrls": [safe, protected]}]}}},
+                "imageList": [{"urlDefault": image_url("live"), "livePhoto": True, "stream": {"h264": [{"masterUrl": protected, "backupUrls": [safe, protected]}]}},
+                              {"urlDefault": image_url("still"), "livePhoto": True, "stream": {"h264": [{"masterUrl": protected}]}}]}
+        captured, html = call(note)
+        self.assertEqual(python_parse.parse_note_html(html, note_id)["videos"][0]["url"], protected)
+        self.assertEqual(captured["status"], 200)
+        data = captured["payload"]
+        self.assertEqual(data["videos"][0]["url"], safe)
+        self.assertEqual(data["videos"][0]["backupUrls"], [])
+        self.assertTrue(data["videos"][0]["isDefault"])
+        self.assertEqual(data["images"][0]["liveVideo"]["url"], safe)
+        self.assertIsNone(data["images"][1]["liveVideo"])
+        self.assertEqual(data["livePhotoCount"], 1)
+        self.assertFalse(data["hasOriginalVideo"])
+        self.assertEqual(data["originalVideoCount"], 0)
+        self.assertNotIn(protected, json.dumps(data))
+        for parser in (python_parse, worker_parser):
+            self.assertEqual(parser.public_playback_video({"url": protected, "backupUrls": [safe, protected]})["url"], safe)
+            self.assertIsNone(parser.public_playback_video({"url": protected}))
+        note = {"noteId": note_id, "video": {"media": {"stream": {"h264": [{"masterUrl": protected}]}}}}
+        self.assertEqual(call(note)[0]["status"], 422)
+        note["video"]["consumer"] = {"originVideoKey": "spectrum/undeclared-upload"}
+        captured, _ = call(note)
+        self.assertEqual(captured["status"], 200)
+        self.assertTrue(captured["payload"]["hasOriginalVideo"])
+        self.assertEqual(captured["payload"]["videos"], [])
+        self.assertNotIn(protected, json.dumps(captured["payload"]))
+
+    def test_audio_stream_preference_and_original_isolation(self) -> None:
         streams = python_parse.extract_video_streams_from_note({"video": {
             "consumer": {"originVideoKey": "original.mp4"},
             "media": {"stream": {
@@ -105,7 +152,111 @@ class PythonBackendTests(unittest.TestCase):
         self.assertEqual(streams[0]["audioCodec"], "aac")
         self.assertTrue(streams[0]["url"].endswith("/audio.mp4"))
         self.assertFalse(streams[-1]["hasAudio"])
-        self.assertTrue(any(s["source"] == "origin-video-key" for s in streams))
+        self.assertFalse(any(s["source"] == "origin-video-key" for s in streams))
+        originals = python_parse.extract_original_videos_from_note({"video": {"consumer": {"originVideoKey": "original.mp4"}}})
+        self.assertEqual(originals[0]["source"], "origin-video-key")
+        self.assertEqual(originals[0]["sourceWatermark"], "unknown")
+
+    def test_original_sources_are_exact_note_bound_and_do_not_leak_into_playback(self) -> None:
+        note_id = "dddddddddddddddddddddddd"
+        original = "https://sns-video-bd.xhscdn.com/spectrum/explicit-original.mp4?sign=fixture&t=123"
+        ordinary = "https://sns-video-bd.xhscdn.com/stream/ordinary.mp4"
+        note = {"noteId": note_id, "video": {
+            "consumer": {"originVideoKey": original},
+            "media": {"stream": {"h264": [{"masterUrl": original, "backupUrls": [ordinary]},
+                {"masterUrl": ordinary, "backupUrls": [original]}]}},
+        }, "imageList": [{"urlDefault": image_url("cover"), "stream": {"h264": [{"masterUrl": original}]}}]}
+        html = "<script>window.__INITIAL_STATE__=" + json.dumps({"noteData": {"data": note},
+            "recommendations": [{"noteId": "aaaaaaaaaaaaaaaaaaaaaaaa", "video": {"consumer": {"originVideoKey": "unrelated.mp4"}}}]}) + "</script>"
+        for parser in (python_parse, worker_parser):
+            with self.subTest(parser=parser.__name__):
+                parsed = parser.parse_note_html(html, note_id)
+                self.assertEqual(len(parsed["originalVideos"]), 1)
+                source = parsed["originalVideos"][0]
+                self.assertEqual(source["url"], original)
+                self.assertEqual(source["sourceField"], "video.consumer.originVideoKey")
+                self.assertEqual(source["sourceWatermark"], "unknown")
+                self.assertIsNone(source["hasAudio"])
+                self.assertEqual(source["codec"], "")
+                self.assertTrue(all(original not in [v["url"], *v["backupUrls"]] for v in parsed["videos"]))
+                self.assertIsNone(parsed["images"][0]["liveVideo"])
+
+    def test_original_only_local_notes_and_unsafe_original_field_rejection(self) -> None:
+        note_id = "dddddddddddddddddddddddd"
+        for parser in (python_parse, worker_parser):
+            for video in ({"consumer": {"origin_video_key": "spectrum/source"}},
+                          {"originVideoKey": "//sns-video-bd.xhscdn.com/spectrum/source"},
+                          {"origin_video_key": "/spectrum/source"}):
+                note = {"noteId": note_id, "video": video}
+                for html in ("<script>window.__INITIAL_STATE__=" + json.dumps({"noteData": {"data": note}}) + "</script>",
+                             '<script>window.__INITIAL_STATE__={"broken":function(){},"detail":' + json.dumps(note) + "}</script>"):
+                    parsed = parser.parse_note_html(html, note_id)
+                    self.assertEqual(parsed["originalVideos"][0]["url"], "https://sns-video-bd.xhscdn.com/spectrum/source")
+                    self.assertEqual(parsed["videos"], [])
+            for key in ("https://evil.example/a", "https://user:secret@sns-video-bd.xhscdn.com/a",
+                        "https://sns-video-bd.xhscdn.com:8443/a", "http://sns-video-bd.xhscdn.com/a",
+                        "../a", "a/../b", "javascript:alert(1)", "spectrum/a?url=evil", "spectrum/with space"):
+                with self.subTest(parser=parser.__name__, key=key):
+                    self.assertEqual(parser.extract_original_videos_from_note({"video": {"consumer": {"originVideoKey": key}}}), [])
+
+    def test_public_python_parse_advertises_original_count_without_source_urls(self) -> None:
+        note_id = "dddddddddddddddddddddddd"
+        html = '<script>window.__INITIAL_STATE__=' + json.dumps({"noteData": {"data": {
+            "noteId": note_id, "video": {"consumer": {"originVideoKey": "spectrum/member-source"}}
+        }}}) + '</script>'
+        body = json.dumps({"text": f"https://www.xiaohongshu.com/explore/{note_id}"}).encode()
+        request = object.__new__(python_parse.handler)
+        request.headers = {"Content-Length": str(len(body))}
+        request.rfile = io.BytesIO(body)
+        captured = {}
+        request._send_json = lambda status, payload: captured.update(status=status, payload=payload)
+        with patch.object(python_parse, "fetch_note_page", return_value=(f"https://www.xiaohongshu.com/explore/{note_id}", html)):
+            request.do_POST()
+        self.assertEqual(captured["status"], 200)
+        self.assertEqual(captured["payload"]["originalVideoCount"], 1)
+        self.assertTrue(captured["payload"]["hasOriginalVideo"])
+        self.assertEqual(captured["payload"]["type"], "video")
+        self.assertEqual(captured["payload"]["videos"], [])
+        self.assertNotIn("member-source", json.dumps(captured["payload"]))
+        self.assertNotIn("originalVideos", captured["payload"])
+
+    def test_media_v2_metadata_describes_upload_without_claiming_codec_audio_or_watermark(self) -> None:
+        metadata = {"video": {"width": 1920, "height": 1080, "duration": 469,
+                              "md5": "3d8c06fa6cb6a8c5524548b3be0d2db4"},
+                    "stream": {"h264": [{"width": 1280, "height": 720, "audio_codec": "aac"}]}}
+        for parser in (python_parse, worker_parser):
+            for media_v2 in (metadata, json.dumps(metadata)):
+                source = parser.extract_original_videos_from_note({"video": {
+                    "consumer": {"originVideoKey": "spectrum/current-upload"}, "mediaV2": media_v2
+                }})[0]
+                self.assertEqual(source["width"], 1920)
+                self.assertEqual(source["height"], 1080)
+                self.assertEqual(source["duration"], 469000)
+                self.assertEqual(source["declaredMd5"], metadata["video"]["md5"])
+                self.assertEqual(source["metadataSource"], "video.mediaV2.video")
+                self.assertEqual(source["codec"], "")
+                self.assertIsNone(source["hasAudio"])
+                self.assertEqual(source["sourceWatermark"], "unknown")
+            for media_v2 in ('{BROKEN', {"video": {"md5": [metadata["video"]["md5"]]}}):
+                source = parser.extract_original_videos_from_note({"video": {
+                    "consumer": {"originVideoKey": "spectrum/current-upload"}, "mediaV2": media_v2
+                }})[0]
+                self.assertEqual(source["declaredMd5"], "")
+
+    def test_ambiguous_stream_origins_are_rejected_without_ordinary_or_meta_leaks(self) -> None:
+        note_id = "dddddddddddddddddddddddd"
+        for parser in (python_parse, worker_parser):
+            for key in ("stream/ambiguous.mp4", "/stream/ambiguous.mp4",
+                        "https://sns-video-bd.xhscdn.com/stream/ambiguous.mp4",
+                        "https://sns-video-bd.xhscdn.com/%73tream/ambiguous.mp4"):
+                url = key if key.startswith("https:") else "https://sns-video-bd.xhscdn.com/" + key.lstrip("/")
+                note = {"noteId": note_id, "video": {"consumer": {"originVideoKey": key},
+                        "media": {"stream": {"h264": [{"masterUrl": url, "backupUrls": [url]}]}}}}
+                for html in ("<script>window.__INITIAL_STATE__=" + json.dumps({"noteData": {"data": note}}) + "</script>",
+                             '<script>window.__INITIAL_STATE__={"broken":function(){},"detail":' + json.dumps(note) + "}</script>"):
+                    parsed = parser.parse_note_html(f'<meta property="og:video" content="{url}">' + html, note_id)
+                    self.assertEqual(parsed["originalVideos"], [])
+                    self.assertEqual(parsed["videos"], [])
 
     def test_video_chunk_range_and_length_are_verified(self) -> None:
         for content_range, body, status in [
@@ -120,7 +271,7 @@ class PythonBackendTests(unittest.TestCase):
             if content_range:
                 response.headers["Content-Range"] = content_range
             request = object.__new__(python_video.handler)
-            request.path = "/api/python_video?url=https%3A%2F%2Fsns-video-bd.xhscdn.com%2Ffixture.mp4&action=chunk&start=3&end=5"
+            request.path = "/api/python_video?url=https%3A%2F%2Fsns-video-bd.xhscdn.com%2Fstream%2Ffixture.mp4&action=chunk&start=3&end=5"
             request.wfile = io.BytesIO()
             request.send_response = lambda value: setattr(request, "status", value)
             request.send_header = lambda *_: None

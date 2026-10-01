@@ -7,8 +7,8 @@ import re
 import socket
 from http.server import BaseHTTPRequestHandler
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qs, urlparse
-from urllib.request import Request, urlopen
+from urllib.parse import parse_qs, unquote, urljoin, urlparse
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 MAX_CHUNK_BYTES = 3_500_000
@@ -48,6 +48,21 @@ def is_xhs_video_url(value: str) -> bool:
     )
 
 
+def is_public_playback_url(value: str) -> bool:
+    if not is_xhs_video_url(value):
+        return False
+    path = unquote(urlparse(value).path)
+    return path.startswith("/stream/") and "\\" not in path and ".." not in path.split("/")
+
+
+class PlaybackRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target = urljoin(req.full_url, newurl)
+        if not is_public_playback_url(target):
+            raise XhsError("原视频需要有效会员，请使用会员原视频下载。", 403)
+        return super().redirect_request(req, fp, code, msg, headers, target)
+
+
 def parse_nonnegative_integer(value: str, name: str) -> int:
     if not re.fullmatch(r"\d+", str(value or "")):
         raise XhsError(f"{name} 参数无效。")
@@ -80,8 +95,8 @@ def open_video(source_url: str, range_header: str):
         method="GET",
     )
     try:
-        response = urlopen(request, timeout=18)
-        if not is_xhs_video_url(response.geturl()):
+        response = build_opener(PlaybackRedirectHandler()).open(request, timeout=18)
+        if not is_public_playback_url(response.geturl()):
             response.close()
             raise XhsError("视频 CDN 跳转到了不受支持的地址。", 502)
         return response
@@ -139,6 +154,9 @@ class handler(BaseHTTPRequestHandler):
 
             if not is_xhs_video_url(source_url):
                 raise XhsError("视频地址无效或不属于小红书 CDN。")
+
+            if not is_public_playback_url(source_url):
+                raise XhsError("原视频需要有效会员，请使用会员原视频下载。", 403)
 
             if action == "meta":
                 with open_video(source_url, "bytes=0-0") as response:

@@ -21,10 +21,10 @@ test('real SQLite ParseRuntime handles large native HTML and preserves bounded s
         return env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName('parsing-v1')).fetch(request);
       } };
     ` },
-    bundle: true, format: 'esm', write: false, platform: 'neutral',
+    bundle: true, format: 'esm', write: false, platform: 'node', external: ['node:*', 'cloudflare:*'],
   });
   const runtime = new Miniflare(convertV4MiniflareOptions({
-    modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-22',
+    modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-22', compatibilityFlags: ['nodejs_compat'],
     durableObjects: { PARSE_RUNTIME: { className: 'ParseRuntime', useSQLite: true } },
     bindings: { XHS_PARSE_FALLBACK_ORIGIN: PARSE_FALLBACK_ORIGIN },
     serviceBindings: { PYTHON_API: async request => {

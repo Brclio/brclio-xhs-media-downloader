@@ -275,6 +275,34 @@ test('resolveNote waits for the real video stream when a video note initially ha
   assert.deepEqual(details.waits, [500]);
 });
 
+test('resolveNote accepts a complete original-only video and preserves its membership-separated source', async () => {
+  for (const imageList of [[], detailNote().imageList]) {
+    const data = detailNote({ type: 'video', imageList, video: { consumer: { originVideoKey: 'spectrum/original-only' } } });
+    const { browser, details } = detailFixture({ state: { note: { noteDetailMap: { [NOTE]: { note: data } } } } });
+    const result = await browser.resolveNote({ id: NOTE, url: detailUrl });
+    assert.equal(result.strategy, 'exact-initial-state');
+    assert.equal(result.originalVideos.length, 1);
+    assert.equal(result.originalVideos[0].source, 'origin-video-key');
+    assert.equal(result.videos.length, 0);
+    assert.equal(details.reads, 1);
+    assert.deepEqual(details.waits, []);
+  }
+});
+
+test('a paced mobile-page fallback may complete an original-only video while excluding its playback duplicate', async () => {
+  const data = detailNote({ type: 'video', video: {} });
+  const original = 'https://sns-video-bd.xhscdn.com/spectrum/mobile-original';
+  const full = detailNote({ type: 'video', video: { consumer: { originVideoKey: original },
+    media: { stream: { h264: [{ masterUrl: original }] } } } });
+  let calls = 0;
+  const { browser } = detailFixture({ state: { note: { noteDetailMap: { [NOTE]: { note: data } } } },
+    fetchPage: async url => { calls++; return { finalUrl: url, html: `<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: full } })}</script>` }; } });
+  const result = await browser.resolveNote({ id: NOTE, url: detailUrl });
+  assert.equal(calls, 1);
+  assert.equal(result.originalVideos[0].url, original);
+  assert.equal(result.videos.length, 0);
+});
+
 test('resolveNote reports an error when paired-live or main-video hydration never completes', async () => {
   for (const data of [
     detailNote({ imageList: [{ urlDefault: 'https://ci.xiaohongshu.com/live-still', livePhoto: true }] }),

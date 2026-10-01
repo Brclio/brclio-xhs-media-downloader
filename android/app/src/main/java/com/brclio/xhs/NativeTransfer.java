@@ -108,7 +108,7 @@ final class NativeTransfer {
     static Preview preview(URI initial, String range, Cancellation cancellation, Runnable closed) throws IOException {
         URI current = initial;
         for (int redirect = 0; redirect <= 5; redirect++) {
-            NativePolicy.mediaUri(current.toString());
+            NativePolicy.previewUri(current.toString());
             HttpURLConnection connection = connection(current, cancellation);
             boolean streaming = false;
             try {
@@ -145,6 +145,7 @@ final class NativeTransfer {
                     if (status == 206 && mime.equals("application/octet-stream")) mime = "video/mp4";
                     else throw new IOException("媒体预览类型无效。");
                 }
+                if (mime.startsWith("video/")) NativePolicy.playbackVideoUri(current.toString());
                 Map<String, String> headers = new HashMap<>();
                 headers.put("Cache-Control", "no-store");
                 headers.put("Access-Control-Allow-Origin", "https://appassets.androidplatform.net");
@@ -211,12 +212,12 @@ final class NativeTransfer {
                 throw new IllegalArgumentException("不支持的媒体类型。");
             }
             List<URI> urls = new ArrayList<>();
-            urls.add(NativePolicy.mediaUri(item.getString("url")));
+            urls.add(kind.equals("video") ? NativePolicy.playbackVideoUri(item.getString("url")) : NativePolicy.mediaUri(item.getString("url")));
             JSONArray backups = item.optJSONArray("backupUrls");
             if (backups != null) {
                 if (backups.length() > 8) throw new IllegalArgumentException("备用地址数量过多。");
                 for (int j = 0; j < backups.length(); j++) {
-                    URI uri = NativePolicy.mediaUri(backups.getString(j));
+                    URI uri = kind.equals("video") ? NativePolicy.playbackVideoUri(backups.getString(j)) : NativePolicy.mediaUri(backups.getString(j));
                     if (!urls.contains(uri)) urls.add(uri);
                 }
             }
@@ -292,7 +293,8 @@ final class NativeTransfer {
         URI current = initial;
         long startedAt = System.nanoTime();
         for (int redirect = 0; redirect <= 5; redirect++) {
-            NativePolicy.mediaUri(current.toString());
+            if (kind.equals("video")) NativePolicy.playbackVideoUri(current.toString());
+            else NativePolicy.mediaUri(current.toString());
             cancellation.check();
             HttpURLConnection connection = connection(current, cancellation);
             try {

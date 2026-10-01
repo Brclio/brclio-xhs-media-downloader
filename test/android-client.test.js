@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import * as mediaHelpers from '../android/app/src/main/assets/www/media.js';
 import {
   safeFilename, mediaUrl, normalizeNote, captionText, textEntry,
-  imageEntry, videoEntry, selectedEntries,
+  imageEntry, videoEntry, selectedEntries, memberVideoPageUrl, playbackVideoUrl,
 } from '../android/app/src/main/assets/www/media.js';
 
 const imageUrl = n => `https://sns-webpic-qc.xhscdn.com/20260927/signature/image${n}!nd_dft_wlteh_jpg_3`;
@@ -62,6 +62,30 @@ test('Android accepts video-only and direct-image results without inventing othe
   assert.equal(image.videos.length, 0);
   assert.equal(image.content, '');
   assert.equal(image.images[0].liveVideo, null);
+});
+
+test('Android original-only results keep availability without exposing a native video download URL', () => {
+  const original = 'https://sns-video-bd.xhscdn.com/spectrum/original';
+  const note = normalizeNote({ success: true, hasOriginalVideo: true, originalVideoCount: 1, images: [], videos: [] }, sourceUrl);
+  assert.equal(note.hasOriginalVideo, true);
+  assert.deepEqual(note.videos, []);
+  const legacy = normalizeNote({ success: true, images: [], videos: [{ url: original }] }, sourceUrl);
+  assert.equal(legacy.hasOriginalVideo, true);
+  assert.equal(JSON.stringify(legacy).includes(original), false);
+  const withBackup = normalizeNote({ ...fixture(), videos: [{ url: videoUrl('ordinary'), backupUrls: [original, videoUrl('backup')] }] }, sourceUrl);
+  assert.deepEqual(withBackup.videos[0].backupUrls, [videoUrl('backup')]);
+});
+
+test('Android member entry preserves signed note parameters and targets the hosted account gate', () => {
+  const destination = new URL(memberVideoPageUrl(sourceUrl));
+  assert.equal(destination.origin, 'https://xhs.download.brclio.com');
+  assert.equal(destination.searchParams.get('note'), sourceUrl);
+  assert.equal(destination.searchParams.get('memberVideo'), '1');
+  assert.equal(playbackVideoUrl(videoUrl('ordinary')), videoUrl('ordinary'));
+  for (const value of ['https://sns-video-bd.xhscdn.com/spectrum/original',
+    'https://sns-video-bd.xhscdn.com/stream/%2e%2e/original', 'https://sns-video-bd.xhscdn.com/stream/%5Coriginal']) assert.equal(playbackVideoUrl(value), '');
+  for (const value of ['javascript:alert(1)', 'https://evilxiaohongshu.com/explore/abc', 'https://www.xiaohongshu.com:8443/explore/abc',
+    'https://user:password@www.xiaohongshu.com/explore/abc', 'https://attacker.test/', '']) assert.equal(memberVideoPageUrl(value), '');
 });
 
 test('Android normalizes image ordering so repeated upstream indices cannot corrupt selection or ZIP names', () => {
@@ -278,6 +302,23 @@ async function clientFixture(t) {
     share: text => window.brclioEvent({ type: 'share', text }),
     update: data => window.brclioEvent({ type: 'update', ...data }) };
 }
+
+test('Android shows the hosted member entry for original-only videos and clears it with the next parse', async t => {
+  const ui = await clientFixture(t);
+  await ui.respond(ui.parse(sourceUrl), { success: true, title: '原视频笔记', images: [], videos: [], hasOriginalVideo: true, originalVideoCount: 1 });
+  assert.equal(ui.element('results').hidden, false);
+  assert.equal(ui.element('video-section').hidden, true);
+  assert.equal(ui.element('member-video-section').hidden, false);
+  const destination = new URL(ui.element('member-video-download').href);
+  assert.equal(destination.searchParams.get('note'), sourceUrl);
+  assert.equal(destination.searchParams.get('memberVideo'), '1');
+  assert.equal(ui.next('save'), undefined, 'Membership and saving continue in the system browser');
+  const next = ui.parse('https://xhslink.cn/o/image-note');
+  assert.equal(ui.element('member-video-section').hidden, true);
+  assert.equal(ui.element('member-video-download').href, undefined);
+  await ui.respond(next, { success: true, images: [{ url: imageUrl(1) }], videos: [] });
+  assert.equal(ui.element('member-video-section').hidden, true);
+});
 
 test('Android new parse clears a previous success immediately and retains no stale media after failure', async t => {
   const ui = await clientFixture(t);

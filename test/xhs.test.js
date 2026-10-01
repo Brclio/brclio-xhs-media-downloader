@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import parseHandler from "../api/parse.js";
+import { invokeHandler } from "../cloudflare/http-adapter.js";
 import {
   extractOriginalAssetToken,
   extractInputUrl,
@@ -16,6 +17,50 @@ import {
 function imageUrl(id, variant = "!nd_dft_wlteh_webp_3") {
   return `https://sns-webpic-qc.xhscdn.com/202607301856/signature/${id}${variant}`;
 }
+
+test('public native parse withholds undeclared protected paths and promotes ordinary backups without inventing origin availability', async t => {
+  const previous = globalThis.fetch;
+  t.after(() => { globalThis.fetch = previous; });
+  const noteId = 'abcdef1234567890abcdef12';
+  const protectedUrl = 'https://sns-video-bd.xhscdn.com/spectrum/undeclared-upload';
+  const protectedBackup = 'https://sns-video-bd.xhscdn.com/root-upload';
+  const safeUrl = 'https://sns-video-bd.xhscdn.com/stream/playback.mp4';
+  const note = { noteId, video: { media: { stream: { h264: [{ masterUrl: protectedUrl, backupUrls: [safeUrl, protectedBackup] }] } } },
+    imageList: [
+      { urlDefault: imageUrl('paired'), livePhoto: true, stream: { h264: [{ masterUrl: protectedUrl, backupUrls: [safeUrl, protectedBackup] }] } },
+      { urlDefault: imageUrl('unpaired'), livePhoto: true, stream: { h264: [{ masterUrl: protectedUrl }] } }
+    ] };
+  const request = () => new Request('https://site.example/api/parse', { method: 'POST', body: JSON.stringify({ text: `https://www.xiaohongshu.com/explore/${noteId}` }) });
+  const html = value => `<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: value } })}</script>`;
+  globalThis.fetch = async () => new Response(html(note));
+  assert.equal(parseNoteHtml(html(note), { noteId }).videos[0].url, protectedUrl, 'desktop/internal parser keeps complete source metadata');
+  let response = await invokeHandler(parseHandler, request());
+  assert.equal(response.status, 200);
+  let data = await response.json();
+  assert.equal(data.videos[0].url, safeUrl);
+  assert.deepEqual(data.videos[0].backupUrls, []);
+  assert.equal(data.videos[0].isDefault, true);
+  assert.equal(data.images[0].liveVideo.url, safeUrl);
+  assert.equal(data.images[1].liveVideo, null);
+  assert.equal(data.livePhotoCount, 1);
+  assert.equal(data.hasOriginalVideo, false);
+  assert.equal(data.originalVideoCount, 0);
+  assert.equal(JSON.stringify(data).includes(protectedUrl), false);
+  assert.equal(JSON.stringify(data).includes(protectedBackup), false);
+  const protectedOnly = { noteId, video: { media: { stream: { h264: [{ masterUrl: protectedUrl }] } } } };
+  globalThis.fetch = async () => new Response(html(protectedOnly));
+  response = await invokeHandler(parseHandler, request());
+  assert.equal(response.status, 422);
+  protectedOnly.video.consumer = { originVideoKey: 'spectrum/undeclared-upload' };
+  globalThis.fetch = async () => new Response(html(protectedOnly));
+  response = await invokeHandler(parseHandler, request());
+  assert.equal(response.status, 200);
+  data = await response.json();
+  assert.equal(data.hasOriginalVideo, true);
+  assert.equal(data.originalVideoCount, 1);
+  assert.deepEqual(data.videos, []);
+  assert.equal(JSON.stringify(data).includes(protectedUrl), false);
+});
 
 function makeImageList(prefix, count) {
   return Array.from({ length: count }, (_, index) => ({
@@ -313,7 +358,7 @@ function videoUrl(id) {
   return `https://sns-video-bd.xhscdn.com/stream/${id}.mp4`;
 }
 
-test('audio-bearing streams outrank silent higher-resolution streams and keep the original fallback', () => {
+test('audio-bearing streams outrank silent higher-resolution streams and isolate the original source', () => {
   const target = 'dddddddddddddddddddddddd';
   const note = { noteId: target, type: 'video', video: {
     consumer: { originVideoKey: 'original-with-unknown-audio.mp4' },
@@ -327,8 +372,114 @@ test('audio-bearing streams outrank silent higher-resolution streams and keep th
   assert.equal(parsed.videos[0].hasAudio, true);
   assert.equal(parsed.videos[0].audioCodec, 'aac');
   assert.equal(parsed.videos[0].audioChannels, 2);
-  assert.ok(parsed.videos.some(v => v.source === 'origin-video-key'));
+  assert.equal(parsed.originalVideos[0].source, 'origin-video-key');
+  assert.equal(parsed.originalVideos[0].sourceWatermark, 'unknown');
+  assert.ok(parsed.videos.every(v => v.source !== 'origin-video-key'));
   assert.equal(parsed.videos.at(-1).hasAudio, false);
+});
+
+test('published original keys stay separate from playback and backup URLs without claiming no watermark', () => {
+  const target = 'dddddddddddddddddddddddd';
+  const originalUrl = 'https://sns-video-bd.xhscdn.com/spectrum/explicit-original.mp4?sign=fixture&t=123';
+  const note = { noteId: target, video: {
+    consumer: { originVideoKey: originalUrl },
+    media: { stream: { h264: [
+      { masterUrl: originalUrl, backupUrls: [videoUrl('ordinary')], width: 1920, height: 1080 },
+      { masterUrl: videoUrl('other'), backupUrls: [originalUrl, videoUrl('other-backup')] }
+    ] } }
+  }, imageList: [{ urlDefault: imageUrl('cover'), stream: { h264: [{ masterUrl: originalUrl }] } }] };
+  const recommendations = { noteId: 'aaaaaaaaaaaaaaaaaaaaaaaa', video: { consumer: { originVideoKey: 'unrelated-original.mp4' } } };
+  const html = `<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: note }, recommendations: [recommendations] })}</script>`;
+  const parsed = parseNoteHtml(html, { noteId: target });
+  assert.equal(parsed.originalVideos.length, 1);
+  assert.equal(parsed.originalVideos[0].url, originalUrl);
+  assert.equal(parsed.originalVideos[0].sourceField, 'video.consumer.originVideoKey');
+  assert.equal(parsed.originalVideos[0].hasAudio, null);
+  assert.equal(parsed.originalVideos[0].codec, '');
+  assert.equal(parsed.originalVideos[0].sourceWatermark, 'unknown');
+  assert.equal(parsed.videos.length, 2);
+  assert.equal(parsed.videos[0].url, videoUrl('ordinary'));
+  assert.ok(parsed.videos.every(video => ![video.url, ...video.backupUrls].includes(originalUrl)));
+  assert.equal(parsed.images[0].liveVideo, null);
+});
+
+test('origin-only exact and broken-state local notes retain explicit provenance and reject unsafe origin fields', () => {
+  const target = 'dddddddddddddddddddddddd';
+  for (const video of [
+    { consumer: { origin_video_key: 'spectrum/legacy-original' } },
+    { originVideoKey: '//sns-video-bd.xhscdn.com/spectrum/legacy-original' },
+    { origin_video_key: '/spectrum/legacy-original' }
+  ]) {
+    const note = { noteId: target, video };
+    for (const html of [
+      `<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: note } })}</script>`,
+      `<script>window.__INITIAL_STATE__={"broken":function(){},"detail":${JSON.stringify(note)}}</script>`
+    ]) {
+      const parsed = parseNoteHtml(html, { noteId: target });
+      assert.equal(parsed.originalVideos.length, 1);
+      assert.equal(parsed.originalVideos[0].url, 'https://sns-video-bd.xhscdn.com/spectrum/legacy-original');
+      assert.equal(parsed.videos.length, 0);
+      assert.ok(['exact-initial-state', 'note-id-local-video'].includes(parsed.strategy));
+    }
+  }
+  for (const key of ['https://evil.example/original.mp4', 'https://user:secret@sns-video-bd.xhscdn.com/a',
+    'https://sns-video-bd.xhscdn.com:8443/a', 'http://sns-video-bd.xhscdn.com/a', '../a', 'a/../b',
+    'javascript:alert(1)', 'spectrum/a?url=https://evil.example', 'spectrum/with space']) {
+    const note = { noteId: target, video: { consumer: { originVideoKey: key }, media: { stream: { h264: [{ masterUrl: videoUrl('safe') }] } } } };
+    const parsed = parseNoteHtml(`<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: note } })}</script>`, { noteId: target });
+    assert.deepEqual(parsed.originalVideos, [], key);
+    assert.equal(parsed.videos.length, 1);
+  }
+});
+
+test('resolution, codec and qualityType labels never manufacture an original source', () => {
+  const target = 'dddddddddddddddddddddddd';
+  const note = { noteId: target, video: { media: { stream: { h264: [{ masterUrl: videoUrl('origin-named'),
+    width: 3840, height: 2160, qualityType: 'origin-no-watermark' }] } } } };
+  const parsed = parseNoteHtml(`<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: note } })}</script>`, { noteId: target });
+  assert.deepEqual(parsed.originalVideos, []);
+  assert.equal(parsed.videos[0].sourceWatermark, 'unknown');
+  assert.deepEqual(parseNoteHtml(`<meta property="og:video" content="${videoUrl('meta-origin')}">`, { noteId: target }).originalVideos, []);
+});
+
+test('mediaV2 upload metadata enriches the original without inheriting transcoded codec or audio claims', () => {
+  const target = 'dddddddddddddddddddddddd';
+  const metadata = { video: { width: 1920, height: 1080, duration: 469, md5: '3d8c06fa6cb6a8c5524548b3be0d2db4' },
+    stream: { h264: [{ width: 1280, height: 720, audioCodec: 'aac' }] } };
+  for (const mediaV2 of [JSON.stringify(metadata), metadata, '{BROKEN', { video: { md5: ['3d8c06fa6cb6a8c5524548b3be0d2db4'] } }]) {
+    const note = { noteId: target, video: { consumer: { originVideoKey: 'spectrum/source' }, mediaV2 } };
+    const result = parseNoteHtml(`<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: note } })}</script>`, { noteId: target });
+    const source = result.originalVideos[0];
+    assert.equal(source.sourceWatermark, 'unknown');
+    assert.equal(source.hasAudio, null);
+    assert.equal(source.codec, '');
+    assert.equal(source.size, 0);
+    if (mediaV2 === metadata || mediaV2 === JSON.stringify(metadata)) {
+      assert.equal(source.width, 1920);
+      assert.equal(source.height, 1080);
+      assert.equal(source.duration, 469000);
+      assert.equal(source.declaredMd5, metadata.video.md5);
+      assert.equal(source.metadataSource, 'video.mediaV2.video');
+    } else assert.equal(source.declaredMd5, '');
+  }
+});
+
+test('ambiguous origins in the public stream namespace are rejected and not relabeled as ordinary or meta media', () => {
+  const target = 'dddddddddddddddddddddddd';
+  for (const key of ['stream/ambiguous.mp4', '/stream/ambiguous.mp4',
+    'https://sns-video-bd.xhscdn.com/stream/ambiguous.mp4', 'https://sns-video-bd.xhscdn.com/%73tream/ambiguous.mp4']) {
+    const url = key.startsWith('https:') ? key : `https://sns-video-bd.xhscdn.com/${key.replace(/^\/+/, '')}`;
+    const note = { noteId: target, video: { consumer: { originVideoKey: key },
+      media: { stream: { h264: [{ masterUrl: url, backupUrls: [url] }] } } } };
+    for (const html of [
+      `<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: note } })}</script>`,
+      `<script>window.__INITIAL_STATE__={"broken":function(){},"detail":${JSON.stringify(note)}}</script>`
+    ]) {
+      const parsed = parseNoteHtml(`<meta property="og:video" content="${url}">${html}`, { noteId: target });
+      assert.deepEqual(parsed.originalVideos, [], key);
+      assert.deepEqual(parsed.videos, [], key);
+    }
+  }
 });
 
 function makeVideo(codec, id, width, height, bitrate, size) {

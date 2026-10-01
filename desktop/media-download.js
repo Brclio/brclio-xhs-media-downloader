@@ -4,6 +4,7 @@ import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { isXhsImageUrl, isXhsVideoUrl, normalizeImageUrl } from "../lib/xhs.js";
 import { inspectMp4Tracks, requireVideoAudio } from "../lib/media-tracks.js";
+import { isMemberVideoUrl } from "../lib/video-policy.js";
 
 async function inspectVideoHandle(handle, bytes, requireAudio) {
   const tracks = await inspectMp4Tracks(async (start, length) => {
@@ -157,7 +158,8 @@ function detectImageType(bytes) {
   return null;
 }
 
-export async function downloadMedia({ root, directory, asset, fetchImpl, signal, beforeRequest, onDiagnostic = () => {}, maxBytes = 2 * 1024 ** 3, timeoutMs = 10 * 60 * 1000 }) {
+export async function downloadMedia({ root, directory, asset, fetchImpl, signal, beforeRequest, authorize, onDiagnostic = () => {}, maxBytes = 2 * 1024 ** 3, timeoutMs = 10 * 60 * 1000 }) {
+  if (!asset || !['image', 'video'].includes(asset.kind)) throw new Error('媒体类型无效。');
   const sizeLimit = maxBytes === 2 * 1024 ** 3 ? '2 GiB' : `${Math.round(maxBytes / 1024 ** 2 * 10) / 10} MiB`;
   const diagnostic = (event, fields) => { try { onDiagnostic(event, { kind: asset.kind, assetKey: asset.key, ...fields }); } catch { /* Diagnostics never interrupt saving. */ } };
   const validate = asset.kind === "image" ? isXhsImageUrl : isXhsVideoUrl;
@@ -168,11 +170,23 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
   let temporary;
   let handle;
   let reader;
+  let memberVideo = asset.kind === 'video' && asset.watermarkFree === true;
+  const requireOriginalAuthorization = async () => {
+    try {
+      if (!authorize) throw new Error('软件账号授权服务不可用。');
+      await authorize('watermark-free-video');
+    } catch (error) {
+      throw Object.assign(new Error(error.message || '无水印视频仅限有效会员下载。'), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED', status: error.status || 403, cause: error });
+    }
+  };
   try {
     for (let redirect = 0; redirect <= 5; redirect += 1) {
       throwIfAborted(signal);
       if (new URL(url).protocol !== "https:" || !validate(url)) throw new Error("媒体链接或重定向不属于受支持的小红书媒体域名。");
       await beforeRequest(signal);
+      memberVideo ||= asset.kind === 'video' && isMemberVideoUrl(url);
+      if (memberVideo) await requireOriginalAuthorization();
+      throwIfAborted(signal);
       timer = AbortSignal.timeout(timeoutMs);
       requestSignal = AbortSignal.any([signal, timer].filter(Boolean));
       response = await fetchImpl(url, {
@@ -228,10 +242,12 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
     await handle.close();
     handle = null;
     throwIfAborted(requestSignal);
+    if (memberVideo) await requireOriginalAuthorization();
+    throwIfAborted(requestSignal);
     await assertSafeTarget(root, directory, name);
     await fs.rename(temporary, path.join(directory, name));
     diagnostic('media.saved', { bytes, hasAudio: mediaTracks?.hasAudio, hasVideo: mediaTracks?.hasVideo });
-    return { key: asset.key, kind: asset.kind, name, bytes, sha256: hash.digest("hex"), url: asset.url, ...(mediaTracks ? { mediaTracks } : {}) };
+    return { key: asset.key, kind: asset.kind, name, bytes, sha256: hash.digest("hex"), url: asset.url, ...(memberVideo ? { watermarkFree: true } : {}), ...(mediaTracks ? { mediaTracks } : {}) };
   } catch (error) {
     diagnostic('media.error', { code: error.code || error.name || 'MEDIA_DOWNLOAD_FAILED' });
     if (signal?.aborted) throw abortError();

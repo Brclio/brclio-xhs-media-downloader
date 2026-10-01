@@ -8,7 +8,7 @@ import entry as api
 
 NOTE_ID = "abcdef1234567890abcdef12"
 IMAGE = "https://sns-webpic-qc.xhscdn.com/202609230000/signature/fixtureimage!nd_dft_wlteh_webp_3"
-VIDEO = "https://sns-video-bd.xhscdn.com/fixture.mp4"
+VIDEO = "https://sns-video-bd.xhscdn.com/stream/fixture.mp4"
 
 
 async def fixture_fetch(url, **options):
@@ -33,6 +33,19 @@ async def fixture_fetch(url, **options):
             "stream": {"h264": [{"masterUrl": VIDEO, "duration": 2500}]},
         }], "video": {"media": {"stream": {"h264": [{"masterUrl": VIDEO,
             "audioChannels": 2, "audioCodec": "aac", "width": 1080, "height": 1920}]}}}}
+        protected = "https://sns-video-bd.xhscdn.com/spectrum/undeclared-upload"
+        if scenario in ("protected", "protected-only", "origin-only"):
+            stream = note["video"]["media"]["stream"]["h264"][0]
+            stream["masterUrl"] = protected
+            if scenario == "protected":
+                stream["backupUrls"] = [VIDEO, protected]
+                note["imageList"][0]["stream"]["h264"] = [{"masterUrl": protected, "backupUrls": [VIDEO, protected]}]
+                note["imageList"].append({"urlDefault": IMAGE, "livePhoto": True,
+                                           "stream": {"h264": [{"masterUrl": protected}]}})
+            else:
+                note["imageList"] = []
+            if scenario == "origin-only":
+                note["video"]["consumer"] = {"originVideoKey": "spectrum/undeclared-upload"}
         return Response("<script>window.__INITIAL_STATE__=" + json.dumps({"note": {"noteDetailMap": {NOTE_ID: {"note": note}}}}) + ";</script>")
     if parsed.hostname == "ci.xiaohongshu.com":
         if "redirect" in parsed.path:

@@ -10,7 +10,7 @@ const rootDirectory = fileURLToPath(new URL('..', import.meta.url));
 const handler = createProtocolHandler({ rootDirectory });
 
 test('desktop protocol serves the real web entry and all first-party JS imports', async () => {
-  for (const name of ['index.html', 'app.js', 'account-ui.js', 'lib/archive.js', 'lib/clipboard.js', 'lib/membership-plans.js', 'style.css', 'site-header.css', 'favicon.svg', 'download.html', 'download.css', 'download.js', 'ios-shortcut.js', 'ios-shortcut.css', 'product.html', 'product.css', 'product.js']) {
+  for (const name of ['index.html', 'app.js', 'account-ui.js', 'lib/browser-account.js', 'lib/archive.js', 'lib/clipboard.js', 'lib/membership-plans.js', 'style.css', 'site-header.css', 'favicon.svg', 'download.html', 'download.css', 'download.js', 'ios-shortcut.js', 'ios-shortcut.css', 'product.html', 'product.css', 'product.js']) {
     const response = await handler(new Request(`xhs-app://local/${name}`));
     assert.equal(response.status, 200, name);
     assert.ok((await response.text()).length > 0, name);
@@ -83,4 +83,90 @@ test('desktop python routing preserves body, query, bytes, and HTTP status', asy
   } });
   const response = await handle(new Request('xhs-app://local/api/python_image?token=example'));
   assert.deepEqual([...new Uint8Array(await response.arrayBuffer())], [0, 255, 127]);
+});
+
+test('raw original-video routes and the member gateway cannot use the free single-download authority', async t => {
+  const original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  let fetched = 0, pythonRequests = 0;
+  t.mock.method(globalThis, 'fetch', async () => { fetched++; throw Error('must not fetch an unauthorized original'); });
+  t.mock.method(console, 'error', () => {});
+  const features = [];
+  const handle = createProtocolHandler({ rootDirectory, authorize: async feature => {
+    features.push(feature);
+    if (feature === 'watermark-free-video') throw Object.assign(new Error('会员已到期'), { code: 'MEMBERSHIP_EXPIRED', status: 403 });
+    return { authorized: true, free: true };
+  }, pythonBackend: { available: true, request: async () => { pythonRequests++; return Response.json({ success: true }); } } });
+  for (const route of ['/api/video', '/api/video.js', '/api/python_video', '/api/python_video.py']) {
+    const response = await handle(new Request(`xhs-app://local${route}?url=${encodeURIComponent(original)}&action=meta`));
+    assert.equal(response.status, 403, route);
+  }
+  for (const route of ['/api/member_video', '/api/member_video.js']) {
+    const response = await handle(new Request(`xhs-app://local${route}`, { method: 'POST', body: JSON.stringify({ text: `https://www.xiaohongshu.com/explore/${'1'.repeat(24)}` }) }));
+    assert.equal(response.status, 403, route);
+  }
+  assert.equal(fetched, 0);
+  assert.equal(pythonRequests, 0);
+  assert.equal(features.filter(feature => feature === 'watermark-free-video').length, 6);
+});
+
+test('ordinary desktop stream metadata stays free and a redirect to an original rechecks membership', async t => {
+  const stream = 'https://sns-video-bd.xhscdn.com/stream/playback.mp4';
+  const original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  let redirect = false;
+  const fetched = [], features = [];
+  t.mock.method(globalThis, 'fetch', async url => {
+    fetched.push(url);
+    if (redirect) return new Response(null, { status: 302, headers: { location: original } });
+    return new Response(new Uint8Array([0]), { status: 206, headers: { 'content-range': 'bytes 0-0/100', 'content-type': 'video/mp4' } });
+  });
+  t.mock.method(console, 'error', () => {});
+  const handle = createProtocolHandler({ rootDirectory, authorize: async feature => {
+    features.push(feature);
+    if (feature === 'watermark-free-video') throw Object.assign(new Error('请先开通会员'), { status: 403 });
+  } });
+  const request = () => new Request(`xhs-app://local/api/video?url=${encodeURIComponent(stream)}&action=meta`);
+  const free = await handle(request());
+  assert.equal(free.status, 200);
+  assert.equal((await free.json()).size, 100);
+  assert.deepEqual(features, ['single-download']);
+  redirect = true;
+  assert.equal((await handle(request())).status, 403);
+  assert.deepEqual(features, ['single-download', 'single-download', 'watermark-free-video']);
+  assert.deepEqual(fetched, [stream, stream]);
+});
+
+test('desktop member gateway resolves original-only pages to account-bound tickets and checks every read', async t => {
+  const id = '1234567890abcdef12345678';
+  const noteUrl = `https://www.xiaohongshu.com/explore/${id}`;
+  const original = 'https://sns-video-bd.xhscdn.com/spectrum/member-original';
+  const html = `<script>window.__INITIAL_STATE__=${JSON.stringify({ noteData: { data: {
+    noteId: id, title: 'Original-only note', video: { consumer: { originVideoKey: original } }, imageList: []
+  } } })}</script>`;
+  const fetched = [];
+  t.mock.method(globalThis, 'fetch', async url => {
+    fetched.push(String(url));
+    if (String(url) === noteUrl) return new Response(html, { headers: { 'content-type': 'text/html' } });
+    assert.equal(String(url), original);
+    return new Response(new Uint8Array([0]), { status: 206, headers: { 'content-range': 'bytes 0-0/100', 'content-type': 'video/mp4' } });
+  });
+  let userId = 'member-a', allowed = true, checks = 0;
+  const handle = createProtocolHandler({ rootDirectory, authorize: async feature => {
+    if (feature === 'single-download') return { authorized: true, free: true };
+    assert.equal(feature, 'watermark-free-video'); checks++;
+    if (!allowed) throw Object.assign(new Error('会员授权已撤销'), { status: 403 });
+    return { authorized: true, userId };
+  } });
+  const post = await handle(new Request('xhs-app://local/api/member_video', { method: 'POST', body: JSON.stringify({ text: noteUrl }) }));
+  assert.equal(post.status, 200);
+  const data = await post.json();
+  assert.equal(JSON.stringify(data).includes(original), false);
+  const ticket = data.videos[0].url.slice('member-video:'.length);
+  const read = () => new Request(`xhs-app://local/api/member_video?ticket=${ticket}&action=meta`);
+  assert.equal((await handle(read())).status, 200);
+  userId = 'member-b';
+  assert.equal((await handle(read())).status, 403);
+  userId = 'member-a'; allowed = false;
+  assert.equal((await handle(read())).status, 403);
+  assert.deepEqual(fetched, [noteUrl, original]);
+  assert.equal(checks, 4);
 });

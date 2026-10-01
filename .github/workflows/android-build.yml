@@ -56,8 +56,19 @@ jobs:
       - name: Install Android SDK 35
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Unit tests, lint and build debug APK
+      - name: Test member browser entry and native video policy, lint and build debug APK
+        # build-android runs every android*.test.js and :app:testDebugUnitTest before assembly.
         run: npm run android:build
+      - name: Confirm the original-video and redirect JUnit gate ran
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const xml = readFileSync('android/app/build/test-results/testDebugUnitTest/TEST-com.brclio.xhs.NativePolicyTest.xml', 'utf8');
+          const result = xml.match(/<testcase\b[^>]*\bname="nativeVideoTransfersOnlyAcceptOrdinaryPlaybackIncludingEveryRedirectTarget"[^>]*(?:\/>|>[\s\S]*?<\/testcase>)/)?.[0];
+          assert.ok(result, 'The native original-video/redirect policy test did not execute');
+          assert.doesNotMatch(result, /<(?:skipped|failure|error)\b/, 'The native policy test must pass without being skipped');
+          NODE
       - name: Upload debug APK and checksum
         uses: actions/upload-artifact@v4
         with:
@@ -74,6 +85,7 @@ jobs:
           name: android-verification-${{ github.run_number }}
           path: |
             android/app/build/reports/tests/
+            android/app/build/test-results/
             android/app/build/reports/lint-results-*.html
           if-no-files-found: ignore
           retention-days: 14

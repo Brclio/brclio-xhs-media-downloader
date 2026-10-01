@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import re
-from urllib.parse import parse_qs, urljoin, urlparse
+from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
 from js import AbortSignal
 from workers import Request, Response, WorkerEntrypoint, fetch
@@ -17,7 +17,7 @@ from parser_core import (
     MAX_HTML_BYTES, MAX_INPUT_LENGTH, PAGE_HEADERS, XhsError,
     build_no_watermark_url, extract_input_url, extract_note_id,
     extract_original_asset_token, is_allowed_page_url, is_direct_image_url,
-    is_xhs_image_url, is_xhs_video_url, normalize_image_url, parse_note_html,
+    is_xhs_image_url, is_xhs_video_url, normalize_image_url, parse_note_html, public_playback_video,
     validate_asset_token,
 )
 
@@ -83,6 +83,8 @@ async def read_limited(response, limit: int, message: str) -> bytes:
 async def safe_fetch(url: str, *, headers: dict, validator, label: str,
                      timeout_ms: int = 15000):
     signal = AbortSignal.timeout(timeout_ms)
+    if label == "视频 CDN":
+        validator = is_public_playback_url
     for hop in range(6):
         if not validator(url):
             raise XhsError(f"{label}跳转到了不受支持的地址。", 502)
@@ -176,21 +178,24 @@ async def parse_request(request) -> Response:
     if not note_id:
         raise XhsError("无法从分享链接中识别当前笔记 ID。", 422)
     parsed = parse_note_html(page_html, note_id)
-    if not parsed["images"] and not parsed["videos"]:
+    public_images = [{**image, "liveVideo": public_playback_video(image.get("liveVideo"))} for image in parsed["images"]]
+    public_videos = [video for item in parsed["videos"] if (video := public_playback_video(item))]
+    if not public_images and not public_videos and not parsed.get("originalVideos"):
         raise XhsError("没有解析到图片或视频。笔记可能已删除、需要登录，或者小红书页面结构已更新。", 422)
     images = [{"index": index, "token": item["token"], "url": item["url"],
                "livePhoto": bool(item.get("livePhoto")),
                "liveVideo": media_fields(item["liveVideo"])
                if isinstance(item.get("liveVideo"), dict) else None}
-              for index, item in enumerate(parsed["images"], start=1)]
-    videos = [{"index": index, **media_fields(item, video=True)}
-              for index, item in enumerate(parsed["videos"], start=1)]
+              for index, item in enumerate(public_images, start=1)]
+    videos = [{"index": index, **media_fields(item, video=True), "isDefault": index == 1}
+              for index, item in enumerate(public_videos, start=1)]
     return json_response(200, {
         "success": True, "engine": "python", "title": parsed["title"],
         "content": parsed["content"], "noteId": note_id, "strategy": parsed["strategy"],
-        "type": "mixed" if images and videos else "video" if videos else "image",
+        "type": "mixed" if images and (videos or parsed.get("originalVideos")) else "video" if videos or parsed.get("originalVideos") else "image",
         "count": len(images), "livePhotoCount": sum(bool(item["liveVideo"]) for item in images),
-        "videoCount": len(videos), "images": images, "videos": videos,
+        "videoCount": len(videos), "originalVideoCount": len(parsed.get("originalVideos", [])),
+        "hasOriginalVideo": bool(parsed.get("originalVideos")), "images": images, "videos": videos,
     })
 
 
@@ -258,11 +263,20 @@ async def open_video(url: str, range_header: str):
     return response
 
 
+def is_public_playback_url(url: str) -> bool:
+    if not is_xhs_video_url(url):
+        return False
+    path = unquote(urlparse(url).path)
+    return path.startswith("/stream/") and "\\" not in path and ".." not in path.split("/")
+
+
 async def video_request(query: dict) -> Response:
     source_url = normalize_image_url((query.get("url") or [""])[0])
     action = (query.get("action") or ["meta"])[0]
     if not is_xhs_video_url(source_url):
         raise XhsError("视频地址无效或不属于小红书 CDN。")
+    if not is_public_playback_url(source_url):
+        raise XhsError("原视频需要有效会员，请使用会员原视频下载。", 403)
     if action == "meta":
         response = await open_video(source_url, "bytes=0-0")
         content_range = parse_content_range(response.headers.get("Content-Range"))

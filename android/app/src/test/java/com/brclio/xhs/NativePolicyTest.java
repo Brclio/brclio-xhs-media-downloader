@@ -55,6 +55,22 @@ public class NativePolicyTest {
         }
     }
 
+    @Test public void nativeVideoTransfersOnlyAcceptOrdinaryPlaybackIncludingEveryRedirectTarget() {
+        URI playback = NativePolicy.playbackVideoUri("https://sns-video-v28.xhscdn.com/stream/ordinary.mp4?sign=a%2Bb%3D");
+        assertEquals("https://sns-video-v28.xhscdn.com/stream/ordinary.mp4?sign=a%2Bb%3D", playback.toString());
+        assertEquals(playback, NativePolicy.previewUri(playback.toString()));
+        assertNotNull(NativePolicy.previewUri("https://sns-webpic-qc.xhscdn.com/original-image.jpg"));
+        for (String original : new String[] {
+                "https://sns-video-v28.xhscdn.com/spectrum/original", "https://sns-video-v28.xhscdn.com/original.mp4",
+                "https://sns-video-v28.xhscdn.com/stream/../original.mp4",
+                "https://sns-video-v28.xhscdn.com/stream/%2e%2e/original.mp4",
+                "https://sns-video-v28.xhscdn.com/stream/%5coriginal.mp4",
+                "https://ci.xiaohongshu.com/stream/original.mp4"
+        }) assertThrows(original, IllegalArgumentException.class, () -> NativePolicy.playbackVideoUri(original));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.playbackVideoUri(playback.resolve("../original.mp4").toString()));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.previewUri("https://sns-video-v28.xhscdn.com/original.mp4"));
+    }
+
     @Test public void filenamesCannotEscapeDirectoriesOrHideAnExtension() {
         String clean = NativePolicy.filename(" ../夏天\\回忆:照片\u0000\n\u007f\u202egpj.mp4 ", "default.jpg");
         assertFalse(clean.matches(".*[\\\\/:*?\"<>|\\p{Cntrl}].*"));

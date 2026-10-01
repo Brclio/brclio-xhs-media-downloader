@@ -92,7 +92,13 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
   function account(state, user, session, time) {
     const member = membership(user, time);
     const device = deviceView(state, session);
-    const features = Object.fromEntries(KNOWN_FEATURES.map(feature => [feature, { requiresMembership: config.protectedFeatures.includes(feature), requiresDevice: config.protectedFeatures.includes(feature), allowed: !config.protectedFeatures.includes(feature) || (member.active && device.status === 'authorized' && session.client === 'desktop') }]));
+    const features = Object.fromEntries(KNOWN_FEATURES.map(feature => {
+      const requiresMembership = feature === 'watermark-free-video' || config.protectedFeatures.includes(feature);
+      const requiresDevice = requiresMembership && (feature === 'profile-download' || session.client === 'desktop');
+      const supportedClient = session.client === 'desktop' || (feature === 'watermark-free-video' && session.client === 'browser');
+      return [feature, { requiresMembership, requiresDevice,
+        allowed: !requiresMembership || (supportedClient && member.active && (!requiresDevice || device.status === 'authorized')) }];
+    }));
     return { user: { id: user.id, email: user.email, role: role(user), createdAt: user.createdAt }, membership: member, device, features, serverTime: iso(time) };
   }
   function userView(state, user, time) {
@@ -246,13 +252,15 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     if (request.action === 'authorize') {
       const feature = request.input.feature;
       if (!KNOWN_FEATURES.includes(feature)) fail('UNKNOWN_FEATURE', '未知功能。');
-      if (session.client !== 'desktop') fail('DESKTOP_REQUIRED', '此权限仅适用于桌面客户端。', 403);
-      if (config.protectedFeatures.includes(feature)) {
-        const device = deviceView(state, session);
-        if (device.status !== 'authorized') fail(device.status === 'revoked' ? 'DEVICE_REVOKED' : 'DEVICE_LIMIT', device.status === 'revoked' ? '此设备授权已被管理员撤销，请联系管理员。' : '账号已绑定其他设备，请联系管理员解绑', 403);
+      if (session.client !== 'desktop' && !(feature === 'watermark-free-video' && session.client === 'browser')) fail('DESKTOP_REQUIRED', '此权限仅适用于桌面客户端。', 403);
+      if (feature === 'watermark-free-video' || config.protectedFeatures.includes(feature)) {
+        if (session.client === 'desktop') {
+          const device = deviceView(state, session);
+          if (device.status !== 'authorized') fail(device.status === 'revoked' ? 'DEVICE_REVOKED' : 'DEVICE_LIMIT', device.status === 'revoked' ? '此设备授权已被管理员撤销，请联系管理员。' : '账号已绑定其他设备，请联系管理员解绑', 403);
+        }
         const member = membership(user, time);
         if (!member.active) fail(member.type === 'duration' ? 'MEMBERSHIP_EXPIRED' : 'MEMBERSHIP_REQUIRED', member.type === 'duration' ? '会员已到期，请续期后继续。' : '此功能需要开通会员。', 403);
-        if (time - Date.parse(state.devices[session.deviceId].lastCheckedAt) >= config.deviceCheckWriteMs) {
+        if (session.client === 'desktop' && time - Date.parse(state.devices[session.deviceId].lastCheckedAt) >= config.deviceCheckWriteMs) {
           return store.transaction(latest => {
             const checkedTime = now();
             const current = authenticate(latest, request, checkedTime);
@@ -365,7 +373,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       const { user, session } = authenticate(state, request, time, request.action.startsWith('admin-'));
       if (request.action === 'logout') { session.revokedAt = iso(time); return { value: { loggedOut: true } }; }
       if (request.action === 'redeem') {
-        if (session.client !== 'desktop') fail('DESKTOP_REQUIRED', '请在桌面客户端兑换。', 403);
+        if (!['desktop', 'browser'].includes(session.client)) fail('DESKTOP_REQUIRED', '请使用软件账号在网页或客户端兑换。', 403);
         const requestId = requestIdValue(request.input.requestId);
         const raw = activationCodeValue(request.input.code);
         const codeHash = hash('activation', raw);

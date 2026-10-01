@@ -26,6 +26,10 @@
     "api/account.js": {
       "maxDuration": 60,
       "excludeFiles": "{desktop/**,desktop-runtime/**,dist-desktop/**,test/**,docs/**}"
+    },
+    "api/member_video.js": {
+      "maxDuration": 60,
+      "excludeFiles": "{desktop/**,desktop-runtime/**,dist-desktop/**,test/**,docs/**}"
     }
   },
   "headers": [

@@ -16,7 +16,27 @@ export function mediaUrl(value) {
 function normalizeVideo(raw, index) {
   const url = mediaUrl(raw?.url);
   if (!url) throw new Error('解析结果包含无效的视频地址，请重新解析。');
-  return { ...raw, index, url, backupUrls: [...new Set((Array.isArray(raw.backupUrls) ? raw.backupUrls : []).map(mediaUrl).filter(Boolean))] };
+  if (!playbackVideoUrl(url)) return null;
+  return { ...raw, index, url, backupUrls: [...new Set((Array.isArray(raw.backupUrls) ? raw.backupUrls : []).map(playbackVideoUrl).filter(Boolean))] };
+}
+
+export function playbackVideoUrl(value) {
+  const normalized = mediaUrl(value);
+  if (!normalized) return '';
+  try {
+    const url = new URL(normalized), path = decodeURIComponent(url.pathname);
+    return (url.hostname === 'xhscdn.com' || url.hostname.endsWith('.xhscdn.com'))
+      && path.startsWith('/stream/') && !path.includes('\\') && !path.split('/').includes('..') ? normalized : '';
+  } catch { return ''; }
+}
+
+export function memberVideoPageUrl(value) {
+  try {
+    const source = new URL(value), host = source.hostname;
+    if (source.protocol !== 'https:' || source.username || source.password || (source.port && source.port !== '443')
+      || !['xiaohongshu.com', 'xhslink.com', 'xhslink.cn'].some(allowed => host === allowed || host.endsWith(`.${allowed}`))) return '';
+    return `https://xhs.download.brclio.com/?note=${encodeURIComponent(source.href)}&memberVideo=1`;
+  } catch { return ''; }
 }
 
 export function normalizeNote(payload, input = '') {
@@ -26,13 +46,16 @@ export function normalizeNote(payload, input = '') {
     if (!url) throw new Error('解析结果包含无效的图片地址，请重新解析。');
     return { index: index + 1, url, livePhoto: Boolean(raw.livePhoto || raw.liveVideo), liveVideo: raw.liveVideo ? normalizeVideo(raw.liveVideo, index + 1) : null };
   });
-  const videos = (Array.isArray(payload.videos) ? payload.videos : []).map((raw, index) => normalizeVideo(raw, index + 1));
-  if (!images.length && !videos.length) throw new Error('未找到可下载的图片或视频。');
-  if (images.length > 50 || videos.length > 50) throw new Error('媒体数量过多，请使用网页版处理。');
+  const rawVideos = Array.isArray(payload.videos) ? payload.videos : [];
+  const normalizedVideos = rawVideos.map((raw, index) => normalizeVideo(raw, index + 1));
+  const videos = normalizedVideos.filter(Boolean);
+  const hasOriginalVideo = payload.hasOriginalVideo === true || payload.originalVideoCount > 0 || normalizedVideos.some(video => video === null);
+  if (!images.length && !videos.length && !hasOriginalVideo) throw new Error('未找到可下载的图片或视频。');
+  if (images.length > 50 || rawVideos.length > 50) throw new Error('媒体数量过多，请使用网页版处理。');
   return {
     title: String(payload.title || '小红书笔记'), content: String(payload.content || ''),
     sourceUrl: String(input).match(/https?:\/\/[^\s<>"'”]+/)?.[0]?.replace(/[.,;!?\])}，。！？；）】》]+$/g, '') || '',
-    noteId: String(payload.noteId || ''), engine: payload.engine === 'python' ? 'Python' : 'Node.js', images, videos,
+    noteId: String(payload.noteId || ''), engine: payload.engine === 'python' ? 'Python' : 'Node.js', images, videos, hasOriginalVideo,
   };
 }
 

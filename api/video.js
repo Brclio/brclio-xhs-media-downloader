@@ -1,5 +1,7 @@
 import { XhsError, isXhsVideoUrl, normalizeImageUrl } from "../lib/xhs.js";
 
+import { isMemberVideoUrl } from "../lib/video-policy.js";
+
 const MAX_CHUNK_BYTES = 3_500_000;
 const MAX_VIDEO_BYTES = 512 * 1024 * 1024;
 
@@ -21,11 +23,14 @@ function parseContentRange(value) {
   };
 }
 
-async function fetchVideo(url, range) {
+async function fetchVideo(url, range, authorizeOriginal) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 18000);
 
   try {
+    for (let hop = 0; hop < 6; hop += 1) {
+    if (!isXhsVideoUrl(url)) throw new XhsError("视频 CDN 地址不受支持。", 502);
+    if (isMemberVideoUrl(url)) await authorizeOriginal();
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -34,15 +39,25 @@ async function fetchVideo(url, range) {
         referer: "https://www.xiaohongshu.com/",
         range
       },
-      redirect: "follow",
+      redirect: "manual",
       signal: controller.signal
     });
-    if (!isXhsVideoUrl(response.url)) {
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+      await response.body?.cancel().catch(() => {});
+      if (!location || hop === 5) throw new XhsError("视频 CDN 跳转次数过多。", 502);
+      url = new URL(location, url).href;
+      continue;
+    }
+    if (response.url && !isXhsVideoUrl(response.url)) {
       await response.body?.cancel().catch(() => {});
       throw new XhsError("视频 CDN 跳转到了不受支持的地址。", 502);
     }
     return response;
+    }
   } catch (error) {
+    if (error instanceof XhsError) throw error;
+    if (error?.status) throw error;
     if (error?.name === "AbortError") throw new XhsError("读取视频超时。", 504);
     throw new XhsError(`读取视频失败：${error.message}`, 502);
   } finally {
@@ -84,7 +99,10 @@ function getSourceUrl(req) {
   return sourceUrl;
 }
 
-export default async function handler(req, res) {
+export function createVideoHandler({ authorizeOriginal = async () => {
+  throw new XhsError("原视频需要有效会员，请使用会员原视频下载。", 403);
+} } = {}) {
+return async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-XHS-Engine", "node");
@@ -99,7 +117,7 @@ export default async function handler(req, res) {
     const action = String(req.query.action ?? "meta");
 
     if (action === "meta") {
-      const response = await fetchVideo(sourceUrl, "bytes=0-0");
+      const response = await fetchVideo(sourceUrl, "bytes=0-0", authorizeOriginal);
       if (![200, 206].includes(response.status)) {
         throw new XhsError(`视频服务器返回 HTTP ${response.status}。`, 502);
       }
@@ -134,7 +152,7 @@ export default async function handler(req, res) {
       throw new XhsError(`单个视频分段不能超过 ${MAX_CHUNK_BYTES} 字节。`, 413);
     }
 
-    const response = await fetchVideo(sourceUrl, `bytes=${start}-${end}`);
+    const response = await fetchVideo(sourceUrl, `bytes=${start}-${end}`, authorizeOriginal);
     if (![200, 206].includes(response.status)) {
       throw new XhsError(`视频服务器返回 HTTP ${response.status}。`, 502);
     }
@@ -170,10 +188,13 @@ export default async function handler(req, res) {
     }
     return res.status(200).send(buffer);
   } catch (error) {
-    const statusCode = error instanceof XhsError ? error.statusCode : 500;
-    const message = error instanceof XhsError ? error.message : "Node.js 视频下载失败。";
+    const statusCode = error instanceof XhsError ? error.statusCode : error.status || 500;
+    const message = error instanceof XhsError || error.status ? error.message : "Node.js 视频下载失败。";
     console.error("video error", error);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     return res.status(statusCode).json({ success: false, engine: "node", message });
   }
 }
+}
+
+export default createVideoHandler();

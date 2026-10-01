@@ -1,4 +1,4 @@
-import { safeFilename, normalizeNote, captionText, textEntry, imageEntry, videoEntry, selectedEntries } from './media.js';
+import { safeFilename, normalizeNote, captionText, textEntry, imageEntry, videoEntry, selectedEntries, memberVideoPageUrl } from './media.js';
 
 const $ = id => document.getElementById(id);
 const pending = new Map();
@@ -80,6 +80,8 @@ function resetResult() {
   $('video-player').removeAttribute('src');
   $('video-player').load();
   $('quality').replaceChildren();
+  $('member-video-section').hidden = true;
+  $('member-video-download').removeAttribute('href');
   updateSelection();
 }
 
@@ -317,8 +319,11 @@ $('parse-form').addEventListener('submit', event => {
     selected = new Set(note.images.map(image => image.index));
     $('note-title').textContent = note.title;
     $('caption').textContent = note.content || '这篇笔记没有正文，复制时将包含标题。';
-    $('result-meta').textContent = `${note.images.length} 张图片 · ${note.videos.length} 条视频线路`;
+    $('result-meta').textContent = `${note.images.length} 张图片 · ${note.videos.length} 条普通视频线路${note.hasOriginalVideo ? ' · 有会员原视频' : ''}`;
     $('video-section').hidden = !note.videos.length;
+    const memberPage = memberVideoPageUrl(note.sourceUrl);
+    $('member-video-section').hidden = !memberPage || (!note.videos.length && !note.hasOriginalVideo);
+    if (memberPage) $('member-video-download').href = memberPage;
     note.videos.forEach((video, index) => {
       const option = document.createElement('option'); option.value = String(index); option.textContent = video.label || `${video.width || '?'}×${video.height || '?'} · ${video.codec || '视频'} · 线路 ${index + 1}`; $('quality').append(option);
     });

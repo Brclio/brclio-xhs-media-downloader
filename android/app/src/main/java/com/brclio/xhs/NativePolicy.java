@@ -24,6 +24,25 @@ final class NativePolicy {
         return uri;
     }
 
+    /** Native transfers have no software-account session; originals use the member website. */
+    static URI playbackVideoUri(String value) {
+        URI uri = mediaUri(value);
+        String host = uri.getHost().toLowerCase(Locale.ROOT);
+        String path = uri.normalize().getPath();
+        if (!(host.equals("xhscdn.com") || host.endsWith(".xhscdn.com")) || path == null
+                || !path.startsWith("/stream/") || path.contains("\\")
+                || path.contains("/../") || path.endsWith("/..")) {
+            throw new IllegalArgumentException("原视频仅限会员，请通过网页版登录后下载。");
+        }
+        return uri;
+    }
+
+    static URI previewUri(String value) {
+        URI uri = mediaUri(value);
+        return uri.getHost().toLowerCase(Locale.ROOT).startsWith("sns-video")
+                ? playbackVideoUri(value) : uri;
+    }
+
     static URI httpsUri(String value) {
         try {
             if (value == null || value.length() > 8192 || value.contains("\\")) {

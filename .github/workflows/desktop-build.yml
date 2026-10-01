@@ -115,6 +115,9 @@ jobs:
       - name: Verify membership purchase and redemption in the real desktop renderer
         # Isolated fake account bridge; no real emails, payments or account writes.
         run: npm run desktop:verify:membership
+      - name: Verify member original videos and browser account authorization in the real renderer
+        # Disposable account/media fixtures exercise guest, nonmember, member and authorization-loss flows.
+        run: npm run desktop:verify:member-video
       - name: Verify feedback conversations and safe reply retries in the real desktop renderer
         run: npm run desktop:verify:feedback
       - name: Verify public feedback, browser login and private owner conversations

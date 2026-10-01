@@ -91,6 +91,65 @@ function fixture(overrides = {}) {
   return { instance, execute, login, issue, admin, adminCall, grant, generate, deliveries, activationDeliveries, mailer, config, faults, logFiles, advance: ms => { clock += ms; }, set onLogRead(callback) { onLogRead = callback; }, get clock() { return clock; }, get state() { return state; }, get writes() { return writes; }, get conflicts() { return conflicts; }, get graphqlQueries() { return graphqlQueries; } };
 }
 
+test('original-video authorization requires live membership for browser sessions without claiming a desktop slot', async () => {
+  const f = fixture({ protectedFeatures: ['profile-download'] }), admin = await f.admin();
+  const browser = await f.login('video-member@example.test', null, 'browser');
+  assert.equal(browser.account.features['single-download'].allowed, true);
+  assert.deepEqual(browser.account.features['watermark-free-video'], { requiresMembership: true, requiresDevice: false, allowed: false });
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }), { code: 'ACCOUNT_REQUIRED' });
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, browser), { code: 'MEMBERSHIP_REQUIRED' });
+  await f.grant(admin, browser, 1);
+  const writes = f.writes;
+  const authorized = await f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, browser);
+  assert.equal(authorized.authorized, true);
+  assert.deepEqual(authorized.account.features['watermark-free-video'], { requiresMembership: true, requiresDevice: false, allowed: true });
+  assert.equal(authorized.account.features['profile-download'].allowed, false);
+  assert.equal(Object.keys(f.state.devices).length, 0);
+  assert.equal(f.writes, writes, 'web authorization never claims or updates a desktop device');
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'profile-download' }, browser), { code: 'DESKTOP_REQUIRED' });
+  await assert.rejects(f.adminCall(admin, 'authorize', { feature: 'watermark-free-video' }), { code: 'DESKTOP_REQUIRED' });
+  f.advance(DAY);
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, browser), { code: 'MEMBERSHIP_EXPIRED' });
+  const expired = await f.execute(f.instance(), 'me', {}, browser);
+  assert.equal(expired.account.features['watermark-free-video'].allowed, false);
+  await f.execute(f.instance(), 'logout', {}, browser);
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, browser), { code: 'SESSION_REVOKED' });
+});
+
+test('desktop original-video authorization retains the signed bound-device gate', async () => {
+  const f = fixture(), admin = await f.admin(), desktop = await f.login();
+  assert.deepEqual(desktop.account.features['watermark-free-video'], { requiresMembership: true, requiresDevice: true, allowed: false });
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, desktop, desktop.dev), { code: 'MEMBERSHIP_REQUIRED' });
+  await f.grant(admin, desktop);
+  assert.equal((await f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, desktop, desktop.dev)).authorized, true);
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, desktop), { code: 'INVALID_DEVICE_PROOF' });
+  f.advance(60001);
+  const second = await f.login(desktop.account.user.email);
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, second, second.dev), { code: 'DEVICE_LIMIT' });
+  await f.adminCall(admin, 'admin-unbind', { userId: desktop.account.user.id, deviceId: desktop.account.device.id });
+  await assert.rejects(f.execute(f.instance(), 'authorize', { feature: 'watermark-free-video' }, desktop, desktop.dev), { code: 'DEVICE_REVOKED' });
+});
+
+test('browser activation redeems for the verified owner without device binding and safely replays a retry', async () => {
+  const f = fixture(), admin = await f.admin();
+  const browser = await f.login('browser-member@example.test', null, 'browser');
+  const other = await f.login('browser-other@example.test', null, 'browser');
+  const [activation] = await f.generate(admin, { userId: browser.account.user.id, planId: 'monthly' });
+  const input = { code: activation.code, requestId: randomUUID() };
+  await assert.rejects(f.execute(f.instance(), 'redeem', input), { code: 'ACCOUNT_REQUIRED' });
+  await assert.rejects(f.execute(f.instance(), 'redeem', input, other), { code: 'ACTIVATION_RECIPIENT_MISMATCH' });
+  await assert.rejects(f.adminCall(admin, 'redeem', input), { code: 'DESKTOP_REQUIRED' });
+  const redeemed = await f.execute(f.instance(), 'redeem', input, browser);
+  assert.equal(redeemed.account.membership.active, true);
+  assert.equal(redeemed.account.features['watermark-free-video'].allowed, true);
+  assert.equal(redeemed.account.device.status, 'unbound');
+  assert.equal(Object.keys(f.state.devices).length, 0);
+  const replay = await f.execute(f.instance(), 'redeem', input, browser);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.account.membership.expiresAt, redeemed.account.membership.expiresAt);
+  await assert.rejects(f.execute(f.instance(), 'redeem', { ...input, requestId: randomUUID() }, browser), { code: 'ACTIVATION_USED' });
+});
+
 test('targeted plans use the authoritative catalog and bind one registered recipient without plaintext persistence', async () => {
   const f = fixture(), admin = await f.admin(), customer = await f.login();
   assert.deepEqual(MEMBERSHIP_PLANS.map(p => [p.id, p.days, formatMembershipPrice(p)]), [['daily', 1, '2'], ['monthly', 30, '9.9'], ['yearly', 365, '39.9']]);

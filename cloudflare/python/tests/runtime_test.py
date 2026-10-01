@@ -22,7 +22,7 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 NOTE = "https://www.xiaohongshu.com/explore/abcdef1234567890abcdef12"
-VIDEO = "https://sns-video-bd.xhscdn.com/fixture.mp4"
+VIDEO = "https://sns-video-bd.xhscdn.com/stream/fixture.mp4"
 
 
 class WorkerRuntimeTests(unittest.TestCase):
@@ -107,6 +107,25 @@ class WorkerRuntimeTests(unittest.TestCase):
         self.assertEqual(body["images"][0]["liveVideo"]["duration"], 2500)
         self.assertEqual(body["videos"][0]["audioCodec"], "aac")
         self.assertEqual(body["videos"][0]["hasAudio"], True)
+
+    def test_public_parse_filters_undeclared_original_paths_and_supports_only_explicit_origins(self):
+        status, _, body = self.call("/api/python-parse", {"text": NOTE + "?case=protected"})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["videos"][0]["url"], VIDEO)
+        self.assertEqual(body["videos"][0]["backupUrls"], [])
+        self.assertTrue(body["videos"][0]["isDefault"])
+        self.assertEqual(body["images"][0]["liveVideo"]["url"], VIDEO)
+        self.assertIsNone(body["images"][1]["liveVideo"])
+        self.assertFalse(body["hasOriginalVideo"])
+        self.assertEqual(body["originalVideoCount"], 0)
+        self.assertNotIn("spectrum/", json.dumps(body))
+        self.assertEqual(self.call("/api/python-parse", {"text": NOTE + "?case=protected-only"})[0], 422)
+        status, _, body = self.call("/api/python-parse", {"text": NOTE + "?case=origin-only"})
+        self.assertEqual(status, 200)
+        self.assertTrue(body["hasOriginalVideo"])
+        self.assertEqual(body["originalVideoCount"], 1)
+        self.assertEqual(body["videos"], [])
+        self.assertNotIn("spectrum/", json.dumps(body))
 
     def test_note_errors_and_input_limits(self):
         for body, expected in [({}, 400), ({"text": "https://example.com"}, 400),

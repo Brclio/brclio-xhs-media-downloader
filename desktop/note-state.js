@@ -66,7 +66,7 @@ export function readNoteSnapshot(noteId) {
       'infoList', 'info_list', 'imageInfo', 'image_info', 'urlInfo', 'url_info', 'urlList', 'url_list',
       'imageScene', 'image_scene', 'format', 'scene', 'imageId', 'image_id', 'fileId', 'file_id',
       'livePhoto', 'live_photo', 'isLivePhoto', 'is_live_photo',
-      'stream', 'livePhotoStream', 'live_photo_stream', 'media', 'consumer',
+      'stream', 'livePhotoStream', 'live_photo_stream', 'media', 'consumer', 'mediaV2', 'video', 'md5',
       'h264', 'h265', 'h266', 'av1', 'masterUrl', 'master_url', 'masterUrls', 'master_urls',
       'backupUrls', 'backup_urls', 'videoCodec', 'video_codec', 'codec', 'width', 'height',
       'videoBitrate', 'video_bitrate', 'bitrate', 'size', 'fileSize', 'file_size',
