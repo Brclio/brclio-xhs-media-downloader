@@ -115,6 +115,17 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     if (details.level === 'error' && !details.message.includes('ERR_BLOCKED_BY_CLIENT') && !details.message.includes('playback.mp4')) rendererErrors.push(details.message);
   });
   const evaluate = script => win.webContents.executeJavaScript(script, true);
+  const setViewport = async (width, height) => {
+    let gutter = 0, measured;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      win.setContentSize(width + gutter, height);
+      await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+      measured = await evaluate('({ width: document.documentElement.clientWidth, gutter: innerWidth - document.documentElement.clientWidth })');
+      if (measured.width === width) break;
+      gutter = measured.gutter;
+    }
+    assert.equal(measured.width, width, `Expected ${width}px layout viewport: ${JSON.stringify(measured)}`);
+  };
   const until = condition => evaluate(`new Promise((resolve, reject) => {
     const started = Date.now(); const check = () => {
       if (${condition}) resolve(); else if (Date.now() - started > 5000) reject(new Error('Fixture condition timed out: ' + ${JSON.stringify(condition)})); else setTimeout(check, 20);
@@ -178,16 +189,17 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(await evaluate(`window.fixtureRequests.slice(${requestsBefore}).filter(request => request.path === '/api/member_video').length`), 0);
   await click('membership-close'); await click('browser-account-close');
   for (const width of [1440, 768, 390, 320]) {
-    win.setSize(width, 960);
+    await setViewport(width, 960);
     await evaluate(`document.querySelectorAll('.toast').forEach(element => element.classList.remove('toast-visible')); document.documentElement.style.scrollBehavior = 'auto';
       window.scrollTo({ top: document.getElementById('video-section').getBoundingClientRect().top + scrollY - document.querySelector('.app-header').offsetHeight - 16, behavior: 'instant' });
       new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`);
-    const overflow = await evaluate(`({ viewport: innerWidth, width: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].filter(element => { const box = element.getBoundingClientRect(); return box.width > 0 && box.right > innerWidth + 1; }).slice(0, 10).map(element => ({ tag: element.tagName, id: element.id, className: element.className, width: element.getBoundingClientRect().width })) })`);
-    assert.equal(overflow.width > overflow.viewport + 1, false, `Page overflow at ${width}px: ${JSON.stringify(overflow)}`);
+    const overflow = await evaluate(`({ viewport: document.documentElement.clientWidth, width: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].filter(element => { const box = element.getBoundingClientRect(); return box.width > 0 && box.right > document.documentElement.clientWidth + 1; }).slice(0, 10).map(element => ({ tag: element.tagName, id: element.id, className: element.className, width: element.getBoundingClientRect().width })) })`);
+    assert.equal(overflow.viewport, width, `Layout viewport changed before ${width}px screenshot`);
+    assert.ok(overflow.width <= overflow.viewport, `Page overflow at ${width}px: ${JSON.stringify(overflow)}`);
     fs.writeFileSync(path.join(screenshots, `video-${width}.png`), (await win.webContents.capturePage()).toPNG());
   }
   await click('browser-account-open');
-  await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+  await setViewport(320, 960);
   assert.equal(await evaluate(`(() => { const dialog = document.getElementById('browser-account-dialog'); return dialog.scrollWidth > dialog.clientWidth + 1; })()`), false, 'Account dialog overflow at 320px');
   fs.writeFileSync(path.join(screenshots, 'account-320.png'), (await win.webContents.capturePage()).toPNG());
   await click('browser-account-close');
@@ -203,9 +215,9 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   }
   // The desktop bridge uses the same opaque ticket flow; account entry switches
   // its existing account tab instead of opening the browser account dialog.
-  win.setSize(1440, 1000);
   await win.loadURL(origin + '/?fixtureDesktop=1');
   await until(`document.getElementById('account-email') && document.getElementById('account-badge').textContent.includes('未登录')`);
+  await setViewport(1440, 1000);
   await evaluate(`document.getElementById('share-text').value = 'https://www.xiaohongshu.com/explore/aaaaaaaaaaaaaaaaaaaaaaaa'; document.getElementById('parse-form').requestSubmit()`);
   await until(`!document.getElementById('video-section').hidden && !document.getElementById('parse-button').disabled`);
   await click('download-original-video-button');

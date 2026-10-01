@@ -391,6 +391,9 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
       } catch (cause) { console.error(JSON.stringify({ installedArchiveError: cause.message })); }
       try { console.error(JSON.stringify({ installerWindows: await windowSnapshot([...ids]) })); }
       catch (cause) { console.error(JSON.stringify({ installerWindowError: cause.message })); }
+      // NSIS may relaunch through Explorer, outside the installer's child tree.
+      try { console.error(JSON.stringify({ applicationWindows: await windowSnapshot(relevant.map(p => p.ProcessId)) })); }
+      catch (cause) { console.error(JSON.stringify({ applicationWindowError: cause.message })); }
       try {
         const log = await readFile(path.join(profile, 'diagnostics/events.ndjson'), 'utf8');
         console.error(JSON.stringify({ appEvents: log.trim().split(/\r?\n/).slice(-12).map(line => JSON.parse(line)) }));
