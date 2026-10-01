@@ -8,18 +8,36 @@ const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { execFileSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
+// Diagnostic comparison against the immutable failed release; never restore
+// shared product files just to reproduce the old scroll behavior.
+const baselineNestedScroll = process.argv.includes('--baseline-nested-scroll');
+const baselineScroll = process.argv.includes('--baseline-scroll') || baselineNestedScroll;
+const baselineApp = baselineScroll ? execFileSync('git', ['show', 'v1.8.27:app.js'], { cwd: root, encoding: 'utf8' }) : null;
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'brclio-member-video-ui-'));
 const screenshots = path.join(temporary, 'screenshots');
 fs.mkdirSync(screenshots);
 app.setPath('userData', path.join(temporary, 'profile'));
-let win, server, finished = false;
+let win, server, finished = false, readDiagnostics;
 const deadline = setTimeout(() => void finish(1, new Error('MEMBER_VIDEO_UI_TIMEOUT')), 120_000);
 async function finish(code, error) {
   if (finished) return;
   finished = true; clearTimeout(deadline);
-  if (error) console.error(error);
+  if (error) {
+    console.error(error);
+    if (readDiagnostics) {
+      try {
+        const diagnostics = await Promise.race([readDiagnostics(), new Promise(resolve => setTimeout(resolve, 2000))]);
+        if (diagnostics) {
+          const file = path.join(temporary, 'failure.json');
+          fs.writeFileSync(file, JSON.stringify(diagnostics, null, 2));
+          console.error(JSON.stringify({ uiFailureDiagnostics: diagnostics, report: file }));
+        }
+      } catch { /* Preserve the original assertion when its renderer is unavailable. */ }
+    }
+  }
   win?.destroy(); server?.close();
   app.exit(code);
 }
@@ -32,6 +50,30 @@ window.fixtureRole = 'guest'; window.fixtureOriginalAvailable = true;
 window.fixtureRequests = []; window.fixtureDownloads = []; window.fixtureBlobs = new Map();
 window.fixtureDenyChunks = false; window.fixtureDenyFinalMeta = false; window.fixtureCorruptMp4 = false; window.fixtureChangeDuringFinalMeta = ''; window.fixtureMetaCalls = 0; window.fixtureOpened = [];
 window.fixtureSlow = false; window.fixturePending = []; window.fixtureDeliveredBytes = 0; window.fixtureAccountChecks = 0; window.fixtureInspectionCalls = 0;
+window.fixtureScrollAudit = [];
+const auditScroll = (kind, details = {}) => {
+  const panel = document.getElementById('video-download-progress');
+  window.fixtureScrollAudit.push({ kind, at: Math.round(performance.now()), y: scrollY,
+    active: document.activeElement?.id || document.activeElement?.tagName,
+    phase: panel?.dataset.phase, panelTop: panel && !panel.hidden ? Math.round(panel.getBoundingClientRect().top) : null, ...details });
+  if (window.fixtureScrollAudit.length > 160) window.fixtureScrollAudit.shift();
+};
+const scrollIntoView = Element.prototype.scrollIntoView;
+Element.prototype.scrollIntoView = function(options) {
+  auditScroll('scrollIntoView', { id: this.id, options }); return scrollIntoView.call(this, options);
+};
+const elementScrollTo = Element.prototype.scrollTo;
+Element.prototype.scrollTo = function(...args) {
+  auditScroll('elementScrollTo', { id: this.id, top: this.scrollTop, args }); return elementScrollTo.apply(this, args);
+};
+const windowScrollTo = window.scrollTo;
+window.scrollTo = (...args) => { auditScroll('windowScrollTo', { args }); return windowScrollTo.apply(window, args); };
+const focus = HTMLElement.prototype.focus;
+HTMLElement.prototype.focus = function(options) {
+  auditScroll('focus', { id: this.id, options }); return focus.call(this, options);
+};
+document.addEventListener('scroll', event => auditScroll('scroll', { id: event.target.id || event.target.nodeName, top: event.target.scrollTop }), { capture: true, passive: true });
+document.addEventListener('focusin', event => auditScroll('focusin', { id: event.target.id }), true);
 window.fixtureRelease = stage => {
   const pending = window.fixturePending.find(item => item.stage === stage);
   if (!pending) throw new Error('No paused fixture response: ' + stage);
@@ -127,6 +169,9 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     logoutAccount: async () => { window.fixtureRole = 'guest'; return { ok: true, state: state(), result: {} }; },
   };
   document.body.classList.add('is-desktop'); document.getElementById('desktop-navigation').hidden = false;
+  // Real initializeDesktopUI assigns this class to create the independent
+  // desktop scroll area. Preserve that layout while mocking only its bridge.
+  document.getElementById('single-note-panel').classList.add('desktop-page');
   document.getElementById('account-tab').onclick = () => { document.getElementById('desktop-account-page').hidden = false; document.getElementById('single-note-panel').hidden = true; };
   document.getElementById('single-note-tab').onclick = () => { document.getElementById('desktop-account-page').hidden = true; document.getElementById('single-note-panel').hidden = false; };
 }
@@ -140,7 +185,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
       if (requested === '/playback.mp4') { res.writeHead(200, { 'content-type': 'video/mp4' }); res.end(bytes); return; }
       const file = path.resolve(root, `.${requested === '/' ? '/index.html' : requested}`);
       if (!file.startsWith(root + path.sep)) throw new Error('Outside fixture root');
-      let body = fs.readFileSync(file);
+      let body = requested === '/app.js' && baselineApp !== null ? Buffer.from(baselineApp) : fs.readFileSync(file);
       if (requested === '/') {
         body = body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
         body = body.replace('</body>', '<script src="/member-video-fixture.js"></script><script type="module" src="/app.js"></script></body>');
@@ -157,6 +202,9 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     if (details.level === 'error' && !details.message.includes('ERR_BLOCKED_BY_CLIENT') && !details.message.includes('playback.mp4')) rendererErrors.push(details.message);
   });
   const evaluate = script => win.webContents.executeJavaScript(script, true);
+  readDiagnostics = () => evaluate(`({ audit: window.fixtureScrollAudit, scrollY, active: document.activeElement?.id,
+    pending: window.fixturePending?.map(item => item.stage), phase: document.getElementById('video-download-progress')?.dataset.phase,
+    viewport: { width: document.documentElement.clientWidth, height: innerHeight, pageHeight: document.documentElement.scrollHeight } })`);
   const setViewport = async (width, height) => {
     let gutter = 0, measured;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -192,6 +240,8 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
       nearControls: document.getElementById('video-section').contains(panel),
       buttonDisabled: trigger.disabled, deliveredBytes: window.fixtureDeliveredBytes,
       controlsDisabled: Object.fromEntries(['parse-button', 'video-quality', 'download-video-button'].map(id => [id, document.getElementById(id).disabled])),
+      scrollY, activeElement: document.activeElement?.id, at: Math.round(performance.now()),
+      nestedScrollTop: document.getElementById('single-note-panel').scrollTop,
       totalBytes: ${bytes.length}, downloads: window.fixtureDownloads.length,
       rect: { top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height } };
   })()`;
@@ -222,6 +272,16 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
     fs.writeFileSync(path.join(screenshots, `${name}.png`), (await win.webContents.capturePage()).toPNG());
   };
+  const settleScrolling = (minimumMs = 750) => evaluate(`new Promise((resolve, reject) => {
+    const coordinate = () => scrollY + document.getElementById('single-note-panel').scrollTop;
+    const started = performance.now(); let previous = coordinate(), stable = 0;
+    const check = () => {
+      stable = Math.abs(coordinate() - previous) < 0.5 ? stable + 1 : 0; previous = coordinate();
+      if (performance.now() - started >= ${minimumMs} && stable >= 4) resolve();
+      else if (performance.now() - started > 3000) reject(new Error('Pending scroll did not settle'));
+      else requestAnimationFrame(check);
+    }; requestAnimationFrame(check);
+  })`);
   const assertNoOverflow = async width => {
     const overflow = await evaluate(`({ viewport: document.documentElement.clientWidth, width: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].filter(element => { const box = element.getBoundingClientRect(); return box.width > 0 && box.right > document.documentElement.clientWidth + 1; }).slice(0, 10).map(element => ({ tag: element.tagName, id: element.id, className: element.className, width: element.getBoundingClientRect().width })) })`);
     assert.equal(overflow.viewport, width, `Layout viewport changed before ${width}px screenshot`);
@@ -250,7 +310,9 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await click('browser-account-close');
   await evaluate(`document.getElementById('download-original-video-button').scrollIntoView({ block: 'center', behavior: 'instant' });
     window.fixtureSlow = true; window.fixtureAccountChecks = 0; window.fixtureDeliveredBytes = 0`);
-  const immediate = await evaluate(`document.getElementById('download-original-video-button').click(); ${progressSnapshotScript}`);
+  const immediate = await evaluate(`auditScroll('pending-parse-navigation');
+    if (${!baselineNestedScroll}) window.scrollTo({ top: Math.min(document.documentElement.scrollHeight - innerHeight, scrollY + 1300), behavior: 'smooth' });
+    document.getElementById('download-original-video-button').click(); ${progressSnapshotScript}`);
   assert.equal(immediate.phase, 'verifying', 'Click must synchronously show progress before awaiting the account request');
   assert.equal(immediate.visible, true);
   assert.equal(immediate.inViewport, true);
@@ -258,6 +320,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   progressEvidence.push({ ...immediate, immediateClick: true });
   await paused('account');
   await assertProgress('verifying'); await capture('progress-verifying');
+  await settleScrolling();
   await release('account'); await paused('resolve');
   await assertProgress('resolving'); await capture('progress-resolving');
   await release('resolve'); await paused('meta');
@@ -285,7 +348,22 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     await until(`Number.parseFloat(document.getElementById('video-download-percent').textContent) === ${Math.round(insideChunk / bytes.length * 100)}`);
     const withinResponse = await assertProgress('downloading', { transferred: insideChunk });
     percentages.push(Number.parseFloat(withinResponse.percent));
-    if (start === 50) await capture('progress-within-chunk');
+    if (start === 50) {
+      await capture('progress-within-chunk');
+      const beforeWheel = await evaluate('scrollY');
+      win.webContents.sendInputEvent({ type: 'mouseWheel', x: 1000, y: 500, deltaX: 0, deltaY: 900, canScroll: true });
+      await until(`Math.abs(scrollY - ${beforeWheel}) > 100`);
+      await settleScrolling(1100);
+      const scrolled = await progressSnapshot();
+      assert.equal(scrolled.inViewport, false, 'A real user wheel can deliberately leave the download controls');
+      const userPosition = scrolled.scrollY;
+      await settleScrolling(1100);
+      assert.equal(await evaluate('scrollY'), userPosition, 'Progress rendering must not pull a user back after deliberate scrolling');
+      progressEvidence.push({ ...scrolled, userWheelRespected: true });
+      await capture('progress-user-scroll-respected');
+      await evaluate(`document.getElementById('video-download-progress').scrollIntoView({ block: 'center', behavior: 'instant' })`);
+      await assertProgress('downloading', { transferred: insideChunk });
+    }
     await release(`chunk-tail-${start}`);
   }
   assert.ok(percentages.length > 2 && percentages.every((value, index) => index === 0 || value > percentages[index - 1]), `Progress must actually increase: ${JSON.stringify(percentages)}`);
@@ -401,6 +479,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await evaluate(`window.fixtureOriginalAvailable = false; document.getElementById('parse-form').requestSubmit()`);
   await until(`document.getElementById('download-original-video-button').disabled && !document.getElementById('parse-button').disabled`);
   assert.match(await evaluate(`document.getElementById('original-video-hint').textContent`), /未提供原视频/);
+  const browserScrollAudit = await evaluate('window.fixtureScrollAudit');
   for (const unsafe of ['javascript:alert(1)', 'https://www.xiaohongshu.com.attacker.test/explore/abc', 'https://user@www.xiaohongshu.com/explore/abc']) {
     const rejected = new URL(origin + '/'); rejected.searchParams.set('note', unsafe); rejected.searchParams.set('memberVideo', '1');
     await win.loadURL(rejected.href);
@@ -421,7 +500,33 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/member_video').length`), 0);
   await evaluate(`window.fixtureRole = 'member'`); await click('account-refresh');
   await until(`document.getElementById('account-badge').textContent.includes('有效期会员')`);
-  await click('single-note-tab'); await click('download-original-video-button');
+  await click('single-note-tab');
+  await evaluate(`document.getElementById('download-original-video-button').scrollIntoView({ block: 'center', behavior: 'instant' });
+    window.fixtureSlow = true; window.fixtureAccountChecks = 0`);
+  const nestedLayout = await evaluate(`(() => {
+    const page = document.getElementById('single-note-panel');
+    return { overflow: getComputedStyle(page).overflowY, windowY: scrollY, scrollTop: page.scrollTop,
+      height: page.clientHeight, scrollHeight: page.scrollHeight, className: page.className, viewportHeight: innerHeight };
+  })()`);
+  assert.equal(nestedLayout.overflow, 'auto', 'Desktop fixture must use its real CSS scroll container');
+  assert.ok(nestedLayout.scrollHeight > nestedLayout.height);
+  assert.equal(nestedLayout.windowY, 0, 'Desktop scroll belongs to its page rather than the document');
+  const nestedImmediate = await evaluate(`(() => {
+    const page = document.getElementById('single-note-panel');
+    auditScroll('pending-desktop-navigation', { top: page.scrollTop });
+    page.scrollTo({ top: Math.max(0, page.scrollTop - 1300), behavior: 'smooth' });
+    document.getElementById('download-original-video-button').click();
+    return ${progressSnapshotScript};
+  })()`);
+  assert.equal(nestedImmediate.inViewport, true, 'Desktop progress must be visible at click');
+  assert.ok(nestedImmediate.rect.top + Math.min(nestedLayout.scrollTop, 1300) > nestedLayout.viewportHeight, 'Pending desktop scroll must have enough actual travel to move progress out of view');
+  progressEvidence.push({ ...nestedImmediate, immediateClick: true, desktopNested: true });
+  await paused('account'); await assertProgress('verifying');
+  await settleScrolling();
+  await release('account'); await paused('resolve');
+  await assertProgress('resolving'); await capture('desktop-pending-scroll-resolving');
+  assert.ok(Math.abs((await progressSnapshot()).nestedScrollTop - nestedLayout.scrollTop) <= 1, 'Old desktop navigation must stop at download start');
+  await evaluate(`window.fixtureSlow = false; window.fixtureRelease('resolve')`);
   await until(`window.fixtureDownloads.length === 1 && !document.getElementById('download-original-video-button').disabled`);
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0);
   assert.equal(await evaluate('window.fixtureOpened.length'), 0);
@@ -458,8 +563,8 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(await evaluate('window.fixturePending.length'), 0, 'All delayed body and account operations must finish');
   assert.equal(rendererErrors.length, 0, rendererErrors.join('\n'));
   const report = path.join(temporary, 'verification.json');
-  const result = { ok: true, verifiedAt: new Date().toISOString(), version: require(path.join(root, 'package.json')).version, platform: process.platform, arch: process.arch, electronVersion: process.versions.electron, safeExternalEntry: true, noAutomaticPaidAction: true, guestLogin: true, browserAccountLogin: true, memberDownload: true, desktopAccountEntryAndDownload: true, finalAuthorizationBeforeSave: true, accountChangeDuringFinalResponse: true, noProtectedFallback: true, ordinaryPurchase: true, noOriginal: true, immediateProgress: true, delayedAccountResolveMetadataChunks: true, delayedMp4Inspection: true, realBytePercentage: true, progressWithinChunkBody: true, noSaveBeforeFinalChecks: true, retainedCompletionAndFailure: true, invalidMediaNoSave: true, retryRestoresButtons: true, retryResetsReceivedBytes: true, freePlaybackProgress: true, fixtureBytes: bytes.length, widths: [1440, 768, 390, 320], screenshots, report };
-  fs.writeFileSync(report, JSON.stringify({ ...result, progressEvidence }, null, 2));
+  const result = { ok: true, verifiedAt: new Date().toISOString(), version: require(path.join(root, 'package.json')).version, platform: process.platform, arch: process.arch, electronVersion: process.versions.electron, safeExternalEntry: true, noAutomaticPaidAction: true, guestLogin: true, browserAccountLogin: true, memberDownload: true, desktopAccountEntryAndDownload: true, finalAuthorizationBeforeSave: true, accountChangeDuringFinalResponse: true, noProtectedFallback: true, ordinaryPurchase: true, noOriginal: true, immediateProgress: true, delayedAccountResolveMetadataChunks: true, delayedMp4Inspection: true, realBytePercentage: true, progressWithinChunkBody: true, noSaveBeforeFinalChecks: true, retainedCompletionAndFailure: true, invalidMediaNoSave: true, retryRestoresButtons: true, retryResetsReceivedBytes: true, freePlaybackProgress: true, pendingWindowScrollCancelled: true, pendingDesktopScrollCancelled: true, userWheelScrollingRespected: true, fixtureBytes: bytes.length, widths: [1440, 768, 390, 320], screenshots, report };
+  fs.writeFileSync(report, JSON.stringify({ ...result, progressEvidence, browserScrollAudit, desktopNestedLayout: nestedLayout, scrollAudit: await evaluate('window.fixtureScrollAudit') }, null, 2));
   console.log(JSON.stringify(result));
   await finish(0);
 }).catch(error => void finish(1, error));

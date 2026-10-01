@@ -81,6 +81,7 @@ const native = process.platform === 'darwin' && process.env.MAC_INSTALL_PROGRESS
 
 async function nativeViewer(input, action) {
   let child, readyPath, stderr = '';
+  const startedAt = Date.now();
   const progress = await startMacInstallProgress(input, { spawn(command, args, options) {
     readyPath = args[4];
     child = spawn(command, args, { ...options, stdio: ['pipe', 'ignore', 'pipe'] });
@@ -100,32 +101,31 @@ async function nativeViewer(input, action) {
       };
     }
     return child;
-  } });
+  } }).catch(error => {
+    error.message += ` Native AppKit readiness: ${JSON.stringify({ elapsedMs: Date.now() - startedAt,
+      cause: error.cause?.message, exitCode: child?.exitCode, signalCode: child?.signalCode, stderr })}`;
+    throw error;
+  });
+  const readinessElapsedMs = Date.now() - startedAt;
   child.ref();
   assert.equal(JSON.parse(await readFile(readyPath, 'utf8')).eventLoopRunning, true);
   const exited = new Promise(resolve => child.once('exit', (code, signal) => resolve({ code, signal })));
-  return { progress, child, readyPath, exited, stderr: () => stderr };
+  return { progress, child, readyPath, exited, readinessElapsedMs, stderr: () => stderr };
 }
 
 test('native AppKit window survives all installer stages and closes only after installed', { skip: !native, timeout: 15000 }, async t => {
   const input = await fixture(t);
-  let child, stderr = '';
-  const progress = await startMacInstallProgress(input, { spawn(command, args, options) {
-    child = spawn(command, args, { ...options, stdio: ['pipe', 'ignore', 'pipe'] });
-    child.stderr.on('data', chunk => { stderr += chunk; });
-    return child;
-  } });
-  t.after(() => progress.close());
-  child.ref();
-  const exited = new Promise(resolve => child.once('exit', (code, signal) => resolve({ code, signal })));
+  const viewer = await nativeViewer(input);
+  t.after(() => viewer.progress.close());
+  t.diagnostic(`Real AppKit event-loop acknowledgement took ${viewer.readinessElapsedMs} ms`);
   for (const status of ['opening', 'verifying', 'copying', 'checking', 'prepared', 'ready', 'waiting', 'validating', 'replacing', 'launching', 'awaiting_startup', 'rolling_back', 'cleanup_pending', 'cleaning']) {
     await writeFile(input.resultPath, JSON.stringify({ status }));
     await delay(130);
-    assert.equal(child.exitCode, null, `${status} must keep the progress viewer alive`);
+    assert.equal(viewer.child.exitCode, null, `${status} must keep the progress viewer alive`);
   }
   await writeFile(input.resultPath, JSON.stringify({ status: 'installed', message: '安装成功，正在自动打开新版应用。' }));
-  const outcome = await Promise.race([exited, delay(4000, { timeout: true })]);
-  assert.deepEqual(outcome, { code: 0, signal: null }, stderr);
+  const outcome = await Promise.race([viewer.exited, delay(4000, { timeout: true })]);
+  assert.deepEqual(outcome, { code: 0, signal: null }, viewer.stderr());
 });
 
 test('native failure, rollback, and cancellation close buttons exit cleanly without signalling the viewer', { skip: !native, timeout: 15000 }, async t => {
@@ -135,6 +135,7 @@ test('native failure, rollback, and cancellation close buttons exit cleanly with
     await writeFile(input.resultPath, record);
     const viewer = await nativeViewer(input, 'button');
     t.after(() => viewer.progress.close());
+    t.diagnostic(`${status} AppKit event-loop acknowledgement took ${viewer.readinessElapsedMs} ms`);
     await delay(200);
     assert.equal(viewer.child.exitCode, null, `${status} must keep its explanation until the close action`);
     assert.deepEqual(await Promise.race([viewer.exited, delay(4000, { timeout: true })]),

@@ -515,6 +515,14 @@ function startVideoProgress(phase, message) {
   progress.phase(phase, message);
   timer = setInterval(render, 1000);
   if (panel) {
+    // A previous result/focus scroll can still be animating while this panel is
+    // already visible. Stop that navigation once, before the first async step.
+    window.scrollTo?.({ top: window.scrollY, left: window.scrollX, behavior: "instant" });
+    for (let container = panel.parentElement; container; container = container.parentElement) {
+      if (container.scrollHeight > container.clientHeight || container.scrollWidth > container.clientWidth) {
+        container.scrollTo?.({ top: container.scrollTop, left: container.scrollLeft, behavior: "instant" });
+      }
+    }
     const rect = panel.getBoundingClientRect();
     if (rect.top < 0 || rect.bottom > window.innerHeight) {
       panel.scrollIntoView({ block: "nearest", behavior: "instant" });

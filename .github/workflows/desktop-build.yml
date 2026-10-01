@@ -61,7 +61,10 @@ jobs:
       - run: npm run test:node
       - name: Verify native Mac replacement and rollback in temporary signed apps
         if: runner.os != 'Windows'
-        run: node --test test/mac-update.test.js test/mac-update-cleanup.test.js test/startup-ready.test.js test/mac-install-progress.test.js
+        # These files launch real AppKit/Electron windows, sign bundles and mount
+        # DMGs. Serialize them so one fixture cannot consume another's bounded
+        # readiness budget; every native acceptance gate still executes.
+        run: node --test --test-concurrency=1 test/mac-update.test.js test/mac-update-cleanup.test.js test/startup-ready.test.js test/mac-install-progress.test.js
         env:
           XHS_MAC_UPDATE_NATIVE: '1'
           MAC_INSTALL_PROGRESS_NATIVE: '1'

@@ -128,7 +128,7 @@ async function runPage({ payload = release(), fetchError, status = 200, navigato
 test('static download anchors point to one complete branded release', () => {
   const current = snapshot(documentFixture());
   const tag = current.versions[0];
-  assert.equal(tag, 'v1.8.27');
+  assert.equal(tag, 'v1.8.28');
   for (const [key, suffix] of Object.entries(suffixes)) {
     assert.equal(current.links[key], `${base}/download/${tag}/Brclio-XHS-${tag.slice(1)}-${suffix}`);
     assert.match(current.sizes[key], /^(?:\d+\.\d MB|大小以发布附件为准)$/);
