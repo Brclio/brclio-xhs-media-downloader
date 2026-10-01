@@ -125,7 +125,12 @@ async function fixture(t) {
     await writeFile(path.join(directory, `release-proof-${label}.json`), JSON.stringify({
       version, sourceSha, platform, arch, comparedSources: 27, bundledPythonVerified: true,
       ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning: 'adhoc', packagedMacUpdateVerified: true, packagedUpdateHistoryVerified: true }
-        : { packagedWindowsUpdateVerified: true, packagedWindowsPortableVerified: true }), files
+        : { packagedWindowsUpdateVerified: true, packagedWindowsPortableVerified: true, windowsUpdate: {
+          automaticRelaunchRendererReadyVerified: true, restartedRenderers: [
+            { pid: 7676, version, at: '2026-10-01T11:33:46.000Z' },
+            { pid: 8132, version, at: '2026-10-01T11:35:46.000Z' }
+          ]
+        } }), files
     }));
   }
   return directory;
@@ -221,6 +226,62 @@ for (const field of ['packagedWindowsUpdateVerified', 'packagedWindowsPortableVe
     }
   });
 }
+
+test('release rejects Windows builds without verified automatic renderer readiness', async t => {
+  const directory = await fixture(t);
+  const proofPath = path.join(directory, 'release-proof-windows-x64.json');
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'));
+  for (const value of [undefined, false, 'true']) {
+    if (value === undefined) delete proof.windowsUpdate.automaticRelaunchRendererReadyVerified;
+    else proof.windowsUpdate.automaticRelaunchRendererReadyVerified = value;
+    await writeFile(proofPath, JSON.stringify(proof));
+    await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /renderer readiness must be verified/);
+  }
+  delete proof.windowsUpdate;
+  await writeFile(proofPath, JSON.stringify(proof));
+  await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /renderer readiness must be verified/);
+});
+
+test('release requires both installed and portable automatic relaunch readiness records', async t => {
+  const directory = await fixture(t);
+  const proofPath = path.join(directory, 'release-proof-windows-x64.json');
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'));
+  const good = proof.windowsUpdate.restartedRenderers;
+  for (const records of [undefined, null, {}, [], good.slice(0, 1), [...good, good[0]]]) {
+    proof.windowsUpdate.restartedRenderers = records;
+    await writeFile(proofPath, JSON.stringify(proof));
+    await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /exactly two restarted renderer/);
+  }
+});
+
+test('release rejects stale or invalid Windows restarted renderer identity and timestamps', async t => {
+  const directory = await fixture(t);
+  const proofPath = path.join(directory, 'release-proof-windows-x64.json');
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'));
+  const good = proof.windowsUpdate.restartedRenderers[1];
+  for (const [field, value, message] of [
+    ['pid', 1, /safe process ID/], ['pid', '8132', /safe process ID/],
+    ['pid', Number.MAX_SAFE_INTEGER + 1, /safe process ID/],
+    ['version', '0.0.0', /release version/],
+    ['at', undefined, /valid ISO timestamp/], ['at', 1, /valid ISO timestamp/],
+    ['at', '2026-02-30T11:35:46.000Z', /valid ISO timestamp/],
+    ['at', 'not a timestamp', /valid ISO timestamp/]
+  ]) {
+    proof.windowsUpdate.restartedRenderers[1] = { ...good, [field]: value };
+    await writeFile(proofPath, JSON.stringify(proof));
+    await assert.rejects(validateArtifacts(directory, { version, sourceSha }), message);
+  }
+});
+
+test('Windows readiness proof permits process ID reuse between completed relaunches', async t => {
+  const directory = await fixture(t);
+  const proofPath = path.join(directory, 'release-proof-windows-x64.json');
+  const proof = JSON.parse(await readFile(proofPath, 'utf8'));
+  proof.windowsUpdate.restartedRenderers[1].pid = proof.windowsUpdate.restartedRenderers[0].pid;
+  await writeFile(proofPath, JSON.stringify(proof));
+  const result = await validateArtifacts(directory, { version, sourceSha });
+  assert.equal(result.files.length, 6);
+});
 
 for (const label of ['mac-arm64', 'mac-x64']) {
   test(`release rejects ${label} without packaged history acknowledgement acceptance`, async t => {

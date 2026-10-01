@@ -158,15 +158,17 @@ test('desktop member gateway resolves original-only pages to account-bound ticke
   } });
   const post = await handle(new Request('xhs-app://local/api/member_video', { method: 'POST', body: JSON.stringify({ text: noteUrl }) }));
   assert.equal(post.status, 200);
+  assert.equal(checks, 2, 'Resolution checks membership before reading the page and before issuing tickets');
   const data = await post.json();
   assert.equal(JSON.stringify(data).includes(original), false);
   const ticket = data.videos[0].url.slice('member-video:'.length);
   const read = () => new Request(`xhs-app://local/api/member_video?ticket=${ticket}&action=meta`);
   assert.equal((await handle(read())).status, 200);
+  assert.equal(checks, 4, 'Metadata checks membership before fetching and before responding');
   userId = 'member-b';
   assert.equal((await handle(read())).status, 403);
   userId = 'member-a'; allowed = false;
   assert.equal((await handle(read())).status, 403);
   assert.deepEqual(fetched, [noteUrl, original]);
-  assert.equal(checks, 4);
+  assert.equal(checks, 6);
 });

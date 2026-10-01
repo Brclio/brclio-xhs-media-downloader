@@ -5,7 +5,7 @@ import { createCloudflareMailer } from '../cloudflare/mailer.js';
 
 // Successful protocol fixtures also run alongside packaging tests on shared CI
 // hosts. Keep their deadline above scheduler pauses; the stalled-reply case
-// below explicitly exercises its separate 20 ms operation timeout.
+// below explicitly exercises its separate 20 ms command timeout.
 const options = port => ({ host: 'smtp.example.test', port, secure: port === 465, requireTLS: true, auth: { user: 'sender@example.test', pass: 'fixture-secret' }, tls: { rejectUnauthorized: true }, connectionTimeout: 5_000, greetingTimeout: 5_000, socketTimeout: 5_000 });
 const message = { from: 'Brclio <sender@example.test>', to: { address: 'recipient@example.test' }, subject: '验证码', text: '正文\n.first\n.\n最后一行', headers: { 'X-Account-Delivery-ID': 'fixture-delivery' } };
 
@@ -115,10 +115,45 @@ test('failed QUIT after DATA 250 retains the confirmed successful acceptance', a
 test('invalid, oversized and stalled SMTP replies fail boundedly and close sockets', async () => {
   for (const reply of ['250-first\r\n550 wrong-code\r\n', 'x'.repeat(65_537), null]) {
     const server = smtpServer({ responseFor: kind => kind === 'EHLO' ? reply : undefined });
-    await assert.rejects(createNativeSmtpTransport(options(465), { ...server, operationTimeoutMs: 20 }).verify(), error => ['EPROTOCOL', 'ETIMEDOUT'].includes(error.code));
+    const smtpOptions = { ...options(465), socketTimeout: reply === null ? 20 : 5_000 };
+    await assert.rejects(createNativeSmtpTransport(smtpOptions, { ...server, operationTimeoutMs: 5_000 }).verify(), { code: reply === null ? 'ETIMEDOUT' : 'EPROTOCOL' });
+    assert.ok(server.commands.includes('EHLO'));
     assert.ok(!server.commands.includes('AUTH'));
     assert.ok(server.sockets[0].wasClosed);
   }
+});
+
+test('operation expiry closes a socket created before the deadline guard', async t => {
+  const server = smtpServer();
+  let now = 1_000;
+  t.mock.method(Date, 'now', () => now);
+  const connectImpl = (...args) => { const socket = server.connectImpl(...args); now += 30; return socket; };
+  await assert.rejects(createNativeSmtpTransport(options(465), { connectImpl, operationTimeoutMs: 20 }).verify(), { code: 'ETIMEDOUT' });
+  assert.equal(server.sockets[0].wasClosed, true);
+  assert.deepEqual(server.commands, []);
+});
+
+test('a connection resolving after timeout is closed without sending commands', async () => {
+  const server = smtpServer();
+  let resolveConnection;
+  const connecting = new Promise(resolve => { resolveConnection = resolve; });
+  await assert.rejects(createNativeSmtpTransport(options(465), { connectImpl: () => connecting, operationTimeoutMs: 20 }).verify(), { code: 'ETIMEDOUT' });
+  const socket = server.connectImpl({ hostname: 'smtp.example.test', port: 465 }, { secureTransport: 'on' });
+  socket.closed = Promise.reject(new Error('PRIVATE-late-socket-close'));
+  resolveConnection(socket);
+  await Promise.resolve();
+  assert.equal(socket.wasClosed, true);
+  assert.deepEqual(server.commands, []);
+});
+
+test('setup expiry observes a connection rejecting after the deadline guard', async t => {
+  let now = 1_000, rejectConnection;
+  t.mock.method(Date, 'now', () => now);
+  const connecting = new Promise((_resolve, reject) => { rejectConnection = reject; });
+  const connectImpl = () => { now += 30; return connecting; };
+  await assert.rejects(createNativeSmtpTransport(options(465), { connectImpl, operationTimeoutMs: 20 }).verify(), { code: 'ETIMEDOUT' });
+  rejectConnection(new Error('PRIVATE-late-connect-failure'));
+  await Promise.resolve();
 });
 
 test('587 cannot authenticate if STARTTLS is missing or the TLS handshake fails', async () => {

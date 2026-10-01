@@ -51,6 +51,19 @@ export async function validateArtifacts(directory, { version, sourceSha }) {
         'Packaged Windows installer upgrade must be verified before release');
       assert.equal(proof.packagedWindowsPortableVerified, true,
         'Packaged Windows portable migration must be verified before release');
+      assert.equal(proof.windowsUpdate?.automaticRelaunchRendererReadyVerified, true,
+        'Packaged Windows automatic relaunch renderer readiness must be verified before release');
+      const restarted = proof.windowsUpdate.restartedRenderers;
+      assert.ok(Array.isArray(restarted) && restarted.length === 2,
+        'Windows update proof must contain exactly two restarted renderer readiness records');
+      for (const renderer of restarted) {
+        assert.ok(Number.isSafeInteger(renderer?.pid) && renderer.pid > 1,
+          'Windows restarted renderer readiness requires a safe process ID');
+        assert.equal(renderer.version, version, 'Windows restarted renderer must run the release version');
+        assert.ok(typeof renderer.at === 'string' && Number.isFinite(Date.parse(renderer.at))
+          && new Date(renderer.at).toISOString() === renderer.at,
+          'Windows restarted renderer readiness requires a valid ISO timestamp');
+      }
     }
     assert.ok(Number.isInteger(proof.comparedSources) && proof.comparedSources >= 27);
     const expected = target.suffixes.map(suffix => `Brclio-XHS-${version}-${suffix}`).sort();

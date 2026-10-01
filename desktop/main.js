@@ -273,6 +273,8 @@ async function createWindow() {
   mainWindow.webContents.on('unresponsive', () => diagnostic('renderer.unresponsive', {}, 'warn'));
   mainWindow.webContents.on('did-fail-load', (_event, code, description, url, isMainFrame) => diagnostic('renderer.load_failed', { code, description, url, isMainFrame }, 'error'));
   mainWindow.once('ready-to-show', () => mainWindow?.show());
+  // Start shutdown before destruction can reject the pending navigation.
+  mainWindow.on('close', () => { if (!quitting) app.quit(); });
   mainWindow.on('closed', () => { installConfirmation.cancel(); mainWindow = null; if (!quitting) app.quit(); });
   await mainWindow.loadURL(`${APP_URL}/`);
 }
@@ -396,6 +398,14 @@ async function boot() {
     } });
   registerIpc();
   await createWindow();
+  if (quitting || !mainWindow || mainWindow.isDestroyed()) return;
+  // A native window handle exists before the trusted renderer finishes. Keep
+  // a durable readiness record so upgrade checks can wait for the usable app.
+  void waitForDesktopReady(mainWindow, { signal: startupReadyAbort.signal }).then(async ready => {
+    if (!ready || quitting) return;
+    await diagnostics.record('app.desktop_ready', { pid: process.pid, ...appInfo() });
+    await diagnostics.flush();
+  }).catch(error => diagnostic('app.readiness_log_failed', { error }, 'warn'));
   // Show the usable shell before asking the OS to unlock saved credentials.
   // A pending system permission is not a failed application startup: the
   // renderer, free downloads and navigation work while account actions wait.
@@ -479,6 +489,9 @@ else {
     })();
   });
   app.whenReady().then(boot).catch((error) => {
+    // Closing the window interrupts loadURL. Ordinary shutdown already owns
+    // cleanup; displaying a synchronous error box here would block that quit.
+    if (quitting) return;
     diagnostic('app.start_failed', { error }, 'error');
     dialog.showErrorBox(`无法启动 ${APP_NAME}`, error.message);
     app.quit();

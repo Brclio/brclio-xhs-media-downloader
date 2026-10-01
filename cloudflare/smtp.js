@@ -115,7 +115,18 @@ export function createNativeSmtpTransport(options, {
       try { await command('QUIT', [221], 1000); } catch { /* accepted DATA or AUTH already confirmed */ }
     }
     try {
-      const socket = await bounded(Promise.resolve(connectImpl({ hostname: options.host, port }, { secureTransport: port === 465 ? 'on' : 'starttls' })), connectionMs);
+      // Own the connection even when setup expires before streams attach, or
+      // an asynchronous connect completes after the operation was closed.
+      const connecting = Promise.resolve(connectImpl({ hostname: options.host, port }, { secureTransport: port === 465 ? 'on' : 'starttls' }))
+        .then(socket => {
+          currentSocket = socket;
+          socket.closed.catch(() => {});
+          if (closed) close();
+          return socket;
+        });
+      // The deadline guard can reject before the race observes this promise.
+      connecting.catch(() => {});
+      const socket = await bounded(connecting, connectionMs);
       streams(socket);
       await bounded(socket.opened, connectionMs);
       encrypted = port === 465;

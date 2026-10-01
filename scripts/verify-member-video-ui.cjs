@@ -30,7 +30,7 @@ app.whenReady().then(async () => {
   const fixture = `
 window.fixtureRole = 'guest'; window.fixtureOriginalAvailable = true;
 window.fixtureRequests = []; window.fixtureDownloads = []; window.fixtureBlobs = new Map();
-window.fixtureDenyChunks = false; window.fixtureDenyFinalMeta = false; window.fixtureMetaCalls = 0; window.fixtureOpened = [];
+window.fixtureDenyChunks = false; window.fixtureDenyFinalMeta = false; window.fixtureChangeDuringFinalMeta = ''; window.fixtureMetaCalls = 0; window.fixtureOpened = [];
 window.open = (...args) => { window.fixtureOpened.push(args); };
 const realFetch = window.fetch.bind(window);
 const fixtureAccount = () => ({ user: { id: 'fixture-user', email: 'member@example.test' },
@@ -62,6 +62,12 @@ window.fetch = async (input, options = {}) => {
     if (url.searchParams.get('action') === 'meta') {
       window.fixtureMetaCalls++;
       if (window.fixtureDenyFinalMeta && window.fixtureMetaCalls === 2) return reply({ success: false, error: { code: 'MEMBERSHIP_EXPIRED', message: '会员在保存前已到期，请刷新权益。' } }, 403);
+      if (window.fixtureChangeDuringFinalMeta && window.fixtureMetaCalls === 2) {
+        const { getAccountBridge } = await import('/lib/browser-account.js');
+        const bridge = getAccountBridge();
+        await bridge.logoutAccount();
+        if (window.fixtureChangeDuringFinalMeta === 'relogin') await bridge.verifyAccountCode('member@example.test', '123456');
+      }
       return reply({ size: ${bytes.length}, contentType: 'video/mp4', chunkSize: 50 });
     }
     const raw = Uint8Array.from(${JSON.stringify(Array.from(bytes))});
@@ -179,6 +185,18 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(await evaluate('window.fixtureOpened.length'), 0);
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0);
   await click('membership-close'); await click('browser-account-close');
+  await evaluate('window.fixtureDenyFinalMeta = false');
+  for (const change of ['logout', 'relogin']) {
+    await evaluate(`window.fixtureRole = 'member'; window.fixtureChangeDuringFinalMeta = ${JSON.stringify(change)}`);
+    await click('download-original-video-button');
+    await until(`document.getElementById('alert-toast').textContent.includes('账号已退出或切换') && !document.getElementById('download-original-video-button').disabled`);
+    assert.equal(await evaluate('window.fixtureRole'), change === 'logout' ? 'guest' : 'member');
+    assert.equal(await evaluate('window.fixtureDownloads.length'), 1, 'Logout or a replacement login during an authorized final metadata response must not save');
+    assert.equal(await evaluate('window.fixtureOpened.length'), 0);
+    await until(`document.getElementById('browser-account-dialog').open`);
+    await click('browser-account-close');
+  }
+  await evaluate("window.fixtureChangeDuringFinalMeta = ''");
   await evaluate('window.fixtureDenyFinalMeta = false; window.fixtureRole = "ordinary"');
   await click('browser-account-open'); await click('account-refresh');
   await until(`document.getElementById('account-badge').textContent.includes('普通用户')`);

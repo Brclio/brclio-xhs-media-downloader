@@ -6,6 +6,12 @@ import { createWorker } from '../cloudflare/worker.js';
 import videoHandler from '../api/video.js';
 import { invokeHandler } from '../cloudflare/http-adapter.js';
 import { BROWSER_COOKIE } from '../api/account.js';
+import { createAccountHandler } from '../api/account.js';
+import { createHostedMemberVideoHandler } from '../api/member_video.js';
+import { createAccountService } from '../server/auth/service.js';
+import { readConfig } from '../server/auth/config.js';
+import { emptyState } from '../server/auth/store.js';
+import { digest } from '../server/auth/crypto.js';
 
 const original = 'https://sns-video-bd.xhscdn.com/spectrum/original-source';
 const note = 'https://www.xiaohongshu.com/explore/abcdef1234567890abcdef12';
@@ -40,7 +46,83 @@ test('member originals use encrypted account-bound tickets with live checks on m
   time += 30 * 60_000;
   assert.equal((await invokeHandler(handler, get())).status, 403);
   assert.equal(downloads, 2);
-  assert.equal(checks, 8);
+  assert.equal(checks, 11);
+});
+
+test('a resolver result cannot issue tickets after its account changes while the page is loading', async () => {
+  let userId = 'member-a', release, entered;
+  const loading = new Promise(resolve => { entered = resolve; });
+  const handler = createMemberVideoHandler({ secret: 'x'.repeat(40),
+    authorize: async () => ({ userId }),
+    resolve: async () => { entered(); await new Promise(resolve => { release = resolve; }); return { originalVideos: [{ url: original }] }; },
+  });
+  const pending = invokeHandler(handler, post()); await loading;
+  userId = 'member-b'; release();
+  const response = await pending;
+  assert.equal(response.status, 401);
+  assert.doesNotMatch(JSON.stringify(await response.json()), /member-video:|original-source|member-a|member-b/);
+});
+
+test('buffered original responses recheck ticket expiry before publishing bytes or video headers', async () => {
+  let time = 1000;
+  const handler = createMemberVideoHandler({ secret: 'x'.repeat(40), now: () => time,
+    authorize: async () => ({ userId: 'member' }),
+    resolve: async () => ({ originalVideos: [{ url: original }] }),
+    video: async (_req, res) => {
+      res.setHeader('Content-Type', 'video/mp4'); res.setHeader('Content-Length', '4');
+      res.setHeader('Content-Range', 'bytes 0-3/4');
+      time += 30 * 60_000;
+      return res.status(200).send(Buffer.from([1, 2, 3, 4]));
+    },
+  });
+  const data = await (await invokeHandler(handler, post())).json();
+  const ticket = data.videos[0].url.slice('member-video:'.length);
+  const response = await invokeHandler(handler, new Request(`https://xhs.test/api/member_video?action=chunk&ticket=${ticket}`));
+  assert.equal(response.status, 403);
+  assert.equal(response.headers.get('content-length'), null);
+  assert.equal(response.headers.get('content-range'), null);
+  assert.match(response.headers.get('content-type'), /application\/json/);
+  assert.doesNotMatch(JSON.stringify(await response.json()), /original-source|member-video:/);
+});
+
+test('real hosted authorization rejects logout and membership revocation during delayed CDN metadata or chunk retrieval', async t => {
+  for (const action of ['meta', 'chunk']) await t.test(action, async t => {
+    const env = { AUTH_SITE_ORIGIN: 'https://xhs.test', AUTH_SECRET_PEPPER: 'private-test-pepper-only-'.repeat(3) };
+    const config = readConfig(env), state = emptyState(), token = 'd'.repeat(43);
+    const sessionKey = digest(config.pepper, 'session', token);
+    state.users.member = { id: 'member', email: 'member@example.test', createdAt: new Date(0).toISOString(), membership: { type: 'permanent' } };
+    state.sessions[sessionKey] = { id: 'session', userId: 'member', client: 'browser', revokedAt: null };
+    const store = { async read() { return { state: structuredClone(state), sha: 'memory' }; }, async transaction(mutate) { return (await mutate(state)).value; } };
+    const service = createAccountService({ store, config, mailer: { configured: false } });
+    const accountHandler = createAccountHandler({ service, config });
+    const handler = createHostedMemberVideoHandler({ env, accountHandler, resolve: async () => ({ originalVideos: [{ url: original }] }) });
+    const headers = { Cookie: `${BROWSER_COOKIE}=${token}` };
+    const data = await (await invokeHandler(handler, new Request('https://xhs.test/api/member_video', {
+      method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: note }),
+    }))).json();
+    const ticket = data.videos[0].url.slice('member-video:'.length);
+    let release, entered;
+    const loading = new Promise(resolve => { entered = resolve; });
+    t.mock.method(globalThis, 'fetch', async () => {
+      entered(); await new Promise(resolve => { release = resolve; });
+      const meta = action === 'meta';
+      return new Response(new Uint8Array(meta ? [1] : [1, 2, 3, 4]), { status: 206, headers: {
+        'content-type': 'video/mp4', 'content-length': meta ? '1' : '4', 'content-range': meta ? 'bytes 0-0/4' : 'bytes 0-3/4',
+      } });
+    });
+    const pending = invokeHandler(handler, new Request(`https://xhs.test/api/member_video?ticket=${ticket}&action=${action}&start=0&end=3`, { headers }));
+    await loading;
+    if (action === 'meta') await service.execute({ action: 'logout', input: {}, token, client: 'browser' });
+    else state.users.member.membership = { type: 'none' };
+    release();
+    const response = await pending, body = await response.json();
+    assert.equal(response.status, action === 'meta' ? 401 : 403);
+    assert.equal(body.code, action === 'meta' ? 'SESSION_REVOKED' : 'MEMBERSHIP_REQUIRED');
+    assert.equal(response.headers.get('content-length'), null);
+    assert.equal(response.headers.get('content-range'), null);
+    assert.match(response.headers.get('content-type'), /application\/json/);
+    assert.doesNotMatch(JSON.stringify(body), /original-source|member-video:/);
+  });
 });
 
 test('raw original CDN URLs and playback redirects cannot bypass the public video endpoint', async t => {

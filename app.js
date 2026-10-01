@@ -1545,6 +1545,7 @@ async function downloadOriginalVideo() {
   }
   const trigger = elements.downloadOriginalVideoButton;
   setLiveDownloadBusy(true, trigger);
+  let unsubscribe = () => {};
   try {
     const bridge = getAccountBridge();
     const accountState = await bridge.getAccountState();
@@ -1558,6 +1559,17 @@ async function downloadOriginalVideo() {
       await openAccountUI({ purchase: true });
       return;
     }
+    const userId = accountState.account?.user?.id;
+    let invalidated;
+    const accountError = (message, code, status) => Object.assign(new Error(message), { code, status });
+    const observeAccount = current => {
+      if (!current?.authenticated || current.account?.user?.id !== userId) {
+        invalidated ||= accountError('软件账号已退出或切换，已停止原视频保存，请重新下载。', 'SESSION_CHANGED', 401);
+      } else if (current.verified && (!current.account?.membership?.active || current.account?.features?.['watermark-free-video']?.allowed === false)) {
+        invalidated ||= accountError('会员权益已失效，已停止原视频保存，请重新下载。', 'MEMBERSHIP_EXPIRED', 403);
+      }
+    };
+    unsubscribe = bridge.onAccountUpdate?.(observeAccount) || unsubscribe;
     setProgress(0, 1, "正在验证会员并读取网页原视频");
     const response = await fetch("/api/member_video", {
       method: "POST", credentials: "same-origin", cache: "no-store",
@@ -1584,6 +1596,12 @@ async function downloadOriginalVideo() {
           await inspectVideoBlob(blob, { requireAudio: true });
           const finalMeta = await getVideoMeta(sourceUrl, blob.size);
           if (finalMeta.size !== blob.size) throw new Error("原视频大小在保存前发生变化，已停止保存，请重新下载。");
+          const currentAccount = await bridge.getAccountState();
+          observeAccount(currentAccount);
+          if (invalidated) throw invalidated;
+          if (!currentAccount.verified || !currentAccount.account?.membership?.active) {
+            throw accountError('无法确认当前会员权益，已停止原视频保存，请刷新账号后重试。', 'MEMBERSHIP_REQUIRED', 403);
+          }
           triggerBlobDownload(blob, `${sanitizeFilename(state.title || "小红书视频")}-原视频.mp4`);
           showToast("网页原视频已完成并开始保存；作者写入画面的水印可能仍保留。", "success", 6200);
           return;
@@ -1602,6 +1620,7 @@ async function downloadOriginalVideo() {
       await openAccountUI({ purchase: true });
     }
   } finally {
+    unsubscribe();
     setLiveDownloadBusy(false, trigger);
     hideProgress();
     if (!document.querySelector("dialog[open]")) trigger?.focus({ preventScroll: true });

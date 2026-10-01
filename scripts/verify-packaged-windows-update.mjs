@@ -61,24 +61,46 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+public class VerifyWindowData {
+  public uint ProcessId;
+  public long Handle;
+  public string Title;
+  public string ClassName;
+  public bool Enabled;
+  public List<VerifyWindowData> Controls;
+}
 public static class VerifyWindowSnapshot {
   private delegate bool EnumCallback(IntPtr window, IntPtr unused);
   [DllImport("user32.dll")] private static extern bool EnumWindows(EnumCallback callback, IntPtr unused);
   [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr window, EnumCallback callback, IntPtr unused);
   [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int maximum);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder text, int maximum);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, UIntPtr wparam, StringBuilder text, uint flags, uint timeout, out UIntPtr result);
   [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
-  public static string[] Read(uint[] processes) {
-    var rows = new List<string>();
+  [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr window);
+  private static VerifyWindowData Describe(IntPtr window, uint pid) {
+    var text = new StringBuilder(16384);
+    // GetWindowText alone cannot reliably read another process's controls.
+    // Ask the control for its text, with a bound for unresponsive dialogs.
+    UIntPtr result;
+    SendMessageTimeout(window, 0x000D, new UIntPtr((uint)text.Capacity), text, 2, 250, out result);
+    if (text.Length == 0) GetWindowText(window, text, text.Capacity);
+    var kind = new StringBuilder(256); GetClassName(window, kind, kind.Capacity);
+    return new VerifyWindowData { ProcessId = pid, Handle = window.ToInt64(), Title = text.ToString(),
+      ClassName = kind.ToString(), Enabled = IsWindowEnabled(window), Controls = new List<VerifyWindowData>() };
+  }
+  public static VerifyWindowData[] Read(uint[] processes) {
+    var rows = new List<VerifyWindowData>();
     EnumWindows(delegate(IntPtr window, IntPtr unused) {
       uint pid; GetWindowThreadProcessId(window, out pid);
       if (Array.IndexOf(processes, pid) >= 0 && IsWindowVisible(window)) {
-        var title = new StringBuilder(1024); GetWindowText(window, title, title.Capacity);
-        rows.Add(pid.ToString() + " window: " + title.ToString());
+        var item = Describe(window, pid);
         EnumChildWindows(window, delegate(IntPtr child, IntPtr unusedChild) {
-          if (IsWindowVisible(child)) { var text = new StringBuilder(1024); GetWindowText(child, text, text.Capacity); if (text.Length > 0) rows.Add("control: " + text.ToString()); }
+          if (IsWindowVisible(child)) item.Controls.Add(Describe(child, pid));
           return true;
         }, IntPtr.Zero);
+        rows.Add(item);
       }
       return true;
     }, IntPtr.Zero);
@@ -86,9 +108,32 @@ public static class VerifyWindowSnapshot {
   }
 }
 '@;
-@([VerifyWindowSnapshot]::Read([uint32[]]($env:VERIFY_PIDS -split ','))) | ConvertTo-Json -Compress`, { VERIFY_PIDS: pids.join(',') }) || '[]');
+ConvertTo-Json -InputObject @([VerifyWindowSnapshot]::Read([uint32[]]($env:VERIFY_PIDS -split ','))) -Depth 6 -Compress`, { VERIFY_PIDS: pids.join(',') }) || '[]');
+}
+export function assertWindowsApplicationWindows(windows, pid, title, { requireMain = true } = {}) {
+  const own = windows.filter(window => window.ProcessId === pid);
+  const unexpected = own.filter(window => window.Title !== title);
+  assert.equal(unexpected.length, 0, `Unexpected application window before shutdown: ${JSON.stringify(unexpected)}`);
+  if (requireMain) assert.ok(own.some(window => window.Title === title), 'The expected application window must be visible');
+}
+export function parseWindowsStartupDiagnostics(text) {
+  const lines = text.split(/\r?\n/);
+  // appendFile can be observed during its last write. Only that unfinished
+  // final line may be skipped; malformed completed diagnostics must fail.
+  if (!text.endsWith('\n')) lines.pop();
+  return lines.filter(Boolean).map(line => JSON.parse(line));
+}
+export function findWindowsStartupEvidence(entries, { pid, version, startedAfter }) {
+  return entries.find(entry => entry.event === 'app.desktop_ready'
+    && Date.parse(entry.at) >= startedAfter && entry.details?.pid === pid
+    && entry.details.version === version && entry.details.platform === 'win32'
+    && entry.details.arch === 'x64' && entry.details.pythonAvailable === true
+    && entry.details.portable === false);
 }
 async function stopApp(pid) {
+  // An error dialog is a failed application, never a CloseMainWindow target to
+  // dismiss in order to make an upgrade check succeed.
+  assertWindowsApplicationWindows(await windowSnapshot([pid]), pid, 'Brclio 小红书下载器');
   await ps(`$p = ${windowsProcessQuery}; if ($p) { if (-not $p.CloseMainWindow()) { throw "Application has no closable window" } }`, { VERIFY_PID: String(pid) });
   await until(async () => !(await processes()).some(p => p.ProcessId === pid), 'normal app shutdown', 30000);
 }
@@ -222,6 +267,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
   const running = new Set();
   let connection;
   const assetEvidence = [];
+  const restartedRendererEvidence = [];
   let stage = 'initialization';
   const progress = value => { stage = value; console.log(JSON.stringify({ windowsUpdateStage: value })); };
   const env = { ...process.env };
@@ -279,6 +325,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     assert.equal(await connection.evaluate("localStorage.getItem('windows-upgrade-fixture')"), 'preserved');
   }
   async function upgrade(pid, oldLauncher, beforeDigest) {
+    const startedAfter = Date.now();
     let installer;
     await oldLauncher(target, { parentPid: pid }, { spawn: (file, args, options) => {
       installer = spawn(file, args, { ...options, env }); running.add(installer); return installer;
@@ -298,7 +345,27 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     assert.ok((restarted.CommandLine || '').includes('--updated'), 'Automatic relaunch carries update marker');
     asar.uncache(archive); // The real installer replaced the file at the same path.
     assert.equal(await digest(archive), await digest(path.join(output, 'win-unpacked/resources/app.asar')), 'Installed payload is the reviewed new archive');
-    await until(async () => Number(await ps(`$p = ${windowsProcessQuery}; if ($p) { $p.MainWindowHandle.ToInt64() }`, { VERIFY_PID: String(restarted.ProcessId) })) > 0, 'restarted app window');
+    // NSIS's --updated relaunch has no CDP flag. The real main process records
+    // this only after its trusted renderer has initialized its preload bridge
+    // and desktopReady state. A native window handle exists before loadURL can
+    // complete and must not authorize a premature shutdown.
+    let lastWindowInspection = 0;
+    const startup = await until(async () => {
+      if (Date.now() - lastWindowInspection >= 2000) {
+        lastWindowInspection = Date.now();
+        assertWindowsApplicationWindows(await windowSnapshot([restarted.ProcessId]), restarted.ProcessId,
+          pkg.build.productName, { requireMain: false });
+      }
+      const log = await readFile(path.join(profile, 'diagnostics/events.ndjson'), 'utf8');
+      const entries = parseWindowsStartupDiagnostics(log);
+      const evidence = findWindowsStartupEvidence(entries, { pid: restarted.ProcessId, version: pkg.version, startedAfter });
+      if (!evidence) return false;
+      assertWindowsApplicationWindows(await windowSnapshot([restarted.ProcessId]), restarted.ProcessId, pkg.build.productName);
+      return evidence;
+    }, 'restarted trusted renderer and bridge readiness', 120000);
+    progress('upgraded-renderer-ready');
+    restartedRendererEvidence.push({ pid: restarted.ProcessId, at: startup.at, version: startup.details.version });
+    console.log(JSON.stringify({ windowsRestartedRenderer: startup }));
     await stopApp(restarted.ProcessId);
     await closeWizard(installer.pid, false);
     progress('upgraded-application-restarted-and-closed');
@@ -361,6 +428,7 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     const result = { previousVersion, version: pkg.version, oldAssets: assetEvidence,
       realPublishedOldInstallers: true, realCurrentInstallers: true, sourceArchivesModified: false,
       oldParentWaitVerified: true, installedInPlaceVerified: true, automaticRelaunchVerified: true,
+      automaticRelaunchRendererReadyVerified: true, restartedRenderers: restartedRendererEvidence,
       dpapiCredentialsPreserved: true, pausedTaskPreserved: true, rendererStoragePreserved: true,
       existingInstallationPortableUpdateVerified: true, standalonePortableMigrationTested: false,
       portableOriginalPreserved: true, currentPortableLaunchVerified: true,

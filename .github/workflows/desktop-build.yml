@@ -106,6 +106,10 @@ jobs:
         run: npm run desktop:verify:clipboard
       - name: Verify responsive startup and credential access recovery
         run: npm run desktop:verify:startup
+      - name: Verify quitting during startup and reporting genuine startup failures
+        run: |
+          npm run desktop:verify:startup-quit
+          npm run desktop:verify:startup-quit -- --startup-failure
       - name: Verify retry and update controls in the real desktop renderer
         run: npx electron scripts/verify-desktop-ui.mjs
       - name: Verify public and packaged learning page assets, navigation and QR saving
