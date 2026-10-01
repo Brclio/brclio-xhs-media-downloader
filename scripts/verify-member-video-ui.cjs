@@ -249,6 +249,6 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0);
   assert.equal(await evaluate('window.fixtureOpened.length'), 0);
   assert.equal(rendererErrors.length, 0, rendererErrors.join('\n'));
-  console.log(JSON.stringify({ ok: true, safeExternalEntry: true, noAutomaticPaidAction: true, guestLogin: true, browserAccountLogin: true, memberDownload: true, desktopAccountEntryAndDownload: true, finalAuthorizationBeforeSave: true, noProtectedFallback: true, ordinaryPurchase: true, noOriginal: true, widths: [1440, 768, 390, 320], screenshots }));
+  console.log(JSON.stringify({ ok: true, safeExternalEntry: true, noAutomaticPaidAction: true, guestLogin: true, browserAccountLogin: true, memberDownload: true, desktopAccountEntryAndDownload: true, finalAuthorizationBeforeSave: true, accountChangeDuringFinalResponse: true, noProtectedFallback: true, ordinaryPurchase: true, noOriginal: true, widths: [1440, 768, 390, 320], screenshots }));
   await finish(0);
 }).catch(error => void finish(1, error));
