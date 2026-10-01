@@ -538,10 +538,20 @@
                 <button id="download-video-button" class="button button-dark" type="button">下载播放视频 · 免费</button>
                 <a id="open-video-link" class="button button-secondary" href="#" target="_blank" rel="noopener noreferrer">打开视频</a>
                 <button id="download-original-video-button" class="button button-member-video" type="button" aria-describedby="original-video-hint"><span>下载无水印原视频</span><span class="member-video-badge">会员</span></button>
+                <div id="video-download-progress" class="video-download-progress" aria-busy="false" hidden>
+                  <div class="video-download-heading">
+                    <strong id="video-download-stage" role="status" aria-live="polite" aria-atomic="true">准备下载视频</strong>
+                    <span id="video-download-percent">—</span>
+                  </div>
+                  <div id="video-download-track" class="video-download-track" role="progressbar" aria-label="视频下载进度" aria-valuemin="0" aria-valuemax="100">
+                    <span id="video-download-bar"></span>
+                  </div>
+                  <p id="video-download-detail">等待视频信息</p>
+                </div>
                 <p id="original-video-hint" class="original-video-hint" role="status" aria-live="polite">无水印原视频需要有效会员。能否下载取决于笔记页面是否提供原视频。</p>
               </div>
 
-              <p class="video-hint">播放视频可能带有平台水印。会员下载页面提供的原视频；作者直接写入画面的水印会保留。视频按小段读取，在本地合并为 MP4。</p>
+              <p class="video-hint">播放视频可能带有平台水印。会员下载页面提供的原视频；作者直接写入画面的水印会保留。下载期间请保持页面打开；开始保存后请查看保存提示或下载文件。</p>
             </div>
 
             <div class="video-card">

@@ -68,6 +68,12 @@ const elements = {
   downloadVideoButton: document.querySelector("#download-video-button"),
   downloadOriginalVideoButton: document.querySelector("#download-original-video-button"),
   originalVideoHint: document.querySelector("#original-video-hint"),
+  videoDownloadProgress: document.querySelector("#video-download-progress"),
+  videoDownloadStage: document.querySelector("#video-download-stage"),
+  videoDownloadDetail: document.querySelector("#video-download-detail"),
+  videoDownloadPercent: document.querySelector("#video-download-percent"),
+  videoDownloadTrack: document.querySelector("#video-download-track"),
+  videoDownloadBar: document.querySelector("#video-download-bar"),
   openVideoLink: document.querySelector("#open-video-link"),
   selectAllButton: document.querySelector("#select-all-button"),
   copySelectedImagesButton: document.querySelector("#copy-selected-images-button"),
@@ -426,6 +432,97 @@ function hideProgress() {
   elements.progressBar.style.width = "0%";
 }
 
+let activeVideoProgress = null;
+
+function startVideoProgress(phase, message) {
+  activeVideoProgress?.dispose();
+  clearTimeout(showToast.timer);
+  clearTimeout(showToast.clearTimer);
+  for (const toast of [elements.toast, elements.alertToast]) {
+    toast.classList.remove("toast-visible");
+    toast.textContent = "";
+  }
+  const panel = elements.videoDownloadProgress;
+  const startedAt = Date.now();
+  let transferStartedAt = startedAt;
+  let loadedBytes = 0;
+  let totalBytes = 0;
+  let detail = "";
+  let busy = true;
+  let lastRender = 0;
+  let lastPercent = null;
+  let timer;
+
+  const render = () => {
+    if (activeVideoProgress !== progress || !panel) return;
+    const percent = totalBytes > 0 ? Math.round(loadedBytes / totalBytes * 100) : null;
+    panel.dataset.indeterminate = String(percent === null && busy);
+    panel.setAttribute("aria-busy", String(busy));
+    elements.videoDownloadPercent.textContent = percent === null ? "—" : `${percent}%`;
+    elements.videoDownloadBar.style.width = percent === null ? "0%" : `${percent}%`;
+    if (percent === null) elements.videoDownloadTrack.removeAttribute("aria-valuenow");
+    else elements.videoDownloadTrack.setAttribute("aria-valuenow", String(percent));
+    const seconds = Math.floor((Date.now() - startedAt) / 1000);
+    const elapsed = seconds >= 60 ? `${Math.floor(seconds / 60)} 分 ${seconds % 60} 秒` : `${seconds} 秒`;
+    const bytes = totalBytes > 0
+      ? `${loadedBytes > 0 ? formatBytes(loadedBytes) : "0 B"} / ${formatBytes(totalBytes)}`
+      : loadedBytes > 0 ? `已读取 ${formatBytes(loadedBytes)} · 总大小待确认`
+        : panel.dataset.phase === "downloading" ? "等待视频数据 · 总大小待确认" : "等待视频信息";
+    const transferSeconds = (Date.now() - transferStartedAt) / 1000;
+    const speed = panel.dataset.phase === "downloading" && loadedBytes > 0 && transferSeconds >= 1
+      ? ` · 平均 ${formatBytes(loadedBytes / transferSeconds)}/秒` : "";
+    elements.videoDownloadDetail.textContent = `${detail ? `${detail} · ` : ""}${bytes}${speed} · 已耗时 ${elapsed}`;
+    lastRender = Date.now();
+    lastPercent = percent;
+  };
+
+  const progress = {
+    phase(nextPhase, text, { reset = false, description = "" } = {}) {
+      if (activeVideoProgress !== progress) return;
+      if (reset) { loadedBytes = 0; totalBytes = 0; transferStartedAt = Date.now(); }
+      detail = description;
+      if (panel) panel.dataset.phase = nextPhase;
+      if (elements.videoDownloadStage) elements.videoDownloadStage.textContent = text;
+      render();
+    },
+    report({ loadedBytes: loaded, totalBytes: total }) {
+      if (activeVideoProgress !== progress || !busy) return;
+      loadedBytes = Math.max(0, Number(loaded) || 0);
+      totalBytes = Math.max(0, Number(total) || 0);
+      if (totalBytes) loadedBytes = Math.min(loadedBytes, totalBytes);
+      if (panel?.dataset.phase !== "downloading") {
+        progress.phase("downloading", "正在下载视频");
+        return;
+      }
+      const percent = totalBytes ? Math.round(loadedBytes / totalBytes * 100) : null;
+      // Update each percentage change; limit repeated byte-only updates during fast reads.
+      if (percent !== lastPercent || loadedBytes === totalBytes || Date.now() - lastRender >= 180) render();
+    },
+    checking(blob) {
+      loadedBytes = blob.size;
+      totalBytes = blob.size;
+      progress.phase("checking", "下载完成，正在检查视频", { description: "检查文件与音轨" });
+    },
+    finish(nextPhase, text, description = "") {
+      busy = false;
+      clearInterval(timer);
+      progress.phase(nextPhase, text, { description });
+    },
+    dispose() { clearInterval(timer); }
+  };
+  activeVideoProgress = progress;
+  if (panel) panel.hidden = false;
+  progress.phase(phase, message);
+  timer = setInterval(render, 1000);
+  if (panel) {
+    const rect = panel.getBoundingClientRect();
+    if (rect.top < 0 || rect.bottom > window.innerHeight) {
+      panel.scrollIntoView({ block: "nearest", behavior: "instant" });
+    }
+  }
+  return progress;
+}
+
 function triggerBlobDownload(blob, filename) {
   const href = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -461,22 +558,25 @@ function responseSizeLimitError(limitErrorFactory) {
 async function responseBlobWithLimit(
   response,
   maxBytes = 0,
-  limitErrorFactory = null
+  limitErrorFactory = null,
+  onProgress = null
 ) {
   const contentType = response.headers.get("content-type") || "";
-  if (!maxBytes) return response.blob();
+  if (!maxBytes && typeof onProgress !== "function") return response.blob();
 
   const contentLength = Number(response.headers.get("content-length") || 0);
-  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+  const total = Number.isSafeInteger(contentLength) && contentLength > 0 ? contentLength : 0;
+  if (maxBytes && Number.isFinite(contentLength) && contentLength > maxBytes) {
     await response.body?.cancel().catch(() => {});
     throw responseSizeLimitError(limitErrorFactory);
   }
 
   if (!response.body?.getReader) {
     const blob = await response.blob();
-    if (blob.size > maxBytes) {
+    if (maxBytes && blob.size > maxBytes) {
       throw responseSizeLimitError(limitErrorFactory);
     }
+    onProgress?.({ loadedBytes: blob.size, totalBytes: total });
     return blob;
   }
 
@@ -489,15 +589,19 @@ async function responseBlobWithLimit(
       const { done, value } = await reader.read();
       if (done) break;
       totalBytes += value.byteLength;
-      if (totalBytes > maxBytes) {
+      if (maxBytes && totalBytes > maxBytes) {
         await reader.cancel().catch(() => {});
         throw responseSizeLimitError(limitErrorFactory);
       }
       chunks.push(value);
+      onProgress?.({ loadedBytes: totalBytes, totalBytes: total });
     }
   } catch (error) {
     await reader.cancel().catch(() => {});
+    chunks.length = 0;
     throw error;
+  } finally {
+    reader.releaseLock?.();
   }
 
   return new Blob(chunks, { type: contentType });
@@ -1195,17 +1299,22 @@ async function downloadVideoByChunks(
         throw new Error(`视频第 ${index + 1} 段声明长度异常。`);
       }
 
-      const buffer = await response.arrayBuffer();
-      if (buffer.byteLength !== expected) {
+      const chunk = await responseBlobWithLimit(
+        response,
+        expected,
+        () => new Error(`视频第 ${index + 1} 段长度异常。`),
+        ({ loadedBytes }) => reportProgress(receivedBytes + loadedBytes, index)
+      );
+      if (chunk.size !== expected) {
         throw new Error(`视频第 ${index + 1} 段长度异常。`);
       }
-      receivedBytes += buffer.byteLength;
+      receivedBytes += chunk.size;
       assertVideoSizeWithinLimit(
         receivedBytes,
         maxBytes,
         limitErrorFactory
       );
-      chunks.push(new Uint8Array(buffer));
+      chunks.push(chunk);
       reportProgress(Math.min(meta.size, end + 1), index + 1);
     }
   } catch (error) {
@@ -1224,7 +1333,7 @@ async function downloadVideoByChunks(
 
 async function tryDirectVideoDownload(
   sourceUrl,
-  { maxBytes = 0, limitErrorFactory = null } = {}
+  { maxBytes = 0, limitErrorFactory = null, onProgress } = {}
 ) {
   if (String(sourceUrl).startsWith("member-video:")) throw new Error("会员原视频需要通过授权下载接口读取。");
   const response = await fetch(sourceUrl, {
@@ -1234,13 +1343,14 @@ async function tryDirectVideoDownload(
   if (!response.ok) throw new Error(`视频 CDN 返回 HTTP ${response.status}`);
   const factory = limitErrorFactory
     || (maxBytes ? () => videoTooLargeError(maxBytes) : null);
-  const blob = await responseBlobWithLimit(response, maxBytes, factory);
+  onProgress?.({ loadedBytes: 0, totalBytes: 0 });
+  const blob = await responseBlobWithLimit(response, maxBytes, factory, onProgress);
   assertVideoSizeWithinLimit(blob.size, maxBytes, factory);
   return blob;
 }
 
 async function fetchVideoBlobWithFallback(video, options = {}) {
-  const { maxBytes = 0, limitErrorFactory = null } = options;
+  const { maxBytes = 0, limitErrorFactory = null, onProgress } = options;
   assertVideoSizeWithinLimit(
     declaredVideoSize(video),
     maxBytes,
@@ -1266,7 +1376,8 @@ async function fetchVideoBlobWithFallback(video, options = {}) {
     try {
       return await tryDirectVideoDownload(sourceUrl, {
         maxBytes,
-        limitErrorFactory
+        limitErrorFactory,
+        onProgress
       });
     } catch (error) {
       if (isArchiveSizeLimitError(error) || error?.name === "VideoTooLargeError") {
@@ -1456,6 +1567,7 @@ async function downloadCurrentVideo() {
   elements.copyCaptionButton.disabled = true;
   elements.downloadZipButton.disabled = true;
   setEngineInputsDisabled(true);
+  const progress = startVideoProgress("preparing", "正在读取视频信息");
 
   const alternatives = state.videos.filter(item => item !== video && item.hasAudio !== false);
   const candidates = [...new Set([
@@ -1467,11 +1579,16 @@ async function downloadCurrentVideo() {
   try {
     for (const sourceUrl of candidates) {
       try {
+        progress.phase("preparing", "正在读取视频信息", { reset: true });
         const blob = await downloadVideoByChunks(sourceUrl, video, {
-          maxBytes: MAX_VIDEO_DOWNLOAD_BYTES
+          maxBytes: MAX_VIDEO_DOWNLOAD_BYTES,
+          onProgress: progress.report
         });
+        progress.checking(blob);
         await inspectVideoBlob(blob, { requireAudio: true });
+        progress.phase("saving", "正在开始保存视频");
         triggerBlobDownload(blob, videoFilename());
+        progress.finish("complete", "已开始保存视频", "请查看保存提示或下载文件");
         showToast("视频已经合并完成并开始保存", "success");
         return;
       } catch (error) {
@@ -1483,11 +1600,16 @@ async function downloadCurrentVideo() {
     // CDN 不支持 Range 或分段接口受限时，再尝试浏览器直连。
     for (const sourceUrl of candidates) {
       try {
+        progress.phase("preparing", "正在尝试备用下载方式", { reset: true });
         const blob = await tryDirectVideoDownload(sourceUrl, {
-          maxBytes: MAX_VIDEO_DOWNLOAD_BYTES
+          maxBytes: MAX_VIDEO_DOWNLOAD_BYTES,
+          onProgress: progress.report
         });
+        progress.checking(blob);
         await inspectVideoBlob(blob, { requireAudio: true });
+        progress.phase("saving", "正在开始保存视频");
         triggerBlobDownload(blob, videoFilename());
+        progress.finish("complete", "已开始保存视频", "请查看保存提示或下载文件");
         showToast("视频已通过浏览器直连开始保存", "success");
         return;
       } catch (error) {
@@ -1502,6 +1624,7 @@ async function downloadCurrentVideo() {
       `${lastError?.message || "自动下载失败"}，已打开视频原地址，可在新页面中保存。`
     );
   } catch (error) {
+    progress.finish("error", "视频下载未完成", error.message || "请稍后重试");
     if (error?.name === "VideoTooLargeError") {
       window.open(video.url, "_blank", "noopener,noreferrer");
       showToast(
@@ -1513,6 +1636,7 @@ async function downloadCurrentVideo() {
       showToast(error.message, "error");
     }
   } finally {
+    progress.dispose();
     state.busy = false;
     elements.downloadVideoButton.disabled = false;
     elements.parseButton.disabled = false;
@@ -1545,16 +1669,19 @@ async function downloadOriginalVideo() {
   }
   const trigger = elements.downloadOriginalVideoButton;
   setLiveDownloadBusy(true, trigger);
+  const progress = startVideoProgress("verifying", "正在验证会员权益");
   let unsubscribe = () => {};
   try {
     const bridge = getAccountBridge();
     const accountState = await bridge.getAccountState();
     if (!accountState?.authenticated) {
+      progress.finish("error", "请先登录软件账号", "无水印原视频仅限有效会员下载，登录后请重新点击下载");
       showToast("请先登录软件账号；无水印原视频仅限会员下载。");
       await openAccountUI();
       return;
     }
     if (accountState.verified && !accountState.account?.membership?.active) {
+      progress.finish("error", "需要有效会员权益", "开通或兑换会员后请重新点击下载");
       showToast("无水印原视频是会员权益，请先开通或兑换会员。");
       await openAccountUI({ purchase: true });
       return;
@@ -1570,7 +1697,7 @@ async function downloadOriginalVideo() {
       }
     };
     unsubscribe = bridge.onAccountUpdate?.(observeAccount) || unsubscribe;
-    setProgress(0, 1, "正在验证会员并读取网页原视频");
+    progress.phase("resolving", "正在读取网页原视频");
     const response = await fetch("/api/member_video", {
       method: "POST", credentials: "same-origin", cache: "no-store",
       headers: { "content-type": "application/json" },
@@ -1592,8 +1719,14 @@ async function downloadOriginalVideo() {
       for (const sourceUrl of [...new Set([video.url, ...(video.backupUrls || [])].filter(Boolean))]) {
         if (!String(sourceUrl).startsWith("member-video:")) throw new Error("原视频授权响应无效，请更新客户端后重试。");
         try {
-          const blob = await downloadVideoByChunks(sourceUrl, video, { maxBytes: MAX_VIDEO_DOWNLOAD_BYTES });
+          progress.phase("preparing", "正在读取原视频信息", { reset: true });
+          const blob = await downloadVideoByChunks(sourceUrl, video, {
+            maxBytes: MAX_VIDEO_DOWNLOAD_BYTES,
+            onProgress: progress.report
+          });
+          progress.checking(blob);
           await inspectVideoBlob(blob, { requireAudio: true });
+          progress.phase("checking", "正在复查原视频与会员权益", { description: "视频检查已通过，确认保存权限" });
           const finalMeta = await getVideoMeta(sourceUrl, blob.size);
           if (finalMeta.size !== blob.size) throw new Error("原视频大小在保存前发生变化，已停止保存，请重新下载。");
           const currentAccount = await bridge.getAccountState();
@@ -1602,7 +1735,9 @@ async function downloadOriginalVideo() {
           if (!currentAccount.verified || !currentAccount.account?.membership?.active) {
             throw accountError('无法确认当前会员权益，已停止原视频保存，请刷新账号后重试。', 'MEMBERSHIP_REQUIRED', 403);
           }
+          progress.phase("saving", "正在开始保存原视频");
           triggerBlobDownload(blob, `${sanitizeFilename(state.title || "小红书视频")}-原视频.mp4`);
+          progress.finish("complete", "已开始保存原视频", "作者写入画面的水印可能仍保留，请查看保存提示或下载文件");
           showToast("网页原视频已完成并开始保存；作者写入画面的水印可能仍保留。", "success", 6200);
           return;
         } catch (error) {
@@ -1613,6 +1748,7 @@ async function downloadOriginalVideo() {
     }
     throw lastError || new Error("原视频下载失败，请稍后重试。");
   } catch (error) {
+    progress.finish("error", "原视频下载未完成", error.message || "请稍后重试");
     showToast(error.message || "原视频下载失败，请稍后重试。", "error", 6200);
     if (error.status === 401 || ["UNAUTHENTICATED", "SESSION_INVALID", "SESSION_REVOKED"].includes(error.code)) {
       await openAccountUI();
@@ -1620,6 +1756,7 @@ async function downloadOriginalVideo() {
       await openAccountUI({ purchase: true });
     }
   } finally {
+    progress.dispose();
     unsubscribe();
     setLiveDownloadBusy(false, trigger);
     hideProgress();
@@ -1697,6 +1834,9 @@ function renderCaption() {
 }
 
 function renderResults() {
+  activeVideoProgress?.dispose();
+  activeVideoProgress = null;
+  if (elements.videoDownloadProgress) elements.videoDownloadProgress.hidden = true;
   elements.emptyState.hidden = true;
   elements.resultSection.hidden = false;
   elements.noteTitle.textContent = state.title;

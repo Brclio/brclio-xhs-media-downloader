@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "1.8.26",
+  "version": "1.8.27",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页、Mac、Windows 与 Android 客户端；桌面版支持主页批量下载和自定义间隔",

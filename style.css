@@ -962,6 +962,71 @@ textarea:focus {
   line-height: 1.75;
   overflow-wrap: anywhere;
 }
+
+.video-download-progress {
+  min-width: 0;
+  padding: clamp(14px, 2vw, 18px);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  color: var(--ink);
+  background: var(--paper);
+  scroll-margin-block: 24px;
+}
+
+.video-download-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: .8rem;
+  line-height: 1.6;
+}
+
+#video-download-stage {
+  overflow-wrap: anywhere;
+}
+
+#video-download-percent {
+  flex-shrink: 0;
+  color: var(--blue-deep);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.video-download-track {
+  height: 7px;
+  margin-top: 11px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--cream-deep);
+}
+
+#video-download-bar {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+}
+
+.video-download-progress[data-indeterminate="true"] #video-download-bar {
+  width: 100% !important;
+  opacity: .28;
+}
+
+#video-download-detail {
+  margin-top: 10px;
+  color: var(--ink-light);
+  font-size: .73rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.video-download-progress[data-phase="error"] #video-download-stage {
+  color: var(--red);
+}
+
 .member-video-entry-hint { margin-top: 16px; color: var(--blue-deep); }
 
 .browser-account-open { cursor: pointer; border: 0; background: transparent; font-family: inherit; }
