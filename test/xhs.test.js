@@ -18,6 +18,23 @@ function imageUrl(id, variant = "!nd_dft_wlteh_webp_3") {
   return `https://sns-webpic-qc.xhscdn.com/202607301856/signature/${id}${variant}`;
 }
 
+test('native parse treats a throwing lazy JSON body getter as INVALID_JSON 400 before fetching', async t => {
+  t.mock.method(globalThis, 'fetch', () => assert.fail('Malformed lazy JSON reached an upstream page'));
+  t.mock.method(console, 'error', () => {});
+  let reads = 0;
+  const req = { method: 'POST', headers: { 'content-type': 'application/json' } };
+  Object.defineProperty(req, 'body', { get() { reads++; throw new SyntaxError('private-invalid-body-sentinel'); } });
+  const res = { code: 200, headers: {}, setHeader(key, value) { this.headers[key.toLowerCase()] = value; }, status(code) { this.code = code; return this; }, json(value) { this.body = value; return this; } };
+  await parseHandler(req, res);
+  assert.equal(reads, 1);
+  assert.equal(res.code, 400);
+  assert.equal(res.body.success, false);
+  assert.equal(res.body.code, 'INVALID_JSON');
+  assert.equal(res.body.engine, 'node');
+  assert.equal(res.headers['cache-control'], 'no-store');
+  assert.doesNotMatch(JSON.stringify(res.body), /private-invalid-body-sentinel/);
+});
+
 test('public native parse withholds undeclared protected paths and promotes ordinary backups without inventing origin availability', async t => {
   const previous = globalThis.fetch;
   t.after(() => { globalThis.fetch = previous; });

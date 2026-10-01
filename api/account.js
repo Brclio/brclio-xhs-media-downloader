@@ -12,8 +12,8 @@ const header = (req, name) => String(req.headers?.[name] || '');
 
 function bodyValue(req) {
   if (Number(header(req, 'content-length')) > FEEDBACK_BODY_BYTES) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);
-  let body = req.body;
   try {
+    let body = req.body;
     if (Buffer.isBuffer(body)) body = body.toString('utf8');
     if (typeof body === 'string') {
       if (Buffer.byteLength(body) > FEEDBACK_BODY_BYTES) fail('REQUEST_TOO_LARGE', '请求内容过大。', 413);

@@ -12,14 +12,13 @@ import {
 import { publicPlaybackVideo } from "../lib/video-policy.js";
 
 function readJsonBody(req) {
-  if (typeof req.body === "string") {
-    try {
-      return JSON.parse(req.body);
-    } catch {
-      return {};
-    }
+  try {
+    const body = req.body;
+    if (typeof body === "string") return JSON.parse(body);
+    return body && typeof body === "object" ? body : {};
+  } catch {
+    throw Object.assign(new XhsError("请求 JSON 格式无效。", 400), { code: "INVALID_JSON" });
   }
-  return req.body && typeof req.body === "object" ? req.body : {};
 }
 
 export default async function handler(req, res) {
@@ -146,6 +145,6 @@ export default async function handler(req, res) {
       : "服务器解析失败，请稍后重试。";
 
     console.error("parse error", error);
-    return res.status(statusCode).json({ success: false, engine: "node", message });
+    return res.status(statusCode).json({ success: false, engine: "node", message, ...(error.code === "INVALID_JSON" ? { code: "INVALID_JSON" } : {}) });
   }
 }
