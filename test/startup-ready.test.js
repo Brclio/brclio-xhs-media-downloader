@@ -20,10 +20,17 @@ function noListeners(window) {
 }
 
 test('late renderer readiness is retried, then all lifecycle listeners are removed', async () => {
-  let ready = false, checks = 0;
-  const window = windowFixture(async () => { checks++; return ready; });
+  let ready = false, checks = 0, observeRetry;
+  const secondProbe = new Promise(resolve => { observeRetry = resolve; });
+  const window = windowFixture(async () => {
+    if (++checks === 2) observeRetry(true);
+    return ready;
+  });
   const result = waitForDesktopReady(window, { retryMs: 5, timeoutMs: 1000 });
-  await delay(25);
+  // Wait for the retry itself, bounded by the observer's existing deadline.
+  // A missing retry must fail rather than leave this fixture pending forever.
+  assert.equal(await Promise.race([secondProbe, result.then(() => false)]), true,
+    'An incomplete renderer must be retried before the readiness observer finishes');
   assert.ok(checks > 1, 'An incomplete renderer must remain observable');
   ready = true;
   assert.equal(await result, true);

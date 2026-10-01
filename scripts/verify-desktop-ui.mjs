@@ -268,6 +268,7 @@ app.whenReady().then(async () => {
         dialogs: Array.from(document.querySelectorAll('dialog[open]'), dialog => ({
           id: dialog.id, bounds: dialog.getBoundingClientRect().toJSON(),
           clientWidth: dialog.clientWidth, scrollWidth: dialog.scrollWidth,
+          computedMaxHeight: getComputedStyle(dialog).maxHeight,
           actions: Array.from(dialog.querySelectorAll('button'), button => ({
             id: button.id, bounds: button.getBoundingClientRect().toJSON()
           }))
@@ -276,6 +277,9 @@ app.whenReady().then(async () => {
         buttonRects: button?.getClientRects().length,
         confirmationOpen: document.querySelector('#desktop-install-confirmation')?.open,
         installCancelEvent: window.fixtureCancelEvent,
+        cssViewportHeight: document.querySelector('#fixture-css-viewport-probe')?.getBoundingClientRect().height,
+        shortScreenMedia: matchMedia('(max-height: 540px)').matches,
+        resizeEvents: window.fixtureViewportResizeEvents || [],
         updateDialogOpen: document.querySelector('#desktop-update-dialog')?.open };
     })()`);
     throw new Error(`UI check failed: ${description}; focus: ${JSON.stringify(focus)}; renderer: ${JSON.stringify(rendererErrors)}; body: ${await evaluate("document.body.innerText.slice(0, 400)")}`);
@@ -287,9 +291,30 @@ app.whenReady().then(async () => {
   const paint = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
   const resizeViewport = async (width, height) => {
     // Native resize and renderer viewport updates are asynchronous. In
-    // particular, a height-only change can still paint the previous viewport.
+    // particular, innerHeight can change before CSS viewport units and media
+    // queries reach the same size. This fixed probe never participates in layout.
+    await evaluate(`(() => {
+      if (!document.querySelector('#fixture-css-viewport-probe')) {
+        const probe = document.createElement('div');
+        probe.id = 'fixture-css-viewport-probe';
+        probe.setAttribute('aria-hidden', 'true');
+        probe.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:100dvh;visibility:hidden;pointer-events:none;margin:0;padding:0;border:0;';
+        document.body.append(probe);
+      }
+      if (!window.fixtureViewportResizeEvents) {
+        window.fixtureViewportResizeEvents = [];
+        addEventListener('resize', () => {
+          window.fixtureViewportResizeEvents.push({ at: performance.now(), width: innerWidth, height: innerHeight,
+            cssHeight: document.querySelector('#fixture-css-viewport-probe')?.getBoundingClientRect().height,
+            shortScreenMedia: matchMedia('(max-height: 540px)').matches });
+          window.fixtureViewportResizeEvents = window.fixtureViewportResizeEvents.slice(-8);
+        });
+      }
+    })()`);
     win.setContentSize(width, height);
     await check(`innerWidth === ${width} && innerHeight === ${height}`, `viewport reaches ${width}×${height}`);
+    await check(`Math.abs(document.querySelector('#fixture-css-viewport-probe').getBoundingClientRect().height - ${height}) < 0.5
+      && matchMedia('(max-height: 540px)').matches === ${height <= 540}`, `CSS viewport reaches ${width}×${height}`);
     await paint();
   };
   const captureFrame = async () => {
@@ -780,6 +805,10 @@ app.whenReady().then(async () => {
       return { fits: ${installDialogFits}, viewport: { width: innerWidth, height: innerHeight },
         dialog: dialog.getBoundingClientRect().toJSON(), clientWidth: dialog.clientWidth, scrollWidth: dialog.scrollWidth,
         action: document.querySelector('#desktop-install-confirm').getBoundingClientRect().toJSON(),
+        computedMaxHeight: getComputedStyle(dialog).maxHeight,
+        cssViewportHeight: document.querySelector('#fixture-css-viewport-probe')?.getBoundingClientRect().height,
+        shortScreenMedia: matchMedia('(max-height: 540px)').matches,
+        resizeEvents: window.fixtureViewportResizeEvents || [],
         detailsOpen: document.querySelector('#desktop-install-details').open };
     })()`);
     assert.equal(geometry.fits, true, `${description}; geometry: ${JSON.stringify(geometry)}`);
