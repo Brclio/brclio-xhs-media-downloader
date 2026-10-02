@@ -2,11 +2,12 @@
 
 ## 目录和部署边界
 
-本项目支持 **Vercel 或 Cloudflare Pages + Workers，以及 Electron**。代码继续放在当前仓库，业务数据放在另一个不关联自动部署的 GitHub 私有仓库。不接入支付系统，GitHub 仍是唯一业务存储，不迁入 D1 或 Redis。Cloudflare 的部署、原环境迁移和切换核验见 [Cloudflare 部署说明](cloudflare-deployment.md)；原 Vercel 部署流程保留，笔记解析还可能使用原 Vercel 的同引擎 JSON 回退。
+本项目支持 **Vercel、Cloudflare Pages + Workers、独立服务器，以及 Electron**。Vercel / Cloudflare 的业务数据继续放在另一个不关联自动部署的 GitHub 私有仓库，默认行为不变；独立服务器新增 SQLite 自动初始化和 GitHub / SQLite 双向迁移，详见[服务器部署](server-deployment.md)。每套账号服务只使用一个权威存储，不做后台双写或自动同步。不接入支付系统、D1 或 Redis。Cloudflare 的部署、原环境迁移和切换核验见 [Cloudflare 部署说明](cloudflare-deployment.md)；原 Vercel 部署流程保留，笔记解析还可能使用原 Vercel 的同引擎 JSON 回退。
 
 | 文件或目录 | 用途 | 发布到 |
 | --- | --- | --- |
-| `api/account.js`、`server/auth/` | 邮箱登录、会员、设备、激活码、管理员权限、GitHub 存储 | Vercel 服务端函数，或主 Worker 私有 `AccountRuntime` 执行环境 |
+| `api/account.js`、`server/auth/`（不含 `sqlite-store.js`） | 邮箱登录、会员、设备、激活码、管理员权限、GitHub 存储 | Vercel 服务端函数，或主 Worker 私有 `AccountRuntime` 执行环境；独立服务器复用 |
+| `server/standalone/`、`server/auth/sqlite-store.js` | 服务器 HTTP / Python 适配与本机 SQLite 存储 | 仅独立服务器，不进入 Vercel / Cloudflare 函数或客户端 |
 | `cloudflare/account-runtime.js` | 私有账号 Durable Object，不使用其存储 | 主 Worker 的 `ACCOUNT_RUNTIME` 绑定 |
 | `admin/` | 管理网页 | Vercel 静态目录，或经 Pages 网关与主 Worker 提供；保留后台安全响应头 |
 | `feedback.html`、`feedback.js`、`feedback.css` | 公开问题、评论和网页软件账号登录 | 公共静态目录；私密数据经同源 `/api/account` 按会话返回 |

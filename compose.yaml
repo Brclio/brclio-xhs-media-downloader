@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      AUTH_STORAGE_DRIVER: ${AUTH_STORAGE_DRIVER:-sqlite}
+      AUTH_SQLITE_PATH: /app/data/accounts.sqlite
+    ports:
+      - "127.0.0.1:${PORT:-3000}:3000"
+    volumes:
+      - account-data:/app/data
+    stop_grace_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  account-data:

@@ -8,10 +8,21 @@ scripts/
 test/
 docs/
 dist-web/
-.env*
-*.local.json
+**/.env*
+**/*.local.json
 # Cloudflare runtimes, local bindings and probes never enter Vercel uploads.
 cloudflare/
 .wrangler/
-.dev.vars*
+**/.dev.vars*
 wrangler.jsonc
+# Standalone server data and tooling must never enter a Vercel upload.
+**/data/
+**/backups/
+**/*.sqlite*
+**/*.db*
+server/standalone/
+server/auth/sqlite-store.js
+server/storage-migration.js
+Dockerfile
+compose.yaml
+.dockerignore
