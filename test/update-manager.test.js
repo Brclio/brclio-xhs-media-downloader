@@ -14,6 +14,32 @@ const content = Buffer.from('fake installer bytes for network and integrity test
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const defaults = { currentVersion: '1.6.0', platform: 'darwin', arch: 'arm64' };
 
+test('update network scope covers checking and downloading, closes before browser handoff, and excludes local installation', async t => {
+  const phases = []; let active = false;
+  const networkScope = { async run(controller, work) {
+    assert.equal(active, false); assert.equal(controller.signal.aborted, false);
+    active = true; phases.push('open');
+    try { return await work(); } finally { active = false; phases.push('close'); }
+  } };
+  const f = await fixture(t, { networkScope, confirmInstall: async () => { assert.equal(active, false); return true; },
+    openInstaller: async () => { assert.equal(active, false); return ''; },
+    openExternal: async () => assert.equal(active, false) });
+  await f.manager.checkForUpdates(); await f.manager.downloadUpdate();
+  await f.manager.installUpdate(); await f.manager.openLatestInstaller();
+  assert.deepEqual(phases, ['open', 'close', 'open', 'close', 'open', 'close']);
+});
+
+test('shutdown cancels update network preparation before its first metadata request', async t => {
+  let entered;
+  const ready = new Promise(resolve => { entered = resolve; });
+  const networkScope = { run(controller) { entered(); return new Promise((_, reject) => controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true })); } };
+  const f = await fixture(t, { networkScope });
+  const operation = f.manager.checkForUpdates(); await ready;
+  assert.equal(f.manager.snapshot().status, 'checking');
+  await f.manager.shutdown(); await operation;
+  assert.equal(f.requests.length, 0); assert.equal(f.manager.snapshot().status, 'idle');
+});
+
 function mockElectronNet(onEnd) {
   const requests = [];
   return { requests, request(options) {

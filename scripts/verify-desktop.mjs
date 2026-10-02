@@ -253,17 +253,22 @@ async function verifyManualInstallerBridge(win) {
     html_url: `https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v${pkg.version}`,
     assets: [{ name, browser_download_url: url, size: 32, digest: `sha256:${'0'.repeat(64)}` }] };
   const request = net.request, openExternal = shell.openExternal;
+  const registryEndpoint = JSON.parse(readFileSync(path.join(root, 'desktop/account-config.json'), 'utf8')).endpoint;
   const opened = [];
   let requests = 0;
   // Intercept only OS/network effects. Exercise the real main constructor,
   // trusted IPC handler, preload, release selection and browser callback.
   net.request = options => {
-    if (options.url !== LATEST_RELEASE_URL) return request.call(net, options);
-    requests++;
+    const registry = options.url === registryEndpoint;
+    if (options.url !== LATEST_RELEASE_URL && !registry) return request.call(net, options);
+    if (!registry) requests++;
     const connection = new EventEmitter();
     connection.abort = () => {};
     connection.end = () => queueMicrotask(() => {
-      const incoming = Readable.from([Buffer.from(JSON.stringify(release))]);
+      // General bridge smoke remains deterministic. The separately opted-in
+      // live proxy checks validate subscriptions, native routing and cleanup.
+      const payload = registry ? { ok: true, proxyConfig: { enabled: false, revision: 1, subscriptionUrls: [], subscriptionUrl: '' } } : release;
+      const incoming = Readable.from([Buffer.from(JSON.stringify(payload))]);
       incoming.statusCode = 200;
       incoming.headers = {};
       connection.emit('response', incoming);

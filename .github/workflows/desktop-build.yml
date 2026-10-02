@@ -54,6 +54,8 @@ jobs:
           python-version: '3.13'
           architecture: ${{ matrix.arch }}
       - run: npm ci
+      - name: Prepare the verified update proxy runtime without subscription defaults
+        run: node scripts/prepare-update-proxy.mjs --arch ${{ matrix.arch }}
       # Electron 44 downloads its runtime lazily. Parallel native tests must
       # never both extract into node_modules/electron/dist at the same time.
       - name: Initialize Electron before concurrent native tests

@@ -34,6 +34,18 @@ export function validateReleaseProof(proof, { tag, sourceCommit, certificateSha2
   assert.match(proof.apk.sha256, /^[a-f\d]{64}$/);
   assert.ok(Number.isSafeInteger(proof.apk.bytes) && proof.apk.bytes > 0);
   const [major, minor, patch] = version.split('.').map(Number);
+  if (major > 1 || (major === 1 && (minor > 0 || patch >= 9))) {
+    const proxy = proof.bundledUpdateProxy;
+    assert.equal(proof.bundledUpdateProxyVerified, true, 'Android 1.0.9+ requires the packaged update proxy gate');
+    assert.equal(proxy?.bundledSubscriptionsAbsent, true, 'Android installers must not contain preset subscriptions');
+    assert.equal(proxy.configurationSource, 'management-api', 'Android subscriptions must come from the management API');
+    assert.equal(proxy.apkSha256, proof.apk.sha256, 'Packaged update proxy acceptance APK mismatch');
+    for (const key of ['sourceArchiveVerified', 'licenseVerified', 'launcherSourceVerified']) {
+      assert.equal(proxy[key], true, `Packaged update proxy did not verify ${key}`);
+    }
+    assert.equal(proxy.coreCount, 3, 'All three Android proxy ABIs must be verified');
+    assert.equal(proxy.launcherCount, 3, 'All three Android proxy parent launchers must be verified');
+  }
   if (requireEmulatorUpgrade && (major > 1 || (major === 1 && (minor > 0 || patch >= 3)))) {
     const check = proof.emulatorUpgrade;
     assert.ok(check, 'Android 1.0.3+ requires the successful emulator upgrade gate');

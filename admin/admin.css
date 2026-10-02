@@ -151,6 +151,28 @@ dialog::backdrop { background: rgba(26,26,46,.4); }
 @media (max-width: 600px) { .app-header { align-items: start; gap: 10px; } .brand { gap: 8px; font-size: .8rem; } .brand-divider { padding: 0 3px; } .header-actions { flex-direction: column; align-items: end; gap: 0; } #admin-email { max-width: 130px; font-size: .65rem; } .header-actions .button { min-height: 29px; padding: 3px 0; font-size: .72rem; } .login-layout { grid-template-columns: 1fr; min-height: auto; padding-block: 15px 35px; } .login-context h1 { max-width: none; } .login-caption { margin-top: 20px; } .login-form-panel { max-width: none; } .workspace-heading { align-items: start; flex-direction: column; gap: 6px; } .tab-bar { gap: 0; } .tab { padding-inline: 12px; font-size: .82rem; } .search-bar { flex-wrap: wrap; gap: 8px; } .search-label { flex-basis: 100%; } .search-bar input { flex: 1; min-width: 140px; } .user-layout { grid-template-columns: 1fr; } .users-list { max-height: 245px; } .user-detail { margin-top: 5px; } .detail-identity { flex-wrap: wrap; } .membership-form { padding: 15px; grid-template-columns: 1fr; } .membership-form .wide-field { grid-column: auto; } .facts { gap: 16px; } .generate-panel .form-stack { grid-template-columns: 1fr; } .filter-bar { grid-template-columns: minmax(0, 1fr) 125px; } .filter-bar > .button { grid-column: 1 / -1; justify-self: end; } .generated-panel { padding: 15px; } .generated-panel .panel-heading { align-items: start; flex-direction: column; gap: 5px; } .status-facts > div { grid-template-columns: 95px minmax(0, 1fr); } .panel-heading { align-items: start; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
 .notice-actions { margin-top: 10px; }
+/* Update settings use the Brclio app template's restrained form + process layout. */
+.update-proxy-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, .85fr); gap: clamp(24px, 4vw, 52px); align-items: start; }
+.update-proxy-form { min-width: 0; padding: clamp(20px, 3vw, 32px); border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.update-proxy-toggle { flex-direction: row; align-items: center; gap: 13px; padding-bottom: 18px; border-bottom: 1px solid var(--line); font-size: .92rem; }
+.update-proxy-toggle input { flex: 0 0 auto; width: 22px; height: 22px; min-height: 0; accent-color: var(--blue-deep); }
+.update-proxy-toggle .small-text { margin-top: 4px; font-weight: 400; }
+.update-proxy-form > label[for="update-proxy-url"] { margin-bottom: -9px; }
+.update-proxy-address { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; }
+.update-proxy-address textarea { min-height: 120px; overflow-wrap: anywhere; }
+.update-proxy-address textarea[readonly] { color: var(--muted); background: var(--cream); }
+@media (max-width: 600px) { .update-proxy-address { grid-template-columns: 1fr; } .update-proxy-address .button { justify-self: end; } }
+.update-proxy-form .button-row { align-items: center; }
+.update-proxy-policy { padding: clamp(18px, 3vw, 30px) 0; }
+.update-proxy-policy h3 { margin-top: 15px; }
+.update-proxy-steps { list-style: none; counter-reset: update-step; display: grid; gap: 22px; padding: 0; margin: 24px 0; }
+.update-proxy-steps li { counter-increment: update-step; position: relative; padding-left: 40px; }
+.update-proxy-steps li::before { content: counter(update-step, decimal-leading-zero); position: absolute; top: 0; left: 0; color: var(--blue-deep); font: 700 1.12rem var(--serif); }
+.update-proxy-steps strong { display: block; font-size: .85rem; }
+.update-proxy-steps span { display: block; margin-top: 4px; color: var(--muted); font-size: .78rem; }
+.update-proxy-meta { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); }
+.update-proxy-meta .facts { grid-template-columns: 1fr 1fr; margin: 0; }
+@media (max-width: 900px) { .update-proxy-layout { grid-template-columns: 1fr; gap: 10px; } .update-proxy-policy { padding-inline: 8px; } }
 .pending-device-results { margin-top: 16px; }
 .pending-device-table { min-width: 650px; }
 .feedback-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: clamp(20px, 3vw, 40px); }

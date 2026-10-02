@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页、Mac、Windows 与 Android 客户端；桌面版支持主页批量下载和自定义间隔",
@@ -20,6 +20,8 @@
     "desktop:verify:startup": "electron scripts/verify-startup-storage.mjs --use-mock-keychain",
     "desktop:verify:startup-quit": "electron scripts/verify-startup-quit.mjs --use-mock-keychain",
     "desktop:prepare": "python3 scripts/build-python.py",
+    "desktop:prepare:proxy": "node scripts/prepare-update-proxy.mjs",
+    "android:prepare:proxy": "node scripts/prepare-update-proxy.mjs --platform android",
     "desktop:prepare:windows": "python scripts/build-windows-python.py",
     "desktop:pack": "electron-builder --dir --publish never",
     "desktop:build": "electron-builder --publish never",
@@ -97,6 +99,7 @@
       "desktop/**/*.js",
       "desktop/**/*.cjs",
       "desktop/account-config.json",
+      "node_modules/yaml/**/*",
       "!desktop/**/*.test.js",
       "!node_modules/nodemailer/**/*"
     ],
@@ -104,6 +107,13 @@
       {
         "from": "desktop-runtime/${os}-${arch}/python",
         "to": "python",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "desktop-runtime/${os}-${arch}/proxy",
+        "to": "proxy",
         "filter": [
           "**/*"
         ]
@@ -156,6 +166,7 @@
     "url": "https://github.com/Brclio/brclio-xhs-media-downloader/issues"
   },
   "dependencies": {
-    "nodemailer": "10.0.10"
+    "nodemailer": "10.0.10",
+    "yaml": "2.8.2"
   }
 }

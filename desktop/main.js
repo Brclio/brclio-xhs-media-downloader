@@ -9,6 +9,7 @@ import { XhsBrowser } from './profile-browser.js';
 import { XhsLoginReset } from './xhs-login-reset.js';
 import { ProfileManager } from './profile-manager.js';
 import { UpdateManager, createElectronUpdateFetch } from './update-manager.js';
+import { UpdateProxyNetwork } from './update-proxy.js';
 import { SecureAccountStore } from './account-storage.js';
 import { AccountClient } from './account-client.js';
 import { DiagnosticLog } from './diagnostic-log.js';
@@ -390,10 +391,15 @@ async function boot() {
       }
     });
   }
+  const updateNetwork = new UpdateProxyNetwork({ net, session, endpoint: accountClient.endpoint,
+    runtimeDirectory: app.isPackaged ? path.join(process.resourcesPath, 'proxy') : path.join(app.getAppPath(), 'desktop-runtime',
+      `${process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : 'linux'}-${process.arch}`, 'proxy'),
+    cacheDirectory: path.join(app.getPath('userData'), 'updates'), onDiagnostic: diagnostic });
   updateManager = new UpdateManager({ currentVersion: app.getVersion(),
     directory: path.join(app.getPath('userData'), 'updates'),
     portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR),
-    fetchImpl: createElectronUpdateFetch(net),
+    fetchImpl: updateNetwork.fetch,
+    networkScope: updateNetwork,
     openExternal: url => shell.openExternal(url),
     onUpdate(state) {
       if (state.status !== lastUpdateStatus) { diagnostic('update.state', { status: state.status, latestVersion: state.latestVersion, error: state.error }); lastUpdateStatus = state.status; }

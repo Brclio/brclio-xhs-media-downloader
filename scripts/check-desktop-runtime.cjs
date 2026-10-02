@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { pathToFileURL } = require('node:url');
 
 module.exports = async function checkRuntime(context) {
   const platform = context.electronPlatformName;
@@ -9,6 +10,13 @@ module.exports = async function checkRuntime(context) {
   const root = context.packager.projectDir;
   const osName = { darwin: 'mac', win32: 'win' }[platform] || 'linux';
   const directory = path.join(root, 'desktop-runtime', `${osName}-${architecture}`);
+  // Every packaging entry point provisions and verifies the pinned proxy core.
+  // Subscriptions are fetched from the management API, never embedded by builds.
+  const { prepareUpdateProxy } = await import(pathToFileURL(path.join(root, 'scripts/prepare-update-proxy.mjs')).href);
+  await prepareUpdateProxy({ platform, arch: architecture, root });
+  // Installed bundles may be owned by an administrator in /Applications. Their
+  // empty compatibility resource must remain readable by the app's ordinary user.
+  if (platform !== 'win32') fs.chmodSync(path.join(directory, 'proxy', 'subscription.json'), 0o644);
   const infoFile = path.join(directory, 'build-info.json');
   if ((!fs.existsSync(path.join(directory, 'python', executable)) && !(platform === 'win32' && fs.existsSync(path.join(directory, 'python/python.exe')))) || !fs.existsSync(infoFile)) {
     throw new Error('Missing bundled Python. Run npm run desktop:prepare on the target OS/architecture first.');

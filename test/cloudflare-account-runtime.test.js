@@ -148,6 +148,25 @@ test('real SQLite Durable Object preserves auth, full feedback and targeted acti
   assert.equal(Object.keys(state.codes).length, 1, 'email retries never mint another activation code');
   assert.ok(!JSON.stringify(state).includes(code.code));
 
+  const initialProxy = await call({ action: 'update-proxy-config', input: {} });
+  assert.equal(initialProxy.status, 200); assert.equal(initialProxy.headers.get('cache-control'), 'no-store');
+  assert.equal((await initialProxy.json()).proxyConfig.revision, 0, 'updater can read before login');
+  const proxyInput = { enabled: true, subscriptionUrls: ['https://subscription.example.test/private-runtime/sub?token=fixture-runtime-token', 'https://second.example.test/private-secondary?token=fixture-secondary-token'], expectedRevision: 0, reason: '设置软件更新专用订阅', requestId: randomUUID() };
+  const proxySaved = await call({ action: 'admin-save-update-proxy-config', input: proxyInput }, adminHeaders);
+  assert.equal(proxySaved.status, 200, JSON.stringify(await proxySaved.clone().json()));
+  assert.equal((await proxySaved.json()).proxyConfig.revision, 1);
+  const latestProxy = await call({ action: 'update-proxy-config', input: {} });
+  const latestProxyConfig = (await latestProxy.json()).proxyConfig;
+  assert.equal(latestProxyConfig.subscriptionUrl, proxyInput.subscriptionUrls[0]);
+  assert.deepEqual(latestProxyConfig.subscriptionUrls, proxyInput.subscriptionUrls);
+  const proxyReplay = await call({ action: 'admin-save-update-proxy-config', input: proxyInput }, adminHeaders);
+  assert.equal((await proxyReplay.json()).replayed, true);
+  assert.equal(state.updateProxyConfig.revision, 1);
+  assert.equal(JSON.stringify(state.audit).includes('fixture-runtime-token'), false);
+  assert.equal(JSON.stringify(state.audit).includes('private-runtime'), false);
+  assert.equal(JSON.stringify(state.audit).includes('fixture-secondary-token'), false);
+  assert.equal(JSON.stringify(state.audit).includes('private-secondary'), false);
+
   const logout = await call({ action: 'logout', input: {} }, { Origin: origin, Cookie: `__Host-xhs-admin=${token}` });
   assert.equal(logout.status, 200);
   assert.match(logout.headers.get('set-cookie'), /Max-Age=0/);

@@ -3,6 +3,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, mkdirSync, copyFileSync, writeFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { verifyPackagedAndroidProxy } from './verify-packaged-android-proxy.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const androidRoot = join(root, 'android');
@@ -136,6 +137,7 @@ async function main() {
   if (!Number.isSafeInteger(versionCode) || versionCode <= 0) fail('Android versionCode 必须是正整数。');
   const sourceApk = join(apkDir, output.outputFile);
   const verification = verifyApk(sdk, sourceApk, { release, version, versionCode });
+  const bundledUpdateProxy = verifyPackagedAndroidProxy(sourceApk, { root });
   if (runChecked('git', ['rev-parse', 'HEAD']).trim() !== sourceCommit) fail('构建过程中 Git 提交发生变化，请重新构建。');
   const sourceDirty = initiallyDirty || Boolean(runChecked('git', ['status', '--porcelain']).trim());
   const filename = `Brclio-XHS-Android-${version}-${buildType}.apk`;
@@ -152,6 +154,7 @@ async function main() {
       applicationId: verification.applicationId, minSdk: verification.minSdk,
       signingCertificateSha256: verification.certificateSha256,
       sourceCommit, sourceDirty, builtAt: new Date().toISOString(),
+      bundledUpdateProxyVerified: true, bundledSubscriptionsAbsent: true, bundledUpdateProxy,
       apk: { name: filename, bytes: statSync(destination).size, sha256: checksum },
     }, null, 2)}\n`);
   }

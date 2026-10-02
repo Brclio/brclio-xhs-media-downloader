@@ -1,0 +1,22 @@
+Mihomo update transport runtime
+
+This application includes an unmodified, separately executed Mihomo runtime
+from MetaCubeX/mihomo, licensed under the GNU General Public License version 3.
+Copyright remains with the Mihomo/Clash contributors and upstream authors.
+The complete license is in LICENSE beside the runtime.
+
+Pinned upstream version: v1.19.32
+Source commit: 88dcbf7f1614a67c3b36b848ee3592dfa92ada36
+Upstream project: https://github.com/MetaCubeX/mihomo
+Upstream release: https://github.com/MetaCubeX/mihomo/releases/tag/v1.19.32
+Source: https://github.com/MetaCubeX/mihomo/tree/88dcbf7f1614a67c3b36b848ee3592dfa92ada36
+
+The source archive corresponding to this version is distributed alongside the
+runtime as corresponding-source.tar.gz. It contains upstream build scripts,
+Go module manifests, the source files, and upstream license information.
+No changes were made to Mihomo's source. The upstream executable is renamed for
+the application's resource/native-library packaging layout; the desktop package
+builder may add the platform code signature required by the application bundle.
+
+The application starts this runtime only for its own software update requests.
+It does not install a VPN profile or change the device's system proxy settings.

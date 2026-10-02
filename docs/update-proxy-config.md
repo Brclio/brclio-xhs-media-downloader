@@ -1,0 +1,70 @@
+# 软件更新网络配置
+
+管理后台 `/admin/` 的“更新网络”页可保存、停用和更换更新订阅。管理员每行填写一个 HTTPS 订阅地址，最多保存 8 个不同来源，并填写变更说明后保存；客户端在下次检查更新时读取最新配置。地址默认遮挡，可点击“显示 / 编辑”查看和编辑列表，退出管理会话后清除表单内容。
+
+这是分发给客户端使用的订阅。地址及其凭据会提供给软件，用户可以从运行时文件、配置接口或网络请求提取，因此应使用专门的更新订阅。真实订阅不得写入仓库源码、示例配置、日志或测试夹具。
+
+所有操作通过 `POST /api/account`，`Content-Type: application/json`：
+
+| action | 访问 | input | 返回字段 |
+| --- | --- | --- | --- |
+| `update-proxy-config` | 匿名读取 | `{}` | `proxyConfig` |
+| `admin-update-proxy-config` | 管理员会话 | `{}` | `proxyConfig` |
+| `admin-save-update-proxy-config` | 管理员会话及可信 Origin | `{enabled, subscriptionUrls: [], reason, requestId, expectedRevision?}` | `saved`, `appliedRevision`, `proxyConfig`, `replayed?` |
+
+```json
+{
+  "proxyConfig": {
+    "enabled": true,
+    "subscriptionUrls": [
+      "https://subscription.example.com/sub?token=EXAMPLE_ONLY",
+      "https://second.example.com/sub?token=EXAMPLE_ONLY"
+    ],
+    "subscriptionUrl": "https://subscription.example.com/sub?token=EXAMPLE_ONLY",
+    "revision": 1,
+    "updatedAt": "2026-10-02T00:00:00.000Z"
+  }
+}
+```
+
+响应保持 `Cache-Control: no-store`。匿名读取允许尚未登录的客户端获取软件更新配置。管理员读取与保存沿用现有 HttpOnly 管理员会话、管理员邮箱白名单、Origin 校验和原子存储事务。
+
+`subscriptionUrls` 是完整的订阅列表，保存时去除两侧空白、规范化 URL 并去重。响应同时保留 `subscriptionUrl`，其值等于列表第一项，无订阅时为空字符串。旧存储中的单个 `subscriptionUrl` 和旧客户端提交的单地址字段仍兼容；同一次提交含有两个字段时，以 `subscriptionUrls` 为准。
+
+订阅仅来自管理后台，发行包不包含默认订阅或构建时订阅回退。`revision: 0` 表示后台从未保存配置，客户端不启用代理，软件更新直接连接。保存后版本从 1 开始递增；`revision > 0` 且 `enabled: false` 表示管理员已明确停用，软件更新同样直接连接。管理界面停用时保留列表供再次启用，也可在编辑时清空列表。启用必须填写至少一个有效订阅。
+
+客户端只缓存后台已经保存的配置（`revision > 0`）。配置接口暂时不可用时，可继续使用最后获取的后台配置；没有有效后台缓存时直接连接。后台明确返回未配置或停用状态时，以该状态为准，不启用其他订阅。
+
+`expectedRevision` 用于防止多个管理员覆盖他人刚保存的配置，冲突返回 `PROXY_CONFIG_CONFLICT`，刷新后可重新编辑。相同 `requestId` 及相同 input 的网络重试不重复递增版本或写审计。旧操作重试返回原 `appliedRevision` 和目前的 `proxyConfig`，避免恢复过时的订阅。
+
+持久化字段是现有业务状态的 `updateProxyConfig`，兼容旧 schemaVersion 1。Vercel 与 Cloudflare 沿用私有 GitHub 业务存储；独立 Node 服务沿用 SQLite 存储，重启和存储迁移保留该字段。审计只保留各个订阅的来源域名，隐藏全部路径及查询参数，变更说明内的地址同样脱敏；操作去重记录保存版本号和 HMAC，不另存订阅凭据。
+
+服务器验证每个规范化后长度不超过 4096 的公开 HTTPS DNS 地址，拒绝 IP 字面量、局域网域名、用户名密码、片段及控制字符。订阅列表最多 8 项，该保存接口允许 49,152 字节的请求体。保存只更新配置，不会在服务器发起订阅请求；节点延迟测试和操作期间的代理生命周期由客户端负责。
+
+每次更新操作抓取各个订阅来源，合并可用节点后选择实测延迟最低的节点。单个来源抓取失败时可继续使用其余成功来源。桌面客户端保留可用节点的延迟排序：连接失败，或更新服务器返回 HTTP 403、429、502、503、504 时，按排序切换到下一最快节点重试，以处理节点出口 IP 被限流或暂时不可用的情况。切换仍限于软件更新允许的服务器；取消或结束操作会关闭该更新会话和代理进程。
+
+内置代理只服务客户端内部的更新请求。使用“浏览器下载安装包”等外部浏览器回退时，客户端通过更新会话获取最新下载地址，然后关闭该会话；外部浏览器的实际下载使用浏览器自身的网络设置，不能自动继承客户端代理。常规内置下载和本地安装不需要更改系统代理或浏览器代理。
+
+## 部署后配置与核验
+
+Cloudflare 后端和管理页需要一起发布。现有生产 Secrets 保持不变：先按 [Cloudflare 部署说明](cloudflare-deployment.md) 完成本地构建和 dry-run，再部署仓库根目录的主 Worker，最后运行 `npm run cloudflare:deploy:pages` 重建并发布网关静态资源。只发布 Pages 不会更新 `/api/account` 的后台逻辑。现有 Pages 项目沿用 Direct Upload，命令和顺序见 [网关说明](../cloudflare/pages/README.md)；此类部署可通过 [Wrangler Pages deploy](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/) 执行。
+
+使用现有管理员登录会话在正式域名 `/admin/` 保存列表，或运行 [管理工具](../scripts/manage-update-proxy-config.mjs)。工具默认只读，不发送验证码或创建会话；只有显式 `--apply` 才执行后台保存。它仅输出启用状态、配置版本和来源数量，不输出订阅或管理员会话。
+
+订阅输入文件使用 `{enabled, subscriptionUrls, reason}`，已有管理员会话文件使用 `{adminSession: "已有会话令牌"}`。将两个 JSON 文件保存在仓库外的私有目录，目录权限为 `700`，文件权限为 `600`；不要把地址或令牌放到命令参数、聊天或日志中。
+
+```sh
+# 默认只读：检查正式后台是否已有配置
+node scripts/manage-update-proxy-config.mjs
+
+# 使用已有管理员会话读取配置并验证管理员访问权限，仍不写入
+node scripts/manage-update-proxy-config.mjs --session-file /私有目录/admin-session.json
+
+# 已获得配置授权且后台部署完成后，保存并通过公开客户端接口核验
+node scripts/manage-update-proxy-config.mjs --apply --verify \
+  --config-file /私有目录/update-network.json \
+  --session-file /私有目录/admin-session.json \
+  --operation-file /私有目录/update-network-operation.json
+```
+
+`operation-file` 仅保存请求 ID、原配置版本和输入摘要，首次写入权限为 `600`。响应不确定时使用同一文件及相同输入重新运行，沿用服务端去重机制；下一次不同配置使用新的操作文件。工具通过现有管理员 API、可信 Origin 和 HttpOnly 会话对应的 Cookie 保存，不直接改写 GitHub 业务状态。若没有有效管理员会话，应按现有登录流程取得会话后再保存，工具不会绕过登录门禁。

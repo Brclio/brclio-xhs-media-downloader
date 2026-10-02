@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "version": "v1.19.32",
+  "repository": "https://github.com/MetaCubeX/mihomo",
+  "releaseUrl": "https://github.com/MetaCubeX/mihomo/releases/tag/v1.19.32",
+  "releasePublishedAt": "2026-09-30T17:09:36Z",
+  "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+  "license": "GPL-3.0",
+  "licenseSha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+  "source": {
+    "url": "https://codeload.github.com/MetaCubeX/mihomo/tar.gz/88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+    "sha256": "77643ec763a92b330a0b4a44870f78ee05c08792897e7f5e40a3654415c5f077",
+    "bytes": 1269330,
+    "tarSha256": "027d1469a3d980f78855d92f4c2701c0afc19650a1a5435d606774e2bae9199f",
+    "tarBytes": 5928960
+  },
+  "targets": {
+    "mac-arm64": {
+      "asset": "mihomo-darwin-arm64-v1.19.32.gz",
+      "url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-darwin-arm64-v1.19.32.gz",
+      "sha256": "3312a6780652c622890fd4357c6a853bbf865464fd047ac7b7f52dab8de18652",
+      "bytes": 20756622,
+      "archive": "gzip"
+    },
+    "mac-x64": {
+      "asset": "mihomo-darwin-amd64-compatible-v1.19.32.gz",
+      "url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-darwin-amd64-compatible-v1.19.32.gz",
+      "sha256": "18b382df77bded2ad0fb3db27db5636cb15b20729d5ba995a357eeb9b46bf507",
+      "bytes": 22302953,
+      "archive": "gzip"
+    },
+    "win-x64": {
+      "asset": "mihomo-windows-amd64-compatible-v1.19.32.zip",
+      "url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-windows-amd64-compatible-v1.19.32.zip",
+      "sha256": "974a4d7ad69aed27aa2e8f91d61113573c14dadb14562c63e58effabf59816f0",
+      "bytes": 22525067,
+      "archive": "zip"
+    },
+    "android-arm64-v8a": {
+      "asset": "mihomo-android-arm64-v8-v1.19.32.gz",
+      "url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-android-arm64-v8-v1.19.32.gz",
+      "sha256": "42b1f2be8702484d3ae6238daab392622f54bd0d264966700f1f28f52596e326",
+      "bytes": 21866463,
+      "binarySha256": "bb9afbd48717f92d59e07da35fb694b83d40d6edb63eb9033c2ee4174137d195",
+      "binaryBytes": 64045272,
+      "archive": "gzip"
+    },
+    "android-armeabi-v7a": {
+      "asset": "mihomo-android-armv7-v1.19.32.gz",
+      "url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-android-armv7-v1.19.32.gz",
+      "sha256": "cbac13a26ab77ce80871a064783a02246a856a20ab7435fe301fa1665e99acf4",
+      "bytes": 22190735,
+      "binarySha256": "10e85ebad5380e5cdcb4028b6ba40910593bc9c37ce6b50e9f3a21adfca1408d",
+      "binaryBytes": 59576612,
+      "archive": "gzip"
+    },
+    "android-x86_64": {
+      "asset": "mihomo-android-amd64-v1.19.32.gz",
+      "url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-android-amd64-v1.19.32.gz",
+      "sha256": "91c159015e7d8aaff22153b9fd18749a0c7258d6f252ea344ecace975ce17413",
+      "bytes": 23471244,
+      "binarySha256": "1c5aa8e8a7006e4093560fe48505fd1587de29210879e806822cb1094b334413",
+      "binaryBytes": 68750864,
+      "archive": "gzip"
+    }
+  }
+}

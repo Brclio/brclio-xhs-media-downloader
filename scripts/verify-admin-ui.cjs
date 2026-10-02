@@ -135,6 +135,7 @@ app.whenReady().then(async () => {
   let handler;
   const calls = [];
   let failNextFeedbackReply = false;
+  let failNextProxySave = false;
   let holdNextFeedbackReply = null;
   let holdNextFeedbackDetail = null;
   const tlsOptions = { key: fs.readFileSync(keyFile), cert: fs.readFileSync(certificateFile) };
@@ -151,6 +152,10 @@ app.whenReady().then(async () => {
           calls.push(req.body);
           res.status = code => { res.statusCode = code; return res; };
           res.json = async body => {
+            if (body.ok && req.body.action === 'admin-save-update-proxy-config' && failNextProxySave) {
+              failNextProxySave = false; res.statusCode = 503;
+              return res.end(JSON.stringify({ ok: false, error: { message: 'Fixture settings result unavailable' } }));
+            }
             if (body.ok && req.body.action === 'admin-feedback-reply') {
               if (failNextFeedbackReply) {
                 failNextFeedbackReply = false; res.statusCode = 503;
@@ -452,6 +457,60 @@ app.whenReady().then(async () => {
   await click('#tab-status');
   await check(`document.querySelector('#status-content').textContent.includes('连接或认证失败')`, 'configured but unavailable SMTP is visibly unsuccessful');
   fs.writeFileSync(path.join(screenshots, 'status.png'), (await win.webContents.capturePage()).toPNG());
+  await click('#tab-update-proxy');
+  await check(`document.querySelector('#update-proxy-state').textContent === '尚未设置 · 直接连接' && !document.querySelector('#save-update-proxy').disabled`, 'initial update settings load without a stored subscription and state direct connection');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-enabled').checked`), false, 'unconfigured updates stay direct until the administrator enables a subscription');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-save-note').textContent.includes('未配置时直接连接')`), true);
+  await evaluate(`document.querySelector('#update-proxy-enabled').checked = true`);
+  const updateSubscriptions = ['https://subscription.example.test/private-fixture/sub?token=fixture-network-secret', 'https://second.example.test/private-secondary?token=fixture-secondary-network-secret'];
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-url').readOnly`), true, 'subscription list is masked and readonly by default');
+  await click('#show-update-proxy-url');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-url').readOnly`), false);
+  await fill('#update-proxy-url', updateSubscriptions.join('\n'));
+  await fill('#update-proxy-reason', '更换两个软件更新专用订阅');
+  await click('#show-update-proxy-url');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-url').value.includes('https:')`), false, 'hiding removes cleartext subscriptions from the textarea');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-url').value.split(String.fromCharCode(10)).length`), 2, 'masked pool retains one row per subscription');
+  failNextProxySave = true;
+  await click('#save-update-proxy');
+  await check(`document.querySelector('#notice .notice-actions button')`, 'uncertain settings save offers safe retry');
+  assert.equal(state.updateProxyConfig.revision, 1, 'setting has reached durable storage despite uncertain response');
+  await click('#notice .notice-actions button');
+  await check(`document.querySelector('#notice').textContent.includes('更新网络配置已保存') && document.querySelector('#update-proxy-reason').value === ''`, 'same settings request recovers and clears the explanation');
+  const proxyAttempts = calls.filter(call => call.action === 'admin-save-update-proxy-config');
+  assert.equal(proxyAttempts.length, 2);
+  assert.equal(proxyAttempts[0].input.requestId, proxyAttempts[1].input.requestId, 'settings retry preserves the request ID');
+  assert.equal(state.updateProxyConfig.revision, 1, 'uncertain response retry cannot increment the revision twice');
+  assert.deepEqual(state.updateProxyConfig.subscriptionUrls, updateSubscriptions, 'two sources survive the masked save and retry');
+  assert.equal(state.updateProxyConfig.subscriptionUrl, updateSubscriptions[0], 'legacy clients retain the first URL alias');
+  assert.equal(state.audit.filter(entry => entry.action === 'admin-save-update-proxy-config').length, 1);
+  assert.equal(JSON.stringify(state.audit).includes('fixture-network-secret'), false, 'audit hides query credentials');
+  assert.equal(JSON.stringify(state.audit).includes('private-fixture'), false, 'audit hides credentials in paths');
+  assert.equal(JSON.stringify(state.audit).includes('fixture-secondary-network-secret'), false, 'audit hides credentials from every source');
+  assert.equal(JSON.stringify(state.audit).includes('private-secondary'), false);
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-state').textContent`), '已启用更新代理');
+  fs.writeFileSync(path.join(screenshots, 'update-network.png'), (await win.webContents.capturePage()).toPNG());
+  for (const width of [560, 360]) {
+    win.setContentSize(width, 1000); await pause(80);
+    assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), `update settings fit ${width}px display`);
+    fs.writeFileSync(path.join(screenshots, `update-network-${width}.png`), (await win.webContents.capturePage()).toPNG());
+  }
+  win.setContentSize(1280, 1000);
+  await evaluate(`document.querySelector('#update-proxy-enabled').checked = false`);
+  await fill('#update-proxy-reason', '临时停用软件更新代理');
+  await click('#save-update-proxy');
+  await check(`document.querySelector('#update-proxy-state').textContent === '已停用更新代理'`, 'explicit administrator disable is saved');
+  assert.equal(state.updateProxyConfig.enabled, false); assert.equal(state.updateProxyConfig.revision, 2);
+  assert.deepEqual(state.updateProxyConfig.subscriptionUrls, updateSubscriptions, 'disabling retains the two source pool');
+  await new Promise(resolve => { win.webContents.once('did-finish-load', resolve); win.reload(); });
+  await check(`!document.querySelector('#workspace').hidden`, 'update settings preserve existing authenticated session');
+  await click('#tab-update-proxy');
+  await check(`document.querySelector('#update-proxy-state').textContent === '已停用更新代理'`, 'update setting survives admin page reload');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-url').value.includes('https:')`), false, 'reload keeps both stored subscriptions masked');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-url').readOnly`), true);
+  await click('#show-update-proxy-url');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-url').value`), updateSubscriptions.join('\n'), 'reveal and edit recovers the persisted pool');
+  await click('#show-update-proxy-url');
   await click('#tab-codes');
   if (await evaluate(`!document.querySelector('#generated-panel').hidden`)) {
     await click('#dismiss-codes');
@@ -459,6 +518,9 @@ app.whenReady().then(async () => {
   }
   await click('#tab-feedback');
   let releaseDetail;
+  await check(`document.querySelectorAll('.feedback-list-item').length > 0`, 'feedback list is ready after the update settings reload');
+  await evaluate(`Array.from(document.querySelectorAll('.feedback-list-item')).find(item => item.textContent.includes('下载问题')).click()`);
+  await check(`document.querySelector('#feedback-detail h2')?.textContent.includes('下载问题')`, 'feedback detail is selected before the logout refresh race');
   holdNextFeedbackDetail = new Promise(resolve => { releaseDetail = resolve; });
   const previousDetails = calls.filter(call => call.action === 'admin-feedback-detail').length;
   await click('#refresh-feedback');
@@ -468,6 +530,7 @@ app.whenReady().then(async () => {
   releaseDetail(); await pause(100);
   assert.equal(await evaluate(`document.querySelector('#feedback-detail').textContent`), '', 'logout clears retained feedback and logs from the document');
   assert.equal(await evaluate(`document.querySelector('#issue-preview').textContent.includes('student@example.test')`), false, 'logout clears targeted customer details');
+  assert.equal(await evaluate(`document.querySelector('#update-proxy-url').value`), '', 'logout clears subscription credentials from the form');
   assert.equal(Object.values(state.sessions).filter(session => session.client === 'admin').every(session => session.revokedAt), true);
   assert.equal((await win.webContents.session.cookies.get({ url: config.siteOrigin, name: ADMIN_COOKIE })).length, 0);
   assert.equal(await evaluate('localStorage.length'), 0, 'no credential localStorage');

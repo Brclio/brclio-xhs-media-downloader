@@ -11,8 +11,11 @@ on:
       - 'assets/learning/**'
       - 'assets/support/wechat-personal-qr.png'
       - 'scripts/build-android.mjs'
+      - 'scripts/prepare-update-proxy.mjs'
+      - 'desktop/resources/update-proxy/**'
       - 'scripts/publish-android-release.mjs'
       - 'test/android*.test.js'
+      - 'test/update-proxy-runtime.test.js'
       - 'package.json'
       - '.github/workflows/android-build.yml'
   push:
@@ -25,8 +28,11 @@ on:
       - 'assets/learning/**'
       - 'assets/support/wechat-personal-qr.png'
       - 'scripts/build-android.mjs'
+      - 'scripts/prepare-update-proxy.mjs'
+      - 'desktop/resources/update-proxy/**'
       - 'scripts/publish-android-release.mjs'
       - 'test/android*.test.js'
+      - 'test/update-proxy-runtime.test.js'
       - 'package.json'
       - '.github/workflows/android-build.yml'
 
@@ -53,9 +59,11 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - name: Install Android SDK 35
-        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+      - name: Install Android SDK 35 and pinned launcher NDK
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools' 'ndk;27.2.12479018'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Verify update proxy provisioning without subscription defaults
+        run: node --test test/update-proxy-runtime.test.js
       - name: Test member browser entry and native video policy, lint and build debug APK
         # build-android runs every android*.test.js and :app:testDebugUnitTest before assembly.
         run: npm run android:build

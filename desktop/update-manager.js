@@ -12,7 +12,7 @@ const MAX_RELEASE_BYTES = 1024 * 1024;
 
 // Electron net.fetch rejects manual redirects instead of exposing their response.
 // Adapt net.request so the manager can validate every Location before following it.
-export function createElectronUpdateFetch(net) {
+export function createElectronUpdateFetch(net, { session } = {}) {
   return (url, options = {}) => new Promise((resolve, reject) => {
     const signal = options.signal;
     if (signal?.aborted) { reject(signal.reason); return; }
@@ -31,7 +31,7 @@ export function createElectronUpdateFetch(net) {
       request?.abort();
     };
     try {
-      request = net.request({ url, method: 'GET', redirect: 'manual', credentials: 'omit',
+      request = net.request({ url, method: options.method || 'GET', session, cache: options.cache, redirect: 'manual', credentials: 'omit',
         useSessionCookies: false, bypassCustomProtocolHandlers: true,
         headers: Object.fromEntries(new Headers(options.headers)) });
       request.on('error', failure);
@@ -91,7 +91,7 @@ export function createElectronUpdateFetch(net) {
         } catch (error) { failure(error); request.abort(); }
       });
       signal?.addEventListener('abort', abort, { once: true });
-      request.end();
+      request.end(options.body);
     } catch (error) { failure(error); request?.abort(); }
   });
 }
@@ -221,11 +221,12 @@ export class UpdateManager {
     directory, fetchImpl = globalThis.fetch, onUpdate = () => {}, networkTimeoutMs = 30000,
     confirmInstall = async () => false, pauseDownloads = async () => {},
     openInstaller = async () => fail('INSTALL_UNAVAILABLE', '当前环境无法打开安装程序。'),
-    openExternal = async () => fail('BROWSER_OPEN_FAILED', '无法打开浏览器，请检查默认浏览器设置后重试。'), onInstalled = () => {} }) {
+    openExternal = async () => fail('BROWSER_OPEN_FAILED', '无法打开浏览器，请检查默认浏览器设置后重试。'), onInstalled = () => {}, networkScope = null }) {
     versionParts(currentVersion);
     if (!directory || !path.isAbsolute(directory)) throw new TypeError('Update cache must be an absolute path');
     this.directory = directory;
     this.fetchImpl = fetchImpl;
+    this.networkScope = networkScope;
     this.onUpdate = onUpdate;
     this.networkTimeoutMs = networkTimeoutMs;
     this.confirmInstall = confirmInstall;
@@ -257,14 +258,20 @@ export class UpdateManager {
     if (this.operation) return this.operation;
     const controller = new AbortController();
     this.controller = controller;
+    this.phase = phase;
     this.operation = (async () => {
-      try { await work(controller); }
+      try {
+        if (phase === 'check' && this.state.status !== 'downloaded') this.emit({ status: 'checking', error: null, checkError: null, canRetry: false });
+        if (phase === 'download' && this.candidate) this.emit({ status: 'downloading', error: null, canRetry: false });
+        if (this.networkScope && ['check', 'download'].includes(phase)) await this.networkScope.run(controller, () => work(controller));
+        else await work(controller);
+      }
       catch (error) {
         if (controller.signal.aborted && controller.signal.reason?.code === 'CANCELED') {
           this.emit({ status: this.candidate ? 'available' : 'idle', error: null, canRetry: false });
         } else {
           const reason = controller.signal.aborted ? controller.signal.reason : error;
-          const failure = reason instanceof UpdateError ? reason : /^MAC_UPDATE_[A-Z_]+$/.test(error?.code || '') ? new UpdateError(error.code, error.message) : new UpdateError(
+          const failure = reason instanceof UpdateError ? reason : /^(?:MAC_UPDATE_|PROXY_)[A-Z_]+$/.test(error?.code || '') ? new UpdateError(error.code, error.message) : new UpdateError(
             error?.code === 'ENOSPC' ? 'DISK_FULL' : phase === 'install' ? 'INSTALL_FAILED' : 'NETWORK_ERROR',
             error?.code === 'ENOSPC' ? '磁盘空间不足，请清理后重试。' : phase === 'install'
               ? '无法完成安装前准备或打开安装程序，请重试。' : '更新请求失败，请检查网络连接后重试。');
@@ -283,7 +290,7 @@ export class UpdateManager {
       return this.snapshot();
     })();
     try { return await this.operation; }
-    finally { this.operation = null; this.controller = null; }
+    finally { this.operation = null; this.controller = null; this.phase = null; }
   }
 
   async bounded(promise, controller) {
@@ -383,15 +390,18 @@ export class UpdateManager {
     // error, replace its verified candidate, or accept a URL from the renderer.
     this.latestInstallerOperation = (async () => {
       try {
-        const release = await this.readLatestRelease(controller);
-        const { candidate } = parseRelease(release, this.state, { includeInstaller: true });
+        const readCandidate = async () => {
+          const release = await this.readLatestRelease(controller);
+          return parseRelease(release, this.state, { includeInstaller: true }).candidate;
+        };
+        const candidate = this.networkScope ? await this.networkScope.run(controller, readCandidate) : await readCandidate();
         controller.signal.throwIfAborted();
         try { await this.openExternal(candidate.url); }
         catch { fail('BROWSER_OPEN_FAILED', '无法打开浏览器，请检查默认浏览器设置后重试。'); }
         return { ok: true, version: candidate.version, name: candidate.name };
       } catch (error) {
         const reason = controller.signal.aborted ? controller.signal.reason : error;
-        const failure = reason instanceof UpdateError ? reason
+        const failure = reason instanceof UpdateError ? reason : /^PROXY_[A-Z_]+$/.test(reason?.code || '') ? new UpdateError(reason.code, reason.message)
           : new UpdateError('NETWORK_ERROR', '无法获取最新安装包，请检查网络连接后重试。');
         return { ok: false, error: { code: failure.code, message: failure.message } };
       }
@@ -568,7 +578,7 @@ export class UpdateManager {
   }
 
   async cancelUpdateDownload() {
-    if (this.state.status === 'downloading') {
+    if (this.phase === 'download') {
       this.controller?.abort(new UpdateError('CANCELED', '已暂停下载并保留进度。'));
       await this.operation;
     }
@@ -596,7 +606,7 @@ export class UpdateManager {
   async shutdown() {
     this.latestInstallerController?.abort(new UpdateError('CANCELED', '应用即将关闭。'));
     await this.latestInstallerOperation;
-    if (['checking', 'downloading'].includes(this.state.status)) {
+    if (this.operation && this.phase !== 'install') {
       this.controller?.abort(new UpdateError('CANCELED', '应用即将关闭。'));
       await this.operation;
     } else if (this.state.status === 'installing') {

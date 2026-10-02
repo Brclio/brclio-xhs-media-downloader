@@ -68,6 +68,24 @@ test('Android 1.0.3 publication requires an emulator acceptance result bound to 
   }
 });
 
+test('Android 1.0.9 publication requires APK-bound proxy resources without embedded subscriptions', () => {
+  const release = { ...proof(), version: '1.0.9', versionCode: 10009,
+    apk: { ...proof().apk, name: 'Brclio-XHS-Android-1.0.9-release.apk' } };
+  const checked = { ...options, tag: 'android-v1.0.9', requireEmulatorUpgrade: false };
+  assert.throws(() => validateReleaseProof(release, checked), /packaged update proxy gate/);
+  release.bundledUpdateProxyVerified = true;
+  release.bundledUpdateProxy = { bundledSubscriptionsAbsent: true, configurationSource: 'management-api',
+    apkSha256: release.apk.sha256, sourceArchiveVerified: true, licenseVerified: true,
+    launcherSourceVerified: true, coreCount: 3, launcherCount: 3 };
+  assert.equal(validateReleaseProof(release, checked), '1.0.9');
+  for (const [key, value] of Object.entries({ bundledSubscriptionsAbsent: false, configurationSource: 'builtin',
+    apkSha256: 'c'.repeat(64), sourceArchiveVerified: false, licenseVerified: false,
+    launcherSourceVerified: false, coreCount: 2, launcherCount: 2 })) {
+    assert.throws(() => validateReleaseProof({ ...release,
+      bundledUpdateProxy: { ...release.bundledUpdateProxy, [key]: value } }, checked), key);
+  }
+});
+
 test('Android asset validation rejects modified APK bytes and checksums before any upload', () => {
   const directory = mkdtempSync(join(tmpdir(), 'android-release-test-'));
   const data = proof();

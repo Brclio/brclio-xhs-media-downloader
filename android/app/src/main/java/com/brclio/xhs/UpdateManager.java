@@ -24,7 +24,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -35,6 +34,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.ResponseBody;
 
 /** Checks one fixed Android release channel; JavaScript never supplies an APK URL or file path. */
 final class UpdateManager {
@@ -126,12 +130,22 @@ final class UpdateManager {
         final NativeTransfer.Cancellation cancellation = new NativeTransfer.Cancellation();
         final long startedAt = System.nanoTime();
         final long deadlineMs;
+        volatile UpdateProxySession proxySession;
+        volatile OkHttpClient client;
+        volatile Call call;
         Download output;
         Job(long deadlineMs) { this.deadlineMs = deadlineMs; }
         void check() throws IOException {
             cancellation.check();
             if ((System.nanoTime() - startedAt) / 1_000_000 > deadlineMs) throw new IOException("更新操作超时，请检查网络后重试。");
         }
+        void stopNetwork() {
+            Call currentCall = call;
+            if (currentCall != null) currentCall.cancel();
+            UpdateProxySession currentSession = proxySession;
+            if (currentSession != null) currentSession.close();
+        }
+        void cancel() { cancellation.cancel(); stopNetwork(); }
     }
 
     private final Activity activity;
@@ -161,6 +175,7 @@ final class UpdateManager {
         this.canInstallBuild = !BuildConfig.DEBUG && activity.getPackageName().equals(UpdatePolicy.APPLICATION_ID);
         File[] oldFiles = directory.listFiles();
         worker.execute(() -> {
+            UpdateProxySession.clearPreviousSessions(activity.getCacheDir());
             if (oldFiles == null) return;
             long expiration = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
             for (File file : oldFiles) {
@@ -200,6 +215,7 @@ final class UpdateManager {
         if (job == null) return;
         worker.execute(() -> {
             try {
+                prepareNetwork(job);
                 JSONObject latest = latestRelease(job);
                 String latestVersion = latest == null ? null : UpdatePolicy.versionFromTag(latest.optString("tag_name"));
                 String current = BuildConfig.VERSION_NAME.replaceFirst("-debug$", "");
@@ -253,6 +269,7 @@ final class UpdateManager {
         if (job == null) return;
         worker.execute(() -> {
             try {
+                prepareNetwork(job);
                 JSONObject metadata = latestRelease(job);
                 if (metadata == null) throw new IOException("暂未找到可用的安卓正式版，请稍后重试。");
                 Release release = new Release(metadata);
@@ -263,6 +280,7 @@ final class UpdateManager {
                 byte[] checksum = fetchBytes(release.checksumUrl, 4096, release.checksumSize, true, job);
                 UpdatePolicy.checksum(new String(checksum, StandardCharsets.UTF_8), release.filename);
                 job.check();
+                job.stopNetwork();
                 activity.runOnUiThread(() -> {
                     try {
                         job.check();
@@ -285,6 +303,7 @@ final class UpdateManager {
     }
 
     private void finishManualDownload(Job job, String previousStatus, Callback callback, String version, Exception failure) {
+        job.stopNetwork();
         synchronized (lock) {
             if (active != job) return;
             active = null;
@@ -320,6 +339,7 @@ final class UpdateManager {
                 job.check();
                 if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException("无法创建更新缓存，请检查存储空间。");
                 if (directory.getUsableSpace() < release.size + 16L * 1024 * 1024) throw new IOException("存储空间不足，无法下载更新。");
+                prepareNetwork(job);
                 byte[] checkBytes = fetchBytes(release.checksumUrl, 4096, release.checksumSize, true, job);
                 String expected = UpdatePolicy.checksum(new String(checkBytes, StandardCharsets.UTF_8), release.filename);
                 part = File.createTempFile("update-", ".part", directory);
@@ -431,7 +451,7 @@ final class UpdateManager {
     JSONObject cancel() {
         Job job;
         synchronized (lock) { job = active; }
-        if (job != null) job.cancellation.cancel();
+        if (job != null) job.cancel();
         return object("cancelled", job != null);
     }
 
@@ -478,7 +498,7 @@ final class UpdateManager {
             }
             if (active != null) { callback.failure("已有版本检查或更新任务正在进行，请稍候。"); return null; }
             // Never launch a browser after the renderer's 90-second request has expired.
-            active = new Job(nextStatus.equals("manual_download") ? 60_000L : DEADLINE_MS);
+            active = new Job(nextStatus.equals("manual_download") || nextStatus.equals("checking") ? 80_000L : DEADLINE_MS);
             status = nextStatus;
             if (!nextStatus.equals("manual_download")) error = null;
             if (nextStatus.equals("downloading")) { bytes = 0; total = available == null ? 0 : available.size; }
@@ -488,6 +508,7 @@ final class UpdateManager {
     }
 
     private void finish(Job job, Callback callback, Exception failure) {
+        job.stopNetwork();
         Download cancelledOutput = null;
         synchronized (lock) {
             if (active != job) return;
@@ -577,15 +598,27 @@ final class UpdateManager {
     }
 
     private static final class Response implements AutoCloseable {
-        final HttpURLConnection connection;
+        final okhttp3.Response response;
         final InputStream input;
         final long length;
         final Job job;
-        Response(HttpURLConnection connection, InputStream input, long length, Job job) {
-            this.connection = connection; this.input = input; this.length = length; this.job = job;
+        Response(okhttp3.Response response, InputStream input, long length, Job job) {
+            this.response = response; this.input = input; this.length = length; this.job = job;
         }
         @Override public void close() throws IOException {
-            try { input.close(); } finally { job.cancellation.detach(connection); }
+            try { input.close(); } finally { response.close(); job.call = null; }
+        }
+    }
+
+    private void prepareNetwork(Job job) throws IOException {
+        job.check();
+        UpdateProxySession session = new UpdateProxySession(job::check);
+        job.proxySession = session;
+        try { job.client = session.prepare(activity); job.check(); }
+        catch (Exception failure) {
+            session.close();
+            if (failure instanceof IOException) throw (IOException) failure;
+            throw new IOException("更新代理准备失败，请联系管理员或稍后重试。");
         }
     }
 
@@ -595,21 +628,33 @@ final class UpdateManager {
             job.check();
             if (asset) UpdatePolicy.redirectUri(current.toString());
             else if (!current.toString().equals(UpdatePolicy.RELEASES_API)) throw new IOException("版本服务地址无效。");
-            HttpURLConnection connection = (HttpURLConnection) current.toURL().openConnection();
-            connection.setInstanceFollowRedirects(false);
-            connection.setConnectTimeout(15_000);
-            connection.setReadTimeout(30_000);
-            connection.setUseCaches(false);
-            connection.setRequestProperty("User-Agent", "Brclio-Android/" + BuildConfig.VERSION_NAME);
-            connection.setRequestProperty("Accept-Encoding", "identity");
-            connection.setRequestProperty("Accept", asset ? "application/octet-stream" : "application/vnd.github+json");
-            if (!asset) connection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
-            job.cancellation.attach(connection);
+            if (job.client == null) throw new IOException("更新网络尚未准备完成。");
+            Request.Builder request = new Request.Builder().url(current.toString())
+                    .header("User-Agent", "Brclio-Android/" + BuildConfig.VERSION_NAME)
+                    .header("Accept-Encoding", "identity")
+                    .header("Cache-Control", "no-cache")
+                    .header("Accept", asset ? "application/octet-stream" : "application/vnd.github+json");
+            if (!asset) request.header("X-GitHub-Api-Version", "2022-11-28");
+            Call call = job.client.newCall(request.build());
+            job.call = call;
+            job.check();
+            okhttp3.Response response;
+            try { response = call.execute(); }
+            catch (IOException unavailable) {
+                job.check();
+                if (job.proxySession != null && job.proxySession.selectNext()) { redirect--; continue; }
+                throw new IOException("更新服务连接失败，请检查网络后重试。");
+            }
             boolean streaming = false;
             try {
-                int status = connection.getResponseCode();
+                int status = response.code();
+                if (status == 403 || status == 429 || status == 502 || status == 503 || status == 504) {
+                    // Close the old route before selecting another measured exit. Redirect budget is unchanged.
+                    response.close();
+                    if (job.proxySession != null && job.proxySession.selectNext()) { redirect--; continue; }
+                }
                 if (status >= 300 && status < 400) {
-                    String location = connection.getHeaderField("Location");
+                    String location = response.header("Location");
                     if (!asset || location == null || redirect == 5) throw new IOException("更新服务重定向异常，请稍后重试。");
                     current = UpdatePolicy.redirectUri(current.resolve(location).toString());
                     continue;
@@ -617,12 +662,14 @@ final class UpdateManager {
                 if (status == 403 || status == 429) throw new IOException("版本服务请求受限，请稍后重新检查。");
                 if (status == 404) throw new IOException("更新文件尚未发布或已被移除，请重新检查版本。");
                 if (status != 200) throw new IOException("更新服务暂不可用（HTTP " + status + "），请稍后重试。");
-                String encoding = connection.getContentEncoding();
+                String encoding = response.header("Content-Encoding");
                 if (encoding != null && !encoding.equalsIgnoreCase("identity")) throw new IOException("更新响应编码无效。");
-                InputStream input = connection.getInputStream();
+                ResponseBody body = response.body();
+                if (body == null) throw new IOException("更新响应内容为空。");
+                InputStream input = body.byteStream();
                 streaming = true;
-                return new Response(connection, input, connection.getContentLengthLong(), job);
-            } finally { if (!streaming) job.cancellation.detach(connection); }
+                return new Response(response, input, body.contentLength(), job);
+            } finally { if (!streaming) { response.close(); job.call = null; } }
         }
         throw new IOException("更新下载重定向次数过多。");
     }

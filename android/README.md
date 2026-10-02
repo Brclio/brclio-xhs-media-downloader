@@ -1,6 +1,6 @@
 # Brclio 小红书下载器 · Android
 
-Android 客户端版本独立编号，当前为 `1.0.8`，`versionCode` 为 `10008`（首版为 `1.0.0 / 10000`），支持 Android 8.0（API 26）及以上。安装 APK 后可粘贴小红书单篇笔记链接或分享文案，也可以在其他应用中通过系统「分享」将文字交给 Brclio。
+Android 客户端版本独立编号，当前为 `1.0.9`，`versionCode` 为 `10009`（首版为 `1.0.0 / 10000`），支持 Android 8.0（API 26）及以上。安装 APK 后可粘贴小红书单篇笔记链接或分享文案，也可以在其他应用中通过系统「分享」将文字交给 Brclio。
 
 本版聚焦单篇笔记：标题与正文、原图、实况静态图与动态片段、视频清晰度选择、勾选图片与 ZIP、图片复制及系统分享。保存文件时使用 Android 系统文件选择器，由用户选择位置；无需「所有文件访问权限」或相册读取权限。不同目标应用对多图剪贴板支持不同，可改用系统分享或 ZIP。
 
@@ -28,6 +28,10 @@ Gradle 在构建时将根目录的 `learn.html`、`learn.css`、`learn.js`、`vi
 
 应用启动后自动检查更新，也可在「软件更新」区手动检查。应用从本仓库公开 Releases 中查找 `android-v主版本.次版本.修订版本`，忽略草稿、预发布和桌面版标签。发现新版后由用户选择下载安装；APK 下载完成后核对 SHA256、应用 ID、版本名、递增的 `versionCode` 与当前安装应用的签名证书，然后打开 Android 系统安装器。首次安装更新时可能需要按系统提示允许 Brclio 安装应用，最后的安装确认由系统显示。
 
+更新检查和应用内 APK 下载开始时，原生更新器先获取管理后台的最新更新代理配置，再抓取至多 8 个 Clash YAML 订阅，合并有效节点，测试全部支持节点到 GitHub 的延迟并选择最快可用节点。单个来源暂时失败时继续使用其它来源；某个出口请求受限或连接失败时依延迟顺序尝试下一节点。每个来源至多 256 个节点，检查总时限为 80 秒；无法在时限内完成时关闭组件并提示重试。安装包随附更新网络组件，启动期间只在本机回环地址监听，并为更新器使用单独的认证网络连接；仅允许官方 GitHub 更新域名的 HTTPS 请求。检查或下载完成、失败、取消、退出应用或应用进程被系统终止时关闭组件。解析、小红书媒体下载、推广页面与系统安装器继续使用各自的既有网络方式，应用不会开启系统 VPN 或修改系统代理。订阅地址只能来自后台，安装包不预设默认地址。后台尚未配置或管理员关闭时走直连；后台暂时不可用时，才使用之前成功获取的管理员配置；首次启动且没有可用缓存时也走直连。后台返回未配置状态后清除旧配置，缓存中的关闭状态同样保持直连。
+
+「浏览器下载最新版 APK」只在核验官方发布信息时使用更新代理，交给系统浏览器前便关闭；浏览器由 Android 和用户的网络设置管理。已在应用内下载的 APK 安装过程不需要联网。
+
 正式应用 ID 为 `com.brclio.xhs`，更新必须继续使用同一签名密钥。debug 包为 `com.brclio.xhs.debug`，不能直接升级为正式应用；首次使用正式版请从下载页面或 Android Release 单独安装。
 
 已经下载并校验完成的 APK 在当前进程中继续保留。断网导致检查更新失败，或系统安装器未能启动后，仍可直接重试安装，无需重新下载。
@@ -41,6 +45,7 @@ Gradle 在构建时将根目录的 `learn.html`、`learn.css`、`learn.js`、`vi
 - Android SDK Platform 35
 - Android SDK Build-Tools 35.0.0
 - Android SDK Platform-Tools（安装及设备测试需要）
+- Android NDK `27.2.12479018`（构建进程退出保护组件）
 
 设置 `JAVA_HOME` 指向 JDK，设置 `ANDROID_HOME` 指向 SDK。macOS 常见 SDK 路径为 `$HOME/Library/Android/sdk`。也可以在未纳入版本控制的 `android/local.properties` 中写入 `sdk.dir=/绝对路径/Android/sdk`；Windows 路径使用正斜线。
 
@@ -51,11 +56,11 @@ npm run android:check
 npm run android:build
 ```
 
-构建脚本只使用 Node.js 内置模块，不要求安装桌面版依赖。首次构建需要联网下载 Gradle 和 Android 依赖。脚本先核对完整 JDK（包含 `javac`、`jlink`）、SDK 与 Gradle Wrapper 校验值，再运行 Android 前端 Node.js 测试、Java 单元测试、Android lint 和 APK 构建。成功后才导出：
+构建脚本不要求安装桌面版运行时依赖；更新核心从已固定版本和 SHA256 的官方资源准备，使用 NDK 构建进程退出保护组件。构建无需任何订阅环境变量或密钥，生成的订阅兼容资源保持空列表。首次构建需要联网下载 Gradle 和 Android 依赖。脚本先核对完整 JDK（包含 `javac`、`jlink`）、SDK 与 Gradle Wrapper 校验值，再运行 Android 前端 Node.js 测试、Java 单元测试、Android lint 和 APK 构建。成功后才导出：
 
 ```text
-dist-android/Brclio-XHS-Android-1.0.8-debug.apk
-dist-android/Brclio-XHS-Android-1.0.8-debug.apk.sha256
+dist-android/Brclio-XHS-Android-1.0.9-debug.apk
+dist-android/Brclio-XHS-Android-1.0.9-debug.apk.sha256
 ```
 
 `debug` 包使用构建机的调试密钥，应用 ID 为 `com.brclio.xhs.debug`；正式包应用 ID 为 `com.brclio.xhs`，可并存。不同构建机产生的调试密钥可能不同，因此来自不同构建机的 debug 包不一定能覆盖安装。
@@ -63,7 +68,7 @@ dist-android/Brclio-XHS-Android-1.0.8-debug.apk.sha256
 连接已开启 USB 调试的设备后，可安装测试包：
 
 ```bash
-adb install -r dist-android/Brclio-XHS-Android-1.0.8-debug.apk
+adb install -r dist-android/Brclio-XHS-Android-1.0.9-debug.apk
 ```
 
 也可用 Android Studio 打开 `android/` 目录构建及运行。构建成功仅说明代码、资源与静态检查通过，不等于完成真机解析、文件保存或图片粘贴验证。
@@ -88,7 +93,7 @@ adb install -r dist-android/Brclio-XHS-Android-1.0.8-debug.apk
 npm run android:build:release
 ```
 
-成功后输出 `dist-android/Brclio-XHS-Android-1.0.8-release.apk`、同名 `.apk.sha256`、`SHA256SUMS.txt` 与 `android-update.json`。APK 使用 Android SDK 的 `apksigner` 校验真实签名，并以 `aapt` 读取并核对包名与版本；缺少签名配置、使用 Android Debug 证书、证书不符或 APK 版本不符都会失败。JSON 记录源码提交、工作区是否干净、版本、APK 字节数、校验值与签名证书指纹，供发布前核对。
+成功后输出 `dist-android/Brclio-XHS-Android-1.0.9-release.apk`、同名 `.apk.sha256`、`SHA256SUMS.txt` 与 `android-update.json`。APK 使用 Android SDK 的 `apksigner` 校验真实签名，并以 `aapt` 读取并核对包名与版本；缺少签名配置、使用 Android Debug 证书、证书不符或 APK 版本不符都会失败。JSON 记录源码提交、工作区是否干净、版本、APK 字节数、校验值与签名证书指纹，供发布前核对。
 
 后续升级继续使用同一签名密钥，并提高 `android/app/build.gradle` 中的 `versionCode` 与 `versionName`。`versionCode` 只要求严格递增，不根据版本名硬编码推算；Android 版本独立于根目录的桌面版版本号。
 
@@ -111,12 +116,12 @@ npm run android:build:release
 
 另配置公开仓库变量 `ANDROID_SIGNING_CERT_SHA256` 为正式签名证书的 SHA256 指纹。工作流把密钥解码到临时目录，以 `ANDROID_SIGNING_STORE_FILE` 传给构建，完成后清除临时文件。发布升级所需的原始密钥和密码应另行备份，不要为每个版本重新生成密钥。
 
-发布前先提交最终代码与该版本说明，例如 `docs/releases/android-v1.0.8.md`，再把 `android-v1.0.8` 标签推送到同一提交。发布脚本要求构建时工作区干净，且 APK 记录的提交与本地标签、远端标签及当前检出提交完全相同。它先创建草稿，上传并重新下载全部四个附件核对字节，再以 `--latest=false` 公开；Android 不占用桌面版的 GitHub Latest，原 Mac / Windows 自动更新仍使用桌面发布。
+发布前先提交最终代码与该版本说明，例如 `docs/releases/android-v1.0.9.md`，再把 `android-v1.0.9` 标签推送到同一提交。发布脚本要求构建时工作区干净，且 APK 记录的提交与本地标签、远端标签及当前检出提交完全相同。它先创建草稿，上传并重新下载全部四个附件核对字节，再以 `--latest=false` 公开；Android 不占用桌面版的 GitHub Latest，原 Mac / Windows 自动更新仍使用桌面发布。
 
 同一标签的发布作业串行执行。已公开的 Android Release 不覆盖；失败留下的草稿只有在提交和附件名称一致时才可由同一标签重试。若正式版本需要修复，请增加版本名和 `versionCode` 后发布新标签。手动运行同一发布流程可用：
 
 ```bash
-ANDROID_RELEASE_TAG=android-v1.0.8 node scripts/publish-android-release.mjs
+ANDROID_RELEASE_TAG=android-v1.0.9 node scripts/publish-android-release.mjs
 ```
 
 此命令需要已通过完整构建的正式附件、公开证书变量和已登录的 GitHub CLI；它会实际发布 Release。普通本地构建与 debug CI 均不会发布。
@@ -125,7 +130,7 @@ ANDROID_RELEASE_TAG=android-v1.0.8 node scripts/publish-android-release.mjs
 
 本轮构建、Android 15 模拟器实测与待验证项目见 [本地验证记录](VALIDATION.md)。
 
-会员原视频的来源、水印核验与下载权限说明见 [来源说明](../docs/watermark-free-video.md)；本版变化与验收范围见 [Android v1.0.8](../docs/releases/android-v1.0.8.md)。平台原文件可能保留作者自行写入画面的水印。发布后仍需在真实设备上验证系统浏览器接收完整链接、网页登录及会员下载。
+会员原视频的来源、水印核验与下载权限说明见 [来源说明](../docs/watermark-free-video.md)；本版变化与验收范围见 [Android v1.0.9](../docs/releases/android-v1.0.9.md)。平台原文件可能保留作者自行写入画面的水印。发布后仍需在真实设备上验证系统浏览器接收完整链接、网页登录及会员下载。
 
 发布前在 Android 8 和较新 Android 设备上分别核对冷启动、旋转屏幕、分享文字进入应用、长短链接解析、图文与普通视频、实况素材配对、文案复制、勾选 ZIP、图片复制/分享、文件选择取消、下载取消及断网错误。含多条媒体的归档应检查文件数量、顺序与字节内容；播放视频时应检查画面和声音。当前工具运行的实际验证结果由该次构建或测试记录说明，不能用本节操作说明代替。
 

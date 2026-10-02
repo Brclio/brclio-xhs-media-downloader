@@ -34,6 +34,9 @@ export async function validateArtifacts(directory, { version, sourceSha }) {
     assert.equal(proof.platform, target.platform);
     assert.equal(proof.arch, target.arch);
     assert.equal(proof.bundledPythonVerified, true);
+    assert.equal(proof.bundledUpdateProxyVerified, true, 'Every installer must include its verified update proxy runtime');
+    assert.equal(proof.bundledUpdateProxy?.bundledSubscriptionsAbsent, true,
+      'Every installer must obtain subscriptions solely from the management API');
     if (target.platform === 'darwin') {
       // The native build verifier sets these only after checking the complete
       // application signature, including sealed resources and nested code.

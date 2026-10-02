@@ -123,7 +123,8 @@ async function fixture(t) {
       files.push({ name, bytes: data.length, sha256: createHash('sha256').update(data).digest('hex') });
     }
     await writeFile(path.join(directory, `release-proof-${label}.json`), JSON.stringify({
-      version, sourceSha, platform, arch, comparedSources: 27, bundledPythonVerified: true,
+      version, sourceSha, platform, arch, comparedSources: 27, bundledPythonVerified: true, bundledUpdateProxyVerified: true,
+      bundledUpdateProxy: { bundledSubscriptionsAbsent: true, configurationSource: 'management-api' },
       ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning: 'adhoc', packagedMacUpdateVerified: true, packagedUpdateHistoryVerified: true }
         : { packagedWindowsUpdateVerified: true, packagedWindowsPortableVerified: true, windowsUpdate: {
           automaticRelaunchRendererReadyVerified: true, restartedRenderers: [
@@ -143,6 +144,15 @@ test('release accepts only all six installers built and verified from one commit
   assert.equal(result.evidence.length, 3);
   assert.ok(result.evidence.filter(proof => proof.platform === 'darwin').every(proof => proof.macCodeSignatureVerified === true && proof.macCodeSigning === 'adhoc'));
   assert.equal(result.evidence.find(proof => proof.platform === 'win32').macCodeSignatureVerified, undefined);
+});
+
+test('release rejects stale installers with embedded subscription defaults', async t => {
+  const directory = await fixture(t);
+  const file = path.join(directory, 'release-proof-windows-x64.json');
+  const proof = JSON.parse(await readFile(file, 'utf8'));
+  proof.bundledUpdateProxy.bundledSubscriptionsAbsent = false;
+  await writeFile(file, JSON.stringify(proof));
+  await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /solely from the management API/);
 });
 
 test('compatibility aliases preserve the three updater installers, checksums and original proofs', async t => {
@@ -211,6 +221,17 @@ test('release rejects incomplete and unexpected platform assets', async t => {
   const directory = await fixture(t);
   await rm(path.join(directory, `Brclio-XHS-${version}-windows-x64-setup.exe`));
   await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /three verified/);
+});
+
+test('release rejects any platform without verified bundled update proxy runtime', async t => {
+  for (const label of ['mac-arm64', 'mac-x64', 'windows-x64']) {
+    const directory = await fixture(t);
+    const file = path.join(directory, `release-proof-${label}.json`);
+    const proof = JSON.parse(await readFile(file, 'utf8'));
+    delete proof.bundledUpdateProxyVerified;
+    await writeFile(file, JSON.stringify(proof));
+    await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /verified update proxy runtime/);
+  }
 });
 
 for (const field of ['packagedWindowsUpdateVerified', 'packagedWindowsPortableVerified']) {

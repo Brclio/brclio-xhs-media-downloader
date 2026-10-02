@@ -44,9 +44,22 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     'desktop/feedback-client.js', 'desktop/mac-update.js', 'desktop/mac-architecture.js', 'desktop/mac-install-progress.js',
     'desktop/windows-update.js', 'desktop/install-confirmation.js', 'desktop/mac-update-cleanup.js',
     'desktop/startup-ready.js', 'desktop/mac-update-history.js', 'desktop/image-clipboard.js',
-    'desktop/native-clipboard.js', 'desktop/xhs-login-reset.js', 'lib/image-dimensions.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/browser-account.js', 'lib/member-video-handler.js', 'lib/video-policy.js']) {
+    'desktop/native-clipboard.js', 'desktop/xhs-login-reset.js', 'desktop/update-proxy.js', 'desktop/proxy-core-supervisor.cjs',
+    'lib/image-dimensions.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/browser-account.js', 'lib/member-video-handler.js', 'lib/video-policy.js']) {
     try { await stat(path.join(sourceDirectory, name)); expectedSources.push(name); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
+  const sourcePackage = JSON.parse(await readFile(path.join(sourceDirectory, 'package.json'), 'utf8'));
+  if (sourcePackage.dependencies?.yaml) {
+    const moduleDirectory = path.join(sourceDirectory, 'node_modules/yaml');
+    for (const name of await readdir(moduleDirectory, { recursive: true })) {
+      if (/\.(?:js|cjs|html|css)$/.test(name) && (await stat(path.join(moduleDirectory, name))).isFile()) {
+        expectedSources.push(`node_modules/yaml/${name.replaceAll('\\', '/')}`);
+      }
+    }
+    const modulePackage = JSON.parse(extract('node_modules/yaml/package.json'));
+    assert.equal(modulePackage.version, sourcePackage.dependencies.yaml, 'Packaged subscription parser must match its reviewed pinned version');
+    assert.ok(extract('node_modules/yaml/LICENSE').equals(await readFile(path.join(moduleDirectory, 'LICENSE'))));
   }
   expectedSources.sort();
   const actualSources = asar.listPackage(archive)
@@ -54,7 +67,6 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     .filter(name => /\.(?:js|cjs|html|css)$/.test(name)).sort();
   assert.deepEqual(actualSources, expectedSources, 'Packaged source must contain exactly the reviewed application files');
   const packaged = JSON.parse(extract('package.json').toString('utf8'));
-  const sourcePackage = JSON.parse(await readFile(path.join(sourceDirectory, 'package.json'), 'utf8'));
   assert.equal(packaged.version, version, 'ASAR package version mismatch');
   assert.equal(packaged.name, 'brclio-xhs-media-downloader');
   assert.equal(packaged.productName, sourcePackage.productName);

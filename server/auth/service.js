@@ -4,6 +4,7 @@ import { digest, equalDigest, normalizeDevice, verifyProof } from './crypto.js';
 import { KNOWN_FEATURES } from '../../lib/membership-policy.js';
 import { getMembershipPlan } from '../../lib/membership-plans.js';
 import { createFeedbackService } from './feedback.js';
+import { subscriptionUrlsValue, updateProxyConfigView, updateProxyAuditView, updateProxyAuditReason } from './update-proxy.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -247,7 +248,10 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
   async function readAction(request) {
     const { state } = await store.read();
     const time = now();
+    // The updater must work before sign-in, including a fresh installation.
+    if (request.action === 'update-proxy-config') return { proxyConfig: updateProxyConfigView(state) };
     const { user, session } = authenticate(state, request, time, request.action.startsWith('admin-'));
+    if (request.action === 'admin-update-proxy-config') return { proxyConfig: updateProxyConfigView(state) };
     if (request.action === 'me') return { account: account(state, user, session, time) };
     if (request.action === 'authorize') {
       const feature = request.input.feature;
@@ -380,6 +384,24 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     const result = await store.transaction(state => {
       const time = now();
       const { user, session } = authenticate(state, request, time, request.action.startsWith('admin-'));
+      if (request.action === 'admin-save-update-proxy-config') {
+        const outcome = operation(state, user, request, () => {
+          const reason = reasonValue(request.input.reason);
+          if (typeof request.input.enabled !== 'boolean') fail('INVALID_PROXY_CONFIG', '请选择是否启用更新代理。');
+          const subscriptionUrls = subscriptionUrlsValue(Object.hasOwn(request.input, 'subscriptionUrls') ? request.input.subscriptionUrls : [request.input.subscriptionUrl], { enabled: request.input.enabled });
+          const before = updateProxyConfigView(state);
+          if (request.input.expectedRevision !== undefined && (!Number.isSafeInteger(request.input.expectedRevision) || request.input.expectedRevision !== before.revision)) {
+            fail('PROXY_CONFIG_CONFLICT', '配置已被其他管理员更新，请刷新后重新保存。', 409);
+          }
+          const after = { enabled: request.input.enabled, subscriptionUrls, subscriptionUrl: subscriptionUrls[0] || '', revision: before.revision + 1, updatedAt: iso(time) };
+          state.updateProxyConfig = after;
+          audit(state, user, request.action, 'update-proxy-config', updateProxyAuditReason(reason, before.subscriptionUrls, subscriptionUrls, request.input.subscriptionUrls, request.input.subscriptionUrl), updateProxyAuditView(before), updateProxyAuditView(after), time);
+          // The operation ledger preserves only the revision. The private setting
+          // remains the sole source of subscription credentials.
+          return { saved: true, appliedRevision: after.revision };
+        });
+        return { ...outcome, value: { ...outcome.value, proxyConfig: updateProxyConfigView(state) } };
+      }
       if (request.action === 'logout') { session.revokedAt = iso(time); return { value: { loggedOut: true } }; }
       if (request.action === 'redeem') {
         if (!['desktop', 'browser'].includes(session.client)) fail('DESKTOP_REQUIRED', '请使用软件账号在网页或客户端兑换。', 403);
@@ -510,7 +532,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       else if (action === 'send-code') result = await sendCode(request);
       else if (action === 'admin-send-activation') result = await sendActivation(request);
       else if (action === 'verify-code') result = await verifyCode(request);
-      else if (['logout', 'redeem', 'admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code'].includes(action)) result = await mutateAction(request);
+      else if (['logout', 'redeem', 'admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code', 'admin-save-update-proxy-config'].includes(action)) result = await mutateAction(request);
       else result = await readAction(request);
       return { ...result, serverTime: iso(now()) };
     },

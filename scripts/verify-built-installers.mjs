@@ -9,6 +9,7 @@ import { verifyAsar } from './verify-promoted-installer.mjs';
 import { PythonBackend } from '../desktop/python-backend.js';
 import { verifyPackagedMacLaunch } from './verify-packaged-mac.mjs';
 import { verifyPackagedMacUpdate } from './verify-packaged-mac-update.mjs';
+import { verifyPackagedUpdateProxy } from './verify-packaged-update-proxy.mjs';
 
 const root = process.cwd();
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -98,6 +99,18 @@ try {
     for (const name of names) command('7z', ['t', path.join(output, name)]);
   }
   const comparedSources = await verifyAsar(path.join(resources, 'app.asar'), root, version);
+  const bundledUpdateProxy = await verifyPackagedUpdateProxy(resources, { platform, arch });
+  if (platform === 'darwin') {
+    // Each container must carry the native runtime without subscription defaults.
+    for (const appPath of macApps.slice(1)) {
+      const other = await verifyPackagedUpdateProxy(path.join(appPath, 'Contents/Resources'), { platform, arch });
+      assert.deepEqual(other, bundledUpdateProxy, 'DMG and ZIP must contain the same verified update proxy runtime.');
+      for (const filename of ['mihomo', 'build-info.json', 'LICENSE', 'NOTICE', 'corresponding-source.tar.gz']) {
+        assert.equal(await digest(path.join(appPath, 'Contents/Resources/proxy', filename)),
+          await digest(path.join(resources, 'proxy', filename)), 'DMG and ZIP update proxy resources must be identical.');
+      }
+    }
+  }
   const backend = new PythonBackend({ appDirectory: root, resourcesDirectory: resources, packaged: true });
   try {
     assert.equal(await backend.initialize(), true, 'The packaged Python runtime must start without system Python');
@@ -122,6 +135,7 @@ try {
     files.push({ name, bytes: info.size, sha256: await digest(file) });
   }
   const proof = { version, sourceSha, sourceDirty, platform, arch, productName: pkg.build.productName, comparedSources, bundledPythonVerified: true,
+    bundledUpdateProxyVerified: true, bundledUpdateProxy,
     ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning, macSignatureContainers: ['dmg', 'zip'],
       packagedMacLaunchVerified: true, packagedMacUpdateVerified: true, packagedUpdateHistoryVerified: true } : {}), files };
   await writeFile(path.join(output, `release-proof-${label}.json`), `${JSON.stringify(proof, null, 2)}\n`);

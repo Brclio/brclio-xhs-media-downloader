@@ -11,6 +11,10 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   let userRequest = 0;
   let feedbackRequest = 0;
   let feedbackSessionEpoch = 0;
+  let updateProxyConfig = null;
+  let updateProxyRequest = 0;
+  let updateProxyDraft = '';
+  let updateProxyVisible = false;
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -158,6 +162,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
           if (!pending) return;
           const result = await mutate(pending.action, pending.input);
           state.loaded.delete('audit');
+          if (pending.action === 'admin-save-update-proxy-config') return finishUpdateProxySave(result);
           if (pending.action === 'admin-feedback-reply') return finishFeedbackReply(pending.input, result);
           if (pending.action === 'admin-generate-codes') displayGenerated(result, pending.input);
           else if (pending.action === 'admin-send-activation') displaySent(result);
@@ -205,6 +210,9 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     renderRecipients(); renderIssuePreview();
     feedbackSessionEpoch += 1; feedbackRequest += 1;
     state.feedback = []; state.selectedFeedback = null; state.feedbackDetail = null; state.feedbackHistory = []; state.feedbackMessages = []; state.feedbackDrafts.clear(); state.feedbackLog = null; state.mutating = false;
+    updateProxyConfig = null; updateProxyRequest += 1; updateProxyDraft = '';
+    $('update-proxy-form').reset(); setUpdateProxyVisibility(false, false); $('save-update-proxy').disabled = true;
+    $('update-proxy-meta').replaceChildren(); $('update-proxy-state').textContent = '正在加载'; $('update-proxy-save-note').textContent = '请先加载配置。';
     $('workspace').hidden = true; $('login-panel').hidden = false; $('logout').hidden = true; $('admin-email').textContent = '';
     ['users-list', 'user-detail', 'codes-list', 'audit-list', 'status-content', 'feedback-list', 'feedback-detail'].forEach((id) => $(id).replaceChildren());
   }
@@ -248,7 +256,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   async function switchTab(name) {
     state.tab = name;
     tabs.forEach((tab) => { const active = tab.dataset.tab === name; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; $(`panel-${tab.dataset.tab}`).hidden = !active; });
-    if (!state.loaded.has(name)) await ({ users: loadUsers, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback })[name]();
+    if (!state.loaded.has(name)) await ({ users: loadUsers, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback, 'update-proxy': loadUpdateProxyConfig })[name]();
     if (name === 'codes' && !issue.recipients.length) await findRecipients();
   }
   tabs.forEach((tab, index) => {
@@ -720,7 +728,49 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   }
   $('feedback-filter-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, loadFeedback); });
   $('refresh-feedback').addEventListener('click', () => run($('refresh-feedback'), async () => { await loadFeedback(); if (state.selectedFeedback) await selectFeedback(state.selectedFeedback); }));
-  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态', 'admin-feedback-reply': '回复问题反馈', 'feedback-reply': '用户回复反馈' })[action] || action || '操作记录'; }
+  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态', 'admin-feedback-reply': '回复问题反馈', 'feedback-reply': '用户回复反馈', 'admin-save-update-proxy-config': '更新软件订阅配置' })[action] || action || '操作记录'; }
+  function renderUpdateProxyConfig(config) {
+    updateProxyConfig = config;
+    const unconfigured = config.revision === 0;
+    $('update-proxy-enabled').checked = config.enabled;
+    const urls = Array.isArray(config.subscriptionUrls) ? config.subscriptionUrls : config.subscriptionUrl ? [config.subscriptionUrl] : [];
+    updateProxyDraft = urls.join('\n'); setUpdateProxyVisibility(false, false);
+    $('update-proxy-state').textContent = unconfigured ? '尚未设置 · 直接连接' : config.enabled ? '已启用更新代理' : '已停用更新代理';
+    $('update-proxy-state').className = `badge ${unconfigured || !config.enabled ? 'badge-muted' : ''}`;
+    $('update-proxy-save-note').textContent = unconfigured ? '未配置时直接连接。保存并启用后生效。' : '下一次检查更新时生效。';
+    $('update-proxy-meta').replaceChildren(facts([['配置版本', unconfigured ? '尚未保存' : `第 ${config.revision} 版`], ['订阅来源', `${urls.length} 个`], ['更新时间', fmt(config.updatedAt)]]));
+    $('save-update-proxy').disabled = false;
+  }
+  async function loadUpdateProxyConfig() {
+    const request = ++updateProxyRequest, epoch = feedbackSessionEpoch;
+    const data = await api('admin-update-proxy-config');
+    if (request !== updateProxyRequest || epoch !== feedbackSessionEpoch || !state.admin) return;
+    renderUpdateProxyConfig(data.proxyConfig); state.loaded.add('update-proxy');
+  }
+  function finishUpdateProxySave(result) {
+    renderUpdateProxyConfig(result.proxyConfig); $('update-proxy-reason').value = ''; state.loaded.delete('audit');
+    tell(`更新网络配置已保存（第 ${result.proxyConfig.revision} 版）。客户端下一次检查更新时获取。`, 'success');
+  }
+  function setUpdateProxyVisibility(show, capture = true) {
+    if (capture && updateProxyVisible) updateProxyDraft = $('update-proxy-url').value;
+    updateProxyVisible = show; $('update-proxy-url').readOnly = !show;
+    $('update-proxy-url').value = show ? updateProxyDraft : updateProxyDraft.split(/\r?\n/).filter(line => line.trim()).map(() => '••••••••••••••••••••••••').join('\n');
+    $('show-update-proxy-url').textContent = show ? '隐藏' : '显示 / 编辑'; $('show-update-proxy-url').setAttribute('aria-pressed', String(show));
+  }
+  $('show-update-proxy-url').addEventListener('click', () => setUpdateProxyVisibility(!updateProxyVisible));
+  $('refresh-update-proxy').addEventListener('click', () => run($('refresh-update-proxy'), loadUpdateProxyConfig));
+  $('update-proxy-form').addEventListener('submit', event => {
+    event.preventDefault(); run($('save-update-proxy'), async () => {
+      if (!updateProxyConfig || !$('update-proxy-form').reportValidity()) return;
+      const enabled = $('update-proxy-enabled').checked;
+      if (updateProxyVisible) updateProxyDraft = $('update-proxy-url').value;
+      const subscriptionUrls = [...new Set(updateProxyDraft.split(/\r?\n/).map(url => url.trim()).filter(Boolean))];
+      if (enabled && !subscriptionUrls.length) { setUpdateProxyVisibility(true); $('update-proxy-url').focus(); throw new Error('启用更新代理时，请填写至少一个 HTTPS 订阅地址。'); }
+      if (subscriptionUrls.length > 8) { setUpdateProxyVisibility(true); $('update-proxy-url').focus(); throw new Error('最多保存 8 个不同的订阅地址，每行一个。'); }
+      const result = await mutate('admin-save-update-proxy-config', { enabled, subscriptionUrls, expectedRevision: updateProxyConfig.revision, reason: $('update-proxy-reason').value.trim() });
+      finishUpdateProxySave(result);
+    });
+  });
   async function loadAudit() { const data = await api('admin-audit'); state.audit = data.audit || []; state.total.audit = data.total || state.audit.length; state.pages.audit = 0; state.loaded.add('audit'); renderAudit(); }
   function renderAudit() {
     const visible = pageItems('audit', state.audit, renderAudit);
