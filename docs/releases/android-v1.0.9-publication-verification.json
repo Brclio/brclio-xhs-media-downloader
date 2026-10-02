@@ -1,0 +1,526 @@
+{
+  "result": "PASS",
+  "sourceSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+  "verifiedAt": "2026-10-02T15:10:53.624Z",
+  "publication": {
+    "runId": 37022183796,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37022183796",
+    "status": "completed",
+    "conclusion": "success",
+    "provenance": {
+      "schemaVersion": 1,
+      "repository": "Brclio/brclio-xhs-media-downloader",
+      "sourceCommit": "6f98115462f046888562a79b6782e7e1722b6bf9",
+      "tags": {
+        "desktop": {
+          "name": "v2.0.2",
+          "commit": "6f98115462f046888562a79b6782e7e1722b6bf9"
+        },
+        "android": {
+          "name": "android-v1.0.9",
+          "commit": "6f98115462f046888562a79b6782e7e1722b6bf9"
+        }
+      },
+      "runs": {
+        "desktop": {
+          "id": 37020590659,
+          "workflowName": "Desktop installers",
+          "workflowId": 362432997,
+          "headSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11233990090,
+              "name": "Brclio-XHS-mac-arm64",
+              "bytes": 327274825,
+              "digest": "sha256:51570c86febc2fc9662b25894529e2e06932cc084cc8ea1cadf81edd12b1535b"
+            },
+            {
+              "id": 11233986163,
+              "name": "Brclio-XHS-mac-intel",
+              "bytes": 342786240,
+              "digest": "sha256:c49705c818bc154b91afd8b86a880e91c158d9d35b107bc06cecbe4ee6e19975"
+            },
+            {
+              "id": 11233426139,
+              "name": "Brclio-XHS-windows-x64",
+              "bytes": 286407663,
+              "digest": "sha256:64ef1273fd72b9fca235f7ada7dcf3f173815c26c5b99f241858e0ff0b47ba21"
+            }
+          ]
+        },
+        "android": {
+          "id": 37020592821,
+          "workflowName": "Android signed release",
+          "workflowId": 368644334,
+          "headSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11233491409,
+              "name": "Android-release-37020592821-1",
+              "bytes": 72527871,
+              "digest": "sha256:017edb53ee18d13db2ff8f3dacfc45b7fc1f82d04c828d8db04a3c1ddc8c8cb8"
+            }
+          ]
+        }
+      },
+      "provenanceCheckedAt": "2026-10-02T14:46:18.541Z",
+      "publisherCheckedAt": {
+        "desktop": "2026-10-02T14:46:51.478Z",
+        "android": "2026-10-02T14:47:02.514Z"
+      },
+      "publicMetadataCheckedAt": "2026-10-02T14:47:03.409Z"
+    },
+    "evidenceArtifact": {
+      "id": 11233652683,
+      "name": "publication-evidence-37022183796-1",
+      "bytes": 17002,
+      "digest": "sha256:5622f9caa05eee790c7e4d91f90db3c739fadd69f7494ca998e41d33e7b36e3e"
+    },
+    "ciMetadataBytesMatchAnonymousPublicFiles": true
+  },
+  "configuration": {
+    "source": "management-api",
+    "bundledSubscriptionUrls": false,
+    "enabled": true,
+    "revision": 1,
+    "count": 1,
+    "userSelectedFirstSubscription": true,
+    "liveConfigurationVerified": true
+  },
+  "updateProxy": {
+    "scope": [
+      "update-check",
+      "installer-download"
+    ],
+    "lowestAvailableLatency": true,
+    "systemProxyUnchanged": true,
+    "cleanupAfterCompletionFailureCancellationAndOwnerExitVerified": true
+  },
+  "website": {
+    "sourceCommit": "2e191a042e430d2d6d41441272e577013908fa49",
+    "origin": "https://xhs.download.brclio.com",
+    "workerVersionId": "98679c6b-f6c8-4b5c-aa55-891ea29306c7",
+    "pagesDeploymentUrl": "https://0922d937.brclio-xhs-pages.pages.dev",
+    "formal": {
+      "checkedAt": "2026-10-02T15:00:24.471Z",
+      "targetHost": "xhs.download.brclio.com",
+      "mode": "anonymous-read-only",
+      "writes": 0,
+      "authenticationRequests": 0,
+      "backend": {
+        "enabled": true,
+        "revision": 1,
+        "count": 1,
+        "firstMatch": true,
+        "noStore": true
+      },
+      "download": {
+        "desktopTag": "v2.0.2",
+        "androidTag": "android-v1.0.9",
+        "desktopPublishedDate": "2026.10.02",
+        "androidPublishedDate": "2026.10.02",
+        "sizesMatch": true,
+        "staticLinksMatch": true,
+        "placeholdersRemoved": true
+      },
+      "changelog": {
+        "latestEntry": true,
+        "latestSummary": true,
+        "previousDesktopRecord": true,
+        "previousAndroidRecord": true,
+        "previousMembershipRecord": true
+      },
+      "admin": {
+        "updateNetworkTab": true,
+        "backendOnly": true,
+        "noStore": true,
+        "cspVerified": true,
+        "frameProtection": true,
+        "credentialsAbsentFromStaticFiles": true
+      },
+      "render": {
+        "status": "PASS",
+        "widths": [
+          1440,
+          390
+        ],
+        "sourceHashesMatched": true
+      }
+    },
+    "pages": {
+      "checkedAt": "2026-10-02T15:00:25.970Z",
+      "targetHost": "0922d937.brclio-xhs-pages.pages.dev",
+      "mode": "anonymous-read-only",
+      "writes": 0,
+      "authenticationRequests": 0,
+      "backend": {
+        "enabled": true,
+        "revision": 1,
+        "count": 1,
+        "firstMatch": true,
+        "noStore": true
+      },
+      "download": {
+        "desktopTag": "v2.0.2",
+        "androidTag": "android-v1.0.9",
+        "desktopPublishedDate": "2026.10.02",
+        "androidPublishedDate": "2026.10.02",
+        "sizesMatch": true,
+        "staticLinksMatch": true,
+        "placeholdersRemoved": true
+      },
+      "changelog": {
+        "latestEntry": true,
+        "latestSummary": true,
+        "previousDesktopRecord": true,
+        "previousAndroidRecord": true,
+        "previousMembershipRecord": true
+      },
+      "admin": {
+        "updateNetworkTab": true,
+        "backendOnly": true,
+        "noStore": true,
+        "cspVerified": true,
+        "frameProtection": true,
+        "credentialsAbsentFromStaticFiles": true
+      },
+      "render": {
+        "status": "PASS",
+        "widths": [
+          1440,
+          390
+        ],
+        "sourceHashesMatched": true
+      }
+    },
+    "formalSmoke": {
+      "origin": "https://xhs.download.brclio.com",
+      "checkedAt": "2026-10-02T15:01:00.162Z",
+      "passed": 55,
+      "total": 55,
+      "ok": true,
+      "realMediaChecks": false
+    },
+    "pagesSmoke": {
+      "origin": "https://0922d937.brclio-xhs-pages.pages.dev",
+      "checkedAt": "2026-10-02T15:00:48.044Z",
+      "passed": 55,
+      "total": 55,
+      "ok": true,
+      "realMediaChecks": false
+    },
+    "staticSources": [
+      {
+        "file": "download.html",
+        "status": 200,
+        "bytes": 25560,
+        "sha256": "9f9f8658000deac7d7a03a8ec0faa9476421839fc568f96fa0e9fdce65fa47f7",
+        "localMatch": true
+      },
+      {
+        "file": "download.js",
+        "status": 200,
+        "bytes": 9796,
+        "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+        "localMatch": true
+      },
+      {
+        "file": "download.css",
+        "status": 200,
+        "bytes": 23755,
+        "sha256": "c88c11fa656bc0d3c0aa22a6ab98e20e7c389cc8c012c1de435de22215f3e235",
+        "localMatch": true
+      },
+      {
+        "file": "changelog.html",
+        "status": 200,
+        "bytes": 135314,
+        "sha256": "9460f8e7038a4aa17763aa4f245aaa5d7918c4de7b2cfd797e7773ed12a595c3",
+        "localMatch": true
+      },
+      {
+        "file": "changelog.js",
+        "status": 200,
+        "bytes": 4344,
+        "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+        "localMatch": true
+      },
+      {
+        "file": "changelog.css",
+        "status": 200,
+        "bytes": 18431,
+        "sha256": "264ed94c224f8dcc943824ea221cdb56ac3eaa0b0b74c1291c5c07f5a03fc30d",
+        "localMatch": true
+      },
+      {
+        "file": "style.css",
+        "status": 200,
+        "bytes": 33474,
+        "sha256": "3ac6cd52f1f5a884cf9fd7b079847b0b2e721585ac405598b055954aced223f4",
+        "localMatch": true
+      },
+      {
+        "file": "site-header.css",
+        "status": 200,
+        "bytes": 6334,
+        "sha256": "cdcef719e45dd8b2e60ac23e4f31c772d042ec958bb076c5445bdd152c68e3de",
+        "localMatch": true
+      },
+      {
+        "file": "admin/index.html",
+        "status": 200,
+        "bytes": 15496,
+        "sha256": "d66d37073f2cb73b39ac7e5455954412aeb47f7ea29dfbc5e1ed2ec6fbca6a1d",
+        "localMatch": true
+      },
+      {
+        "file": "admin/admin.js",
+        "status": 200,
+        "bytes": 69367,
+        "sha256": "a4b573de672750356a1e09b656fc447f1034b091b7056ca496bc0e56266f1372",
+        "localMatch": true
+      },
+      {
+        "file": "admin/admin.css",
+        "status": 200,
+        "bytes": 21511,
+        "sha256": "3be6993d6218fe444b284dd26355bebf661c09ad84387f2c0f243fc3ff9d6578",
+        "localMatch": true
+      }
+    ],
+    "staticAssetsIdenticalOnBothOrigins": true,
+    "scopedNodeTests": {
+      "passed": 80,
+      "failed": 0,
+      "skipped": 0
+    },
+    "visualInspection": {
+      "pages": [
+        "download",
+        "changelog"
+      ],
+      "widths": [
+        390,
+        1440
+      ],
+      "overflow": false,
+      "rendererErrors": 0,
+      "inspected": true
+    }
+  },
+  "tests": {
+    "node": {
+      "passed": 917,
+      "failed": 0,
+      "skipped": 9
+    },
+    "python": {
+      "passed": 27,
+      "failed": 0
+    }
+  },
+  "userDeviceInstallationPerformed": false,
+  "version": "1.0.9",
+  "tag": "android-v1.0.9",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.9",
+  "publishedAt": "2026-10-02T14:47:01Z",
+  "draft": false,
+  "prerelease": false,
+  "assetCount": 4,
+  "publicReadbackCheckedAt": "2026-10-02T14:49:23.870Z",
+  "assets": [
+    {
+      "name": "android-update.json",
+      "bytes": 2580,
+      "sha256": "f469f4455908a171e004f944928789b229d6e8f54e96267575ffa99e9941bf2b",
+      "releaseAssetDigest": "sha256:f469f4455908a171e004f944928789b229d6e8f54e96267575ffa99e9941bf2b",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "complete metadata bytes hashed separately"
+    },
+    {
+      "name": "Brclio-XHS-Android-1.0.9-release.apk",
+      "bytes": 73143746,
+      "sha256": "cb287f75b7222d71551b51994056045da5d5ad532df6787ab2af32520454f785",
+      "releaseAssetDigest": "sha256:cb287f75b7222d71551b51994056045da5d5ad532df6787ab2af32520454f785",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-Android-1.0.9-release.apk.sha256",
+      "bytes": 103,
+      "sha256": "0f33e5d483a96249d94d919c30e300b5fc2612df413375e832778e1b8cb608c9",
+      "releaseAssetDigest": "sha256:0f33e5d483a96249d94d919c30e300b5fc2612df413375e832778e1b8cb608c9",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "complete metadata bytes hashed separately"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 103,
+      "sha256": "0f33e5d483a96249d94d919c30e300b5fc2612df413375e832778e1b8cb608c9",
+      "releaseAssetDigest": "sha256:0f33e5d483a96249d94d919c30e300b5fc2612df413375e832778e1b8cb608c9",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "complete metadata bytes hashed separately"
+    }
+  ],
+  "publicInstallerVerification": "Anonymous HEAD and range GET; complete CI installer checksums matched GitHub server asset digests. New installer binaries were not fully downloaded again locally.",
+  "publicMetadataCompleteBytesVerified": true,
+  "sourceTagVerified": true,
+  "manifest": {
+    "schemaVersion": 1,
+    "platform": "android",
+    "version": "1.0.9",
+    "versionCode": 10009,
+    "applicationId": "com.brclio.xhs",
+    "minSdk": 26,
+    "signingCertificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b",
+    "sourceCommit": "6f98115462f046888562a79b6782e7e1722b6bf9",
+    "sourceDirty": false,
+    "builtAt": "2026-10-02T14:33:52.923Z",
+    "bundledUpdateProxyVerified": true,
+    "bundledSubscriptionsAbsent": true,
+    "bundledUpdateProxy": {
+      "version": "v1.19.32",
+      "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+      "apkSha256": "cb287f75b7222d71551b51994056045da5d5ad532df6787ab2af32520454f785",
+      "bundledSubscriptionsAbsent": true,
+      "configurationSource": "management-api",
+      "sourceArchiveVerified": true,
+      "licenseVerified": true,
+      "launcherSourceVerified": true,
+      "coreCount": 3,
+      "launcherCount": 3,
+      "binaries": [
+        {
+          "abi": "arm64-v8a",
+          "coreSha256": "bb9afbd48717f92d59e07da35fb694b83d40d6edb63eb9033c2ee4174137d195",
+          "launcherSha256": "ff95c71875b2b74bec1de86eb84c3d07c56c835b1450f6153189950e81a6ac14",
+          "elfVerified": true
+        },
+        {
+          "abi": "armeabi-v7a",
+          "coreSha256": "10e85ebad5380e5cdcb4028b6ba40910593bc9c37ce6b50e9f3a21adfca1408d",
+          "launcherSha256": "ff81f7c906142998023476a721d999d5f70ca208e6db032c9da96404b86cb4c0",
+          "elfVerified": true
+        },
+        {
+          "abi": "x86_64",
+          "coreSha256": "1c5aa8e8a7006e4093560fe48505fd1587de29210879e806822cb1094b334413",
+          "launcherSha256": "7d1fd4b61597cae9b0095e8792612d21581125bb5eea2fa7f7152a2209f371a3",
+          "elfVerified": true
+        }
+      ]
+    },
+    "apk": {
+      "name": "Brclio-XHS-Android-1.0.9-release.apk",
+      "bytes": 73143746,
+      "sha256": "cb287f75b7222d71551b51994056045da5d5ad532df6787ab2af32520454f785"
+    },
+    "emulatorUpgrade": {
+      "verifiedAt": "2026-10-02T14:40:36.947Z",
+      "method": "adb install -r",
+      "apiLevel": 35,
+      "sourceCommit": "6f98115462f046888562a79b6782e7e1722b6bf9",
+      "apkSha256": "cb287f75b7222d71551b51994056045da5d5ad532df6787ab2af32520454f785",
+      "targetVersion": "1.0.9",
+      "targetVersionCode": 10009,
+      "baselineVersion": "1.0.2",
+      "baselineVersionCode": 10002,
+      "signaturesVerified": true,
+      "oldAndNewLaunchVerified": true,
+      "uidPreserved": true,
+      "firstInstallTimePreserved": true,
+      "userSettingPreserved": true,
+      "updateCheckUiVerified": true,
+      "inAppInstallerConfirmationTested": false,
+      "manualFallbackFixtureVerified": true,
+      "vipCommunityVerified": true
+    }
+  },
+  "unitTests": {
+    "javaPassed": 48,
+    "javaFailed": 0,
+    "nodePassed": 67,
+    "nodeFailed": 0,
+    "nodeSkipped": 1,
+    "lintPassed": true
+  },
+  "realNetworkAcceptance": {
+    "scope": "Supplemental disposable emulator checks before the subscription retry fix and final source commit. These debug checks were not repeated against the exact signed release APK; exact-source signed build and upgrade validation are recorded in manifest.emulatorUpgrade.",
+    "fullOlderPublicApkDownload": {
+      "verifiedAt": "2026-10-02T12:52:54.457Z",
+      "method": "isolated debug native download QA",
+      "backendOnlySubscriptions": true,
+      "bootstrapTransportFixture": false,
+      "backendRevision": 1,
+      "configuredSubscriptionCount": 1,
+      "fixtureApkSha256": "93efb82fe3416f3265713fa178a3baea24819311f1b1819afcf62ba33238ef89",
+      "fixtureVersion": "0.0.0-debug",
+      "downloadedVersion": "1.0.8",
+      "downloadedApkBytes": 3943834,
+      "downloadedApkSha256": "ecb9d84c9cb22e5b846ea3b0200a782c0897aae4609f643a23ab730c8a89900e",
+      "officialChecksumMatched": true,
+      "officialApplicationIdVerified": true,
+      "officialVersionVerified": true,
+      "officialSigningCertificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b",
+      "nodesProbed": 16,
+      "availableNodes": 12,
+      "downloadCancellationVerified": true,
+      "cancelledPartialDeleted": true,
+      "cancelledProxyCleanup": true,
+      "completedProxyCleanup": true,
+      "systemProxyUnchanged": true,
+      "noVpnInterfaceAdded": true,
+      "installationForbidden": true,
+      "systemInstallerInvoked": false,
+      "fixtureChanges": [
+        "lower debug version",
+        "download debug refusal bypassed only",
+        "downloaded official package and fixed certificate verified independently of installed debug package"
+      ]
+    },
+    "unmodifiedDebugOwnerDeath": {
+      "verifiedAt": "2026-10-02T13:15:36.152Z",
+      "api": "35",
+      "abi": "arm64-v8a",
+      "apkSha256": "19d420f46681b50a23dd2fb49973c1acef69d0525feb28e7f19c85ad102dc016",
+      "apkModified": false,
+      "sourceOrBinaryFixture": false,
+      "bootstrapTransportFixture": false,
+      "backendOnlySubscriptions": true,
+      "backendRevision": 1,
+      "configuredSubscriptionCount": 1,
+      "loadedLiveNodes": 16,
+      "sameCorePidBeforeOwnerKill": true,
+      "ownerDeathCleanup": true,
+      "systemProxyUnchanged": true,
+      "noVpnInterfaceAdded": true,
+      "limitations": [
+        "Owner-death-only acceptance of the unchanged production-source debug APK on an API35 emulator. No latency/check/download or signed/physical-device claim in this report."
+      ]
+    }
+  },
+  "limitations": [
+    "Signed APK replacement was verified using adb install -r on API 35; in-app system installer confirmation was not automated.",
+    "Manual fallback used an isolated debug source copy with an injected installer failure; real published metadata, checksums and browser intent were verified.",
+    "Supplemental full old APK download and owner-death checks preceded the final retry fix; they are not exact-source signed-release reruns.",
+    "The new 73.1 MB APK public readback used HEAD and range GET, with the CI complete-file checksum matched to the GitHub server digest."
+  ]
+}

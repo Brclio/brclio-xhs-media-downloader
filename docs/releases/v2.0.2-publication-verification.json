@@ -1,0 +1,631 @@
+{
+  "result": "PASS",
+  "sourceSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+  "verifiedAt": "2026-10-02T15:10:53.624Z",
+  "publication": {
+    "runId": 37022183796,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37022183796",
+    "status": "completed",
+    "conclusion": "success",
+    "provenance": {
+      "schemaVersion": 1,
+      "repository": "Brclio/brclio-xhs-media-downloader",
+      "sourceCommit": "6f98115462f046888562a79b6782e7e1722b6bf9",
+      "tags": {
+        "desktop": {
+          "name": "v2.0.2",
+          "commit": "6f98115462f046888562a79b6782e7e1722b6bf9"
+        },
+        "android": {
+          "name": "android-v1.0.9",
+          "commit": "6f98115462f046888562a79b6782e7e1722b6bf9"
+        }
+      },
+      "runs": {
+        "desktop": {
+          "id": 37020590659,
+          "workflowName": "Desktop installers",
+          "workflowId": 362432997,
+          "headSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11233990090,
+              "name": "Brclio-XHS-mac-arm64",
+              "bytes": 327274825,
+              "digest": "sha256:51570c86febc2fc9662b25894529e2e06932cc084cc8ea1cadf81edd12b1535b"
+            },
+            {
+              "id": 11233986163,
+              "name": "Brclio-XHS-mac-intel",
+              "bytes": 342786240,
+              "digest": "sha256:c49705c818bc154b91afd8b86a880e91c158d9d35b107bc06cecbe4ee6e19975"
+            },
+            {
+              "id": 11233426139,
+              "name": "Brclio-XHS-windows-x64",
+              "bytes": 286407663,
+              "digest": "sha256:64ef1273fd72b9fca235f7ada7dcf3f173815c26c5b99f241858e0ff0b47ba21"
+            }
+          ]
+        },
+        "android": {
+          "id": 37020592821,
+          "workflowName": "Android signed release",
+          "workflowId": 368644334,
+          "headSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11233491409,
+              "name": "Android-release-37020592821-1",
+              "bytes": 72527871,
+              "digest": "sha256:017edb53ee18d13db2ff8f3dacfc45b7fc1f82d04c828d8db04a3c1ddc8c8cb8"
+            }
+          ]
+        }
+      },
+      "provenanceCheckedAt": "2026-10-02T14:46:18.541Z",
+      "publisherCheckedAt": {
+        "desktop": "2026-10-02T14:46:51.478Z",
+        "android": "2026-10-02T14:47:02.514Z"
+      },
+      "publicMetadataCheckedAt": "2026-10-02T14:47:03.409Z"
+    },
+    "evidenceArtifact": {
+      "id": 11233652683,
+      "name": "publication-evidence-37022183796-1",
+      "bytes": 17002,
+      "digest": "sha256:5622f9caa05eee790c7e4d91f90db3c739fadd69f7494ca998e41d33e7b36e3e"
+    },
+    "ciMetadataBytesMatchAnonymousPublicFiles": true
+  },
+  "configuration": {
+    "source": "management-api",
+    "bundledSubscriptionUrls": false,
+    "enabled": true,
+    "revision": 1,
+    "count": 1,
+    "userSelectedFirstSubscription": true,
+    "liveConfigurationVerified": true
+  },
+  "updateProxy": {
+    "scope": [
+      "update-check",
+      "installer-download"
+    ],
+    "lowestAvailableLatency": true,
+    "systemProxyUnchanged": true,
+    "cleanupAfterCompletionFailureCancellationAndOwnerExitVerified": true
+  },
+  "website": {
+    "sourceCommit": "2e191a042e430d2d6d41441272e577013908fa49",
+    "origin": "https://xhs.download.brclio.com",
+    "workerVersionId": "98679c6b-f6c8-4b5c-aa55-891ea29306c7",
+    "pagesDeploymentUrl": "https://0922d937.brclio-xhs-pages.pages.dev",
+    "formal": {
+      "checkedAt": "2026-10-02T15:00:24.471Z",
+      "targetHost": "xhs.download.brclio.com",
+      "mode": "anonymous-read-only",
+      "writes": 0,
+      "authenticationRequests": 0,
+      "backend": {
+        "enabled": true,
+        "revision": 1,
+        "count": 1,
+        "firstMatch": true,
+        "noStore": true
+      },
+      "download": {
+        "desktopTag": "v2.0.2",
+        "androidTag": "android-v1.0.9",
+        "desktopPublishedDate": "2026.10.02",
+        "androidPublishedDate": "2026.10.02",
+        "sizesMatch": true,
+        "staticLinksMatch": true,
+        "placeholdersRemoved": true
+      },
+      "changelog": {
+        "latestEntry": true,
+        "latestSummary": true,
+        "previousDesktopRecord": true,
+        "previousAndroidRecord": true,
+        "previousMembershipRecord": true
+      },
+      "admin": {
+        "updateNetworkTab": true,
+        "backendOnly": true,
+        "noStore": true,
+        "cspVerified": true,
+        "frameProtection": true,
+        "credentialsAbsentFromStaticFiles": true
+      },
+      "render": {
+        "status": "PASS",
+        "widths": [
+          1440,
+          390
+        ],
+        "sourceHashesMatched": true
+      }
+    },
+    "pages": {
+      "checkedAt": "2026-10-02T15:00:25.970Z",
+      "targetHost": "0922d937.brclio-xhs-pages.pages.dev",
+      "mode": "anonymous-read-only",
+      "writes": 0,
+      "authenticationRequests": 0,
+      "backend": {
+        "enabled": true,
+        "revision": 1,
+        "count": 1,
+        "firstMatch": true,
+        "noStore": true
+      },
+      "download": {
+        "desktopTag": "v2.0.2",
+        "androidTag": "android-v1.0.9",
+        "desktopPublishedDate": "2026.10.02",
+        "androidPublishedDate": "2026.10.02",
+        "sizesMatch": true,
+        "staticLinksMatch": true,
+        "placeholdersRemoved": true
+      },
+      "changelog": {
+        "latestEntry": true,
+        "latestSummary": true,
+        "previousDesktopRecord": true,
+        "previousAndroidRecord": true,
+        "previousMembershipRecord": true
+      },
+      "admin": {
+        "updateNetworkTab": true,
+        "backendOnly": true,
+        "noStore": true,
+        "cspVerified": true,
+        "frameProtection": true,
+        "credentialsAbsentFromStaticFiles": true
+      },
+      "render": {
+        "status": "PASS",
+        "widths": [
+          1440,
+          390
+        ],
+        "sourceHashesMatched": true
+      }
+    },
+    "formalSmoke": {
+      "origin": "https://xhs.download.brclio.com",
+      "checkedAt": "2026-10-02T15:01:00.162Z",
+      "passed": 55,
+      "total": 55,
+      "ok": true,
+      "realMediaChecks": false
+    },
+    "pagesSmoke": {
+      "origin": "https://0922d937.brclio-xhs-pages.pages.dev",
+      "checkedAt": "2026-10-02T15:00:48.044Z",
+      "passed": 55,
+      "total": 55,
+      "ok": true,
+      "realMediaChecks": false
+    },
+    "staticSources": [
+      {
+        "file": "download.html",
+        "status": 200,
+        "bytes": 25560,
+        "sha256": "9f9f8658000deac7d7a03a8ec0faa9476421839fc568f96fa0e9fdce65fa47f7",
+        "localMatch": true
+      },
+      {
+        "file": "download.js",
+        "status": 200,
+        "bytes": 9796,
+        "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+        "localMatch": true
+      },
+      {
+        "file": "download.css",
+        "status": 200,
+        "bytes": 23755,
+        "sha256": "c88c11fa656bc0d3c0aa22a6ab98e20e7c389cc8c012c1de435de22215f3e235",
+        "localMatch": true
+      },
+      {
+        "file": "changelog.html",
+        "status": 200,
+        "bytes": 135314,
+        "sha256": "9460f8e7038a4aa17763aa4f245aaa5d7918c4de7b2cfd797e7773ed12a595c3",
+        "localMatch": true
+      },
+      {
+        "file": "changelog.js",
+        "status": 200,
+        "bytes": 4344,
+        "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+        "localMatch": true
+      },
+      {
+        "file": "changelog.css",
+        "status": 200,
+        "bytes": 18431,
+        "sha256": "264ed94c224f8dcc943824ea221cdb56ac3eaa0b0b74c1291c5c07f5a03fc30d",
+        "localMatch": true
+      },
+      {
+        "file": "style.css",
+        "status": 200,
+        "bytes": 33474,
+        "sha256": "3ac6cd52f1f5a884cf9fd7b079847b0b2e721585ac405598b055954aced223f4",
+        "localMatch": true
+      },
+      {
+        "file": "site-header.css",
+        "status": 200,
+        "bytes": 6334,
+        "sha256": "cdcef719e45dd8b2e60ac23e4f31c772d042ec958bb076c5445bdd152c68e3de",
+        "localMatch": true
+      },
+      {
+        "file": "admin/index.html",
+        "status": 200,
+        "bytes": 15496,
+        "sha256": "d66d37073f2cb73b39ac7e5455954412aeb47f7ea29dfbc5e1ed2ec6fbca6a1d",
+        "localMatch": true
+      },
+      {
+        "file": "admin/admin.js",
+        "status": 200,
+        "bytes": 69367,
+        "sha256": "a4b573de672750356a1e09b656fc447f1034b091b7056ca496bc0e56266f1372",
+        "localMatch": true
+      },
+      {
+        "file": "admin/admin.css",
+        "status": 200,
+        "bytes": 21511,
+        "sha256": "3be6993d6218fe444b284dd26355bebf661c09ad84387f2c0f243fc3ff9d6578",
+        "localMatch": true
+      }
+    ],
+    "staticAssetsIdenticalOnBothOrigins": true,
+    "scopedNodeTests": {
+      "passed": 80,
+      "failed": 0,
+      "skipped": 0
+    },
+    "visualInspection": {
+      "pages": [
+        "download",
+        "changelog"
+      ],
+      "widths": [
+        390,
+        1440
+      ],
+      "overflow": false,
+      "rendererErrors": 0,
+      "inspected": true
+    }
+  },
+  "tests": {
+    "node": {
+      "passed": 917,
+      "failed": 0,
+      "skipped": 9
+    },
+    "python": {
+      "passed": 27,
+      "failed": 0
+    }
+  },
+  "userDeviceInstallationPerformed": false,
+  "version": "2.0.2",
+  "tag": "v2.0.2",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.2",
+  "publishedAt": "2026-10-02T14:46:50Z",
+  "draft": false,
+  "prerelease": false,
+  "assetCount": 11,
+  "publicReadbackCheckedAt": "2026-10-02T14:49:23.870Z",
+  "assets": [
+    {
+      "name": "Brclio-XHS-2.0.2-mac-arm64.dmg",
+      "bytes": 164098917,
+      "sha256": "f75b10f0f2cff0c5984692b24213e06237d08580eabd19fb7314d412a2c1f472",
+      "releaseAssetDigest": "sha256:f75b10f0f2cff0c5984692b24213e06237d08580eabd19fb7314d412a2c1f472",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.2-mac-arm64.zip",
+      "bytes": 165023304,
+      "sha256": "24dcd15d0539c6be212881e601e16b4e086094d51e85474fa0f1ccb88470db18",
+      "releaseAssetDigest": "sha256:24dcd15d0539c6be212881e601e16b4e086094d51e85474fa0f1ccb88470db18",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.2-mac-x64.dmg",
+      "bytes": 171791302,
+      "sha256": "140d2727254cd9bae93cd1b7c42f083a7b5c871ba661efd41a62c56e0cc42e14",
+      "releaseAssetDigest": "sha256:140d2727254cd9bae93cd1b7c42f083a7b5c871ba661efd41a62c56e0cc42e14",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.2-mac-x64.zip",
+      "bytes": 172819009,
+      "sha256": "e6920ec0db6b839f1eaf7df4318392f6cae1a4ef41929acdf9693d0ef7f69775",
+      "releaseAssetDigest": "sha256:e6920ec0db6b839f1eaf7df4318392f6cae1a4ef41929acdf9693d0ef7f69775",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.2-windows-x64-portable.exe",
+      "bytes": 143073629,
+      "sha256": "47c5cfa2c9c57b2f33bdfacf04c837361bcf2818bf95592b0cd885bd52f9e75a",
+      "releaseAssetDigest": "sha256:47c5cfa2c9c57b2f33bdfacf04c837361bcf2818bf95592b0cd885bd52f9e75a",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.2-windows-x64-setup.exe",
+      "bytes": 143312116,
+      "sha256": "72209f537ae244572e07da727aa122c457ceab7e711f4e56992567da698e3ad1",
+      "releaseAssetDigest": "sha256:72209f537ae244572e07da727aa122c457ceab7e711f4e56992567da698e3ad1",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "build-evidence.json",
+      "bytes": 6987,
+      "sha256": "91b7a7091a45a683b7259a100f3592992b96cb07a53755fe052d8889642b967c",
+      "releaseAssetDigest": "sha256:91b7a7091a45a683b7259a100f3592992b96cb07a53755fe052d8889642b967c",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "complete metadata bytes hashed separately"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 906,
+      "sha256": "9aba1cacb03b2673c98c0b53d592f974ece172883b7b792995485dacae098f16",
+      "releaseAssetDigest": "sha256:9aba1cacb03b2673c98c0b53d592f974ece172883b7b792995485dacae098f16",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "complete metadata bytes hashed separately"
+    },
+    {
+      "name": "XHS-Downloader-2.0.2-mac-arm64.dmg",
+      "bytes": 164098917,
+      "sha256": "f75b10f0f2cff0c5984692b24213e06237d08580eabd19fb7314d412a2c1f472",
+      "releaseAssetDigest": "sha256:f75b10f0f2cff0c5984692b24213e06237d08580eabd19fb7314d412a2c1f472",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "XHS-Downloader-2.0.2-mac-x64.dmg",
+      "bytes": 171791302,
+      "sha256": "140d2727254cd9bae93cd1b7c42f083a7b5c871ba661efd41a62c56e0cc42e14",
+      "releaseAssetDigest": "sha256:140d2727254cd9bae93cd1b7c42f083a7b5c871ba661efd41a62c56e0cc42e14",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "XHS-Downloader-2.0.2-windows-x64-setup.exe",
+      "bytes": 143312116,
+      "sha256": "72209f537ae244572e07da727aa122c457ceab7e711f4e56992567da698e3ad1",
+      "releaseAssetDigest": "sha256:72209f537ae244572e07da727aa122c457ceab7e711f4e56992567da698e3ad1",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    }
+  ],
+  "publicInstallerVerification": "Anonymous HEAD and range GET; complete CI installer checksums matched GitHub server asset digests. New installer binaries were not fully downloaded again locally.",
+  "publicMetadataCompleteBytesVerified": true,
+  "sourceTagVerified": true,
+  "builds": [
+    {
+      "version": "2.0.2",
+      "sourceSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+      "sourceDirty": false,
+      "platform": "darwin",
+      "arch": "arm64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 222,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledUpdateProxy": {
+        "version": "v1.19.32",
+        "target": "mac-arm64",
+        "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+        "archiveSha256": "3312a6780652c622890fd4357c6a853bbf865464fd047ac7b7f52dab8de18652",
+        "sourceArchiveVerified": true,
+        "licenseVerified": true,
+        "bundledSubscriptionsAbsent": true,
+        "configurationSource": "management-api",
+        "nativeStartupVerified": true,
+        "codeSignatureVerified": true
+      },
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "macSignatureContainers": [
+        "dmg",
+        "zip"
+      ],
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "version": "2.0.2",
+      "sourceSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+      "sourceDirty": false,
+      "platform": "darwin",
+      "arch": "x64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 222,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledUpdateProxy": {
+        "version": "v1.19.32",
+        "target": "mac-x64",
+        "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+        "archiveSha256": "18b382df77bded2ad0fb3db27db5636cb15b20729d5ba995a357eeb9b46bf507",
+        "sourceArchiveVerified": true,
+        "licenseVerified": true,
+        "bundledSubscriptionsAbsent": true,
+        "configurationSource": "management-api",
+        "nativeStartupVerified": true,
+        "codeSignatureVerified": true
+      },
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "macSignatureContainers": [
+        "dmg",
+        "zip"
+      ],
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "version": "2.0.2",
+      "sourceSha": "6f98115462f046888562a79b6782e7e1722b6bf9",
+      "sourceDirty": false,
+      "platform": "win32",
+      "arch": "x64",
+      "productName": "Brclio 小红书下载器",
+      "comparedSources": 222,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledUpdateProxy": {
+        "version": "v1.19.32",
+        "target": "win-x64",
+        "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+        "archiveSha256": "974a4d7ad69aed27aa2e8f91d61113573c14dadb14562c63e58effabf59816f0",
+        "sourceArchiveVerified": true,
+        "licenseVerified": true,
+        "bundledSubscriptionsAbsent": true,
+        "configurationSource": "management-api",
+        "nativeStartupVerified": true
+      },
+      "packagedWindowsUpdateVerified": true,
+      "packagedWindowsPortableVerified": true,
+      "windowsUpdate": {
+        "previousVersion": "1.8.17",
+        "version": "2.0.2",
+        "oldAssets": [
+          {
+            "name": "Brclio-XHS-1.8.17-windows-x64-setup.exe",
+            "bytes": 124073263,
+            "sha256": "5b70613f04365c10a6898fcb7b4e934441137b98b29fe982b1ec130a881956f7"
+          },
+          {
+            "name": "Brclio-XHS-1.8.17-windows-x64-portable.exe",
+            "bytes": 123834736,
+            "sha256": "e47c0d920c6d2f117ab31cdc7443cb0ce2f95f11e84841467f033ad683f966fb"
+          }
+        ],
+        "realPublishedOldInstallers": true,
+        "realCurrentInstallers": true,
+        "sourceArchivesModified": false,
+        "oldParentWaitVerified": true,
+        "installedInPlaceVerified": true,
+        "automaticRelaunchVerified": true,
+        "automaticRelaunchRendererReadyVerified": true,
+        "restartedRenderers": [
+          {
+            "pid": 4292,
+            "at": "2026-10-02T14:36:13.468Z",
+            "version": "2.0.2"
+          },
+          {
+            "pid": 7392,
+            "at": "2026-10-02T14:36:53.276Z",
+            "version": "2.0.2"
+          }
+        ],
+        "dpapiCredentialsPreserved": true,
+        "pausedTaskPreserved": true,
+        "rendererStoragePreserved": true,
+        "existingInstallationPortableUpdateVerified": true,
+        "standalonePortableMigrationTested": false,
+        "portableOriginalPreserved": true,
+        "currentPortableLaunchVerified": true,
+        "cancelBeforeInstallVerified": true,
+        "rollbackImplemented": false,
+        "powerLossRecoveryTested": false,
+        "machineWideUacTested": false,
+        "profileIsolation": "fresh disposable GitHub runner account",
+        "installDirectoryIsolation": "temporary"
+      }
+    }
+  ],
+  "desktopLatestTag": "v2.0.2",
+  "realNetworkAcceptance": {
+    "scope": "Prepublication isolated local profile, real backend subscription and public v2.0.1 installer; separate from exact-source CI packaged validation above.",
+    "packagedCheck": {
+      "checkedAt": "2026-10-02T13:56:18.685Z",
+      "version": "2.0.2",
+      "latestVersion": "2.0.1",
+      "signedPackageVerified": true,
+      "sourceMatchesCurrentWorkspace": true,
+      "preloadAndIPCVerified": true,
+      "proxySelected": true,
+      "proxyStopped": true,
+      "activeProxyProcessesAfterCheck": 0,
+      "activeProxyProcessesAfterExit": 0,
+      "installed": false,
+      "installerDownloaded": false
+    },
+    "fullInstallerDownload": {
+      "checkedAt": "2026-10-02T12:35:12.194Z",
+      "defaultSessionUnchanged": true,
+      "downloadVerified": true,
+      "downloadBytes": 141990196,
+      "status": "downloaded",
+      "latestVersion": "2.0.1",
+      "activeScopesAfterCheck": 0,
+      "proxySelected": true,
+      "proxyStopped": true
+    },
+    "downloadedInstallerRemovedAfterVerification": true
+  }
+}
