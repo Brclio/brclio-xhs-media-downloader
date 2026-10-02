@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
-import { androidNdkVersion, buildAndroidParentLaunchers } from '../scripts/prepare-update-proxy.mjs';
+import { androidNdkVersion, buildAndroidParentLaunchers, findPinnedAndroidNdk } from '../scripts/prepare-update-proxy.mjs';
 
 test('Android parent-death launcher requires the pinned official NDK and host compiler', (t) => {
   const root = mkdtempSync(join(tmpdir(), 'brclio-parent-launcher-build-test-'));
@@ -18,6 +18,28 @@ test('Android parent-death launcher requires the pinned official NDK and host co
   assert.throws(() => buildAndroidParentLaunchers({ root, env: { ANDROID_NDK_HOME: ndk } }), /requires official Android NDK/);
   writeFileSync(join(ndk, 'source.properties'), `Pkg.Revision = ${androidNdkVersion}\n`);
   assert.throws(() => buildAndroidParentLaunchers({ root, env: { ANDROID_NDK_HOME: ndk } }), /missing its host Clang/);
+});
+
+test('stale runner NDK environment cannot hide the pinned NDK installed in an SDK', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'brclio-parent-launcher-ndk-selection-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const stale = join(root, 'preinstalled-ndk');
+  const sdk = join(root, 'sdk');
+  const pinned = join(sdk, 'ndk', androidNdkVersion);
+  mkdirSync(stale, { recursive: true }); mkdirSync(pinned, { recursive: true });
+  writeFileSync(join(stale, 'source.properties'), 'Pkg.Revision = 29.0.14206865\n');
+  writeFileSync(join(pinned, 'source.properties'), `Pkg.Revision = ${androidNdkVersion}\n`);
+  const env = { ANDROID_NDK_HOME: stale, ANDROID_NDK_ROOT: join(root, 'missing-ndk'), ANDROID_HOME: sdk };
+  assert.equal(findPinnedAndroidNdk({ root, env }), pinned);
+  assert.throws(() => buildAndroidParentLaunchers({ root, env }), /missing its host Clang/,
+    'The build must reach the selected pinned toolchain instead of failing on the stale version');
+  assert.equal(findPinnedAndroidNdk({ root, env: { ...env, ANDROID_HOME: join(root, 'missing-sdk'), ANDROID_SDK_ROOT: sdk } }), pinned);
+  mkdirSync(join(root, 'android'));
+  writeFileSync(join(root, 'android/local.properties'), `sdk.dir=${sdk.replace(/\\/g, '\\\\')}\n`);
+  assert.equal(findPinnedAndroidNdk({ root, env: { ANDROID_NDK_HOME: stale } }), pinned);
+  rmSync(join(pinned, 'source.properties'));
+  assert.throws(() => findPinnedAndroidNdk({ root, env }), /requires official Android NDK/,
+    'An installed stale NDK must never satisfy the fixed-version requirement');
 });
 
 test('native Linux parent-death hook survives exec and terminates the core after an owner crash', {

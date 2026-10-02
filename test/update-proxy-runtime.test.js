@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deflateRawSync, gzipSync } from 'node:zlib';
+import { spawnSync } from 'node:child_process';
 import { extractExecutable, prepareUpdateProxy, runtimeLock, sha256 } from '../scripts/prepare-update-proxy.mjs';
 
 function temporaryRoot(t) {
@@ -110,4 +111,34 @@ test('pinned runtime lock contains checksums and corresponding-source/license fo
   assert.match(runtimeLock.sourceCommit, /^[a-f0-9]{40}$/);
   assert.ok(runtimeLock.source.url.endsWith(runtimeLock.sourceCommit));
   assert.equal(sha256(readFileSync(new URL('../desktop/resources/update-proxy/LICENSE', import.meta.url))), runtimeLock.licenseSha256);
+});
+
+test('Git autocrlf checkout preserves pinned license and runtime source bytes through repository attributes', (t) => {
+  const root = temporaryRoot(t);
+  const directory = join(root, 'desktop/resources/update-proxy');
+  mkdirSync(directory, { recursive: true });
+  const names = ['LICENSE', 'NOTICE', 'android-parent-launcher.c', 'runtime.lock.json'];
+  const originals = new Map(names.map((name) => [name, readFileSync(new URL(`../desktop/resources/update-proxy/${name}`, import.meta.url))]));
+  const git = (...args) => {
+    const result = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true });
+    assert.equal(result.status, 0, result.error?.message || result.stderr);
+    return result.stdout;
+  };
+  git('init', '--quiet');
+  git('config', 'core.autocrlf', 'true');
+  git('config', 'core.attributesFile', join(root, 'absent-global-attributes'));
+  for (const [name, bytes] of originals) writeFileSync(join(directory, name), bytes);
+  git('add', 'desktop/resources/update-proxy');
+  const checkout = () => {
+    for (const name of names) rmSync(join(directory, name));
+    git('checkout-index', '--all', '--force');
+  };
+  checkout();
+  assert.notEqual(sha256(readFileSync(join(directory, 'LICENSE'))), runtimeLock.licenseSha256,
+    'Control checkout must reproduce the Windows CRLF checksum mismatch');
+  writeFileSync(join(root, '.gitattributes'), readFileSync(new URL('../.gitattributes', import.meta.url)));
+  git('add', '.gitattributes');
+  checkout();
+  for (const [name, bytes] of originals) assert.deepEqual(readFileSync(join(directory, name)), bytes);
+  assert.equal(sha256(readFileSync(join(directory, 'LICENSE'))), runtimeLock.licenseSha256);
 });

@@ -141,9 +141,13 @@ final class UpdateManager {
         }
         void stopNetwork() {
             Call currentCall = call;
-            if (currentCall != null) currentCall.cancel();
             UpdateProxySession currentSession = proxySession;
-            if (currentSession != null) currentSession.close();
+            try {
+                // Stop the proxy immediately, even if closing a live TLS connection fails.
+                if (currentSession != null) currentSession.close();
+            } finally {
+                if (currentCall != null) UpdateNetworkCleanup.start(currentCall::cancel);
+            }
         }
         void cancel() { cancellation.cancel(); stopNetwork(); }
     }

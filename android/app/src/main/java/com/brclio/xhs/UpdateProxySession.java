@@ -48,6 +48,7 @@ final class UpdateProxySession implements AutoCloseable {
     private volatile Process process;
     private volatile File directory;
     private volatile OkHttpClient client;
+    private boolean cleanupScheduled;
     private String secret;
     private int controllerPort;
     private final List<Delay> ranked = new ArrayList<>();
@@ -58,7 +59,10 @@ final class UpdateProxySession implements AutoCloseable {
     OkHttpClient prepare(Activity activity) throws IOException {
         check();
         JSONObject config = newestConfiguration(activity);
-        client = directClient();
+        synchronized (this) {
+            check();
+            client = directClient();
+        }
         if (!config.optBoolean("enabled", false)) return client;
         List<List<Map<String, Object>>> sources = new ArrayList<>();
         JSONArray urls = config.optJSONArray("subscriptionUrls");
@@ -82,11 +86,15 @@ final class UpdateProxySession implements AutoCloseable {
         secret = UUID.randomUUID().toString().replace("-", "");
         File parent = new File(activity.getCacheDir(), "update-proxy");
         if (!parent.isDirectory() && !parent.mkdirs()) throw new IOException("无法准备更新网络缓存。");
-        directory = new File(parent, UUID.randomUUID().toString());
-        if (!directory.mkdir()) throw new IOException("无法准备更新网络缓存。");
-        File configuration = new File(directory, "config.yaml");
-        writePrivate(configuration, new Yaml().dump(UpdateProxyPolicy.configuration(nodes, proxyPort, controllerPort,
-                username, password, secret)).getBytes(StandardCharsets.UTF_8));
+        File configuration;
+        synchronized (this) {
+            check();
+            directory = new File(parent, UUID.randomUUID().toString());
+            if (!directory.mkdir()) throw new IOException("无法准备更新网络缓存。");
+            configuration = new File(directory, "config.yaml");
+            writePrivate(configuration, new Yaml().dump(UpdateProxyPolicy.configuration(nodes, proxyPort, controllerPort,
+                    username, password, secret)).getBytes(StandardCharsets.UTF_8));
+        }
         File executable = new File(activity.getApplicationInfo().nativeLibraryDir, "libbrclio_update_proxy.so");
         File launcher = new File(activity.getApplicationInfo().nativeLibraryDir, "libbrclio_update_proxy_launcher.so");
         if (!executable.isFile() || !executable.canExecute() || !launcher.isFile() || !launcher.canExecute()) {
@@ -122,12 +130,15 @@ final class UpdateProxySession implements AutoCloseable {
         selectFastest(nodes);
         check();
         String authorization = Credentials.basic(username, password);
-        client = directClient().newBuilder()
+        synchronized (this) {
+            check();
+            client = client.newBuilder()
                 .proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", proxyPort)))
                 .proxyAuthenticator((route, response) -> {
                     if (response.request().header("Proxy-Authorization") != null) return null;
                     return response.request().newBuilder().header("Proxy-Authorization", authorization).build();
                 }).build();
+        }
         return client;
     }
 
@@ -322,20 +333,34 @@ final class UpdateProxySession implements AutoCloseable {
     }
 
     @Override public void close() {
+        OkHttpClient ownedClient;
         synchronized (this) {
             closed = true;
-            if (process != null) { process.destroy(); if (process.isAlive()) process.destroyForcibly(); }
+            try {
+                if (process != null) process.destroy();
+            } finally {
+                if (process != null && process.isAlive()) process.destroyForcibly();
+            }
+            if (cleanupScheduled) return;
+            cleanupScheduled = true;
+            ownedClient = client;
         }
-        for (HttpURLConnection connection : connections) connection.disconnect();
-        connections.clear();
         probes.shutdownNow();
-        OkHttpClient current = client;
-        if (current != null) {
-            current.dispatcher().cancelAll();
-            current.connectionPool().evictAll();
-            current.dispatcher().executorService().shutdownNow();
-        }
-        remove(directory);
+        UpdateNetworkCleanup.start(() -> {
+            try {
+                for (HttpURLConnection connection : connections) {
+                    try { connection.disconnect(); } catch (RuntimeException ignored) { }
+                }
+                connections.clear();
+                if (ownedClient != null) {
+                    try { ownedClient.dispatcher().cancelAll(); }
+                    finally {
+                        try { ownedClient.connectionPool().evictAll(); }
+                        finally { ownedClient.dispatcher().executorService().shutdownNow(); }
+                    }
+                }
+            } finally { remove(directory); }
+        });
     }
 
     private static void remove(File file) {

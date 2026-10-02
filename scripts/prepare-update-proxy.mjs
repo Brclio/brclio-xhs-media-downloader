@@ -131,24 +131,30 @@ function atomicWrite(destination, data, executable = false) {
   } finally { rmSync(temporary, { force: true }); }
 }
 
-function androidNdk(root, env) {
-  let sdk = env.ANDROID_HOME || env.ANDROID_SDK_ROOT;
+export function findPinnedAndroidNdk({ root = projectRoot, env = process.env } = {}) {
+  const sdks = [env.ANDROID_HOME, env.ANDROID_SDK_ROOT];
   const properties = join(root, 'android/local.properties');
-  if (!sdk && existsSync(properties)) {
-    sdk = readFileSync(properties, 'utf8').match(/^\s*sdk\.dir\s*=\s*(.+)\s*$/m)?.[1]
-      ?.trim().replace(/\\([\\:= ])/g, '$1');
+  if (existsSync(properties)) {
+    sdks.push(readFileSync(properties, 'utf8').match(/^\s*sdk\.dir\s*=\s*(.+)\s*$/m)?.[1]
+      ?.trim().replace(/\\([\\:= ])/g, '$1'));
   }
-  const ndk = env.ANDROID_NDK_HOME || env.ANDROID_NDK_ROOT || (sdk && join(sdk, 'ndk', androidNdkVersion));
-  if (!ndk || !existsSync(join(ndk, 'source.properties'))
-    || readFileSync(join(ndk, 'source.properties'), 'utf8').match(/^Pkg\.Revision\s*=\s*(.+)$/m)?.[1]?.trim() !== androidNdkVersion) {
-    throw new Error(`Android update proxy launcher requires official Android NDK ${androidNdkVersion}. Install sdkmanager 'ndk;${androidNdkVersion}' and set ANDROID_NDK_HOME or ANDROID_HOME.`);
+  // Hosted runners can predefine an NDK path for a different version. Validate
+  // every candidate before selecting it so that it cannot hide our SDK pin.
+  const candidates = [env.ANDROID_NDK_HOME, env.ANDROID_NDK_ROOT,
+    ...sdks.filter(Boolean).map((sdk) => join(sdk, 'ndk', androidNdkVersion))];
+  for (const ndk of candidates.filter(Boolean)) {
+    try {
+      const revision = readFileSync(join(ndk, 'source.properties'), 'utf8')
+        .match(/^Pkg\.Revision\s*=\s*(.+)$/m)?.[1]?.trim();
+      if (revision === androidNdkVersion) return resolve(ndk);
+    } catch { /* Try another configured SDK when the candidate is missing. */ }
   }
-  return resolve(ndk);
+  throw new Error(`Android update proxy launcher requires official Android NDK ${androidNdkVersion}. Install sdkmanager 'ndk;${androidNdkVersion}' and set ANDROID_NDK_HOME or ANDROID_HOME.`);
 }
 
 export function buildAndroidParentLaunchers({ root = projectRoot, env = process.env,
   abis = ['arm64-v8a', 'armeabi-v7a', 'x86_64'] } = {}) {
-  const ndk = androidNdk(root, env);
+  const ndk = findPinnedAndroidNdk({ root, env });
   const host = { darwin: 'darwin-x86_64', win32: 'windows-x86_64', linux: 'linux-x86_64' }[process.platform];
   if (!host) throw new Error('Unsupported build host for the Android update proxy launcher.');
   const toolchain = join(ndk, 'toolchains/llvm/prebuilt', host);

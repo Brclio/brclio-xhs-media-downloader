@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 2 日，桌面 v2.0.1 新增清除小红书登录记录按钮，方便切换账号；下载文件、任务记录与软件会员保留。Android 保持 v1.0.8。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 2 日，桌面 v2.0.2 与 Android v1.0.9 支持后台管理更新订阅，在检查更新和下载安装包时自动选择延迟最低的可用节点，结束后关闭代理。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -58,7 +58,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次桌面更新增加「清除登录记录」按钮，清空小红书登录信息后即可重新登录其它账号。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次桌面与 Android 更新支持后台管理订阅，在检查更新和下载安装包时自动选择延迟最低的可用节点，结束后关闭代理。
             </p>
 
             <div class="release-hero-actions">
@@ -73,7 +73,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.1</strong>
+              <strong>v2.0.2</strong>
               <small>2026.10.02 · Mac / Windows</small>
             </div>
 
@@ -87,7 +87,7 @@
                 <span>桌面主页批量</span>
               </div>
               <div class="summary-stat">
-                <strong>1.0.8</strong>
+                <strong>1.0.9</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
@@ -96,8 +96,8 @@
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 清除小红书登录记录，方便切换账号；下载文件、任务记录与软件会员保留。</p>
-            <a class="release-summary-link" href="#xhs-login-reset-update">阅读小红书账号切换说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 更新时自动选择低延迟节点，用完关闭代理；订阅由管理后台统一维护。</p>
+            <a class="release-summary-link" href="#update-network-update">阅读软件更新网络说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.1、清除登录、切换账号" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.2、Android 1.0.9、更新网络" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,6 +129,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#update-network-update"><span>v2.0.2 / Android v1.0.9</span><strong>软件更新自动选择节点</strong></a>
               <a href="#xhs-login-reset-update"><span>v2.0.1</span><strong>清除登录与切换账号</strong></a>
               <a href="#membership-pricing-update"><span>v2.0.0</span><strong>会员套餐与开通说明</strong></a>
               <a href="#video-download-progress-update"><span>v1.8.30</span><strong>视频下载进度</strong></a>
@@ -185,6 +186,20 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
+            <article id="update-network-update" class="release-entry release-entry-featured" data-release-platforms="web desktop android">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-02"><span>10.02</span><small>2026 · 软件更新</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.2</span><span class="release-badge release-badge-blue">Android v1.0.9</span><span class="release-status">管理后台 / Mac / Windows / Android</span></div><h3>软件更新自动选择节点，用完关闭代理</h3></div></header>
+                <p class="release-lead">检查更新和应用内下载安装包时，客户端读取后台最新订阅，测试可用节点到更新服务器的延迟，优先使用延迟最低的节点。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>订阅由后台统一维护</strong>管理后台新增「更新网络」，支持添加多个来源、替换或停用订阅。软件不预设链接；后台未配置或已停用时直接连接。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>每次更新重新测速</strong>合并可用来源后选择低延迟节点；单个来源失败时继续使用其它来源，节点连接失败或出口受限时按测速顺序继续尝试。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>更新结束关闭代理</strong>完成、失败、取消或退出后关闭更新代理，解析笔记与下载媒体继续使用原有网络方式。保留安装包校验和覆盖升级流程。</p></div>
+                </div>
+                <p class="release-card-note">外部浏览器下载使用浏览器自己的网络设置。订阅更新在客户端下一次检查或下载安装包时生效，无需重新安装软件来替换订阅。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.2" target="_blank" rel="noopener noreferrer">桌面版 v2.0.2 说明 ↗</a><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.9" target="_blank" rel="noopener noreferrer">Android v1.0.9 说明 ↗</a><a href="/download.html">下载最新版 ↗</a><span>软件更新网络 · 2026.10.02</span></div>
+              </div>
+            </article>
             <article id="xhs-login-reset-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-02"><span>10.02</span><small>2026 · 小红书账号</small></time></div>
               <div class="release-card">
@@ -1580,7 +1595,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.02 · 桌面 v2.0.1 · Android v1.0.8。</p>
+        <p>网页版与客户端记录整理至 2026.10.02 · 桌面 v2.0.2 · Android v1.0.9。</p>
         <div class="footer-credits">
           <a
             class="design-credit"
