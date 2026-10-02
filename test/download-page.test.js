@@ -50,7 +50,7 @@ function documentFixture() {
   };
 }
 
-function release(version = '1.9.0') {
+function release(version = '2.1.0') {
   const tag = `v${version}`;
   return {
     draft: false, prerelease: false, tag_name: tag, html_url: `${base}/tag/${tag}`,
@@ -128,7 +128,7 @@ async function runPage({ payload = release(), fetchError, status = 200, navigato
 test('static download anchors point to one complete branded release', () => {
   const current = snapshot(documentFixture());
   const tag = current.versions[0];
-  assert.equal(tag, 'v1.8.30');
+  assert.equal(tag, 'v2.0.0');
   for (const [key, suffix] of Object.entries(suffixes)) {
     assert.equal(current.links[key], `${base}/download/${tag}/Brclio-XHS-${tag.slice(1)}-${suffix}`);
     assert.match(current.sizes[key], /^(?:\d+\.\d MB|大小以发布附件为准)$/);
@@ -140,13 +140,13 @@ test('verified latest release updates every asset, size, version and release lin
   const page = await runPage();
   const current = snapshot(page.document);
   for (const [index, [key, suffix]] of Object.entries(suffixes).entries()) {
-    assert.equal(current.links[key], `${base}/download/v1.9.0/Brclio-XHS-1.9.0-${suffix}`);
+    assert.equal(current.links[key], `${base}/download/v2.1.0/Brclio-XHS-2.1.0-${suffix}`);
     assert.equal(current.sizes[key], `${(140 + index).toFixed(1)} MB`);
   }
-  assert.ok(current.versions.every(version => version === 'v1.9.0'));
-  assert.ok(current.releaseLinks.every(url => url === `${base}/tag/v1.9.0`));
+  assert.ok(current.versions.every(version => version === 'v2.1.0'));
+  assert.ok(current.releaseLinks.every(url => url === `${base}/tag/v2.1.0`));
   assert.equal(current.date, '发布于 2026.09.24');
-  assert.match(page.document.querySelector('#release-status').textContent, /已核对最新正式版 v1.9.0/);
+  assert.match(page.document.querySelector('#release-status').textContent, /已核对最新正式版 v2.1.0/);
   assert.equal(page.requests.length, 2);
   assert.equal(page.requests[0].url, `https://api.github.com/repos/${repository}/releases/latest`);
   assert.equal(page.requests[0].options.credentials, 'omit');
@@ -161,9 +161,9 @@ const rejectedCases = {
   'prerelease': value => { value.prerelease = true; },
   'missing draft flag': value => { delete value.draft; },
   'missing prerelease flag': value => { delete value.prerelease; },
-  'pre-release version string': value => { value.tag_name = 'v1.9.0-beta.1'; },
+  'pre-release version string': value => { value.tag_name = 'v2.1.0-beta.1'; },
   'older release': () => ({ payload: release('1.8.7') }),
-  'untrusted release page': value => { value.html_url = 'https://evil.invalid/releases/tag/v1.9.0'; },
+  'untrusted release page': value => { value.html_url = 'https://evil.invalid/releases/tag/v2.1.0'; },
   'untrusted installer URL': value => { value.assets[3].browser_download_url = 'https://evil.invalid/installer.exe'; },
   'unexpected installer query string': value => { value.assets[0].browser_download_url += '?redirect=evil'; },
   'duplicate named asset': value => { value.assets.push({ ...value.assets[0] }); },
@@ -271,7 +271,7 @@ test('Android listing independently selects the highest stable semantic version,
   assert.ok(android.releaseLinks.every(url => url === `${base}/tag/android-v1.10.0`));
   assert.equal(android.date, '安卓发布于 2026.09.28');
   assert.match(page.document.querySelector('#android-release-status').textContent, /已核对安卓正式版 v1\.10\.0/);
-  assert.ok(snapshot(page.document).versions.every(version => version === 'v1.9.0'));
+  assert.ok(snapshot(page.document).versions.every(version => version === 'v2.1.0'));
   assert.equal(page.requests[1].url, `https://api.github.com/repos/${repository}/releases?per_page=100`);
   assert.equal(page.requests[1].options.credentials, 'omit');
   assert.equal(page.timers.size, 0);
@@ -315,7 +315,7 @@ for (const [name, change] of Object.entries(rejectedAndroidCases)) {
     const page = await runPage({ androidPayload: [payload], ...options });
     assert.deepEqual(androidSnapshot(page.document), page.initialAndroid);
     assert.match(page.document.querySelector('#android-release-status').textContent, /安卓版本信息暂未刷新/);
-    assert.ok(snapshot(page.document).versions.every(version => version === 'v1.9.0'));
+    assert.ok(snapshot(page.document).versions.every(version => version === 'v2.1.0'));
     assert.equal(page.timers.size, 0);
   });
 }
@@ -335,7 +335,7 @@ test('an Android tag returned by desktop latest never changes the desktop versio
 
 test('a timeout in Android metadata does not block the independently refreshed desktop release', async () => {
   const page = await runPage({ androidHang: true });
-  assert.ok(snapshot(page.document).versions.every(version => version === 'v1.9.0'));
+  assert.ok(snapshot(page.document).versions.every(version => version === 'v2.1.0'));
   assert.equal(page.timers.size, 1);
   for (const timer of page.timers.values()) timer();
   await new Promise(resolve => setImmediate(resolve));
