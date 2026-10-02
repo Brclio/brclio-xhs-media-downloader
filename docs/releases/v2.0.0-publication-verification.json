@@ -1,0 +1,317 @@
+{
+  "version": "2.0.0",
+  "recordedAtAsiaShanghai": "2026-10-02T09:58:11+08:00",
+  "siteSourceCommit": "27a8fa0bd4eddce794b15b7ded8c9d6bf5855fa9",
+  "desktop": {
+    "repository": "Brclio/brclio-xhs-media-downloader",
+    "runId": 36950628488,
+    "attempt": 2,
+    "runConclusion": "success",
+    "sourceSha": "1b305c36ea2f9d33678f5e11b2f2175376cd9939",
+    "remoteTag": {
+      "ref": "refs/tags/v2.0.0",
+      "objectType": "commit",
+      "sha": "1b305c36ea2f9d33678f5e11b2f2175376cd9939",
+      "unchanged": true
+    },
+    "publication": {
+      "releaseId": 401480789,
+      "tag": "v2.0.0",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.0",
+      "publishedAtUtc": "2026-10-02T01:44:07Z",
+      "publishedAtAsiaShanghai": "2026-10-02T09:44:07+08:00",
+      "draft": false,
+      "prerelease": false,
+      "latest": true,
+      "publishJobId": 110667681573,
+      "publishJobConclusion": "success"
+    },
+    "assetSummary": {
+      "total": 11,
+      "formal": 6,
+      "compatibility": 3,
+      "verification": 2,
+      "allUploaded": true,
+      "checksumManifestEntries": 9,
+      "allArtifactDigestsMatchManifest": true,
+      "allFormalSizesAndDigestsMatchBuildEvidence": true,
+      "compatibilityDigestsMatchFormalAssets": true,
+      "verificationFilesDownloadedAndDigestsChecked": true
+    },
+    "assets": [
+      {
+        "name": "Brclio-XHS-2.0.0-mac-arm64.dmg",
+        "bytes": 141981721,
+        "sha256": "4b59165e142cd3255c03da07d218dd92480f0f8a90953ede50dc56cde71287e4",
+        "state": "uploaded",
+        "kind": "formal"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-mac-arm64.zip",
+        "bytes": 142869089,
+        "sha256": "9a3cced948e1905e78bb1fb78ca3f25e8ce3a4225fcb451c01ddb6ada55cf3dd",
+        "state": "uploaded",
+        "kind": "formal"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-mac-x64.dmg",
+        "bytes": 147754046,
+        "sha256": "6df18b953f11bef181aa2c03633b4d40a775db9e818e0538763b8bc4c07cb2b8",
+        "state": "uploaded",
+        "kind": "formal"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-mac-x64.zip",
+        "bytes": 148657856,
+        "sha256": "1b7ab1075d6dd1f567131baaec0b56d11ed20b4a3dca22554d719ca13b57b6d0",
+        "state": "uploaded",
+        "kind": "formal"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-windows-x64-portable.exe",
+        "bytes": 125804299,
+        "sha256": "4a84e991122afb2634d95ae8b971dd30de2e5edc4c789137e205ba7aefac0659",
+        "state": "uploaded",
+        "kind": "formal"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-windows-x64-setup.exe",
+        "bytes": 126042796,
+        "sha256": "176a7af8206822f3cf94de727a3e7af7a2acc7127acfb3c82ad01c747f1cea4a",
+        "state": "uploaded",
+        "kind": "formal"
+      },
+      {
+        "name": "XHS-Downloader-2.0.0-mac-arm64.dmg",
+        "bytes": 141981721,
+        "sha256": "4b59165e142cd3255c03da07d218dd92480f0f8a90953ede50dc56cde71287e4",
+        "state": "uploaded",
+        "kind": "compatibility",
+        "sameBytesAs": "Brclio-XHS-2.0.0-mac-arm64.dmg"
+      },
+      {
+        "name": "XHS-Downloader-2.0.0-mac-x64.dmg",
+        "bytes": 147754046,
+        "sha256": "6df18b953f11bef181aa2c03633b4d40a775db9e818e0538763b8bc4c07cb2b8",
+        "state": "uploaded",
+        "kind": "compatibility",
+        "sameBytesAs": "Brclio-XHS-2.0.0-mac-x64.dmg"
+      },
+      {
+        "name": "XHS-Downloader-2.0.0-windows-x64-setup.exe",
+        "bytes": 126042796,
+        "sha256": "176a7af8206822f3cf94de727a3e7af7a2acc7127acfb3c82ad01c747f1cea4a",
+        "state": "uploaded",
+        "kind": "compatibility",
+        "sameBytesAs": "Brclio-XHS-2.0.0-windows-x64-setup.exe"
+      },
+      {
+        "name": "build-evidence.json",
+        "bytes": 5389,
+        "sha256": "fc9c362c837047ed9da142d3b71489ab7b7741cab4a1891509921193b173f924",
+        "state": "uploaded",
+        "kind": "verification"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 906,
+        "sha256": "6ba93e6f4543201b22257cdc9327d25ab976162a0d13d9c75c6955655810865d",
+        "state": "uploaded",
+        "kind": "verification"
+      }
+    ],
+    "platforms": [
+      {
+        "platform": "darwin",
+        "arch": "arm64",
+        "jobName": "mac-arm64",
+        "jobIdAtAttempt2": 110665366807,
+        "jobConclusion": "success",
+        "version": "2.0.0",
+        "sourceSha": "1b305c36ea2f9d33678f5e11b2f2175376cd9939",
+        "sourceDirty": false,
+        "comparedSources": 67,
+        "proofGates": {
+          "bundledPythonVerified": true,
+          "macCodeSignatureVerified": true,
+          "packagedMacUpdateVerified": true,
+          "packagedUpdateHistoryVerified": true
+        }
+      },
+      {
+        "platform": "darwin",
+        "arch": "x64",
+        "jobName": "mac-intel",
+        "jobIdAtAttempt2": 110665335076,
+        "jobConclusion": "success",
+        "version": "2.0.0",
+        "sourceSha": "1b305c36ea2f9d33678f5e11b2f2175376cd9939",
+        "sourceDirty": false,
+        "comparedSources": 67,
+        "proofGates": {
+          "bundledPythonVerified": true,
+          "macCodeSignatureVerified": true,
+          "packagedMacUpdateVerified": true,
+          "packagedUpdateHistoryVerified": true
+        }
+      },
+      {
+        "platform": "win32",
+        "arch": "x64",
+        "jobName": "windows-x64",
+        "jobIdAtAttempt2": 110665336959,
+        "jobConclusion": "success",
+        "version": "2.0.0",
+        "sourceSha": "1b305c36ea2f9d33678f5e11b2f2175376cd9939",
+        "sourceDirty": false,
+        "comparedSources": 67,
+        "proofGates": {
+          "bundledPythonVerified": true,
+          "packagedWindowsUpdateVerified": true,
+          "packagedWindowsPortableVerified": true,
+          "automaticRelaunchRendererReadyVerified": true
+        }
+      }
+    ],
+    "verificationMethod": "Read GitHub run and release metadata; downloaded only build-evidence.json and SHA256SUMS.txt; checked their hashes, build source/version/platform gates, and all published asset sizes/digests. No large installer downloaded.",
+    "temporaryFiles": "The two downloaded verification files were in a Python TemporaryDirectory and were removed after successful verification; this report preserves verified results.",
+    "networkReverificationPerformedForReport": false
+  },
+  "cloudflare": {
+    "origin": "https://xhs.download.brclio.com",
+    "mainWorkerVersion": "34b8d3f3-48ac-46c0-bc56-62fd4ae1354c",
+    "pagesDeployment": "https://c89a7d8d.brclio-xhs-pages.pages.dev",
+    "health": {
+      "ok": true,
+      "platform": "cloudflare",
+      "version": "2.0.0",
+      "pythonBinding": true,
+      "deploymentId": "34b8d3f3-48ac-46c0-bc56-62fd4ae1354c"
+    },
+    "sourceMatches": [
+      {
+        "path": "lib/membership-plans.js",
+        "matchesSource": true,
+        "sha256": "078e064cc1922e84df68fc7404fa85e7aef4d2fd6d39b2b9f7d9eda5fb657c95"
+      },
+      {
+        "path": "account-ui.js",
+        "matchesSource": true,
+        "sha256": "7206caa84cc9f1119f3d69cc9b59e6db55859e4826175c0c81ddb94c27ad3201"
+      },
+      {
+        "path": "account-ui.css",
+        "matchesSource": true,
+        "sha256": "fb1f9225f6a3a584887ae017719598b38430c58d8dea32af55fcdde7322d1b6f"
+      },
+      {
+        "path": "download.html",
+        "matchesSource": true,
+        "sha256": "846b24b6152229c70f344dc6bc5072ebd0291a8bb92b6147ddec44bcb14704fb"
+      },
+      {
+        "path": "changelog.html",
+        "matchesSource": true,
+        "sha256": "6788608b24f3d7ff460837cb31aa51b8a2b4272e05308d37bdb2a518b609e7b0"
+      },
+      {
+        "path": "admin/admin.js",
+        "matchesSource": true,
+        "sha256": "5ced199531648a9398cd10f5f19cea322b13d8b3d699ac1cd69c3553cc826ca0"
+      }
+    ],
+    "anonymousChecks": {
+      "passed": 55,
+      "total": 55,
+      "ok": true,
+      "checkedAt": "2026-10-02T01:56:33.258Z"
+    }
+  },
+  "liveMembershipUi": {
+    "desktop": {
+      "open": true,
+      "width": 1280,
+      "focusedDialog": "membership-dialog",
+      "overflow": false,
+      "prices": [
+        "¥3",
+        "¥19.9",
+        "¥69.9"
+      ],
+      "processing": "\n          人工处理，请耐心等待\n          付款后由人工核实，我们会在 24 小时内尽快处理，并将激活码发送至付款备注的邮箱。收到后兑换即可开通，会员时长从兑换成功起计算。\n        ",
+      "pricing": "价格说明随着功能持续完善，会员价格将适时上调，具体以购买时页面展示为准。",
+      "paymentHidden": true
+    },
+    "mobile": {
+      "open": true,
+      "width": 390,
+      "focusedDialog": "membership-dialog",
+      "overflow": false,
+      "prices": [
+        "¥3",
+        "¥19.9",
+        "¥69.9"
+      ],
+      "processing": "\n          人工处理，请耐心等待\n          付款后由人工核实，我们会在 24 小时内尽快处理，并将激活码发送至付款备注的邮箱。收到后兑换即可开通，会员时长从兑换成功起计算。\n        ",
+      "pricing": "价格说明随着功能持续完善，会员价格将适时上调，具体以购买时页面展示为准。",
+      "paymentHidden": true
+    },
+    "ok": true
+  },
+  "publishedDownloads": {
+    "ok": true,
+    "results": [
+      {
+        "name": "Brclio-XHS-2.0.0-mac-arm64.dmg",
+        "status": 200,
+        "bytes": 141981721,
+        "sha256": "4b59165e142cd3255c03da07d218dd92480f0f8a90953ede50dc56cde71287e4"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-mac-arm64.zip",
+        "status": 200,
+        "bytes": 142869089,
+        "sha256": "9a3cced948e1905e78bb1fb78ca3f25e8ce3a4225fcb451c01ddb6ada55cf3dd"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-mac-x64.dmg",
+        "status": 200,
+        "bytes": 147754046,
+        "sha256": "6df18b953f11bef181aa2c03633b4d40a775db9e818e0538763b8bc4c07cb2b8"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-mac-x64.zip",
+        "status": 200,
+        "bytes": 148657856,
+        "sha256": "1b7ab1075d6dd1f567131baaec0b56d11ed20b4a3dca22554d719ca13b57b6d0"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-windows-x64-portable.exe",
+        "status": 200,
+        "bytes": 125804299,
+        "sha256": "4a84e991122afb2634d95ae8b971dd30de2e5edc4c789137e205ba7aefac0659"
+      },
+      {
+        "name": "Brclio-XHS-2.0.0-windows-x64-setup.exe",
+        "status": 200,
+        "bytes": 126042796,
+        "sha256": "176a7af8206822f3cf94de727a3e7af7a2acc7127acfb3c82ad01c747f1cea4a"
+      }
+    ]
+  },
+  "localValidation": {
+    "nodePassed": 781,
+    "nodeSkipped": 8,
+    "nodeFailed": 0,
+    "pythonPassed": 27,
+    "membershipRenderer": "passed",
+    "adminRenderer": "passed",
+    "publishedDownloadPageChecks": 62
+  },
+  "scope": {
+    "androidVersion": "1.0.8",
+    "androidMembershipUsesPublishedWebPage": true,
+    "preexistingStandaloneStorageChangesExcluded": true,
+    "userDeviceInstallationPerformed": false
+  }
+}
