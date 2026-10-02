@@ -734,15 +734,16 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   async function loadStatus() {
     const data = await api('admin-status'); state.loaded.add('status');
     const grid = el('div', 'status-grid');
-    const github = el('section', 'status-card'); const ghHeading = el('div', 'panel-heading');
-    ghHeading.append(el('h3', '', 'GitHub 私有数据仓库'), badge(data.github?.status === 'ok' ? '读取正常' : '暂不可用', data.github?.status === 'ok' ? '' : 'badge-danger'));
-    github.append(ghHeading, facts([['检查时间', fmt(data.github?.checkedAt || data.serverTime)], ['服务反馈', data.github?.message || (data.github?.status === 'ok' ? '已成功读取权威业务状态' : '请检查服务端配置与 GitHub 服务')]], 'status-facts'));
+    const storage = data.storage || { provider: 'github', ...data.github };
+    const storageCard = el('section', 'status-card'); const storageHeading = el('div', 'panel-heading');
+    storageHeading.append(el('h3', '', storage.provider === 'sqlite' ? 'SQLite 数据库' : 'GitHub 私有数据仓库'), badge(storage.status === 'ok' ? '读取正常' : '暂不可用', storage.status === 'ok' ? '' : 'badge-danger'));
+    storageCard.append(storageHeading, facts([['检查时间', fmt(storage.checkedAt || data.serverTime)], ['服务反馈', storage.message || (storage.status === 'ok' ? '已成功读取权威业务状态' : '请检查服务端存储配置')]], 'status-facts'));
     const mail = el('section', 'status-card'); const mailHeading = el('div', 'panel-heading');
     const mailStatus = data.mail?.status || (data.mail?.configured ? 'configured' : 'not_configured');
     mailHeading.append(el('h3', '', '邮箱验证码服务'), badge(({ ok: '连接与认证正常', unavailable: '连接或认证失败', configured: '已配置', not_configured: '未配置' })[mailStatus] || '状态未知', ['unavailable', 'not_configured'].includes(mailStatus) ? 'badge-danger' : ''));
     const delivery = data.mail?.lastDelivery;
     mail.append(mailHeading, facts([['邮件服务', data.mail?.provider || '—'], ['检查时间', fmt(data.mail?.checkedAt || data.serverTime)], ['最近发送状态', delivery ? ({ sent: '已提交发送', delivered: '已投递', success: '发送成功', failed: '发送失败', error: '发送失败', pending: '发送中' })[delivery.status] || delivery.status : '暂无发送记录'], ['最近发送时间', fmt(delivery?.at)], ['服务反馈', data.mail?.message || '邮件配置不代表收件邮箱已成功收到邮件']], 'status-facts'));
-    grid.append(github, mail);
+    grid.append(storageCard, mail);
     $('status-content').replaceChildren(grid, el('p', 'status-caption', `服务器时间：${fmt(data.serverTime)}。页面所有时间按当前浏览器时区显示；会员权限以服务器时间为准。`));
   }
   $('refresh-status').addEventListener('click', () => run($('refresh-status'), loadStatus));

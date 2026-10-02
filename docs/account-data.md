@@ -1,6 +1,8 @@
 # 账号业务数据结构与 API
 
-唯一持久化文件为私有业务仓库 `state/accounts.json`。`schemaVersion: 1`。时间均为服务器 UTC ISO 8601；展示层转换为当地时间。所有跨记录操作由 `server/auth/store.js` 的 SHA 乐观并发事务提交，最多 6 次尝试，单文件安全容量上限为 900,000 字节。
+Vercel / Cloudflare 的账号状态保存在私有业务仓库 `state/accounts.json`，反馈日志另存为 `feedback/<id>/part-xxx.ndjson`。`schemaVersion: 1`。时间均为服务器 UTC ISO 8601；展示层转换为当地时间。所有跨记录操作由 `server/auth/store.js` 的 SHA 乐观并发事务提交，最多 6 次尝试，业务 JSON 安全容量上限为 900,000 字节。
+
+独立服务器可使用 `server/auth/sqlite-store.js`，在同一 SQLite 数据库内保存相同 JSON 状态与日志分块；保留现有业务结构，使用版本条件更新和数据库事务防止丢失并发修改。状态容量上限为 16 MiB，迁回 GitHub 时仍需满足原 900,000 字节限制。双向迁移及停写切换见[服务器部署](server-deployment.md)。
 
 ## 顶层结构
 

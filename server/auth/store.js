@@ -3,7 +3,7 @@ import { AccountError, fail } from './errors.js';
 export function emptyState() {
   return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {}, feedbackCommentRateLimits: {} };
 }
-function validateState(state) {
+export function validateState(state) {
   if (!state || state.schemaVersion !== 1 || !Array.isArray(state.audit)) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);
   for (const key of ['users', 'sessions', 'devices', 'otps', 'codes', 'operations', 'rateLimits']) {
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);

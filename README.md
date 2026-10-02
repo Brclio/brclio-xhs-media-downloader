@@ -6,6 +6,8 @@ v1.8.30 改进视频下载进度：点击下载立即显示状态，进度条紧
 
 v1.8.26 新增会员专享「下载无水印视频」：从当前笔记公开的原文件字段取得平台原视频，网页和桌面均需验证有效软件会员。普通播放视频继续按原入口下载；作者自行写入画面的水印可能保留。Android v1.0.8 提供系统浏览器入口，带完整笔记链接进入网页版登录并下载。详见 [原视频来源核验](docs/watermark-free-video.md)、[桌面版说明](docs/releases/v1.8.26.md) 与 [Android 版说明](docs/releases/android-v1.0.8.md)。
 
+新增[独立服务器部署与 SQLite 存储](docs/server-deployment.md)：`npm run start:server` 提供完整网站、账号后台和 Node / Python 双引擎，首次启动自动创建 SQLite 数据库，支持 Docker 持久卷。`npm run migrate:storage -- --from github --to sqlite` 可预览 GitHub → SQLite 迁移，反向交换参数可迁回 GitHub；执行需加 `--apply`，覆盖已有目标需显式 `--replace` 并自动备份。原 Vercel、Cloudflare 和客户端部署流程及默认 GitHub 存储不变。已有数据切换时必须保留原 pepper，并按文档暂停源端写入。
+
 网页新增「问题广场」：公开查看已提交的问题、处理状态与评论，支持搜索、分类及状态筛选。任何软件账号登录后都能发表评论，无需会员；评论是独立的平铺讨论。管理员和提交者之间的回复仍为私密对话，提交者也可在网页查看和继续回复。问题、回复与评论原文继续保存到 GitHub 私有业务仓库，公开页面仅返回脱敏内容，不公开诊断日志或账号信息。详见 [反馈及日志说明](docs/feedback-diagnostics.md)。
 
 v1.8.26 同时修复启动页面仍在加载时正常退出被误报为启动失败的问题，并确保 SMTP 连接超时后及时关闭连接；桌面 v1.8.24、v1.8.25 安装包未公开发布，相关改进纳入 v1.8.26。

@@ -27,6 +27,12 @@ android/local.properties
 android/*.iml
 *.jks
 *.keystore
+# Private standalone-server state and migration backups.
+data/
+backups/
+*.sqlite*
+*.db*
+
 
 # Python Worker dependency cache (also covers linked development runtimes).
 cloudflare/python/.venv

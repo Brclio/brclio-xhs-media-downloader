@@ -296,7 +296,16 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       return { codes: codes.slice(0, 1000), total: codes.length };
     }
     if (request.action === 'admin-audit') return { audit: state.audit.slice(-1000).reverse(), total: state.audit.length };
-    if (request.action === 'admin-status') return { github: { status: 'ok', checkedAt: iso(time) }, mail: { provider: mailer.provider || 'custom', configured: mailer.configured !== false, lastDelivery: state.mailStatus, ...(mailer.check ? await mailer.check() : {}) } };
+    if (request.action === 'admin-status') {
+      const provider = store.kind === 'sqlite' ? 'sqlite' : 'github';
+      const health = { status: 'ok', checkedAt: iso(time) };
+      return {
+        storage: { provider, ...health },
+        // Preserve the existing response for deployed GitHub clients.
+        ...(provider === 'github' ? { github: health } : {}),
+        mail: { provider: mailer.provider || 'custom', configured: mailer.configured !== false, lastDelivery: state.mailStatus, ...(mailer.check ? await mailer.check() : {}) },
+      };
+    }
     fail('UNKNOWN_ACTION', '未知操作。', 404);
   }
 
