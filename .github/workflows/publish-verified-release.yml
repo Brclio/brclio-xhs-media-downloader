@@ -1,0 +1,334 @@
+name: Publish verified native releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      desktop_run_id:
+        description: Successful Desktop installers build-only run ID
+        required: true
+        type: string
+      android_run_id:
+        description: Successful Android signed release build-only run ID
+        required: true
+        type: string
+      desktop_tag:
+        description: Existing canonical desktop tag pointing to the verified source commit
+        required: true
+        type: string
+      android_tag:
+        description: Existing canonical Android tag pointing to the same verified source commit
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-verified-${{ inputs.desktop_tag }}-${{ inputs.android_tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DESKTOP_RUN_ID: ${{ inputs.desktop_run_id }}
+      ANDROID_RUN_ID: ${{ inputs.android_run_id }}
+      DESKTOP_TAG: ${{ inputs.desktop_tag }}
+      ANDROID_TAG: ${{ inputs.android_tag }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify successful native runs, existing tags and artifact provenance
+        id: provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { appendFile, mkdir, writeFile } from 'node:fs/promises';
+          import path from 'node:path';
+          const env = process.env;
+          const repository = env.GITHUB_REPOSITORY;
+          assert.equal(repository, 'Brclio/brclio-xhs-media-downloader');
+          for (const value of [env.DESKTOP_RUN_ID, env.ANDROID_RUN_ID]) {
+            assert.match(value, /^[1-9]\d*$/, 'Run IDs must be canonical positive integers');
+            assert.ok(Number.isSafeInteger(Number(value)));
+          }
+          assert.notEqual(env.DESKTOP_RUN_ID, env.ANDROID_RUN_ID);
+          const version = '(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)';
+          assert.match(env.DESKTOP_TAG, new RegExp(`^v${version}$`));
+          assert.match(env.ANDROID_TAG, new RegExp(`^android-v${version}$`));
+          const api = async endpoint => {
+            const response = await fetch(`https://api.github.com/repos/${repository}/${endpoint}`, {
+              headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.GH_TOKEN}`,
+                'X-GitHub-Api-Version': '2022-11-28' }, signal: AbortSignal.timeout(30000)
+            });
+            assert.ok(response.ok, `GitHub provenance read failed (${response.status}): ${endpoint}`);
+            return response.json();
+          };
+          const tagCommit = async tag => {
+            const ref = await api(`git/ref/tags/${encodeURIComponent(tag)}`);
+            assert.equal(ref.ref, `refs/tags/${tag}`);
+            let object = ref.object;
+            const seen = new Set();
+            while (true) {
+              assert.match(object?.sha || '', /^[a-f0-9]{40}$/);
+              if (object.type === 'commit') return object.sha;
+              assert.equal(object.type, 'tag');
+              assert.ok(!seen.has(object.sha) && seen.size < 8, 'Invalid annotated tag chain');
+              seen.add(object.sha);
+              const annotated = await api(`git/tags/${object.sha}`);
+              assert.equal(annotated.sha, object.sha);
+              object = annotated.object;
+            }
+          };
+          const desktopCommit = await tagCommit(env.DESKTOP_TAG);
+          const androidCommit = await tagCommit(env.ANDROID_TAG);
+          assert.equal(androidCommit, desktopCommit, 'Both release tags must resolve to the same commit');
+          const sourceCommit = desktopCommit;
+          const checkRun = async (id, workflowPath, workflowName, nativeJobs, publicationJob) => {
+            const run = await api(`actions/runs/${id}`);
+            const workflow = await api(`actions/workflows/${encodeURIComponent(workflowPath)}`);
+            assert.equal(run.id, Number(id));
+            assert.equal(run.name, workflowName);
+            assert.equal(run.workflow_id, workflow.id, 'Only the official native workflow is accepted');
+            assert.equal(run.path, workflowPath);
+            assert.equal(run.event, 'workflow_dispatch', 'Use a native build-only dispatch run');
+            assert.equal(run.repository?.full_name, repository);
+            assert.equal(run.head_repository?.full_name, repository, 'Fork artifacts cannot be published');
+            assert.equal(run.head_sha, sourceCommit);
+            assert.equal(run.status, 'completed');
+            assert.equal(run.conclusion, 'success', 'Every native build and acceptance job must pass');
+            assert.ok(Number.isSafeInteger(run.run_attempt) && run.run_attempt > 0);
+            const jobs = await api(`actions/runs/${id}/jobs?filter=latest&per_page=100`);
+            assert.ok(jobs.total_count <= 100, 'Unexpected native job count');
+            for (const name of nativeJobs) {
+              const matching = jobs.jobs.filter(job => job.name === name);
+              assert.equal(matching.length, 1, `Missing unique native acceptance job: ${name}`);
+              assert.equal(matching[0].status, 'completed');
+              assert.equal(matching[0].conclusion, 'success', `Native acceptance did not pass: ${name}`);
+            }
+            const publication = jobs.jobs.filter(job => job.name === publicationJob);
+            assert.equal(publication.length, 1);
+            assert.equal(publication[0].conclusion, 'skipped', 'The source run must be build-only');
+            const artifacts = [];
+            for (let page = 1; page <= 100; page++) {
+              const result = await api(`actions/runs/${id}/artifacts?per_page=100&page=${page}`);
+              artifacts.push(...result.artifacts);
+              if (artifacts.length >= result.total_count) break;
+              assert.ok(page < 100, 'Artifact listing exceeded the safe limit');
+            }
+            const expected = workflowName === 'Desktop installers'
+              ? ['Brclio-XHS-mac-arm64', 'Brclio-XHS-mac-intel', 'Brclio-XHS-windows-x64']
+              : [`Android-release-${id}-${run.run_attempt}`];
+            const selected = expected.map(name => {
+              const matching = artifacts.filter(artifact => artifact.name === name);
+              assert.equal(matching.length, 1, `Missing unique verified artifact: ${name}`);
+              const artifact = matching[0];
+              assert.equal(artifact.expired, false);
+              assert.ok(Number.isSafeInteger(artifact.id) && artifact.id > 0 && artifact.size_in_bytes > 0);
+              assert.equal(artifact.workflow_run?.id, run.id);
+              assert.equal(artifact.workflow_run?.repository_id, run.repository.id);
+              assert.equal(artifact.workflow_run?.head_repository_id, run.repository.id);
+              assert.equal(artifact.workflow_run?.head_sha, sourceCommit);
+              assert.match(artifact.digest || '', /^sha256:[a-f0-9]{64}$/);
+              return { id: artifact.id, name, bytes: artifact.size_in_bytes, digest: artifact.digest };
+            });
+            return { id: run.id, workflowName, workflowId: run.workflow_id, headSha: run.head_sha,
+              runAttempt: run.run_attempt, status: run.status, conclusion: run.conclusion, artifacts: selected };
+          };
+          const desktop = await checkRun(env.DESKTOP_RUN_ID, '.github/workflows/desktop-build.yml',
+            'Desktop installers', ['mac-arm64', 'mac-intel', 'windows-x64'], 'Publish verified installers');
+          const android = await checkRun(env.ANDROID_RUN_ID, '.github/workflows/android-release.yml',
+            'Android signed release', ['build', 'upgrade-emulator'], 'publish');
+          const provenance = { schemaVersion: 1, repository, sourceCommit,
+            tags: { desktop: { name: env.DESKTOP_TAG, commit: desktopCommit },
+              android: { name: env.ANDROID_TAG, commit: androidCommit } },
+            runs: { desktop, android }, provenanceCheckedAt: new Date().toISOString() };
+          const evidence = path.join(env.RUNNER_TEMP, 'publication-evidence', 'metadata');
+          await mkdir(evidence, { recursive: true });
+          await writeFile(path.join(evidence, 'provenance.json'), JSON.stringify(provenance, null, 2) + '\n');
+          await appendFile(env.GITHUB_OUTPUT, `source_sha=${sourceCommit}\ndesktop_artifact_ids=${desktop.artifacts.map(a => a.id).join(',')}\nandroid_artifact_id=${android.artifacts[0].id}\n`);
+          console.log(JSON.stringify({ sourceCommit, desktopRun: desktop.id, androidRun: android.id,
+            androidAttempt: android.runAttempt, verifiedArtifactNames: [...desktop.artifacts, ...android.artifacts].map(a => a.name) }));
+          NODE
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.provenance.outputs.source_sha }}
+          fetch-depth: 0
+
+      - name: Register the runner's generated release-artifacts directory
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { appendFile, access } from 'node:fs/promises';
+          import { execFileSync } from 'node:child_process';
+          assert.equal(execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), process.env.SOURCE_SHA);
+          assert.equal(execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), '');
+          assert.equal(execFileSync('git', ['ls-files', 'release-artifacts'], { encoding: 'utf8' }).trim(), '');
+          await assert.rejects(access('release-artifacts'));
+          // This runner-only ignore covers the downloaded/generated build output,
+          // while the existing publishers still inspect all tracked source changes.
+          await appendFile(execFileSync('git', ['rev-parse', '--git-path', 'info/exclude'], { encoding: 'utf8' }).trim(), '\n/release-artifacts/\n');
+          NODE
+        env:
+          SOURCE_SHA: ${{ steps.provenance.outputs.source_sha }}
+
+      - name: Download the three verified desktop artifacts by immutable IDs
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.provenance.outputs.desktop_artifact_ids }}
+          path: release-artifacts
+          merge-multiple: true
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.desktop_run_id }}
+
+      - name: Download the final emulator-verified Android artifact by immutable ID
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.provenance.outputs.android_artifact_id }}
+          path: dist-android
+          merge-multiple: true
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.android_run_id }}
+
+      - name: Validate both platforms with the existing strict publication gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ steps.provenance.outputs.source_sha }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile, mkdir, copyFile } from 'node:fs/promises';
+          import path from 'node:path';
+          import { execFileSync } from 'node:child_process';
+          import { validateArtifacts } from './scripts/publish-desktop-release.mjs';
+          import { validateReleaseFiles } from './scripts/publish-android-release.mjs';
+          const env = process.env;
+          const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+          assert.equal(env.DESKTOP_TAG, `v${pkg.version}`);
+          assert.equal(execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), env.SOURCE_SHA);
+          assert.equal(execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), '');
+          await validateArtifacts('release-artifacts', { version: pkg.version, sourceSha: env.SOURCE_SHA });
+          const { proof } = validateReleaseFiles('dist-android', { tag: env.ANDROID_TAG,
+            sourceCommit: env.SOURCE_SHA, certificateSha256: (env.ANDROID_SIGNING_CERT_SHA256 || '').replace(/:/g, '').toLowerCase().trim() });
+          for (const tag of [env.DESKTOP_TAG, env.ANDROID_TAG]) {
+            assert.ok((await readFile(`docs/releases/${tag}.md`, 'utf8')).trim());
+            assert.equal(execFileSync('git', ['rev-parse', `refs/tags/${tag}^{commit}`], { encoding: 'utf8' }).trim(), env.SOURCE_SHA);
+          }
+          const evidence = path.join(env.RUNNER_TEMP, 'publication-evidence');
+          const provenance = JSON.parse(await readFile(path.join(evidence, 'metadata', 'provenance.json'), 'utf8'));
+          // Recheck the final attempt after transfer, before either public release.
+          for (const expected of Object.values(provenance.runs)) {
+            const response = await fetch(`https://api.github.com/repos/${env.GITHUB_REPOSITORY}/actions/runs/${expected.id}`, {
+              headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28' }, signal: AbortSignal.timeout(30000)
+            });
+            assert.ok(response.ok);
+            const run = await response.json();
+            assert.equal(run.status, 'completed');
+            assert.equal(run.conclusion, 'success');
+            assert.equal(run.run_attempt, expected.runAttempt);
+            assert.equal(run.head_sha, env.SOURCE_SHA);
+          }
+          await mkdir(path.join(evidence, 'desktop'), { recursive: true });
+          await mkdir(path.join(evidence, 'android'), { recursive: true });
+          for (const label of ['mac-arm64', 'mac-x64', 'windows-x64']) {
+            await copyFile(`release-artifacts/release-proof-${label}.json`, path.join(evidence, 'desktop', `release-proof-${label}.json`));
+          }
+          for (const name of ['android-update.json', `${proof.apk.name}.sha256`, 'SHA256SUMS.txt']) {
+            await copyFile(path.join('dist-android', name), path.join(evidence, 'android', name));
+          }
+          console.log('Both platform proofs, signed bytes, native acceptance and source commits verified.');
+          NODE
+
+      - name: Publish desktop with the existing strict publisher
+        id: desktop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          env GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$DESKTOP_TAG" node scripts/publish-desktop-release.mjs
+          node --input-type=module -e "import { writeFile } from 'node:fs/promises'; import path from 'node:path'; await writeFile(path.join(process.env.RUNNER_TEMP, 'desktop-publisher.json'), JSON.stringify({ checkedAt: new Date().toISOString() }));"
+
+      - name: Publish Android with the existing strict publisher and preserve desktop Latest
+        id: android
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ANDROID_RELEASE_TAG: ${{ inputs.android_tag }}
+          ANDROID_SIGNING_CERT_SHA256: ${{ vars.ANDROID_SIGNING_CERT_SHA256 }}
+        run: |
+          node scripts/publish-android-release.mjs
+          node --input-type=module -e "import { writeFile } from 'node:fs/promises'; import path from 'node:path'; await writeFile(path.join(process.env.RUNNER_TEMP, 'android-publisher.json'), JSON.stringify({ checkedAt: new Date().toISOString() }));"
+
+      - name: Record public release metadata and small publication evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { copyFile, readFile, writeFile, readdir } from 'node:fs/promises';
+          import path from 'node:path';
+          const env = process.env;
+          const evidence = path.join(env.RUNNER_TEMP, 'publication-evidence');
+          const api = async endpoint => {
+            const response = await fetch(`https://api.github.com/repos/${env.GITHUB_REPOSITORY}/${endpoint}`, {
+              headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${env.GH_TOKEN}`,
+                'X-GitHub-Api-Version': '2022-11-28' }, signal: AbortSignal.timeout(30000)
+            });
+            assert.ok(response.ok, `Public release metadata read failed (${response.status})`);
+            return response.json();
+          };
+          const desktop = await api(`releases/tags/${env.DESKTOP_TAG}`);
+          const android = await api(`releases/tags/${env.ANDROID_TAG}`);
+          const latest = await api('releases/latest');
+          for (const [release, tag, count] of [[desktop, env.DESKTOP_TAG, 11], [android, env.ANDROID_TAG, 4]]) {
+            assert.equal(release.tag_name, tag);
+            assert.equal(release.draft, false);
+            assert.equal(release.prerelease, false);
+            assert.equal(release.assets.length, count);
+            assert.ok(release.assets.every(asset => asset.state === 'uploaded' && asset.size > 0
+              && /^sha256:[a-f0-9]{64}$/.test(asset.digest || '')));
+          }
+          assert.equal(latest.tag_name, env.DESKTOP_TAG, 'Android must preserve the new desktop Latest');
+          for (const name of ['build-evidence.json', 'SHA256SUMS.txt']) {
+            await copyFile(path.join('release-artifacts', name), path.join(evidence, 'desktop', name));
+          }
+          const metadata = path.join(evidence, 'metadata');
+          for (const [name, value] of [['desktop-release.json', desktop], ['android-release.json', android], ['latest-release.json', latest]]) {
+            await writeFile(path.join(metadata, name), JSON.stringify(value, null, 2) + '\n');
+          }
+          const provenance = JSON.parse(await readFile(path.join(metadata, 'provenance.json'), 'utf8'));
+          provenance.publisherCheckedAt = {
+            desktop: JSON.parse(await readFile(path.join(env.RUNNER_TEMP, 'desktop-publisher.json'), 'utf8')).checkedAt,
+            android: JSON.parse(await readFile(path.join(env.RUNNER_TEMP, 'android-publisher.json'), 'utf8')).checkedAt
+          };
+          provenance.publicMetadataCheckedAt = new Date().toISOString();
+          await writeFile(path.join(metadata, 'provenance.json'), JSON.stringify(provenance, null, 2) + '\n');
+          const expected = {
+            desktop: ['release-proof-mac-arm64.json', 'release-proof-mac-x64.json', 'release-proof-windows-x64.json', 'build-evidence.json', 'SHA256SUMS.txt'],
+            android: ['android-update.json', `Brclio-XHS-Android-${env.ANDROID_TAG.slice('android-v'.length)}-release.apk.sha256`, 'SHA256SUMS.txt'],
+            metadata: ['desktop-release.json', 'android-release.json', 'latest-release.json', 'provenance.json']
+          };
+          for (const [directory, names] of Object.entries(expected)) {
+            assert.deepEqual((await readdir(path.join(evidence, directory))).sort(), names.sort(), 'Evidence must contain only proofs, checksums and metadata');
+          }
+          console.log(JSON.stringify({ desktop: desktop.html_url, android: android.html_url, latest: latest.tag_name,
+            sourceCommit: provenance.sourceCommit, desktopAssets: desktop.assets.length, androidAssets: android.assets.length }));
+          NODE
+
+      - name: Upload only small publication proofs and metadata
+        if: ${{ always() && steps.provenance.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/publication-evidence/
+          if-no-files-found: error
+          retention-days: 30

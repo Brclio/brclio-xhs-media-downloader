@@ -65,19 +65,29 @@ final class UpdateProxySession implements AutoCloseable {
         }
         if (!config.optBoolean("enabled", false)) return client;
         List<List<Map<String, Object>>> sources = new ArrayList<>();
+        UpdateSubscriptionRetry.Diagnostics sourceFailures = new UpdateSubscriptionRetry.Diagnostics();
         JSONArray urls = config.optJSONArray("subscriptionUrls");
         for (int index = 0; urls != null && index < urls.length(); index++) {
             check();
             try {
-                URI subscription = UpdateProxyPolicy.subscriptionUri(urls.optString(index));
-                String text = new String(fetchSubscription(subscription), StandardCharsets.UTF_8);
-                sources.add(UpdateProxyPolicy.nodes(text));
-            } catch (Exception unavailable) { check(); /* Other administrator-configured sources remain usable. */ }
+                URI subscription;
+                try { subscription = UpdateProxyPolicy.subscriptionUri(urls.optString(index)); }
+                catch (IllegalArgumentException invalid) { throw UpdateSubscriptionRetry.Failure.permanent(UpdateSubscriptionRetry.Reason.URL); }
+                sources.add(UpdateSubscriptionRetry.execute(() -> {
+                    String text = new String(fetchSubscription(subscription), StandardCharsets.UTF_8);
+                    try { return UpdateProxyPolicy.nodes(text); }
+                    catch (RuntimeException invalid) { throw UpdateSubscriptionRetry.Failure.permanent(UpdateSubscriptionRetry.Reason.FORMAT); }
+                }, this::check));
+            } catch (Exception unavailable) {
+                check();
+                sourceFailures.addSummary(UpdateSubscriptionRetry.classify(unavailable));
+                /* Other administrator-configured sources remain usable. */
+            }
         }
         List<Map<String, Object>> nodes;
         try { nodes = UpdateProxyPolicy.mergeNodes(sources); }
         catch (IllegalArgumentException invalid) { throw new IOException(invalid.getMessage()); }
-        if (nodes.isEmpty()) throw new IOException("更新订阅暂不可用，请联系管理员或稍后重试。");
+        if (nodes.isEmpty()) throw new IOException("更新订阅暂不可用（" + sourceFailures.summary() + "），请联系管理员或稍后重试。");
         int proxyPort = unusedPort();
         controllerPort = unusedPort();
         while (proxyPort == controllerPort) controllerPort = unusedPort();
@@ -174,16 +184,16 @@ final class UpdateProxySession implements AutoCloseable {
                 int status = connection.getResponseCode();
                 if (status >= 300 && status < 400) {
                     String location = connection.getHeaderField("Location");
-                    if (location == null || index == 3) throw new IOException("更新订阅跳转异常。");
+                    if (location == null || index == 3) throw UpdateSubscriptionRetry.Failure.permanent(UpdateSubscriptionRetry.Reason.URL);
                     try { uri = UpdateProxyPolicy.subscriptionUri(uri.resolve(location).toString()); }
-                    catch (IllegalArgumentException invalid) { throw new IOException("更新订阅跳转地址无效。"); }
+                    catch (IllegalArgumentException invalid) { throw UpdateSubscriptionRetry.Failure.permanent(UpdateSubscriptionRetry.Reason.URL); }
                     continue;
                 }
-                if (status != 200) throw new IOException("无法获取最新更新订阅（HTTP " + status + "），请联系管理员或稍后重试。");
+                if (status != 200) throw UpdateSubscriptionRetry.Failure.http(status, connection.getHeaderField("Retry-After"));
                 try (InputStream input = connection.getInputStream()) { return readChecked(input, UpdateProxyPolicy.MAX_SUBSCRIPTION_BYTES); }
             } finally { detach(connection); }
         }
-        throw new IOException("更新订阅跳转异常。");
+        throw UpdateSubscriptionRetry.Failure.permanent(UpdateSubscriptionRetry.Reason.URL);
     }
 
     private static final class Delay {
@@ -194,6 +204,7 @@ final class UpdateProxySession implements AutoCloseable {
 
     private void selectFastest(List<Map<String, Object>> nodes) throws IOException {
         List<Future<Delay>> pending = new ArrayList<>();
+        UpdateSubscriptionRetry.Diagnostics failures = new UpdateSubscriptionRetry.Diagnostics();
         for (Map<String, Object> node : nodes) {
             String name = (String) node.get("name");
             pending.add(probes.submit(() -> {
@@ -202,8 +213,10 @@ final class UpdateProxySession implements AutoCloseable {
                     byte[] result = controller("GET", "/proxies/" + encode(name) + "/delay?timeout=6000&expected=200&url="
                             + encode(UpdateProxyPolicy.PROBE_URL), null, 8000);
                     int delay = new JSONObject(new String(result, StandardCharsets.UTF_8)).optInt("delay", -1);
-                    return delay >= 0 && delay <= 6000 ? new Delay(name, delay) : null;
-                } catch (Exception unavailable) { check(); return null; }
+                    if (delay >= 0 && delay <= 6000) return new Delay(name, delay);
+                    failures.add(UpdateSubscriptionRetry.Failure.permanent(UpdateSubscriptionRetry.Reason.PROBE_NO_DELAY));
+                    return null;
+                } catch (Exception unavailable) { check(); failures.add(UpdateSubscriptionRetry.classify(unavailable)); return null; }
             }));
         }
         List<Delay> successful = new ArrayList<>();
@@ -221,7 +234,7 @@ final class UpdateProxySession implements AutoCloseable {
             catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); throw new IOException("更新网络检查已取消。"); }
             catch (ExecutionException failed) { check(); }
         }
-        if (successful.isEmpty()) throw new IOException("订阅中的代理节点均不可用，请联系管理员或稍后重试。");
+        if (successful.isEmpty()) throw new IOException("订阅中的代理节点均不可用（" + failures.summary() + "），请联系管理员或稍后重试。");
         successful.sort(Comparator.comparingInt(value -> value.milliseconds));
         ranked.clear();
         ranked.addAll(successful);
@@ -264,7 +277,7 @@ final class UpdateProxySession implements AutoCloseable {
                 try (java.io.OutputStream output = connection.getOutputStream()) { output.write(body); }
             }
             int status = connection.getResponseCode();
-            if (status != 200 && status != 204) throw new IOException("更新网络服务暂不可用。");
+            if (status != 200 && status != 204) throw UpdateSubscriptionRetry.Failure.http(status, null);
             if (status == 204) return new byte[0];
             try (InputStream input = connection.getInputStream()) { return readChecked(input, maximum); }
         } finally { detach(connection); }
@@ -292,7 +305,7 @@ final class UpdateProxySession implements AutoCloseable {
         int count;
         while ((count = input.read(bytes)) != -1) {
             check();
-            if (result.size() + count > maximum) throw new IOException("更新网络配置超过大小限制。");
+            if (result.size() + count > maximum) throw UpdateSubscriptionRetry.Failure.permanent(UpdateSubscriptionRetry.Reason.FORMAT);
             result.write(bytes, 0, count);
         }
         return result.toByteArray();
