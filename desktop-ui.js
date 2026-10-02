@@ -142,6 +142,8 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     timingHint: element("profile-timing-hint"),
     login: element("profile-login"),
     loginLabel: element("profile-login-label"),
+    clearLogin: element("profile-clear-login"),
+    clearLoginStatus: element("profile-login-clear-status"),
     start: element("profile-start"),
     pause: element("profile-pause"),
     resume: element("profile-resume"),
@@ -180,6 +182,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   let unsubscribe = () => {};
   let unsubscribeLogin = () => {};
   let loginRevision = 0;
+  let clearLoginPending = false;
   let unsubscribeUpdates = () => {};
   let updateRevision = 0;
   let updateHistoryRevision = 0;
@@ -753,6 +756,49 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
       : "在本地版应用内登录，登录状态会保存在这台电脑；浏览器或 Codex 中的登录不会自动共享。";
   }
 
+  function showClearLoginStatus(message, status = "idle") {
+    ui.clearLoginStatus.textContent = message || "";
+    ui.clearLoginStatus.hidden = !message;
+    ui.clearLoginStatus.dataset.status = status;
+    ui.clearLoginStatus.setAttribute("role", status === "error" ? "alert" : "status");
+    ui.clearLoginStatus.setAttribute("aria-live", status === "error" ? "assertive" : "polite");
+  }
+
+  async function clearXhsLogin() {
+    if (operationPending || !initialized) return;
+    if (typeof bridge.clearXhsLogin !== "function") {
+      showClearLoginStatus("当前版本暂不支持清除登录记录，请更新软件。", "error");
+      return;
+    }
+    operationPending = true;
+    clearLoginPending = true;
+    showError("");
+    showClearLoginStatus("正在等待确认或清除登录记录……", "pending");
+    updateControls();
+    try {
+      const result = await bridge.clearXhsLogin();
+      if (result?.cancelled) {
+        showClearLoginStatus("");
+        return;
+      }
+      if (result?.loginState?.status !== "logged-out" || result.loginState.loggedIn !== false) {
+        throw new Error("暂时无法确认登录记录已清除，请重试。");
+      }
+      // Invalidate the account snapshot requested during initialization so it
+      // cannot restore the previous account after this successful reset.
+      loginRevision += 1;
+      renderLoginState(result.loginState);
+      if (result.profileState && typeof result.profileState.status === "string") render(result.profileState);
+      showClearLoginStatus(result.message || "小红书登录记录已清除，可重新登录其他账号。", "success");
+    } catch (error) {
+      showClearLoginStatus(error?.message || "清除登录记录失败，请稍后重试。", "error");
+    } finally {
+      clearLoginPending = false;
+      operationPending = false;
+      updateControls();
+    }
+  }
+
   function openUpdateDialog() {
     if (!ui.updateDialog || ui.installDialog?.open || !updateState.latestVersion
       || !["available", "downloading", "downloaded", "installing", "error"].includes(updateState.status)) return;
@@ -1145,6 +1191,12 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     for (const button of [ui.pause, ui.resume, ui.cancel, ui.retry, ui.login]) {
       button.disabled = operationPending;
     }
+    ui.clearLogin.disabled = !initialized || operationPending || typeof bridge.clearXhsLogin !== "function";
+    ui.clearLogin.textContent = clearLoginPending ? "清除中……" : "清除登录记录";
+    ui.clearLogin.setAttribute("aria-busy", String(clearLoginPending));
+    ui.clearLogin.title = typeof bridge.clearXhsLogin === "function"
+      ? "清除本地版保存的小红书登录与缓存，之后可登录其他账号。"
+      : "当前版本暂不支持清除登录记录，请更新软件。";
     ui.retry.disabled = operationPending || running;
     ui.retry.title = running ? "请先暂停任务，再重试失败笔记" : "重新处理全部失败笔记";
     for (const button of ui.items.querySelectorAll("button[data-retry-id]")) {
@@ -1331,9 +1383,11 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     if (typeof directory === "string" && directory) ui.directory.value = directory;
   }));
   ui.login.addEventListener("click", () => perform(() => {
+    showClearLoginStatus("");
     const url = ui.url.value.trim();
     return bridge.openLogin(validProfileUrl(url) ? url : undefined);
   }));
+  ui.clearLogin.addEventListener("click", () => void clearXhsLogin());
   ui.pause.addEventListener("click", () => perform(() => bridge.pauseProfile()));
   ui.resume.addEventListener("click", () => perform(() => {
     populateSettings(snapshot);

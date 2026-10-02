@@ -70,6 +70,7 @@ contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
   chooseDirectory: () => ipcRenderer.invoke('desktop:choose-directory'),
   openLogin: (profileUrl) => ipcRenderer.invoke('desktop:open-login', profileUrl),
   getLoginState: () => ipcRenderer.invoke('desktop:get-login-state'),
+  clearXhsLogin: () => ipcRenderer.invoke('desktop:clear-xhs-login'),
   onLoginUpdate: (callback) => {
     if (typeof callback !== 'function') throw new TypeError('callback must be a function');
     const listener = (_event, state) => callback(state);

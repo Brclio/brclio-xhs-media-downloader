@@ -6,6 +6,8 @@ import { readLoginSnapshot } from './login-state.js';
 import { readNoteSnapshot } from './note-state.js';
 
 const ORIGIN = 'https://www.xiaohongshu.com';
+const ACCOUNT_PARTITION = 'persist:xhs-account';
+const WINDOW_KEYS = ['profileWindow', 'detailWindow', 'accountWindow'];
 const POSTED = /^\/api\/sns\/web\/v\d+\/user_posted\/?$/;
 const require = createRequire(import.meta.url);
 
@@ -29,16 +31,28 @@ export class XhsBrowser {
     this.fetchPage = fetchPage;
     this.loginState = { status: 'unknown', loggedIn: false, nickname: '', userId: '' };
     this.accountWindow = null;
+    this.sessionRevision = 0;
+    this.resetPromise = null;
   }
 
   async window(kind = 'profile') {
+    if (this.resetPromise) await this.resetPromise;
+    if (this.closing) throw new Error('应用正在关闭。');
     this.electron ||= require('electron');
+    const revision = this.sessionRevision;
     const key = kind === 'profile' ? 'profileWindow' : kind === 'account' ? 'accountWindow' : 'detailWindow';
+    const assertCurrent = win => {
+      if (revision !== this.sessionRevision || win.isDestroyed() || this[key] !== win) {
+        throw profileError('AUTH_REQUIRED', '小红书登录状态已变更，请重新打开登录窗口。');
+      }
+    };
     if (this[key] && !this[key].isDestroyed()) {
+      const win = this[key];
       await this[`${key}Ready`];
-      return this[key];
+      assertCurrent(win);
+      return win;
     }
-    const browserSession = this.electron.session.fromPartition('persist:xhs-account');
+    const browserSession = this.electron.session.fromPartition(ACCOUNT_PARTITION);
     browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     browserSession.setPermissionCheckHandler(() => false);
     const win = new this.electron.BrowserWindow({
@@ -60,6 +74,7 @@ export class XhsBrowser {
     // wait indefinitely before first navigation, so create a blank target first.
     this[`${key}Ready`] = win.loadURL('about:blank');
     await this[`${key}Ready`];
+    assertCurrent(win);
     if (!this.loginTimer) {
       this.loginTimer = setInterval(() => {
         const target = this.accountWindow || this.profileWindow || this.detailWindow;
@@ -71,10 +86,13 @@ export class XhsBrowser {
   }
 
   async refreshLogin(win) {
-    if (this.loginBusy || this.closing || win.isDestroyed() || !allowedNavigation(win.webContents.getURL())) return this.loginState;
-    this.loginBusy = true;
+    if (this.resetPromise || this.loginBusy || this.closing || win.isDestroyed() || !allowedNavigation(win.webContents.getURL())) return { ...this.loginState };
+    const revision = this.sessionRevision;
+    const reading = { revision };
+    this.loginBusy = reading;
     try {
       const current = await this.execute(win, `(${readLoginSnapshot.toString()})()`);
+      if (revision !== this.sessionRevision || win.isDestroyed()) return { ...this.loginState };
       if (current?.status === 'unknown' || !current?.status) return this.loginState;
       if (current.loggedIn && !current.nickname && current.userId === this.loginState.userId) current.nickname = this.loginState.nickname;
       if (JSON.stringify(current) !== JSON.stringify(this.loginState)) {
@@ -82,19 +100,74 @@ export class XhsBrowser {
         this.onLoginState({ ...current });
       }
     } catch { /* A page in navigation is not evidence of logout. */ }
-    finally { this.loginBusy = false; }
+    finally { if (this.loginBusy === reading) this.loginBusy = false; }
     return { ...this.loginState };
   }
 
   async getLoginState() {
-    const win = await this.window('account');
-    if (!allowedNavigation(win.webContents.getURL())) await this.navigate(win, `${ORIGIN}/explore`);
-    return this.refreshLogin(win);
+    if (this.resetPromise) { await this.resetPromise; return { ...this.loginState }; }
+    const revision = this.sessionRevision;
+    try {
+      const win = await this.window('account');
+      if (revision !== this.sessionRevision) return { ...this.loginState };
+      if (!allowedNavigation(win.webContents.getURL())) await this.navigate(win, `${ORIGIN}/explore`);
+      if (revision !== this.sessionRevision) return { ...this.loginState };
+      return this.refreshLogin(win);
+    } catch (error) {
+      if (revision !== this.sessionRevision) return { ...this.loginState };
+      throw error;
+    }
+  }
+
+  clearLoginData() {
+    if (this.resetPromise) return this.resetPromise;
+    const pending = this._clearLoginData();
+    this.resetPromise = pending;
+    const finished = () => { if (this.resetPromise === pending) this.resetPromise = null; };
+    void pending.then(finished, finished);
+    return pending;
+  }
+
+  async _clearLoginData() {
+    this.electron ||= require('electron');
+    this.sessionRevision += 1;
+    clearInterval(this.loginTimer);
+    this.loginTimer = null;
+    this.loginBusy = false;
+    // Invalidate in-flight snapshots even if cleanup later fails. Unknown is
+    // deliberately distinct from reporting a successful logout.
+    this.loginState = { status: 'unknown', loggedIn: false, nickname: '', userId: '' };
+    this.onLoginState({ ...this.loginState });
+    for (const key of WINDOW_KEYS) {
+      const win = this[key];
+      this[key] = null;
+      this[`${key}Ready`] = null;
+      if (win && !win.isDestroyed()) { win.webContents.stop(); win.destroy(); }
+    }
+    this.blockedWindow = null;
+    const browserSession = this.electron.session.fromPartition(ACCOUNT_PARTITION);
+    // Stop background writers before removing all browsing data. This session
+    // belongs only to XHS; the app account, job records and files live elsewhere.
+    await browserSession.clearStorageData({ storages: ['serviceworkers'] });
+    await browserSession.closeAllConnections();
+    await browserSession.clearData();
+    await browserSession.clearAuthCache();
+    await browserSession.clearCodeCaches({});
+    await browserSession.clearHostResolverCache();
+    browserSession.flushStorageData();
+    await browserSession.cookies.flushStore();
+    this.loginState = { status: 'logged-out', loggedIn: false, nickname: '', userId: '' };
+    this.onLoginState({ ...this.loginState });
+    return { ...this.loginState };
   }
 
   async openLogin(value) {
+    const revision = this.sessionRevision;
     const win = this.blockedWindow && !this.blockedWindow.isDestroyed()
       ? this.blockedWindow : await this.window('account');
+    if (revision !== this.sessionRevision || win.isDestroyed()) {
+      throw profileError('AUTH_REQUIRED', '小红书登录状态已变更，请重新打开登录窗口。');
+    }
     win.show();
     win.focus();
     if (!allowedNavigation(win.webContents.getURL())) await this.navigate(win, value ? parseProfileUrl(value).url : `${ORIGIN}/explore`);

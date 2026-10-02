@@ -187,6 +187,19 @@ export class ProfileManager {
   cancel() { return this._command(() => this._stop("cancelled", "任务已取消；已下载文件保留，可继续任务。")); }
   shutdown() { return this.pause(); }
 
+  clearLoginData() {
+    return this._command(async () => {
+      await this._stop("paused", "任务已暂停，清除小红书登录记录后请重新登录再继续。");
+      const loginState = await this.browser.clearLoginData();
+      if (this.state.status === "paused") {
+        this.state.message = "小红书登录记录已清除，请重新登录后继续任务。";
+        await this._save();
+        this._emit();
+      }
+      return { loginState, profileState: this.snapshot() };
+    });
+  }
+
   async _stop(status, message) {
     if (this._controller) {
       this._controller.abort();

@@ -244,10 +244,17 @@
               <h1>整页收藏，慢慢保存。</h1>
               <p>自动发现主页笔记，将图片、实况、视频与文案逐篇保存到电脑。</p>
             </div>
-            <button id="profile-login" class="button button-secondary" type="button" title="在本地版应用内登录，登录状态会保存在这台电脑。">
-              <span id="profile-login-label" class="profile-login-label" aria-live="polite">登录小红书 / 完成验证</span>
-              <span class="profile-login-icon" aria-hidden="true">↗</span>
-            </button>
+            <div class="profile-account-tools">
+              <div class="profile-account-actions">
+                <button id="profile-login" class="button button-secondary" type="button" title="在本地版应用内登录，登录状态会保存在这台电脑。">
+                  <span id="profile-login-label" class="profile-login-label" aria-live="polite">登录小红书 / 完成验证</span>
+                  <span class="profile-login-icon" aria-hidden="true">↗</span>
+                </button>
+                <button id="profile-clear-login" class="button button-secondary profile-clear-login" type="button" aria-describedby="profile-login-clear-hint">清除登录记录</button>
+              </div>
+              <p id="profile-login-clear-hint" class="profile-account-hint">清空此软件保存的小红书登录与缓存，便于切换账号。</p>
+              <p id="profile-login-clear-status" class="profile-account-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+            </div>
           </header>
 
           <div class="profile-workspace">

@@ -56,6 +56,39 @@ async function fixture(t, options = {}) {
   return { base, directory, stateDirectory, requests, waits, manager, config, start, settle };
 }
 
+test('clearing XHS login waits for active parsing to abort and preserves saved files and queue progress', async t => {
+  let parsingStarted, aborted = false;
+  const parsing = new Promise(resolve => { parsingStarted = resolve; });
+  const f = await fixture(t);
+  f.manager.browser.discover = async function* () { yield { notes: [note(A), note(B)], done: true }; };
+  f.manager.browser.resolveNote = async (item, { signal }) => {
+    if (item.id === A) return parsed();
+    parsingStarted();
+    await new Promise((_resolve, reject) => signal.addEventListener('abort', () => {
+      aborted = true; reject(Object.assign(Error('paused'), { name: 'AbortError' }));
+    }, { once: true }));
+  };
+  f.manager.browser.clearLoginData = async () => {
+    assert.equal(aborted, true);
+    assert.equal(f.manager.snapshot().status, 'paused');
+    return { status: 'logged-out', loggedIn: false, nickname: '', userId: '' };
+  };
+  await f.start();
+  await parsing;
+  const downloaded = path.join(noteFolder(f, A), 'image-001.jpg');
+  const original = await fs.readFile(downloaded);
+  const { loginState, profileState } = await f.manager.clearLoginData();
+  assert.equal(loginState.status, 'logged-out');
+  assert.equal(profileState.status, 'paused');
+  assert.equal(profileState.completed, 1);
+  assert.equal(profileState.items.find(item => item.id === B).status, 'pending');
+  assert.deepEqual(await fs.readFile(downloaded), original);
+  const restored = new ProfileManager(f.config);
+  await restored.initialize();
+  assert.equal(restored.snapshot().completed, 1);
+  assert.equal(restored.snapshot().discovered, 2);
+});
+
 test("profile queue deduplicates notes and saves images, paired live MP4, default video and metadata sequentially", async (t) => {
   const f = await fixture(t);
   f.manager.browser = {

@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页、Mac、Windows 与 Android 客户端；桌面版支持主页批量下载和自定义间隔",
@@ -40,7 +40,8 @@
     "cloudflare:deploy": "npm run cloudflare:deploy:python && wrangler deploy && npm run cloudflare:deploy:pages",
     "cloudflare:verify": "node scripts/verify-cloudflare.mjs",
     "build:cloudflare": "node deploy/build-pages.mjs",
-    "cloudflare:deploy:pages": "node deploy/build-pages.mjs && wrangler pages deploy --cwd cloudflare/pages --project-name brclio-xhs-pages --branch main"
+    "cloudflare:deploy:pages": "node deploy/build-pages.mjs && wrangler pages deploy --cwd cloudflare/pages --project-name brclio-xhs-pages --branch main",
+    "desktop:verify:login-reset": "node scripts/verify-xhs-login-reset.mjs"
   },
   "engines": {
     "node": ">=22"

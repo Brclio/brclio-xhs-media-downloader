@@ -43,7 +43,10 @@ contextBridge.exposeInMainWorld('xhsDesktop', {
   onFeedbackState: callback => subscribe('ui-fixture:feedback', callback),
   onNavigate: callback => subscribe('ui-fixture:navigate', callback),
   getProfileState: () => invoke('getProfileState'),
-  getLoginState: () => invoke('getLoginState'),
+  getLoginState: () => invoke('getLoginState').then(state => {
+    ipcRenderer.send('ui-fixture:login-read-delivered');
+    return state;
+  }),
   getUpdateState: () => invoke('getUpdateState'),
   getUpdateHistory: () => invoke('getUpdateHistory'),
   dismissUpdateHistory: id => invoke('dismissUpdateHistory', id),
@@ -57,6 +60,7 @@ contextBridge.exposeInMainWorld('xhsDesktop', {
   respondInstallConfirmation: (id, confirmed) => invoke('respondInstallConfirmation', { id, confirmed }),
   chooseDirectory: () => invoke('chooseDirectory'),
   openLogin: value => invoke('openLogin', value),
+  clearXhsLogin: () => invoke('clearXhsLogin'),
   openDirectory: () => invoke('openDirectory'),
   startProfile: value => invoke('startProfile', value),
   pauseProfile: () => invoke('pauseProfile'),
@@ -78,6 +82,8 @@ app.whenReady().then(async () => {
   const readyEvents = new Map();
   const failedInitializationWindows = new Set();
   ipcMain.on('ui-fixture:desktop-ready', event => readyEvents.set(event.sender.id, (readyEvents.get(event.sender.id) || 0) + 1));
+  let loginReadDeliveries = 0;
+  ipcMain.on('ui-fixture:login-read-delivered', () => { loginReadDeliveries++; });
   const failedId = (126).toString(16).padStart(24, '0');
   const failedUrl = `https://www.xiaohongshu.com/explore/${failedId}?xsec_token=fixture%2Btoken%2Fsignature%3D&xsec_source=pc_user&source=web_profile`;
   const fixtureTitle = '测试笔记 <img src=x onerror=alert(1)>';
@@ -123,8 +129,14 @@ app.whenReady().then(async () => {
   let manualInstallerMode = 'pending';
   let resolveManualInstaller;
   let resolveDirectory;
+  let xhsLogin = { status: 'unknown', loggedIn: false, nickname: '', userId: '' };
+  let initialLoginPending = true;
+  let resolveInitialLogin;
+  let clearLoginMode = 'pending';
+  let resolveClearLogin;
   let win;
   const publishProfile = value => { profile = value; win.webContents.send('ui-fixture:profile', value); return value; };
+  const publishLogin = value => { xhsLogin = value; win.webContents.send('ui-fixture:login', value); return value; };
   const publishAccount = value => { account = value; win.webContents.send('ui-fixture:account', value); return value; };
   const publishUpdate = value => { update = value; win.webContents.send('ui-fixture:update', value); return value; };
   const publishHistory = value => { updateHistory = value; win.webContents.send('ui-fixture:update-history', value); return value; };
@@ -163,7 +175,18 @@ app.whenReady().then(async () => {
       win.webContents.send('ui-fixture:feedback', { status: 'uploading', progress: 50, uploadedBytes: 512, totalBytes: 1024 });
       return new Promise(resolve => { resolveFeedback = resolve; });
     }
-    if (method === 'getLoginState') return { status: 'unknown', loggedIn: false, nickname: '' };
+    if (method === 'getLoginState') {
+      if (initialLoginPending) {
+        initialLoginPending = false;
+        return new Promise(resolve => { resolveInitialLogin = resolve; });
+      }
+      return xhsLogin;
+    }
+    if (method === 'clearXhsLogin') {
+      if (clearLoginMode === 'error') throw new Error('测试清除失败 <img src=x onerror=alert(1)>');
+      if (clearLoginMode === 'invalid') return { loginState: { status: 'unknown', loggedIn: false } };
+      return new Promise(resolve => { resolveClearLogin = resolve; });
+    }
     if (method === 'getProfileState') {
       if (failedInitializationWindows.has(_event.sender.id)) throw new Error('fixture profile initialization failed');
       return profile;
@@ -348,6 +371,106 @@ app.whenReady().then(async () => {
   await check(`document.body.dataset.desktopReady === 'true'`, 'desktop readiness follows successful info and profile initialization');
   await verifyShortcut(win);
   assert.equal(readyEvents.get(win.webContents.id), 1, 'successful initialization emits exactly one desktop-ready event');
+  // Use the real reset renderer with a delayed native confirmation/cleanup
+  // response. The storage reset itself is verified separately with real data.
+  const loginResetScreenshots = {};
+  await click('#profile-tab');
+  await check(`!document.querySelector('#profile-clear-login').disabled`, 'clear XHS login control is available after initialization');
+  const originalLoginLabel = await evaluate(`document.querySelector('#profile-login-label').textContent`);
+  const retainedProfile = structuredClone(profile);
+  const retainedSoftwareAccount = structuredClone(account);
+  await click('#profile-clear-login');
+  await check(`document.querySelector('#profile-clear-login').disabled
+    && document.querySelector('#profile-clear-login').textContent === '清除中……'
+    && document.querySelector('#profile-clear-login').getAttribute('aria-busy') === 'true'
+    && document.querySelector('#profile-login-clear-status').dataset.status === 'pending'`, 'pending reset shows progress and locks duplicate requests');
+  assert.equal(await evaluate(`['profile-login', 'profile-start', 'profile-choose-directory', 'profile-retry']
+    .every(id => document.getElementById(id).disabled)
+    && [...document.querySelectorAll('#profile-items button[data-retry-id]')].every(button => button.disabled)`), true,
+    'pending reset locks conflicting login and profile operations');
+  await click('#profile-clear-login');
+  assert.equal(calls.filter(call => call.method === 'clearXhsLogin').length, 1, 'disabled reset cannot duplicate bridge calls');
+  resolveClearLogin({ cancelled: true });
+  await check(`!document.querySelector('#profile-clear-login').disabled
+    && document.querySelector('#profile-login-clear-status').hidden
+    && document.querySelector('#profile-clear-login').getAttribute('aria-busy') === 'false'`, 'cancelled confirmation restores controls without a success message');
+  assert.equal(await evaluate(`document.querySelector('#profile-login-label').textContent`), originalLoginLabel);
+  assert.deepEqual(profile, retainedProfile, 'cancelled reset preserves the profile task');
+
+  await click('#profile-clear-login');
+  await check(`document.querySelector('#profile-clear-login').disabled`, 'confirmed reset remains pending until completion');
+  const loggedOut = { status: 'logged-out', loggedIn: false, nickname: '', userId: '' };
+  xhsLogin = loggedOut;
+  resolveClearLogin({ loginState: loggedOut, profileState: profile,
+    message: '小红书登录记录已清除，可重新登录其他账号。' });
+  await check(`!document.querySelector('#profile-clear-login').disabled
+    && document.querySelector('#profile-login').dataset.loginStatus === 'logged-out'
+    && document.querySelector('#profile-login-clear-status').dataset.status === 'success'
+    && document.querySelector('#profile-login-clear-status').textContent.includes('重新登录其他账号')`, 'confirmed cleanup shows a signed-out state and success feedback');
+  assert.deepEqual(profile, retainedProfile, 'reset response retains task records');
+  assert.deepEqual(account, retainedSoftwareAccount, 'reset does not sign out the software account');
+  // An old initial snapshot arrives only after cleanup has succeeded. The
+  // renderer must not restore the cleared account from that stale response.
+  resolveInitialLogin({ status: 'logged-in', loggedIn: true, nickname: '旧账号', userId: 'stale-xhs-user' });
+  for (let attempt = 0; attempt < 50 && loginReadDeliveries === 0; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(loginReadDeliveries, 1, 'delayed initial login snapshot reached the preload');
+  await paint();
+  assert.equal(await evaluate(`document.querySelector('#profile-login').dataset.loginStatus`), 'logged-out',
+    'delayed login discovery cannot restore a cleared account');
+
+  clearLoginMode = 'error';
+  await click('#profile-clear-login');
+  await check(`!document.querySelector('#profile-clear-login').disabled
+    && document.querySelector('#profile-login-clear-status').dataset.status === 'error'
+    && document.querySelector('#profile-login-clear-status').getAttribute('role') === 'alert'`, 'cleanup errors are visible and retry remains available');
+  assert.match(await evaluate(`document.querySelector('#profile-login-clear-status').textContent`), /测试清除失败.*<img/);
+  assert.equal(await evaluate(`document.querySelector('#profile-login-clear-status').querySelectorAll('img, script').length`), 0,
+    'cleanup failures render as text');
+  clearLoginMode = 'invalid';
+  await click('#profile-clear-login');
+  await check(`document.querySelector('#profile-login-clear-status').textContent === '暂时无法确认登录记录已清除，请重试。'`,
+    'an unconfirmed cleanup response cannot claim success');
+  assert.equal(await evaluate(`document.querySelector('#profile-login').dataset.loginStatus`), 'logged-out');
+  clearLoginMode = 'pending';
+  await click('#profile-clear-login');
+  await check(`document.querySelector('#profile-clear-login').disabled`, 'cleanup error can be retried');
+  resolveClearLogin({ cancelled: true });
+  await check(`!document.querySelector('#profile-clear-login').disabled && document.querySelector('#profile-login-clear-status').hidden`,
+    'cancelled retry clears prior error feedback');
+
+  const longNickname = '超长的小红书账号昵称'.repeat(30) + '<img src=x onerror=alert(1)>';
+  publishLogin({ status: 'logged-in', loggedIn: true, nickname: longNickname, userId: 'fixture-long-name' });
+  await check(`document.querySelector('#profile-login-label').textContent === ${JSON.stringify(`已登录 · ${longNickname}`)}`,
+    'the login control retains the complete long nickname as text');
+  assert.equal(await evaluate(`document.querySelector('#profile-login').querySelectorAll('img, script').length`), 0);
+  assert.ok((await evaluate(`document.querySelector('#profile-login').title`)).includes(longNickname),
+    'the complete nickname stays available in the title');
+  for (const [width, height] of [[760, 900], [390, 844]]) {
+    await resizeViewport(width, height);
+    await evaluate(`document.querySelector('#profile-panel').scrollTop = 0`);
+    const geometry = await evaluate(`(() => {
+      const panel = document.querySelector('#profile-panel'), tools = document.querySelector('.profile-account-tools');
+      const toolRect = tools.getBoundingClientRect();
+      const buttons = ['profile-login', 'profile-clear-login'].map(id => {
+        const element = document.getElementById(id), rect = element.getBoundingClientRect();
+        return { id, visible: element.getClientRects().length > 0 && rect.width > 0 && rect.height > 0,
+          fits: rect.left >= toolRect.left - 1 && rect.right <= toolRect.right + 1
+            && rect.top >= 0 && rect.bottom <= innerHeight, rect: rect.toJSON() };
+      });
+      return { fits: panel.scrollWidth <= panel.clientWidth && tools.scrollWidth <= tools.clientWidth
+          && document.documentElement.scrollWidth <= document.documentElement.clientWidth
+          && buttons.every(button => button.visible && button.fits), buttons,
+        panel: { clientWidth: panel.clientWidth, scrollWidth: panel.scrollWidth }, tools: toolRect.toJSON() };
+    })()`);
+    assert.equal(geometry.fits, true, `${width}px: reset and login buttons fit with a long nickname: ${JSON.stringify(geometry)}`);
+    loginResetScreenshots[width] = path.join(temporary, `desktop-xhs-login-reset-${width}.png`);
+    writeFileSync(loginResetScreenshots[width], await captureFrame());
+  }
+  publishLogin(loggedOut);
+  await check(`document.querySelector('#profile-login').dataset.loginStatus === 'logged-out'`, 'login state returns to the reset result');
+  await resizeViewport(1180, 980);
   // Exercise the real embedded page and its packaged resources, keeping the
   // downloader's renderer alive throughout navigation and QR saving.
   const learningScreenshots = {};
@@ -1250,7 +1373,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'eight independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['XHS login reset confirmation cancel, pending deduplication, success, retry and safe error rendering', 'XHS reset rejects unconfirmed cleanup and stale initial login discovery', '760px and 390px login/reset controls with long nickname', 'iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'eight independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], loginResetScreenshots, learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

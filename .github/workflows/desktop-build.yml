@@ -113,6 +113,8 @@ jobs:
         run: |
           npm run desktop:verify:startup-quit
           npm run desktop:verify:startup-quit -- --startup-failure
+      - name: Verify isolated Xiaohongshu login reset and preserved app session
+        run: npm run desktop:verify:login-reset
       - name: Verify retry and update controls in the real desktop renderer
         run: npx electron scripts/verify-desktop-ui.mjs
       - name: Verify public and packaged learning page assets, navigation and QR saving

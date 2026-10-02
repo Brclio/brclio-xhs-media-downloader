@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 2 日，桌面 v2.0.0 与网页版更新会员套餐：日会员 3 元、月会员 19.9 元、年会员 69.9 元；付款后由人工核实，24 小时内尽快处理并通过邮箱发送激活码。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 2 日，桌面 v2.0.1 新增清除小红书登录记录按钮，方便切换账号；下载文件、任务记录与软件会员保留。Android 保持 v1.0.8。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -58,7 +58,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次更新会员套餐与开通提示，让价格、人工处理时间和激活方式更清楚。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次桌面更新增加「清除登录记录」按钮，清空小红书登录信息后即可重新登录其它账号。
             </p>
 
             <div class="release-hero-actions">
@@ -73,7 +73,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.0</strong>
+              <strong>v2.0.1</strong>
               <small>2026.10.02 · Mac / Windows</small>
             </div>
 
@@ -96,8 +96,8 @@
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 日会员 3 元 · 月会员 19.9 元 · 年会员 69.9 元；人工核实，24 小时内尽快发码。</p>
-            <a class="release-summary-link" href="#membership-pricing-update">阅读会员套餐与开通说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 清除小红书登录记录，方便切换账号；下载文件、任务记录与软件会员保留。</p>
+            <a class="release-summary-link" href="#xhs-login-reset-update">阅读小红书账号切换说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.0、会员、人工处理" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.1、清除登录、切换账号" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,6 +129,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#xhs-login-reset-update"><span>v2.0.1</span><strong>清除登录与切换账号</strong></a>
               <a href="#membership-pricing-update"><span>v2.0.0</span><strong>会员套餐与开通说明</strong></a>
               <a href="#video-download-progress-update"><span>v1.8.30</span><strong>视频下载进度</strong></a>
               <a href="#member-original-video-update"><span>v1.8.26</span><strong>会员无水印原视频</strong></a>
@@ -184,6 +185,20 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
+            <article id="xhs-login-reset-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-02"><span>10.02</span><small>2026 · 小红书账号</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.1</span><span class="release-status">Mac / Windows</span></div><h3>清除小红书登录记录，方便切换账号</h3></div></header>
+                <p class="release-lead">「登录小红书 / 完成验证」旁新增「清除登录记录」按钮。确认清除后，点击登录按钮即可重新登录其它小红书账号。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>确认后清空登录信息</strong>通过系统确认窗口执行清除，移除客户端内的小红书 Cookie、登录资料、网站存储与缓存。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>先暂停任务，再切换账号</strong>清除时暂停正在运行的主页任务，并关闭小红书登录与验证窗口，完成后显示未登录状态。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>文件与软件会员保留</strong>已下载文件、主页任务记录和 Brclio 软件账号与会员权益保留；取消确认即可继续使用当前账号。</p></div>
+                </div>
+                <p class="release-card-note">本次更新仅涉及桌面客户端，Android 保持 v1.0.8。会员套餐继续沿用 v2.0.0 的价格与开通流程。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.1" target="_blank" rel="noopener noreferrer">桌面版 v2.0.1 说明 ↗</a><a href="/download.html">下载最新版 ↗</a><span>清除登录记录 · 2026.10.02</span></div>
+              </div>
+            </article>
             <article id="membership-pricing-update" class="release-entry release-entry-featured" data-release-platforms="web desktop android">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-02"><span>10.02</span><small>2026 · 会员开通</small></time></div>
               <div class="release-card">
@@ -1565,7 +1580,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.02 · 桌面 v2.0.0 · Android v1.0.8。</p>
+        <p>网页版与客户端记录整理至 2026.10.02 · 桌面 v2.0.1 · Android v1.0.8。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

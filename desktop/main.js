@@ -6,6 +6,7 @@ import os from 'node:os';
 import { APP_URL, createProtocolHandler, isAppUrl } from './protocol.js';
 import { PythonBackend } from './python-backend.js';
 import { XhsBrowser } from './profile-browser.js';
+import { XhsLoginReset } from './xhs-login-reset.js';
 import { ProfileManager } from './profile-manager.js';
 import { UpdateManager, createElectronUpdateFetch } from './update-manager.js';
 import { SecureAccountStore } from './account-storage.js';
@@ -32,6 +33,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'xhs-app', privileges: {
 let mainWindow;
 let browser;
 let manager;
+let loginReset;
 let pythonBackend;
 let updateManager;
 let updateHistory;
@@ -221,29 +223,43 @@ function registerIpc() {
     return directory;
   });
   handle('desktop:open-login', (url) => {
+    loginReset.assertIdle();
     if (url != null && typeof url !== 'string') throw new Error('主页地址无效。');
     return browser.openLogin(url || undefined);
   });
-  handle('desktop:get-login-state', () => browser.getLoginState());
+  handle('desktop:get-login-state', () => loginReset.busy ? { ...browser.loginState } : browser.getLoginState());
+  handle('desktop:clear-xhs-login', () => loginReset.run());
   handle('desktop:start-profile', async (options) => {
+    const revision = loginReset.revision;
+    loginReset.assertIdle();
     if (!options || typeof options !== 'object' || Array.isArray(options)) throw new Error('下载参数无效。');
     const directory = await approvedDirectory(options.directory);
+    loginReset.assertIdle(revision);
     return manager.start({ profileUrl: options.profileUrl, directory,
       intervalSeconds: options.intervalSeconds, jitterSeconds: options.jitterSeconds });
   });
   handle('desktop:pause-profile', () => manager.pause());
   handle('desktop:resume-profile', async () => {
+    const revision = loginReset.revision;
+    loginReset.assertIdle();
     await approvedDirectory(manager.snapshot().directory);
+    loginReset.assertIdle(revision);
     return manager.resume();
   });
   handle('desktop:cancel-profile', () => manager.cancel());
   handle('desktop:retry-failed', async () => {
+    const revision = loginReset.revision;
+    loginReset.assertIdle();
     await approvedDirectory(manager.snapshot().directory);
+    loginReset.assertIdle(revision);
     return manager.retryFailed();
   });
   handle('desktop:retry-item', async (noteId) => {
+    const revision = loginReset.revision;
+    loginReset.assertIdle();
     if (typeof noteId !== 'string' || !/^[a-f\d]{24}$/i.test(noteId)) throw new Error('帖子编号无效。');
     await approvedDirectory(manager.snapshot().directory);
+    loginReset.assertIdle(revision);
     return manager.retryItem(noteId);
   });
   handle('desktop:get-profile-state', () => manager.snapshot());
@@ -349,6 +365,14 @@ async function boot() {
   manager = new ProfileManager({ stateDirectory: path.join(app.getPath('userData'), 'profile-jobs'), browser, onUpdate: sendUpdate,
     onDiagnostic: diagnostic,
     authorize: feature => accountClient.authorize(feature) });
+  loginReset = new XhsLoginReset({ manager, confirm: async () => {
+    const result = await dialog.showMessageBox(mainWindow, {
+      type: 'question', title: '清除小红书登录记录', message: '清除后需要重新登录小红书。',
+      detail: '将清空下载器在这台电脑保存的小红书登录信息、Cookie、网站存储和缓存。正在运行的主页任务会先暂停；下载文件、任务记录和软件会员账号会保留。',
+      buttons: ['取消', '清除登录记录'], defaultId: 0, cancelId: 0, noLink: true
+    });
+    return result.response === 1;
+  } });
   await manager.initialize();
   diagnostic('task.restored', diagnosticContext().task);
   for (const item of manager.snapshot().items || []) {
