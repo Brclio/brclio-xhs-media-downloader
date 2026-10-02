@@ -341,11 +341,38 @@ app.whenReady().then(async () => {
     await paint();
   };
   const captureFrame = async () => {
-    // Chromium may still be rasterizing an earlier frame after DOM assertions.
-    // Let the offscreen compositor publish the changed layout before capture.
-    win.webContents.invalidate();
-    await new Promise(resolve => setTimeout(resolve, 350));
-    return (await win.webContents.capturePage()).toPNG();
+    const location = new Error('Offscreen frame requested here').stack;
+    await paint();
+    const viewport = await evaluate('({ width: innerWidth, height: innerHeight })');
+    // invalidate() delivers a complete NativeImage through offscreen paint.
+    // A second capturePage surface readback can fail with UnknownVizError even
+    // after the DOM is ready. Wait for the actual matching frame instead.
+    return new Promise((resolve, reject) => {
+      const observed = [];
+      const finish = (error, png) => {
+        clearTimeout(timer);
+        win.webContents.removeListener('paint', onPaint);
+        if (error) reject(new Error(`Offscreen screenshot failed at ${viewport.width}×${viewport.height}: ${error.message}; observed frames: ${JSON.stringify(observed)}; ${location}`, { cause: error }));
+        else resolve(png);
+      };
+      const onPaint = (_event, _dirty, image) => {
+        try {
+          const size = image.getSize();
+          observed.push(size);
+          if (observed.length > 8) observed.shift();
+          if (size.width !== viewport.width || size.height !== viewport.height || image.isEmpty()) return;
+          const png = image.toPNG();
+          assert.ok(png.length > 24 && png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), 'offscreen frame contains a PNG');
+          assert.equal(png.readUInt32BE(16), viewport.width, 'screenshot width matches the verified viewport');
+          assert.equal(png.readUInt32BE(20), viewport.height, 'screenshot height matches the verified viewport');
+          finish(null, png);
+        } catch (error) { finish(error); }
+      };
+      const timer = setTimeout(() => finish(new Error('No matching compositor paint arrived within 5 seconds.')), 5000);
+      win.webContents.on('paint', onPaint);
+      try { win.webContents.invalidate(); }
+      catch (error) { finish(error); }
+    });
   };
   const verifyShortcut = async target => {
     const evaluateShortcut = expression => target.webContents.executeJavaScript(expression, true);

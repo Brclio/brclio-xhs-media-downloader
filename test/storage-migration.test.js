@@ -104,9 +104,25 @@ function fakeGithub(initial = {}, { privateRepo = true } = {}) {
   return api;
 }
 const githubStore = api => new GithubMigrationStore({ ...config, fetchImpl: api.fetch });
+const sqliteFixtures = new WeakMap();
 async function temporary(t) {
   const directory = await mkdtemp(join(tmpdir(), 'brclio-migration-'));
-  t.after(() => rm(directory, { recursive: true, force: true })); return directory;
+  const stores = [];
+  sqliteFixtures.set(t, stores);
+  // after hooks run in registration order. Close SQLite before deleting its
+  // files; POSIX unlinking an open file would otherwise hide this lifecycle bug.
+  t.after(async () => {
+    for (const store of stores) store.close();
+    await rm(directory, { recursive: true, force: true });
+  });
+  return directory;
+}
+function sqliteFixture(t, options) {
+  const stores = sqliteFixtures.get(t);
+  assert.ok(stores, 'Create the temporary directory before opening a SQLite fixture');
+  const store = new SqliteStateStore(options);
+  stores.push(store);
+  return store;
 }
 const snapshotSource = snapshot => ({ exportSnapshot: async () => snapshot });
 
@@ -138,8 +154,7 @@ test('GitHub snapshot reuses verified immutable blobs without dropping repeated 
 
 test('real SQLite and mocked GitHub round-trip all state fields, conversations and logs atomically', async t => {
   const directory = await temporary(t), sourceApi = fakeGithub(filesFor(fixture()));
-  const sqlite = new SqliteStateStore({ path: join(directory, 'accounts.sqlite') });
-  t.after(() => sqlite.close());
+  const sqlite = sqliteFixture(t, { path: join(directory, 'accounts.sqlite') });
   const first = await migrateStorage({ source: githubStore(sourceApi), target: sqlite, from: 'github', to: 'sqlite', apply: true });
   assert.equal(first.applied, true); assert.equal(first.source.logParts, 4);
   const local = await sqlite.exportSnapshot();
@@ -195,7 +210,7 @@ test('replacement persists private backup before atomic GitHub replacement and r
   const result = await migrateStorage({ source: snapshotSource(fixture()), target: githubStore(api), from: 'sqlite', to: 'github', apply: true, replace: true, backupDirectory: directory });
   const backup = JSON.parse(await readFile(result.backup, 'utf8'));
   assert.deepEqual(backup.snapshot.state, oldState); assert.deepEqual(backup.snapshot.parts, oldSnapshot.parts);
-  assert.equal((await stat(result.backup)).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') assert.equal((await stat(result.backup)).mode & 0o777, 0o600);
   assert.equal(JSON.stringify(backup).includes(config.token), false);
   assert.equal(api.files[pathFor(OLD, 0)], undefined);
   assert.equal(api.files['README.md'], 'keep'); assert.equal(api.files['feedback/README.md'], 'keep feedback docs');
@@ -211,8 +226,7 @@ test('backup failure prevents target writes', async t => {
 });
 
 test('SQLite concurrent writes after preview prevent replacement without partial imports', async t => {
-  const directory = await temporary(t), sqlite = new SqliteStateStore({ path: join(directory, 'racing.sqlite') });
-  t.after(() => sqlite.close());
+  const directory = await temporary(t), sqlite = sqliteFixture(t, { path: join(directory, 'racing.sqlite') });
   const target = {
     exportSnapshot: () => sqlite.exportSnapshot(),
     async importSnapshot(snapshot, options) {
@@ -228,8 +242,7 @@ test('SQLite concurrent writes after preview prevent replacement without partial
 
 test('source movement during preview refuses migration before touching the destination', async t => {
   const directory = await temporary(t), sourceApi = fakeGithub(filesFor(fixture()));
-  const sqlite = new SqliteStateStore({ path: join(directory, 'target.sqlite') });
-  t.after(() => sqlite.close());
+  const sqlite = sqliteFixture(t, { path: join(directory, 'target.sqlite') });
   const before = await sqlite.exportSnapshot();
   await assert.rejects(migrateStorage({ source: githubStore(sourceApi), target: sqlite, from: 'github', to: 'sqlite', apply: true,
     onPreview: () => sourceApi.advance({ 'new-write.txt': 'source moved' }) }), { code: 'STORAGE_CONFLICT' });
@@ -239,8 +252,7 @@ test('source movement during preview refuses migration before touching the desti
 });
 
 test('SQLite source movement while reading target preview leaves GitHub untouched without re-exporting logs', async t => {
-  const directory = await temporary(t), sqlite = new SqliteStateStore({ path: join(directory, 'source.sqlite') });
-  t.after(() => sqlite.close());
+  const directory = await temporary(t), sqlite = sqliteFixture(t, { path: join(directory, 'source.sqlite') });
   await sqlite.importSnapshot(fixture());
   const originalExport = sqlite.exportSnapshot.bind(sqlite);
   let exports = 0, moved = false;
@@ -261,8 +273,7 @@ test('SQLite source movement while reading target preview leaves GitHub untouche
 });
 
 test('source movement while backing up retains the backup and leaves SQLite untouched', async t => {
-  const directory = await temporary(t), sqlite = new SqliteStateStore({ path: join(directory, 'target.sqlite') });
-  t.after(() => sqlite.close());
+  const directory = await temporary(t), sqlite = sqliteFixture(t, { path: join(directory, 'target.sqlite') });
   await sqlite.transaction(state => { state.users.old = { email: 'old@example.invalid' }; });
   const before = await sqlite.exportSnapshot();
   const current = fixture();
@@ -323,8 +334,7 @@ test('limits and malformed paths are rejected before migration writes', async ()
 });
 
 test('large SQLite targets can be backed up and replaced while writes to GitHub enforce 900KB', async t => {
-  const directory = await temporary(t), sqlite = new SqliteStateStore({ path: join(directory, 'large.sqlite') });
-  t.after(() => sqlite.close());
+  const directory = await temporary(t), sqlite = sqliteFixture(t, { path: join(directory, 'large.sqlite') });
   const large = fixture(); large.state.largeFutureField = 'x'.repeat(950_000);
   await sqlite.importSnapshot(large);
   const preview = await migrateStorage({ source: snapshotSource(fixture()), target: sqlite, from: 'github', to: 'sqlite' });
@@ -338,19 +348,25 @@ test('large SQLite targets can be backed up and replaced while writes to GitHub 
   assert.equal(api.calls.every(call => call.method === 'GET'), true);
 });
 
-test('unsafe backup permissions and public paths are rejected before writes', async t => {
+test('unsafe POSIX backup permissions are rejected before writes', { skip: process.platform === 'win32' }, async t => {
   const directory = await temporary(t), insecureDirectory = join(directory, 'insecure');
   await mkdir(insecureDirectory); await chmod(insecureDirectory, 0o755);
   const api = fakeGithub(filesFor(fixture()));
   await assert.rejects(migrateStorage({ source: snapshotSource(fixture()), target: githubStore(api), from: 'sqlite', to: 'github', apply: true, replace: true, backupDirectory: insecureDirectory }), { code: 'MIGRATION_BACKUP_FAILED' });
   assert.equal(api.calls.every(call => call.method === 'GET'), true);
+});
+
+test('public storage and backup paths are rejected before writes on every platform', async t => {
+  const directory = await temporary(t), api = fakeGithub(filesFor(fixture()));
   const project = fileURLToPath(new URL('../', import.meta.url));
   for (const path of [join(project, 'dist-web', 'accounts.sqlite'), join(project, 'public', 'accounts.sqlite'), join(project, 'admin', 'accounts.sqlite')]) {
     await assert.rejects(migrationCli(['--from', 'github', '--to', 'sqlite', '--sqlite-path', path], env, { fetchImpl: api.fetch, output: () => {} }), { code: 'MIGRATION_PUBLIC_PATH' });
   }
   await assert.rejects(migrationCli(['--from', 'github', '--to', 'sqlite', '--sqlite-path', join(directory, 'accounts.sqlite'), '--backup-dir', join(project, 'dist-web', 'admin')], env, { fetchImpl: api.fetch, output: () => {} }), { code: 'MIGRATION_PUBLIC_PATH' });
-  const alias = join(directory, 'public-alias'); await symlink(join(project, 'admin'), alias);
+  const alias = join(directory, 'public-alias');
+  await symlink(join(project, 'admin'), alias, process.platform === 'win32' ? 'junction' : 'dir');
   await assert.rejects(migrationCli(['--from', 'github', '--to', 'sqlite', '--sqlite-path', join(alias, 'accounts.sqlite')], env, { fetchImpl: api.fetch, output: () => {} }), { code: 'MIGRATION_PUBLIC_PATH' });
+  assert.equal(api.calls.length, 0);
 });
 
 test('GitHub branch movement before commit is rejected without moving the branch', async () => {

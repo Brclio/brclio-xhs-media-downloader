@@ -13,6 +13,28 @@ export const FALLBACK_SHARED_ASSETS = Object.freeze([
   'assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png',
 ]);
 
+// preBuild invokes the same pinned runtime provisioner as the signed candidate.
+// Keep its lock, launcher source, and license material beside the copied script.
+export const FALLBACK_BUILD_DEPENDENCIES = Object.freeze([
+  'scripts/prepare-update-proxy.mjs',
+  'desktop/resources/update-proxy/runtime.lock.json',
+  'desktop/resources/update-proxy/android-parent-launcher.c',
+  'desktop/resources/update-proxy/LICENSE',
+  'desktop/resources/update-proxy/NOTICE',
+]);
+
+export async function copyManualFallbackSources(root, fixtureRoot) {
+  await cp(path.join(root, 'android'), path.join(fixtureRoot, 'android'), {
+    recursive: true,
+    filter: source => !path.relative(path.join(root, 'android'), source).split(path.sep)
+      .some(part => ['build', '.gradle', 'local.properties'].includes(part)),
+  });
+  for (const file of [...FALLBACK_SHARED_ASSETS, ...FALLBACK_BUILD_DEPENDENCIES]) {
+    await mkdir(path.dirname(path.join(fixtureRoot, file)), { recursive: true });
+    await cp(path.join(root, file), path.join(fixtureRoot, file));
+  }
+}
+
 export function manualDownloadControl(nodes) {
   const viewport = nodes.find(node => node.package === 'com.brclio.xhs.debug'
     && node.class === 'android.webkit.WebView' && node.rect);
@@ -86,15 +108,7 @@ export async function verifyManualFallback({ root, output, run, device, shell, s
   assert.equal((await shell('getprop', 'ro.kernel.qemu')).trim(), '1');
   const fixtureApp = 'com.brclio.xhs.debug';
   const fixtureRoot = await mkdtemp(path.join(tmpdir(), 'brclio-android-fallback-fixture-'));
-  await cp(path.join(root, 'android'), path.join(fixtureRoot, 'android'), {
-    recursive: true,
-    filter: source => !path.relative(path.join(root, 'android'), source).split(path.sep)
-      .some(part => ['build', '.gradle', 'local.properties'].includes(part)),
-  });
-  for (const file of FALLBACK_SHARED_ASSETS) {
-    await mkdir(path.dirname(path.join(fixtureRoot, file)), { recursive: true });
-    await cp(path.join(root, file), path.join(fixtureRoot, file));
-  }
+  await copyManualFallbackSources(root, fixtureRoot);
   const gradleFile = path.join(fixtureRoot, 'android/app/build.gradle');
   let gradle = await readFile(gradleFile, 'utf8');
   assert.equal((gradle.match(/versionCode\s+\d+/g) || []).length, 1);

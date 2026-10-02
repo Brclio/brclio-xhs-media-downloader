@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { captureUiHierarchy, installSourceToggle, packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
-import { FALLBACK_SHARED_ASSETS, manualDownloadControl, selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
+import { copyManualFallbackSources, FALLBACK_BUILD_DEPENDENCIES, FALLBACK_SHARED_ASSETS,
+  manualDownloadControl, selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
 
 test('isolated manual fallback fixture includes every shared asset required by the candidate Gradle bundle', async () => {
   const gradle = await readFile(new URL('../android/app/build.gradle', import.meta.url), 'utf8');
@@ -14,6 +18,38 @@ test('isolated manual fallback fixture includes every shared asset required by t
   for (const file of FALLBACK_SHARED_ASSETS) {
     assert.ok((await readFile(new URL(`../${file}`, import.meta.url))).length > 0, `Shared asset is missing: ${file}`);
   }
+});
+
+test('isolated manual fallback copies the real runtime provisioner and its pinned build dependencies', async () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const fixture = await mkdtemp(path.join(tmpdir(), 'brclio-fallback-source-test-'));
+  try {
+    await copyManualFallbackSources(root, fixture);
+    assert.deepEqual([...FALLBACK_BUILD_DEPENDENCIES].sort(), [
+      'scripts/prepare-update-proxy.mjs', 'desktop/resources/update-proxy/runtime.lock.json',
+      'desktop/resources/update-proxy/android-parent-launcher.c',
+      'desktop/resources/update-proxy/LICENSE', 'desktop/resources/update-proxy/NOTICE',
+    ].sort());
+    for (const file of [...FALLBACK_SHARED_ASSETS, ...FALLBACK_BUILD_DEPENDENCIES]) {
+      assert.deepEqual(await readFile(path.join(fixture, file)), await readFile(path.join(root, file)),
+        `The isolated build must use the unchanged candidate dependency: ${file}`);
+    }
+    const provisioner = await import(pathToFileURL(path.join(fixture, 'scripts/prepare-update-proxy.mjs')).href);
+    const lock = JSON.parse(await readFile(path.join(root, 'desktop/resources/update-proxy/runtime.lock.json'), 'utf8'));
+    assert.deepEqual(provisioner.runtimeLock, lock, 'Copied provisioner must resolve its adjacent runtime lock');
+    const gradle = await readFile(path.join(fixture, 'android/app/build.gradle'), 'utf8');
+    assert.match(gradle, /dependsOn syncLearningAssets, prepareUpdateProxy/,
+      'Fixture must retain the signed candidate runtime and shared-assets build steps');
+  } finally {
+    await rm(fixture, { recursive: true, force: true });
+  }
+});
+
+test('upgrade CI installs the SDK and pinned NDK required by the isolated candidate fixture', async () => {
+  const workflow = await readFile(new URL('../.github/workflows/android-release.yml', import.meta.url), 'utf8');
+  const upgradeJob = workflow.slice(workflow.indexOf('  upgrade-emulator:'));
+  assert.match(upgradeJob, /sdkmanager 'platforms;android-35' 'build-tools;35\.0\.0' 'ndk;27\.2\.12479018'/);
+  assert.match(upgradeJob, /script: node scripts\/verify-android-upgrade\.mjs/);
 });
 
 test('manual fallback selects the exact visible enabled Button instead of matching its release-note text', () => {

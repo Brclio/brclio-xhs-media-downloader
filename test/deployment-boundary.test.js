@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { buildWeb, PUBLIC_FILES } from '../deploy/build-web.mjs';
 import { build } from 'esbuild';
 
@@ -118,7 +119,7 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
 test('Vercel and Cloudflare import graphs remain independent of standalone SQLite and migration tools', async () => {
   for (const entry of ['api/account.js', 'cloudflare/worker.js']) {
     const bundle = await build({
-      entryPoints: [new URL(`../${entry}`, import.meta.url).pathname],
+      entryPoints: [fileURLToPath(new URL(`../${entry}`, import.meta.url))],
       bundle: true, write: false, metafile: true, platform: 'node', format: 'esm',
       external: ['node:*', 'cloudflare:*'],
     });

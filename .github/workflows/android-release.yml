@@ -133,8 +133,8 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - name: Install APK signature verifier
-        run: sdkmanager 'build-tools;35.0.0'
+      - name: Install signature verifier and isolated fixture build toolchain
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.2.12479018'
       - uses: actions/download-artifact@v4
         with:
           name: Android-signed-build-${{ github.run_id }}-${{ github.run_attempt }}
