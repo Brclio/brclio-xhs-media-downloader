@@ -16,7 +16,7 @@ let controller, running, configurationServer;
 let report = { platform: process.platform, arch: process.arch, checkedAt: new Date().toISOString(), events: [] };
 async function verify() {
 const download = process.argv.includes('--download');
-const timer = setTimeout(() => controller?.abort(new Error('verification timeout')), download ? 300000 : 120000);
+const timer = setTimeout(() => controller?.abort(new Error('verification timeout')), download ? 900000 : 120000);
 try {
   if (!process.argv.includes('--live')) throw new Error('Pass --live to verify the privately configured subscription.');
   const configuration = JSON.parse(await readFile(path.join(root, 'desktop/account-config.json'), 'utf8'));

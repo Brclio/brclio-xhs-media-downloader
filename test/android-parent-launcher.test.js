@@ -32,15 +32,24 @@ test('native Linux parent-death hook survives exec and terminates the core after
   assert.equal(compilation.status, 0, compilation.error?.message || compilation.stderr);
   const rejectsRelativeCore = spawnSync(executable, ['relative-core-path'], { encoding: 'utf8' });
   assert.equal(rejectsRelativeCore.status, 64);
+  // Use a saved child script: nesting two Node -e string literals decodes the
+  // newline escape twice and can make the core fail before its ready message.
+  const coreScript = join(root, 'core.cjs');
+  writeFileSync(coreScript, "process.stdout.write('CORE_READY ' + process.pid + '\\n'); setInterval(() => {}, 1000);\n");
   const ownerSource = `
     const { spawn } = require('node:child_process');
-    const core = spawn(${JSON.stringify(executable)}, [process.execPath, '-e',
-      "process.stdout.write('CORE_READY ' + process.pid + '\\n'); setInterval(() => {}, 1000)"],
-      { stdio: ['ignore', 'pipe', 'ignore'] });
+    const core = spawn(${JSON.stringify(executable)}, [process.execPath, ${JSON.stringify(coreScript)}],
+      { stdio: ['ignore', 'pipe', 'inherit'] });
     core.stdout.pipe(process.stdout);
-    core.once('error', () => process.exit(1));
+    core.once('error', error => { console.error(error.message); process.exit(1); });
+    core.once('close', (code, signal) => {
+      console.error('Supervised core exited before owner shutdown: ' + code + '/' + signal);
+      process.exit(1);
+    });
   `;
-  const owner = spawn(process.execPath, ['-e', ownerSource], { stdio: ['ignore', 'pipe', 'ignore'] });
+  const owner = spawn(process.execPath, ['-e', ownerSource], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let diagnostics = '';
+  owner.stderr.on('data', data => { diagnostics = (diagnostics + data).slice(-4096); });
   const closed = new Promise((resolve) => owner.once('close', resolve));
   let corePid;
   t.after(async () => {
@@ -50,8 +59,10 @@ test('native Linux parent-death hook survives exec and terminates the core after
   });
   corePid = await new Promise((resolve, reject) => {
     let output = '';
-    const timer = setTimeout(() => reject(new Error('The supervised native core did not become ready.')), 5000);
-    owner.once('error', reject);
+    const fail = error => { clearTimeout(timer); reject(error); };
+    const timer = setTimeout(() => fail(new Error('The supervised native core did not become ready. ' + diagnostics)), 5000);
+    owner.once('error', fail);
+    owner.once('close', (code, signal) => fail(new Error(`The native fixture owner exited before readiness: ${code}/${signal}. ${diagnostics}`)));
     owner.stdout.on('data', (data) => {
       output += data;
       const match = /CORE_READY (\d+)/.exec(output);
@@ -67,7 +78,9 @@ test('native Linux parent-death hook survives exec and terminates the core after
     } catch { return false; }
   };
   assert.equal(stillRunning(), true);
-  owner.kill('SIGKILL');
+  assert.equal(owner.kill('SIGKILL'), true);
+  await closed;
+  assert.equal(owner.signalCode, 'SIGKILL');
   const deadline = Date.now() + 3000;
   while (stillRunning() && Date.now() < deadline) await delay(20);
   assert.equal(stillRunning(), false, 'The proxy core must stop when its application owner is killed.');
