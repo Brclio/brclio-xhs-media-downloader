@@ -23,6 +23,23 @@ export const FALLBACK_BUILD_DEPENDENCIES = Object.freeze([
   'desktop/resources/update-proxy/NOTICE',
 ]);
 
+// Native checks allow 80 seconds for current administration config, subscription
+// fetching, node probes, and GitHub metadata. Observe the complete native result.
+export const MANUAL_FALLBACK_RELEASE_LOOKUP_TIMEOUT_MS = 120000;
+
+export function manualFallbackLookupState(observed) {
+  const status = String(observed?.status || '')
+    .replace(/https?:\/\/[^\s<>"']+/gi, '[redacted URL]')
+    .replace(/\b(token|password|secret|authorization)\s*[:=]\s*\S+/gi, '$1=[redacted]')
+    .slice(0, 400);
+  return {
+    detailsVisible: observed?.detailsVisible === true,
+    busy: observed?.busy === true,
+    error: observed?.tone === 'error' || /检查失败/.test(status),
+    status,
+  };
+}
+
 export async function copyManualFallbackSources(root, fixtureRoot) {
   await cp(path.join(root, 'android'), path.join(fixtureRoot, 'android'), {
     recursive: true,
@@ -152,8 +169,31 @@ export async function verifyManualFallback({ root, output, run, device, shell, s
       catch { return null; }
     }, 'debug-only WebView inspector');
     cdp = await cdpConnection(page.webSocketDebuggerUrl);
-    await waitFor(() => cdp.evaluate(`!document.getElementById('update-details').hidden && !document.getElementById('check-update').disabled`),
-      'real public release lookup in debug fixture');
+    let lookupState;
+    const observeLookup = async () => manualFallbackLookupState(await cdp.evaluate(`(() => {
+      const status = document.getElementById('update-status');
+      return { detailsVisible: !document.getElementById('update-details').hidden,
+        busy: document.getElementById('check-update').disabled,
+        tone: status.dataset.tone, status: status.textContent };
+    })()`));
+    try {
+      await waitFor(async () => {
+        lookupState = await observeLookup();
+        if (lookupState.error) throw new Error(`Native public release lookup failed: ${lookupState.status}`);
+        return lookupState.detailsVisible && !lookupState.busy;
+      }, 'real public release lookup in debug fixture', MANUAL_FALLBACK_RELEASE_LOOKUP_TIMEOUT_MS);
+    } catch (failure) {
+      // Capture current bounded UI status, not release notes or subscription/core
+      // details. This distinguishes a native error from an unfinished operation.
+      lookupState = await observeLookup().catch(() => lookupState);
+      await writeFile(path.join(output, 'manual-fallback-release-lookup-failure.json'), JSON.stringify({
+        observedAt: new Date().toISOString(),
+        timeoutMs: MANUAL_FALLBACK_RELEASE_LOOKUP_TIMEOUT_MS,
+        state: lookupState || { unavailable: true },
+      }, null, 2) + '\n');
+      await snapshot().then(() => screenshot('manual-fallback-release-lookup-failed')).catch(() => {});
+      throw failure;
+    }
     // This failure is an explicitly injected UI fixture, not a claimed real
     // Package Installer failure. The following click and native network/intent are real.
     await cdp.evaluate(`window.brclioEvent(${JSON.stringify({ type: 'update', status: 'error', canInstallBuild: true,

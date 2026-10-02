@@ -671,17 +671,44 @@ app.whenReady().then(async () => {
   win.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...backdropPoint });
   await check(`!${learningDocument}.querySelector('#qr-dialog').open`, 'nested QR backdrop closes the dialog');
   const savedLearningQr = path.join(temporary, 'embedded-learning-wechat-qr.png');
-  let learningDownload;
-  session.defaultSession.once('will-download', (_event, item) => {
-    item.setSavePath(savedLearningQr);
-    learningDownload = new Promise((resolve, reject) => item.once('done', (_doneEvent, state) => {
-      if (state === 'completed') resolve(); else reject(new Error(`embedded QR download ${state}`));
-    }));
+  let stopLearningDownload;
+  const learningDownload = new Promise((resolve, reject) => {
+    let item;
+    let deadline;
+    const cleanup = () => {
+      clearTimeout(deadline);
+      session.defaultSession.removeListener('will-download', onDownload);
+      item?.removeListener('done', onDone);
+    };
+    const fail = message => { cleanup(); reject(new Error(message)); };
+    const onDone = (_event, state) => {
+      cleanup();
+      if (state === 'completed') resolve();
+      else reject(new Error(`embedded QR download ${state}`));
+    };
+    const onDownload = (_event, nativeItem) => {
+      item = nativeItem;
+      clearTimeout(deadline);
+      item.once('done', onDone);
+      deadline = setTimeout(() => fail('embedded QR native download did not complete within 5 seconds'), 5000);
+      try { item.setSavePath(savedLearningQr); }
+      catch (error) { fail(`embedded QR native save path failed: ${error.message}`); }
+    };
+    stopLearningDownload = cleanup;
+    deadline = setTimeout(() => fail('embedded QR save did not reach the native download event within 5 seconds'), 5000);
+    session.defaultSession.once('will-download', onDownload);
   });
-  await clickLearning('#qr-save');
-  await check(`${learningDocument}.querySelector('#qr-status').textContent.includes('已发起保存')`, 'embedded QR save reports a download');
-  assert.ok(learningDownload, 'embedded QR save reaches the native download event');
-  await learningDownload;
+  // Chromium delivers the native event asynchronously after the renderer starts
+  // its blob download. Observe both independently rather than inferring that
+  // the renderer's status means will-download has already arrived.
+  try {
+    await Promise.all([learningDownload, (async () => {
+      await clickLearning('#qr-save');
+      await check(`${learningDocument}.querySelector('#qr-status').textContent.includes('已发起保存')`, 'embedded QR save reports a download');
+    })()]);
+  } finally {
+    stopLearningDownload();
+  }
   assert.deepEqual(readFileSync(savedLearningQr), readFileSync(path.join(root, 'assets/support/wechat-personal-qr.png')), 'saved embedded QR preserves the original source bytes');
   assert.equal(win.webContents.getURL(), initialMainUrl, 'promotion and QR saving never reload or navigate the downloader window');
   assert.equal(readyEvents.get(win.webContents.id), 1, 'embedded navigation does not reinitialize the downloader');
