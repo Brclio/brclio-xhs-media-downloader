@@ -74,9 +74,14 @@ body.is-desktop .account-scope { margin-top: 32px; padding-top: 20px; }
 .membership-plan-selected { position: absolute; top: 16px; right: 12px; color: var(--blue-deep, #236cb8); font-size: .66rem; visibility: hidden; }
 .membership-plan:has(input:checked) .membership-plan-selected { visibility: visible; }
 .membership-small { margin: 10px 0 0; color: var(--ink-light, #4a4a5a); font-size: .73rem; line-height: 1.85; }
+.membership-pricing-note { display: flex; align-items: baseline; gap: 9px; margin: 10px 0 0; color: var(--ink-light, #4a4a5a); font-size: .73rem; line-height: 1.85; }
+.membership-pricing-note > span { flex-shrink: 0; color: var(--blue-deep, #236cb8); font-weight: 700; }
 .membership-payment-note { margin: 22px 0; padding: 17px 20px; border-radius: 8px; background: #f9ecc0; }
 .membership-payment-note h3 { margin: 0; font-size: .95rem; font-weight: 800; line-height: 1.6; }
 .membership-payment-note p { margin: 6px 0 0; font-size: .77rem; line-height: 1.8; }
+.membership-processing-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(26, 26, 46, .12); }
+.membership-processing-note h4 { margin: 0; font-size: .78rem; font-weight: 700; line-height: 1.6; }
+.membership-processing-note strong { white-space: nowrap; color: var(--blue-deep, #236cb8); }
 .membership-email-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 12px; }
 .membership-email { min-width: 0; overflow-wrap: anywhere; font-size: .9rem; font-weight: 700; user-select: text; }
 .membership-email-row .button { flex-shrink: 0; min-height: 38px; padding: 7px 12px; background: var(--cream, #fefcf6); }

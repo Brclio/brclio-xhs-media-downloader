@@ -152,7 +152,7 @@ test('browser activation redeems for the verified owner without device binding a
 
 test('targeted plans use the authoritative catalog and bind one registered recipient without plaintext persistence', async () => {
   const f = fixture(), admin = await f.admin(), customer = await f.login();
-  assert.deepEqual(MEMBERSHIP_PLANS.map(p => [p.id, p.days, formatMembershipPrice(p)]), [['daily', 1, '2'], ['monthly', 30, '9.9'], ['yearly', 365, '39.9']]);
+  assert.deepEqual(MEMBERSHIP_PLANS.map(p => [p.id, p.days, formatMembershipPrice(p)]), [['daily', 1, '3'], ['monthly', 30, '19.9'], ['yearly', 365, '69.9']]);
   assert.equal(getMembershipPlan('invented'), null);
   for (const plan of MEMBERSHIP_PLANS) {
     const [code] = await f.generate(admin, { userId: customer.account.user.id, planId: plan.id, type: 'permanent', days: 9000, priceCents: 1 });
@@ -196,7 +196,7 @@ test('activation email uses only the bound recipient and redemption rejects a di
   const sent = await f.adminCall(admin, 'admin-send-activation', input);
   assert.equal(sent.sent, true); assert.equal(sent.code.delivery.status, 'sent'); assert.equal(sent.code.delivery.attemptId, undefined);
   assert.equal(sent.code.code, undefined); assert.equal(f.activationDeliveries.length, 1);
-  assert.deepEqual(f.activationDeliveries[0], { email: customer.account.user.email, code: code.code, plan: { id: 'monthly', name: '月付', days: 30, priceCents: 990 }, redeemBy, deliveryId: `activation-${code.id}` });
+  assert.deepEqual(f.activationDeliveries[0], { email: customer.account.user.email, code: code.code, plan: { id: 'monthly', name: '月付', days: 30, priceCents: 1990 }, redeemBy, deliveryId: `activation-${code.id}` });
   assert.ok(!JSON.stringify(f.state).includes(code.code));
   assert.equal((await f.adminCall(admin, 'admin-send-activation', input)).replayed, true);
   assert.equal((await f.adminCall(admin, 'admin-send-activation', { codeId: code.id })).replayed, true);
@@ -686,7 +686,7 @@ test('all mail providers use a dedicated activation template with plan, duration
   }
   for (const message of Object.values(messages)) {
     assert.equal(message.subject, 'Brclio 小红书下载器会员激活码'); assert.equal(message.text, messages.smtp.text);
-    for (const content of [delivery.email, delivery.code, '年付 · 39.9 元', '365 天', '成功兑换', delivery.redeemBy, '备注您的账号邮箱']) assert.ok(message.text.includes(content), content);
+    for (const content of [delivery.email, delivery.code, '年付 · 69.9 元', '365 天', '成功兑换', delivery.redeemBy, '备注您的账号邮箱']) assert.ok(message.text.includes(content), content);
     assert.ok(!message.text.includes('登录验证码')); assert.ok(!message.text.includes('5 分钟'));
   }
   assert.deepEqual(messages.smtp.to, { address: delivery.email });

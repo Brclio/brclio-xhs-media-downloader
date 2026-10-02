@@ -111,7 +111,7 @@ app.whenReady().then(async () => {
   assert.equal(current.focus, 'membership-close');
   assert.equal(current.paymentHidden, true, 'Logged-out users must be guided to confirm their software account before paying');
   assert.equal(current.guidanceHidden, false);
-  assert.equal(current.amount, '¥9.9');
+  assert.equal(current.amount, '¥19.9');
   await capture('logged-out-desktop');
   await click('membership-go-login');
   assert.equal((await snapshot()).focus, 'account-email');
@@ -130,7 +130,7 @@ app.whenReady().then(async () => {
   await click('membership-copy-email');
   assert.match(await evaluate(`document.getElementById('membership-email-status').textContent`), /手动复制/);
   await evaluate('window.fixtureClipboardFails = false');
-  for (const [id, amount, days] of [['daily', '2', 1], ['monthly', '9.9', 30], ['yearly', '39.9', 365]]) {
+  for (const [id, amount, days] of [['daily', '3', 1], ['monthly', '19.9', 30], ['yearly', '69.9', 365]]) {
     await evaluate(`document.querySelector('input[name="membership-plan"][value="${id}"]').click()`);
     assert.equal((await snapshot()).amount, `¥${amount}`);
     assert.match(await evaluate(`document.getElementById('membership-purchase-summary').textContent`), new RegExp(`${days} 天`));

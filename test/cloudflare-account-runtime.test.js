@@ -132,7 +132,7 @@ test('real SQLite Durable Object preserves auth, full feedback and targeted acti
   const { codes: [code] } = await issued.json();
   assert.equal(code.recipientEmail, 'user@example.test');
   assert.equal(code.days, 30);
-  assert.equal(code.priceCents, 990);
+  assert.equal(code.priceCents, 1990);
   assert.match(code.code, /^Brclio-[A-F0-9]{40}$/);
   assert.ok(!JSON.stringify(state).includes(code.code), 'raw activation code never reaches GitHub state');
   const sendInput = { codeId: code.id, reason: '测试发送月付激活码', requestId: 'fixture-send-membership-123' };

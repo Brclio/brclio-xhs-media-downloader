@@ -57,19 +57,24 @@ export async function initializeAccountUI() {
       <fieldset class="membership-plans"><legend>选择会员套餐</legend><div class="membership-plan-options">${MEMBERSHIP_PLANS.map(plan => `
         <label class="membership-plan"><input type="radio" name="membership-plan" value="${plan.id}" ${plan.id === 'monthly' ? 'checked' : ''}><span class="membership-plan-name">${plan.name}</span><span class="membership-plan-price"><span>¥</span>${plan.priceLabel}</span><span class="membership-plan-duration">${plan.days} 天会员</span><span class="membership-plan-selected" aria-hidden="true">已选择</span></label>`).join('')}
       </div><p class="membership-small">按次购买，不自动续费。兑换后生效；已有有效期会员可顺延。</p></fieldset>
+      <p class="membership-pricing-note"><span>价格说明</span>随着功能持续完善，会员价格将适时上调，具体以购买时页面展示为准。</p>
       <section class="membership-payment-note" aria-labelledby="membership-note-title">
         <h3 id="membership-note-title">付款务必备注软件账号邮箱</h3>
-        <p>核实收款后，激活码会发送至该邮箱。请勿只填写小红书昵称。</p>
+        <p>请填写用于登录本软件的邮箱，方便核实收款与发送激活码。请勿只填写小红书昵称。</p>
         <div id="membership-email-row" class="membership-email-row" hidden><span id="membership-email" class="membership-email"></span><button id="membership-copy-email" class="button button-secondary" type="button">复制邮箱</button></div>
         <p id="membership-email-status" class="membership-email-status" role="status" aria-live="polite"></p>
+        <div class="membership-processing-note">
+          <h4>人工处理，请耐心等待</h4>
+          <p>付款后由人工核实，我们会在 <strong>24 小时内</strong>尽快处理，并将激活码发送至付款备注的邮箱。收到后兑换即可开通，会员时长从兑换成功起计算。</p>
+        </div>
       </section>
       <div id="membership-login-guidance" class="membership-login-guidance"><p id="membership-login-message">请先登录软件账号，确认收件邮箱后再付款。</p><button id="membership-go-login" class="button button-primary" type="button">前往登录 / 注册</button></div>
       <section id="membership-payment" class="membership-payment" aria-label="扫码付款" hidden>
         <div class="membership-payment-instructions">
           <fieldset class="membership-methods"><legend>选择付款方式</legend><div class="membership-method-options"><label><input type="radio" name="membership-method" value="wechat" checked><span>微信支付</span></label><label><input type="radio" name="membership-method" value="alipay"><span>支付宝</span></label></div></fieldset>
-          <p class="membership-amount">付款金额 <strong id="membership-amount">¥9.9</strong><span id="membership-purchase-summary">月付 · 30 天</span></p>
+          <p class="membership-amount">付款金额 <strong id="membership-amount">¥${MEMBERSHIP_PLANS[1].priceLabel}</strong><span id="membership-purchase-summary">${MEMBERSHIP_PLANS[1].name} · ${MEMBERSHIP_PLANS[1].days} 天</span></p>
           <p id="membership-payment-help" class="membership-small">请用微信扫描右侧二维码，手动输入对应金额，并在付款备注中填写上方邮箱。</p>
-          <p class="membership-small">付款后等待人工核实，再查看收件箱与垃圾邮件。付款本身不会直接激活会员。</p>
+          <p class="membership-small">请留意收件箱与垃圾邮件，收到激活码后兑换开通。</p>
         </div>
         <figure class="membership-payment-qr"><img id="membership-payment-image" src="./assets/membership/wechat-pay.png" alt="微信支付收款二维码" width="240" height="240"><figcaption id="membership-payment-caption">微信支付 · 收款码</figcaption></figure>
       </section>

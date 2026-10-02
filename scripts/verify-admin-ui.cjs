@@ -301,7 +301,7 @@ app.whenReady().then(async () => {
   await click('#tab-users');
   await click('.issue-shortcut button');
   await check(`document.querySelector('#issue-recipient').selectedOptions[0].textContent === 'student@example.test' && document.querySelector('#panel-codes').hidden === false`, 'user shortcut preselects the registered email');
-  assert.equal(await evaluate(`Array.from(document.querySelector('#issue-plan').options).map(option => option.textContent).join('|')`), '日付 · ¥2 · 1 天|月付 · ¥9.9 · 30 天|年付 · ¥39.9 · 365 天');
+  assert.equal(await evaluate(`Array.from(document.querySelector('#issue-plan').options).map(option => option.textContent).join('|')`), '日付 · ¥3 · 1 天|月付 · ¥19.9 · 30 天|年付 · ¥69.9 · 365 天');
   await change('#code-status', ''); await click('#codes-filter-form button');
   await change('#issue-plan', 'yearly');
   await fill('#issue-reason', '已核对付款邮箱，测试年付套餐发码');
