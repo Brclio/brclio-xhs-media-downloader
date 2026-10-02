@@ -1,0 +1,767 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "sourceSha": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21",
+  "verifiedAt": "2026-10-02T16:40:05.934Z",
+  "scope": {
+    "purpose": "Same-feature version increment for user testing of the existing update proxy",
+    "featureBehaviorUnchanged": true,
+    "versionOnlyGuard": {
+      "result": "PASS",
+      "releaseCommit": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21",
+      "parentCommit": "664af7a2d3cb795354b487e05292e15d01f3a0d5",
+      "previousReleaseSourceCommit": "6f98115462f046888562a79b6782e7e1722b6bf9",
+      "previousVersions": {
+        "desktop": "2.0.2",
+        "android": "1.0.9",
+        "androidVersionCode": 10009
+      },
+      "featureLogicChanged": false,
+      "dependencyChanges": false,
+      "changedFilesInReleaseCommit": [
+        "README.md",
+        "android/README.md",
+        "android/app/build.gradle",
+        "android/app/src/main/assets/www/index.html",
+        "desktop/README.md",
+        "docs/releases/android-v1.0.10.md",
+        "docs/releases/v2.0.3.md",
+        "package-lock.json",
+        "package.json"
+      ],
+      "comparison": "All changed production files equal both prior sources after removing only package root version fields, two Gradle version fields, and two Android fallback version spans. All other release-commit changes are README/release notes. Earlier download-page/publication-record changes are presentation evidence only."
+    },
+    "previousVersion": "2.0.2"
+  },
+  "publication": {
+    "publisherRunId": 37032521309,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37032521309",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "id": 110922623170,
+        "name": "publish",
+        "status": "completed"
+      }
+    ],
+    "strictRunTagSourceArtifactAndUploadedBytesGatesPassed": true,
+    "provenance": {
+      "schemaVersion": 1,
+      "repository": "Brclio/brclio-xhs-media-downloader",
+      "sourceCommit": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21",
+      "tags": {
+        "desktop": {
+          "name": "v2.0.3",
+          "commit": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21"
+        },
+        "android": {
+          "name": "android-v1.0.10",
+          "commit": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21"
+        }
+      },
+      "runs": {
+        "desktop": {
+          "id": 37028080157,
+          "workflowName": "Desktop installers",
+          "workflowId": 362432997,
+          "headSha": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11235793936,
+              "name": "Brclio-XHS-mac-arm64",
+              "bytes": 327276350,
+              "digest": "sha256:f3585d0a62646a140b2ff606e7b4e8f6c9e941f52844d2ae86609aaa2ac75432"
+            },
+            {
+              "id": 11236980392,
+              "name": "Brclio-XHS-mac-intel",
+              "bytes": 342786344,
+              "digest": "sha256:8a41cffb45c05b79ad59c23510ea344fb790c6ed258af7f3f7fbd57b0d052dd3"
+            },
+            {
+              "id": 11236182083,
+              "name": "Brclio-XHS-windows-x64",
+              "bytes": 286407741,
+              "digest": "sha256:11db578fd2ee528396cdbed358d4ee83e3000267ce781833f61930ae28e202f3"
+            }
+          ]
+        },
+        "android": {
+          "id": 37031366551,
+          "workflowName": "Android signed release",
+          "workflowId": 368644334,
+          "headSha": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11237871719,
+              "name": "Android-release-37031366551-1",
+              "bytes": 72527302,
+              "digest": "sha256:44815b28cb5a1be50910c8abda6ec33120b5012c9e4d2fdfc9ffb598fab9eb2a"
+            }
+          ]
+        }
+      },
+      "provenanceCheckedAt": "2026-10-02T16:14:09.730Z",
+      "publisherCheckedAt": {
+        "desktop": "2026-10-02T16:14:47.819Z",
+        "android": "2026-10-02T16:15:00.118Z"
+      },
+      "publicMetadataCheckedAt": "2026-10-02T16:15:00.926Z"
+    }
+  },
+  "website": {
+    "result": "PASS",
+    "verifiedAt": "2026-10-02T16:38:13.150Z",
+    "deploymentSourceCommit": "659644ac1c0238d874d25f4daa98349a5b972d67",
+    "worker": {
+      "name": "brclio-xhs-downloader",
+      "versionId": "e3faefa7-3c55-4277-8569-c1a09d079840",
+      "deploymentSucceeded": true
+    },
+    "pages": {
+      "url": "https://be3ade13.brclio-xhs-pages.pages.dev",
+      "deploymentSucceeded": true
+    },
+    "formal": {
+      "result": "PASS",
+      "checkedAt": "2026-10-02T16:34:16.972Z",
+      "targetHost": "xhs.download.brclio.com",
+      "mode": "anonymous-read-only",
+      "writes": 0,
+      "authenticationRequests": 0,
+      "backend": {
+        "enabled": true,
+        "revision": 1,
+        "count": 1,
+        "firstMatch": true,
+        "noStore": true
+      },
+      "download": {
+        "desktopTag": "v2.0.3",
+        "androidTag": "android-v1.0.10",
+        "desktopPublishedDate": "2026.10.03",
+        "androidPublishedDate": "2026.10.03",
+        "sizesMatch": true,
+        "staticLinksMatch": true,
+        "placeholdersRemoved": true
+      },
+      "changelog": {
+        "latestEntry": true,
+        "latestSummary": true,
+        "previousProxyRelease": true,
+        "previousDesktopRecord": true,
+        "previousAndroidRecord": true,
+        "previousMembershipRecord": true
+      },
+      "admin": {
+        "updateNetworkTab": true,
+        "backendOnly": true,
+        "noStore": true,
+        "cspVerified": true,
+        "frameProtection": true,
+        "credentialsAbsentFromStaticFiles": true
+      },
+      "staticChecks": [
+        {
+          "file": "download.html",
+          "status": 200,
+          "bytes": 25567,
+          "sha256": "2db3145d15fb0b61773508a42f1cde7b70f27b27cad3a10dd829d4a128a591b0",
+          "localMatch": true
+        },
+        {
+          "file": "download.js",
+          "status": 200,
+          "bytes": 9796,
+          "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+          "localMatch": true
+        },
+        {
+          "file": "download.css",
+          "status": 200,
+          "bytes": 23755,
+          "sha256": "c88c11fa656bc0d3c0aa22a6ab98e20e7c389cc8c012c1de435de22215f3e235",
+          "localMatch": true
+        },
+        {
+          "file": "changelog.html",
+          "status": 200,
+          "bytes": 137036,
+          "sha256": "7e3555cb31f86183818bb949ac0df984ef8e4794893ceeb5b23775463806a684",
+          "localMatch": true
+        },
+        {
+          "file": "changelog.js",
+          "status": 200,
+          "bytes": 4344,
+          "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+          "localMatch": true
+        },
+        {
+          "file": "changelog.css",
+          "status": 200,
+          "bytes": 18431,
+          "sha256": "264ed94c224f8dcc943824ea221cdb56ac3eaa0b0b74c1291c5c07f5a03fc30d",
+          "localMatch": true
+        },
+        {
+          "file": "style.css",
+          "status": 200,
+          "bytes": 33474,
+          "sha256": "3ac6cd52f1f5a884cf9fd7b079847b0b2e721585ac405598b055954aced223f4",
+          "localMatch": true
+        },
+        {
+          "file": "site-header.css",
+          "status": 200,
+          "bytes": 6334,
+          "sha256": "cdcef719e45dd8b2e60ac23e4f31c772d042ec958bb076c5445bdd152c68e3de",
+          "localMatch": true
+        },
+        {
+          "file": "admin/index.html",
+          "status": 200,
+          "bytes": 15496,
+          "sha256": "d66d37073f2cb73b39ac7e5455954412aeb47f7ea29dfbc5e1ed2ec6fbca6a1d",
+          "localMatch": true
+        },
+        {
+          "file": "admin/admin.js",
+          "status": 200,
+          "bytes": 69367,
+          "sha256": "a4b573de672750356a1e09b656fc447f1034b091b7056ca496bc0e56266f1372",
+          "localMatch": true
+        },
+        {
+          "file": "admin/admin.css",
+          "status": 200,
+          "bytes": 21511,
+          "sha256": "3be6993d6218fe444b284dd26355bebf661c09ad84387f2c0f243fc3ff9d6578",
+          "localMatch": true
+        }
+      ],
+      "render": {
+        "status": "PASS",
+        "widths": [
+          1440,
+          390
+        ],
+        "sourceHashesMatched": true
+      }
+    },
+    "pagesReadback": {
+      "result": "PASS",
+      "checkedAt": "2026-10-02T16:34:17.730Z",
+      "targetHost": "be3ade13.brclio-xhs-pages.pages.dev",
+      "mode": "anonymous-read-only",
+      "writes": 0,
+      "authenticationRequests": 0,
+      "backend": {
+        "enabled": true,
+        "revision": 1,
+        "count": 1,
+        "firstMatch": true,
+        "noStore": true
+      },
+      "download": {
+        "desktopTag": "v2.0.3",
+        "androidTag": "android-v1.0.10",
+        "desktopPublishedDate": "2026.10.03",
+        "androidPublishedDate": "2026.10.03",
+        "sizesMatch": true,
+        "staticLinksMatch": true,
+        "placeholdersRemoved": true
+      },
+      "changelog": {
+        "latestEntry": true,
+        "latestSummary": true,
+        "previousProxyRelease": true,
+        "previousDesktopRecord": true,
+        "previousAndroidRecord": true,
+        "previousMembershipRecord": true
+      },
+      "admin": {
+        "updateNetworkTab": true,
+        "backendOnly": true,
+        "noStore": true,
+        "cspVerified": true,
+        "frameProtection": true,
+        "credentialsAbsentFromStaticFiles": true
+      },
+      "staticChecks": [
+        {
+          "file": "download.html",
+          "status": 200,
+          "bytes": 25567,
+          "sha256": "2db3145d15fb0b61773508a42f1cde7b70f27b27cad3a10dd829d4a128a591b0",
+          "localMatch": true
+        },
+        {
+          "file": "download.js",
+          "status": 200,
+          "bytes": 9796,
+          "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+          "localMatch": true
+        },
+        {
+          "file": "download.css",
+          "status": 200,
+          "bytes": 23755,
+          "sha256": "c88c11fa656bc0d3c0aa22a6ab98e20e7c389cc8c012c1de435de22215f3e235",
+          "localMatch": true
+        },
+        {
+          "file": "changelog.html",
+          "status": 200,
+          "bytes": 137036,
+          "sha256": "7e3555cb31f86183818bb949ac0df984ef8e4794893ceeb5b23775463806a684",
+          "localMatch": true
+        },
+        {
+          "file": "changelog.js",
+          "status": 200,
+          "bytes": 4344,
+          "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+          "localMatch": true
+        },
+        {
+          "file": "changelog.css",
+          "status": 200,
+          "bytes": 18431,
+          "sha256": "264ed94c224f8dcc943824ea221cdb56ac3eaa0b0b74c1291c5c07f5a03fc30d",
+          "localMatch": true
+        },
+        {
+          "file": "style.css",
+          "status": 200,
+          "bytes": 33474,
+          "sha256": "3ac6cd52f1f5a884cf9fd7b079847b0b2e721585ac405598b055954aced223f4",
+          "localMatch": true
+        },
+        {
+          "file": "site-header.css",
+          "status": 200,
+          "bytes": 6334,
+          "sha256": "cdcef719e45dd8b2e60ac23e4f31c772d042ec958bb076c5445bdd152c68e3de",
+          "localMatch": true
+        },
+        {
+          "file": "admin/index.html",
+          "status": 200,
+          "bytes": 15496,
+          "sha256": "d66d37073f2cb73b39ac7e5455954412aeb47f7ea29dfbc5e1ed2ec6fbca6a1d",
+          "localMatch": true
+        },
+        {
+          "file": "admin/admin.js",
+          "status": 200,
+          "bytes": 69367,
+          "sha256": "a4b573de672750356a1e09b656fc447f1034b091b7056ca496bc0e56266f1372",
+          "localMatch": true
+        },
+        {
+          "file": "admin/admin.css",
+          "status": 200,
+          "bytes": 21511,
+          "sha256": "3be6993d6218fe444b284dd26355bebf661c09ad84387f2c0f243fc3ff9d6578",
+          "localMatch": true
+        }
+      ],
+      "render": {
+        "status": "PASS",
+        "widths": [
+          1440,
+          390
+        ],
+        "sourceHashesMatched": true
+      }
+    },
+    "formalSmoke": {
+      "origin": "https://xhs.download.brclio.com",
+      "checkedAt": "2026-10-02T16:35:00.035Z",
+      "passed": 55,
+      "total": 55,
+      "ok": true
+    },
+    "pagesSmoke": {
+      "origin": "https://be3ade13.brclio-xhs-pages.pages.dev",
+      "checkedAt": "2026-10-02T16:34:54.505Z",
+      "passed": 55,
+      "total": 55,
+      "ok": true
+    },
+    "scopedWebTests": {
+      "passed": 80,
+      "failed": 0,
+      "skipped": 0
+    },
+    "visualInspection": {
+      "pages": [
+        "download",
+        "changelog"
+      ],
+      "widths": [
+        390,
+        1440
+      ],
+      "rendererErrors": 0,
+      "overflow": false,
+      "inspected": true
+    },
+    "oldReleaseArticlesUnchanged": 49,
+    "configurationWrites": 0,
+    "userDeviceInstallationPerformed": false
+  },
+  "publicReadbackCheckedAt": "2026-10-02T16:18:43.427Z",
+  "publicMetadataCompleteBytesVerified": true,
+  "sourceTagVerified": true,
+  "publicInstallerVerification": {
+    "method": "Anonymous HEAD and range GET; successful native CI and strict publisher complete-file hashes matched to GitHub asset sizes and digests.",
+    "installerFullDownloadRepeatedOnThisHost": false,
+    "previousVersionFullDownloadEvidenceReused": false,
+    "strictPublisherCompleteAssetDownloadReadback": false
+  },
+  "userDeviceInstallationPerformed": false,
+  "platform": "desktop",
+  "version": "2.0.3",
+  "tag": "v2.0.3",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.3",
+  "publishedAt": "2026-10-02T16:14:47Z",
+  "draft": false,
+  "prerelease": false,
+  "releaseId": 401969454,
+  "assetCount": 11,
+  "assets": [
+    {
+      "name": "Brclio-XHS-2.0.3-mac-arm64.dmg",
+      "bytes": 164099988,
+      "sha256": "7993499176d8c63e23f6c4a7c809530e10adc1d8ed01c18bf0abd8a0db597095",
+      "releaseAssetDigest": "sha256:7993499176d8c63e23f6c4a7c809530e10adc1d8ed01c18bf0abd8a0db597095",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.3-mac-arm64.zip",
+      "bytes": 165023296,
+      "sha256": "2ff022e64cc4639c4fa0ac8478ee21d5d5326b9dde3d4768c90752b5f64a6e69",
+      "releaseAssetDigest": "sha256:2ff022e64cc4639c4fa0ac8478ee21d5d5326b9dde3d4768c90752b5f64a6e69",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.3-mac-x64.dmg",
+      "bytes": 171792947,
+      "sha256": "899f9f3fff32ecfe8b707e62987c046c4c9970dfd94eb417de3a2925937c06f1",
+      "releaseAssetDigest": "sha256:899f9f3fff32ecfe8b707e62987c046c4c9970dfd94eb417de3a2925937c06f1",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.3-mac-x64.zip",
+      "bytes": 172819006,
+      "sha256": "7b48c1680576ccd02bcce6697fe34ae8c0a1bfa6312681880f69b1125377cb01",
+      "releaseAssetDigest": "sha256:7b48c1680576ccd02bcce6697fe34ae8c0a1bfa6312681880f69b1125377cb01",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.3-windows-x64-portable.exe",
+      "bytes": 143073674,
+      "sha256": "a94869f1a6a9f277d42f4f7ed4fe608c48b08b8cdd6e51fee2336eb2b74bb38f",
+      "releaseAssetDigest": "sha256:a94869f1a6a9f277d42f4f7ed4fe608c48b08b8cdd6e51fee2336eb2b74bb38f",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "Brclio-XHS-2.0.3-windows-x64-setup.exe",
+      "bytes": 143312160,
+      "sha256": "715de323d357ba3ced9b48ad46639b8e3096f9e6a38091a4998bc92bee444228",
+      "releaseAssetDigest": "sha256:715de323d357ba3ced9b48ad46639b8e3096f9e6a38091a4998bc92bee444228",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "build-evidence.json",
+      "bytes": 6987,
+      "sha256": "e927a6fa37352b41f83412734bd006b7ab34b8b7c75f03ce6799b1c5c5ad9223",
+      "releaseAssetDigest": "sha256:e927a6fa37352b41f83412734bd006b7ab34b8b7c75f03ce6799b1c5c5ad9223",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "complete metadata bytes hashed separately"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 906,
+      "sha256": "96b9df8c97b4e18ed9c78f05a57de971897fdf22d68e0f3cb32b6350a2103db1",
+      "releaseAssetDigest": "sha256:96b9df8c97b4e18ed9c78f05a57de971897fdf22d68e0f3cb32b6350a2103db1",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "complete metadata bytes hashed separately"
+    },
+    {
+      "name": "XHS-Downloader-2.0.3-mac-arm64.dmg",
+      "bytes": 164099988,
+      "sha256": "7993499176d8c63e23f6c4a7c809530e10adc1d8ed01c18bf0abd8a0db597095",
+      "releaseAssetDigest": "sha256:7993499176d8c63e23f6c4a7c809530e10adc1d8ed01c18bf0abd8a0db597095",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "XHS-Downloader-2.0.3-mac-x64.dmg",
+      "bytes": 171792947,
+      "sha256": "899f9f3fff32ecfe8b707e62987c046c4c9970dfd94eb417de3a2925937c06f1",
+      "releaseAssetDigest": "sha256:899f9f3fff32ecfe8b707e62987c046c4c9970dfd94eb417de3a2925937c06f1",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    },
+    {
+      "name": "XHS-Downloader-2.0.3-windows-x64-setup.exe",
+      "bytes": 143312160,
+      "sha256": "715de323d357ba3ced9b48ad46639b8e3096f9e6a38091a4998bc92bee444228",
+      "releaseAssetDigest": "sha256:715de323d357ba3ced9b48ad46639b8e3096f9e6a38091a4998bc92bee444228",
+      "anonymousHeadStatus": 200,
+      "anonymousGetStatus": 206,
+      "getMode": "range probe",
+      "releaseSizeAndDigestMatch": true,
+      "installerHashComparison": "CI file checksum vs GitHub server asset digest"
+    }
+  ],
+  "desktopLatestTag": "v2.0.3",
+  "builds": [
+    {
+      "version": "2.0.3",
+      "sourceSha": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21",
+      "sourceDirty": false,
+      "platform": "darwin",
+      "arch": "arm64",
+      "comparedSources": 222,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledUpdateProxy": {
+        "version": "v1.19.32",
+        "target": "mac-arm64",
+        "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+        "archiveSha256": "3312a6780652c622890fd4357c6a853bbf865464fd047ac7b7f52dab8de18652",
+        "sourceArchiveVerified": true,
+        "licenseVerified": true,
+        "bundledSubscriptionsAbsent": true,
+        "configurationSource": "management-api",
+        "nativeStartupVerified": true,
+        "codeSignatureVerified": true
+      },
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "macSignatureContainers": [
+        "dmg",
+        "zip"
+      ],
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "version": "2.0.3",
+      "sourceSha": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21",
+      "sourceDirty": false,
+      "platform": "darwin",
+      "arch": "x64",
+      "comparedSources": 222,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledUpdateProxy": {
+        "version": "v1.19.32",
+        "target": "mac-x64",
+        "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+        "archiveSha256": "18b382df77bded2ad0fb3db27db5636cb15b20729d5ba995a357eeb9b46bf507",
+        "sourceArchiveVerified": true,
+        "licenseVerified": true,
+        "bundledSubscriptionsAbsent": true,
+        "configurationSource": "management-api",
+        "nativeStartupVerified": true,
+        "codeSignatureVerified": true
+      },
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "macSignatureContainers": [
+        "dmg",
+        "zip"
+      ],
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "version": "2.0.3",
+      "sourceSha": "0ce65427c3f7ca2ed137e39ff7f456fd2503ab21",
+      "sourceDirty": false,
+      "platform": "win32",
+      "arch": "x64",
+      "comparedSources": 222,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledUpdateProxy": {
+        "version": "v1.19.32",
+        "target": "win-x64",
+        "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+        "archiveSha256": "974a4d7ad69aed27aa2e8f91d61113573c14dadb14562c63e58effabf59816f0",
+        "sourceArchiveVerified": true,
+        "licenseVerified": true,
+        "bundledSubscriptionsAbsent": true,
+        "configurationSource": "management-api",
+        "nativeStartupVerified": true
+      },
+      "packagedWindowsUpdateVerified": true,
+      "packagedWindowsPortableVerified": true,
+      "windowsUpdate": {
+        "previousVersion": "1.8.17",
+        "version": "2.0.3",
+        "oldAssets": [
+          {
+            "name": "Brclio-XHS-1.8.17-windows-x64-setup.exe",
+            "bytes": 124073263,
+            "sha256": "5b70613f04365c10a6898fcb7b4e934441137b98b29fe982b1ec130a881956f7"
+          },
+          {
+            "name": "Brclio-XHS-1.8.17-windows-x64-portable.exe",
+            "bytes": 123834736,
+            "sha256": "e47c0d920c6d2f117ab31cdc7443cb0ce2f95f11e84841467f033ad683f966fb"
+          }
+        ],
+        "realPublishedOldInstallers": true,
+        "realCurrentInstallers": true,
+        "sourceArchivesModified": false,
+        "oldParentWaitVerified": true,
+        "installedInPlaceVerified": true,
+        "automaticRelaunchVerified": true,
+        "automaticRelaunchRendererReadyVerified": true,
+        "restartedRenderers": [
+          {
+            "pid": 1508,
+            "at": "2026-10-02T15:38:58.017Z",
+            "version": "2.0.3"
+          },
+          {
+            "pid": 7624,
+            "at": "2026-10-02T15:39:31.867Z",
+            "version": "2.0.3"
+          }
+        ],
+        "dpapiCredentialsPreserved": true,
+        "pausedTaskPreserved": true,
+        "rendererStoragePreserved": true,
+        "existingInstallationPortableUpdateVerified": true,
+        "standalonePortableMigrationTested": false,
+        "portableOriginalPreserved": true,
+        "currentPortableLaunchVerified": true,
+        "cancelBeforeInstallVerified": true,
+        "rollbackImplemented": false,
+        "powerLossRecoveryTested": false,
+        "machineWideUacTested": false,
+        "profileIsolation": "fresh disposable GitHub runner account",
+        "installDirectoryIsolation": "temporary"
+      }
+    }
+  ],
+  "nativeJobs": [
+    {
+      "name": "mac-arm64",
+      "id": 110907708657,
+      "conclusion": "success"
+    },
+    {
+      "name": "mac-intel",
+      "id": 110907708928,
+      "conclusion": "success"
+    },
+    {
+      "name": "windows-x64",
+      "id": 110907708978,
+      "conclusion": "success"
+    }
+  ],
+  "tests": {
+    "macArm64": {
+      "nodeTotal": 926,
+      "nodePassed": 917,
+      "nodeSkipped": 9,
+      "nodeFailed": 0,
+      "nativeReplacementAndRollbackPassed": 62,
+      "pythonPassed": 27,
+      "bundledPythonHandlerPassed": 2
+    },
+    "macIntel": {
+      "nodeTotal": 926,
+      "nodePassed": 917,
+      "nodeSkipped": 9,
+      "nodeFailed": 0,
+      "nativeReplacementAndRollbackPassed": 62,
+      "pythonPassed": 27,
+      "bundledPythonHandlerPassed": 2
+    },
+    "windowsX64": {
+      "nodeTotal": 926,
+      "nodePassed": 887,
+      "nodeSkipped": 39,
+      "nodeFailed": 0,
+      "pythonPassed": 27,
+      "bundledPythonHandlerPassed": 2
+    }
+  },
+  "macUpdateAcceptance": {
+    "method": "Real packaged main/preload/confirmation/update helper and restart on native CI runners with isolated update transport fixture",
+    "fromVersion": "2.0.3",
+    "fixtureTargetVersion": "2.0.4",
+    "originalApplicationFilesCompared": 247,
+    "automaticRelaunchAndRendererReadyVerified": true,
+    "persistedUpdateHistoryVerified": true,
+    "backupRemoved": true,
+    "profileIsolation": "temporary",
+    "keychain": "mock",
+    "updateNetwork": "fixture-only",
+    "fixtureResigned": true,
+    "gatekeeperApprovalTested": false
+  },
+  "limitations": [
+    "This release increments version metadata only; proxy startup and network behavior are inherited from 2.0.2.",
+    "Mac update acceptance uses a freshly resigned 2.0.4 fixture and fixture-only update transport, not a full production-network download of this new public installer.",
+    "Mac signatures are ad hoc; Gatekeeper approval and a user-device installation were not tested.",
+    "Windows native replacement uses published 1.8.17 installers on a fresh CI account; standalone portable migration, rollback, power loss and machine-wide UAC are not claimed.",
+    "Public installer probes used HEAD and range GET. Complete installer hashes are bound by CI/publisher byte verification and GitHub asset digests; prior-version full-download QA is not reused."
+  ]
+}
