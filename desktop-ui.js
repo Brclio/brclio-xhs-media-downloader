@@ -1,3 +1,5 @@
+import { openAccountUI } from "./account-ui.js";
+
 const RUNNING_STATUSES = new Set(["discovering", "downloading", "waiting"]);
 const STATUS_LABELS = {
   idle: "准备就绪",
@@ -224,6 +226,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     ["single", ui.singleTab, ui.singlePanel],
     ["profile", ui.profileTab, ui.panel],
     ["account", element("account-tab"), element("desktop-account-page")],
+    ["membership", element("desktop-membership-link"), element("desktop-membership-page")],
     ["feedback", element("feedback-tab"), element("desktop-feedback-page")],
     ["about", element("about-tab"), element("desktop-about-page")],
     ["vip", element("desktop-vip-link"), element("desktop-vip-page")],
@@ -296,6 +299,43 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     });
     restoreVipScroll(vipRevision);
   });
+  const membershipFrame = element("desktop-membership-frame");
+  let returnFromMembership = "profile";
+  let membershipScroll = null;
+  let membershipRevision = 0;
+  let membershipScrollPending = false;
+  function restoreMembershipScroll(revision) {
+    if (!membershipScroll || currentPage !== "membership" || !membershipFrame.contentDocument?.body?.classList.contains("membership-embedded")) return;
+    membershipScrollPending = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (revision !== membershipRevision || currentPage !== "membership") return;
+      membershipFrame.contentWindow.scrollTo({ ...membershipScroll, behavior: "instant" });
+      membershipScrollPending = false;
+    }));
+  }
+  membershipFrame.addEventListener("load", () => {
+    const content = membershipFrame.contentDocument;
+    if (!content) return;
+    const source = new URL(content.URL);
+    if (source.protocol !== location.protocol || source.host !== location.host || source.pathname !== "/membership.html") return;
+    content.body.classList.add("membership-embedded");
+    content.addEventListener("click", event => {
+      if (currentPage !== "membership" || membershipFrame.contentDocument !== content) return;
+      const link = event.target.closest?.("a[href]");
+      if (!link) return;
+      const target = new URL(link.href);
+      if (target.protocol !== location.protocol || target.host !== location.host) return;
+      if (["/", "/index.html"].includes(target.pathname)) {
+        event.preventDefault();
+        if (target.searchParams.get("membership") === "open") void openAccountUI({ purchase: true });
+        else navigate(returnFromMembership);
+      } else {
+        const page = { "/vip.html": "vip", "/learn.html": "learning", "/membership.html": "membership" }[target.pathname];
+        if (page && !target.hash) { event.preventDefault(); navigate(page); }
+      }
+    });
+    restoreMembershipScroll(membershipRevision);
+  });
   let dismissedUpdate = "";
   let announcedUpdate = "";
   const compactNavigation = window.matchMedia("(max-width: 600px)");
@@ -314,6 +354,14 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   }, { once: true });
 
   function selectTab(tab, focus = false) {
+    const membershipTab = element("desktop-membership-link");
+    const enteringMembership = tab === membershipTab && currentPage !== "membership";
+    const leavingMembership = currentPage === "membership" && tab !== membershipTab;
+    if (leavingMembership && !membershipScrollPending && membershipFrame.contentDocument?.body?.classList.contains("membership-embedded")) {
+      membershipScroll = { left: membershipFrame.contentWindow.scrollX, top: membershipFrame.contentWindow.scrollY };
+    }
+    if (enteringMembership || leavingMembership) { membershipRevision++; membershipScrollPending = false; }
+    if (enteringMembership) returnFromMembership = currentPage;
     const vipTab = element("desktop-vip-link");
     const enteringVip = tab === vipTab && currentPage !== "vip";
     const leavingVip = currentPage === "vip" && tab !== vipTab;
@@ -344,6 +392,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
       if (selected) currentPage = name;
     }
     document.body.dataset.desktopPage = currentPage;
+    if (currentPage === "membership" && !membershipFrame.hasAttribute("src")) membershipFrame.src = membershipFrame.dataset.src;
     if (currentPage === "vip" && !vipFrame.hasAttribute("src")) vipFrame.src = vipFrame.dataset.src;
     if (currentPage === "learning" && !learningFrame.hasAttribute("src")) learningFrame.src = learningFrame.dataset.src;
     if (currentPage === "about") element("desktop-update-announcement").hidden = true;
@@ -352,6 +401,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     if (compactNavigation.matches) tab.scrollIntoView({ block: "nearest", inline: "nearest" });
     if (enteringVip) restoreVipScroll(vipRevision);
     if (enteringLearning) restoreLearningScroll(learningScrollRevision);
+    if (enteringMembership) restoreMembershipScroll(membershipRevision);
   }
 
   function navigate(page) {
@@ -381,7 +431,10 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     element("desktop-update-announcement").hidden = true;
   });
   if (typeof bridge.onNavigate === "function") {
-    const cleanup = bridge.onNavigate((request) => navigate(request?.page));
+    const cleanup = bridge.onNavigate((request) => {
+      if (request?.page === "account" && request.purchase === true) void openAccountUI({ purchase: true });
+      else navigate(request?.page);
+    });
     if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
   }
   const headerBrand = document.querySelector(".app-header .brand");

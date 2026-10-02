@@ -11,6 +11,7 @@ export const PUBLIC_FILES = [
   'product.html', 'product.css', 'product.js',
   'learn.html', 'learn.css', 'learn.js',
   'vip.html', 'vip.css', 'vip.js',
+  'membership.html', 'membership.css', 'membership.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css',
   'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/browser-account.js', 'assets', 'admin'
@@ -19,8 +20,8 @@ export const PUBLIC_FILES = [
 function promotionWebNavigation(html, homepage, page = 'learn.html') {
   const header = homepage.match(/<header\b[^>]*class="app-header"[^>]*>[\s\S]*?<\/header>/)?.[0];
   if (!header) throw new Error('The learning page requires the homepage navigation');
-  const webClass = page === 'vip.html' ? 'vip-web' : 'learning-web';
-  const navigation = header.replace(/<a\b[^>]*>/g, tag => {
+  const webClass = page === 'vip.html' ? 'vip-web' : page === 'membership.html' ? 'membership-web' : 'learning-web';
+  let navigation = header.replace(/<a\b[^>]*>/g, tag => {
     const selected = tag.includes(`href="/${page}"`);
     let link = tag.replace(/\saria-current="[^"]*"/g, '').replace(/class="([^"]*)"/, (_, value) => {
       const classes = value.split(/\s+/).filter(name => name && name !== 'is-current');
@@ -30,6 +31,8 @@ function promotionWebNavigation(html, homepage, page = 'learn.html') {
     if (selected) link = link.replace(/>$/, ' aria-current="page">');
     return link.replace('href="#support"', 'href="/#support"');
   });
+  if (page === 'membership.html') navigation = navigation.replace(/<button\b[^>]*id="browser-account-open"[^>]*>[\s\S]*?<\/button>/,
+    '<a class="nav-link" href="./index.html?membership=open">账号与会员</a>');
   const fonts = [...homepage.matchAll(/<link\b[^>]*>/g)]
     .map(match => match[0]).filter(link => /href="https:\/\/fonts\.(?:googleapis|gstatic)\.com\//.test(link));
   return html.replace(/<header\b[^>]*>[\s\S]*?<\/header>/, navigation)
@@ -54,7 +57,7 @@ export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.u
       if (html.includes('<!-- desktop-only:')) throw new Error(`Unmatched desktop-only block in ${name}`);
       // Native clients retain their compact local navigation. The public
       // promotion pages receive the same menu and fonts as the downloader home.
-      if (['learn.html', 'vip.html'].includes(name) && /<header\b/.test(html)) {
+      if (['learn.html', 'vip.html', 'membership.html'].includes(name) && /<header\b/.test(html)) {
         html = promotionWebNavigation(html, await readFile(path.join(root, 'index.html'), 'utf8'), name);
       }
       await writeFile(destination, html);

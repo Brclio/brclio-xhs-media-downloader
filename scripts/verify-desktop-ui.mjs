@@ -354,7 +354,7 @@ app.whenReady().then(async () => {
   const learningPopups = [];
   win.webContents.setWindowOpenHandler(({ url }) => { learningPopups.push(url); return { action: 'deny' }; });
   assert.equal(await evaluate(`document.querySelector('#desktop-learning-frame').hasAttribute('src')`), false, 'learning page loads only on first selection');
-  assert.equal(await evaluate(`document.querySelectorAll('#desktop-navigation [role="tab"]').length`), 7, 'VIP and learning pages join the seven-page tablist');
+  assert.equal(await evaluate(`document.querySelectorAll('#desktop-navigation [role="tab"]').length`), 8, 'membership, VIP and learning pages join the eight-page tablist');
   const initialMainUrl = win.webContents.getURL();
   await evaluate(`(() => {
     window.fixtureLearning = {
@@ -537,6 +537,28 @@ app.whenReady().then(async () => {
   assert.equal(readyEvents.get(win.webContents.id), 1, 'embedded navigation does not reinitialize the downloader');
   assert.deepEqual(learningPopups, [], 'opening and using promotion creates no popup window');
   await assertSelectedLearning('QR saving keeps the embedded learning page selected');
+  const membershipDocument = `document.querySelector('#desktop-membership-frame').contentDocument`;
+  const membershipWindow = `document.querySelector('#desktop-membership-frame').contentWindow`;
+  assert.equal(await evaluate(`document.querySelector('#desktop-membership-frame').hasAttribute('src')`), false, 'membership page loads only on first selection');
+  await click('#account-tab');
+  await click('#account-membership-details');
+  await check(`document.body.dataset.desktopPage === 'membership' && ${membershipDocument}?.body?.classList.contains('membership-embedded')`, 'account details opens the trusted packaged membership page');
+  await evaluate(`window.fixtureMembershipDocument = ${membershipDocument}; ${membershipWindow}.scrollTo({ top: 777, behavior: 'instant' }); window.fixtureMembershipScroll = ${membershipWindow}.scrollY`);
+  await click('#feedback-tab');
+  await click('#desktop-membership-link');
+  await check(`fixtureMembershipDocument === ${membershipDocument} && Math.abs(fixtureMembershipScroll - ${membershipWindow}.scrollY) <= 1`, 'membership frame DOM and reading position survive tab switches');
+  await evaluate(`${membershipDocument}.querySelector('a[href="./index.html?membership=open"]').click()`);
+  await check(`document.body.dataset.desktopPage === 'account' && document.querySelector('#membership-dialog').open`, 'embedded membership CTA opens account and purchase dialog in the workspace');
+  assert.equal(win.webContents.getURL(), initialMainUrl, 'membership CTA preserves the main renderer URL');
+  await click('#membership-close');
+  await click('#desktop-membership-link');
+  await evaluate(`${membershipDocument}.querySelector('a[href="./index.html"]').click()`);
+  await check(`document.body.dataset.desktopPage === 'account'`, 'membership return link restores the preceding workspace page');
+  await click('#desktop-membership-link');
+  await evaluate(`${membershipDocument}.querySelector('a[href="./vip.html"]').click()`);
+  await check(`document.body.dataset.desktopPage === 'vip'`, 'membership community link selects the separately priced VIP page');
+  assert.equal(win.webContents.getURL(), initialMainUrl, 'membership and community navigation preserve downloader drafts');
+  assert.deepEqual(learningPopups, [], 'membership navigation creates no popup window');
   await evaluate(`for (const [id, value] of Object.entries(fixtureLearning.original)) document.getElementById(id).value = value`);
   await click('#profile-tab');
   await resizeViewport(1180, 980);
@@ -1123,7 +1145,7 @@ app.whenReady().then(async () => {
   // the requested viewport consistently on macOS and Windows.
   await check(`window.innerWidth === 390`, 'narrow viewport');
   assert.equal(await evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true, 'no horizontal overflow');
-  for (const tab of ['#profile-tab', '#single-note-tab', '#account-tab', '#feedback-tab', '#about-tab', '#desktop-learning-link']) {
+  for (const tab of ['#profile-tab', '#single-note-tab', '#account-tab', '#desktop-membership-link', '#feedback-tab', '#about-tab', '#desktop-learning-link']) {
     await click(tab);
     assert.equal(await evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true, `${tab} has no narrow horizontal overflow`);
     assert.equal(await evaluate(`document.documentElement.scrollHeight <= window.innerHeight`), true, `${tab} preserves viewport height`);
@@ -1228,7 +1250,7 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'seven independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'eight independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

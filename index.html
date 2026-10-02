@@ -38,6 +38,7 @@
             <a class="nav-link is-current" href="/" aria-current="page">下载工具</a>
             <a class="nav-link" href="/product.html">产品介绍</a>
             <a class="nav-link" href="/download.html">软件下载</a>
+            <a class="nav-link" href="/membership.html">会员权益</a>
             <a class="nav-link" href="/vip.html">VIP 交流群</a>
             <a class="nav-link" href="/learn.html">编程私教与书籍</a>
             <a class="nav-link" href="/changelog.html">更新记录</a>
@@ -126,6 +127,7 @@
             <button id="single-note-tab" class="desktop-tab" type="button" role="tab" aria-controls="single-note-panel" aria-selected="true"><span class="desktop-nav-icon" aria-hidden="true">↙</span><span>单篇下载</span></button>
             <button id="profile-tab" class="desktop-tab" type="button" role="tab" aria-controls="profile-panel" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">▦</span><span>主页批量</span><span id="desktop-task-badge" class="desktop-nav-count" hidden>进行中</span></button>
             <button id="account-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-account-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">◎</span><span>账号与会员</span></button>
+            <button id="desktop-membership-link" class="desktop-tab desktop-membership-link" type="button" role="tab" aria-controls="desktop-membership-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">◇</span><span>会员权益<small>当前权限 · 未来福利</small></span></button>
             <button id="feedback-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-feedback-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">✎</span><span>问题反馈</span></button>
             <button id="about-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-about-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">ⓘ</span><span>关于软件</span><span id="desktop-update-badge" class="desktop-nav-count desktop-new-badge" hidden>新版本</span></button>
             <button id="desktop-vip-link" class="desktop-tab desktop-vip-link" type="button" role="tab" aria-controls="desktop-vip-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">✦</span><span>VIP 交流群<small>付费交流 · 99.99 元</small></span></button>
@@ -137,6 +139,10 @@
           </aside>
           <div class="desktop-sidebar-bottom"><button id="desktop-account-shortcut" class="desktop-account-shortcut" type="button"><span class="desktop-account-avatar" aria-hidden="true">B</span><span><strong id="desktop-account-summary">软件账号</strong><small id="desktop-account-summary-status">点击登录 / 查看会员</small></span></button><div class="desktop-update-tools"><span id="desktop-version" class="desktop-version">本地下载工作台</span><button id="desktop-check-updates" class="desktop-check-updates" type="button">检查更新</button></div><a class="desktop-design-credit" href="https://github.com/Brclio/brclio-design-system" target="_blank" rel="noopener noreferrer">Design by Brclio</a></div>
         </nav>
+
+        <section id="desktop-membership-page" class="desktop-page desktop-membership-page" role="tabpanel" aria-labelledby="desktop-membership-link" tabindex="0" hidden>
+          <iframe id="desktop-membership-frame" title="会员权益" data-src="./membership.html?source=desktop" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups" referrerpolicy="no-referrer"></iframe>
+        </section>
 
         <section id="desktop-vip-page" class="desktop-page desktop-vip-page" role="tabpanel" aria-labelledby="desktop-vip-link" tabindex="0" hidden>
           <iframe id="desktop-vip-frame" title="VIP 交流群" data-src="./vip.html?source=desktop" sandbox="allow-scripts allow-same-origin allow-downloads allow-popups" referrerpolicy="no-referrer"></iframe>

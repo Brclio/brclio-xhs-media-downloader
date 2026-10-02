@@ -8,6 +8,8 @@
 .account-badge.is-member { background: var(--yellow, #f4d758); }
 .account-intro, .account-scope, .account-form-note { margin: 13px 0 0; color: var(--ink-light, #4a4a5a); font-size: .78rem; line-height: 1.8; }
 .account-scope { border-top: 1px solid var(--line-strong, #d7d2c8); padding-top: 13px; }
+.account-intro a { display: inline-block; margin-left: .5em; color: var(--blue-deep, #236cb8); text-underline-offset: 3px; }
+.account-intro a:focus-visible { outline: 3px solid var(--blue, #2b7fd8); outline-offset: 3px; }
 .account-notice { margin: 12px 0 0; font-size: .84rem; line-height: 1.7; color: var(--blue-deep, #236cb8); overflow-wrap: anywhere; }
 .account-notice:empty { display: none; }
 .account-notice.is-error { color: #a42a3d; }

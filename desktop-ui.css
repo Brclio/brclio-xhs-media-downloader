@@ -1249,4 +1249,9 @@ body.is-desktop .desktop-vip-link small { display: block; margin-top: 4px; color
 body.is-desktop .desktop-vip-link .desktop-nav-icon { color: var(--blue-deep); }
 body.is-desktop .desktop-vip-page { padding: 0; overflow: hidden; scrollbar-gutter: auto; }
 body.is-desktop #desktop-vip-frame { display: block; width: 100%; height: 100%; border: 0; background: var(--cream); }
+body.is-desktop .desktop-membership-link small { display: block; margin-top: 4px; color: var(--ink-light); font-size: .63rem; font-weight: 400; }
+body.is-desktop .desktop-membership-link .desktop-nav-icon { color: var(--blue-deep); }
+body.is-desktop .desktop-membership-page { padding: 0; overflow: hidden; scrollbar-gutter: auto; }
+body.is-desktop #desktop-membership-frame { display: block; width: 100%; height: 100%; border: 0; background: var(--cream); }
+@media (max-width: 600px) { body.is-desktop .desktop-membership-link small { display: none; } }
 @media (max-width: 600px) { body.is-desktop .desktop-vip-link small { display: none; } }

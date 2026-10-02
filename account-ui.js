@@ -34,7 +34,7 @@ export async function initializeAccountUI() {
       <div><span class="account-eyebrow">SOFTWARE ACCOUNT</span><h2 id="account-title">软件账号与会员</h2></div>
       <div class="account-tools"><span id="account-badge" class="account-badge">读取登录状态…</span><button id="account-open-membership" class="button button-primary" type="button" aria-haspopup="dialog">开通会员</button><button id="account-refresh" class="button button-secondary" type="button">刷新权益</button></div>
     </div>
-    <p class="account-intro">软件账号用于会员权益；小红书账号用于读取笔记，两者分别登录。首次验证邮箱会自动创建软件账号。</p>
+    <p class="account-intro">软件账号用于会员权益；小红书账号用于读取笔记，两者分别登录。首次验证邮箱会自动创建软件账号。<a id="account-membership-details" href="./membership.html">查看会员权益 ↗</a></p>
     <p id="account-notice" class="account-notice" role="status" aria-live="polite"></p>
     <form id="account-login-form" class="account-login-form">
       <label>邮箱地址<input id="account-email" type="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="you@example.com" required></label>
@@ -202,6 +202,10 @@ export async function initializeAccountUI() {
     if (result) element('account-activation').value = '';
   });
   element('account-logout').addEventListener('click', () => run(() => bridge.logoutAccount()));
+  element('account-membership-details').addEventListener('click', event => {
+    const tab = document.getElementById('desktop-membership-link');
+    if (isDesktop && tab) { event.preventDefault(); tab.click(); }
+  });
   element('account-open-membership').addEventListener('click', () => { renderPurchase(); if (!dialog.open) dialog.showModal(); });
   element('membership-close').addEventListener('click', () => dialog.close());
   dialog.addEventListener('change', renderPurchase);
@@ -251,4 +255,12 @@ export async function openAccountUI({ purchase = false } = {}) {
   else document.getElementById('account-refresh')?.focus();
 }
 
-if (typeof window !== 'undefined') void initializeAccountUI();
+if (typeof window !== 'undefined') {
+  void initializeAccountUI().then(() => {
+    const current = new URL(window.location.href);
+    if (!['/', '/index.html'].includes(current.pathname) || current.searchParams.get('membership') !== 'open') return;
+    current.searchParams.delete('membership');
+    history.replaceState(history.state, '', current.href);
+    void openAccountUI({ purchase: true });
+  });
+}

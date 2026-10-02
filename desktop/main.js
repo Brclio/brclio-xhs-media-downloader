@@ -105,29 +105,40 @@ function external(url) {
   } catch { /* Ignore invalid external links. */ }
 }
 
+function desktopRoute(url) {
+  if (!isAppUrl(url)) return null;
+  const target = new URL(url);
+  if (['/', '/index.html'].includes(target.pathname) && target.searchParams.get('membership') === 'open') return { page: 'account', purchase: true };
+  const page = { '/learn.html': 'learning', '/vip.html': 'vip', '/membership.html': 'membership' }[target.pathname];
+  return page ? { page } : null;
+}
+
 function openLocalPreview(url) {
   // Catch old links and programmatic window.open calls as well as the sidebar.
   // Keeping this in the main process prevents stale renderer code from creating
   // a second window or replacing the downloader and discarding its form state.
-  if (['/learn.html', '/vip.html'].includes(new URL(url).pathname)) {
-    navigateDesktop(new URL(url).pathname === '/vip.html' ? 'vip' : 'learning');
+  const route = desktopRoute(url);
+  if (route) {
+    navigateDesktop(route.page, route.purchase);
     return;
   }
   const preview = new BrowserWindow({ parent: mainWindow, width: 720, height: 820,
     webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
   preview.removeMenu();
   preview.webContents.setWindowOpenHandler(({ url: target }) => {
-    if (isAppUrl(target) && ['/learn.html', '/vip.html'].includes(new URL(target).pathname)) {
-      navigateDesktop(new URL(target).pathname === '/vip.html' ? 'vip' : 'learning');
+    const route = desktopRoute(target);
+    if (route) {
+      navigateDesktop(route.page, route.purchase);
       preview.close();
     } else external(target);
     return { action: 'deny' };
   });
   preview.webContents.on('will-navigate', (event, target) => {
+    const route = desktopRoute(target);
     if (!isAppUrl(target)) { event.preventDefault(); external(target); }
-    else if (['/learn.html', '/vip.html'].includes(new URL(target).pathname)) {
+    else if (route) {
       event.preventDefault();
-      navigateDesktop(new URL(target).pathname === '/vip.html' ? 'vip' : 'learning');
+      navigateDesktop(route.page, route.purchase);
       preview.close();
     }
   });
@@ -256,10 +267,11 @@ async function createWindow() {
     return { action: 'deny' };
   });
   mainWindow.webContents.on('will-navigate', (event, url) => {
+    const route = desktopRoute(url);
     if (!isAppUrl(url)) { event.preventDefault(); external(url); }
-    else if (['/learn.html', '/vip.html'].includes(new URL(url).pathname)) {
+    else if (route) {
       event.preventDefault();
-      navigateDesktop(new URL(url).pathname === '/vip.html' ? 'vip' : 'learning');
+      navigateDesktop(route.page, route.purchase);
     }
   });
   mainWindow.webContents.on('will-attach-webview', (event) => event.preventDefault());
@@ -452,10 +464,10 @@ function automaticUpdateCheck() {
   if (!updateManager || ['checking', 'downloading', 'downloaded', 'installing'].includes(updateManager.snapshot().status)) return;
   lastAutomaticCheck = Date.now(); void updateManager.checkForUpdates();
 }
-function navigateDesktop(page) {
+function navigateDesktop(page, purchase = false) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('desktop:navigate', { page });
+  mainWindow.show(); mainWindow.focus(); mainWindow.webContents.send('desktop:navigate', { page, purchase: purchase === true });
 }
 process.on('uncaughtExceptionMonitor', error => diagnostic('app.uncaught_exception', { error }, 'error'));
 app.on('child-process-gone', (_event, details) => diagnostic('app.child_process_gone', details, 'error'));
