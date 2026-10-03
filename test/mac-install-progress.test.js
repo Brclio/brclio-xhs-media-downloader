@@ -86,20 +86,21 @@ async function nativeViewer(input, action) {
     readyPath = args[4];
     child = spawn(command, args, { ...options, stdio: ['pipe', 'ignore', 'pipe'] });
     child.stderr.on('data', chunk => { stderr += chunk; });
-    if (action) {
-      // Exercise Cocoa target/action and the real close notification. Sending
-      // SIGTERM only proves that the process can be killed, not that its UI can
-      // close. This selector is test-only and never enters the shipped script.
-      const target = action === 'button' ? 'closeButton' : 'window';
-      const selector = action === 'button' ? 'performClick:' : 'performClose:';
-      const end = child.stdin.end.bind(child.stdin);
-      child.stdin.end = source => {
+    const end = child.stdin.end.bind(child.stdin);
+    child.stdin.end = source => {
+      source = source.replace('eventLoopRunning: Boolean(app.running)',
+        'eventLoopRunning: Boolean(app.running), heading: ObjC.unwrap(heading.stringValue), stage: ObjC.unwrap(stageLabel.stringValue), progress: Number(bar.doubleValue), closeVisible: !Boolean(closeButton.hidden)');
+      if (action) {
+        // Exercise the shipped Cocoa buttons and their actual target/action.
+        // Sending SIGTERM would not prove that either UI control can close.
+        const target = action === 'button' ? 'closeButton' : 'titleCloseButton';
         const marker = '    var ready = JSON.stringify';
         assert.ok(source.includes(marker));
-        return end(source.replace(marker,
-          `    ${target}.performSelectorWithObjectAfterDelay('${selector}', null, 0.75);\n${marker}`));
-      };
-    }
+        source = source.replace(marker,
+          `    ${target}.performSelectorWithObjectAfterDelay('performClick:', null, 0.75);\n${marker}`);
+      }
+      return end(source);
+    };
     return child;
   } }).catch(error => {
     error.message += ` Native AppKit readiness: ${JSON.stringify({ elapsedMs: Date.now() - startedAt,
@@ -108,9 +109,10 @@ async function nativeViewer(input, action) {
   });
   const readinessElapsedMs = Date.now() - startedAt;
   child.ref();
-  assert.equal(JSON.parse(await readFile(readyPath, 'utf8')).eventLoopRunning, true);
+  const display = JSON.parse(await readFile(readyPath, 'utf8'));
+  assert.equal(display.eventLoopRunning, true);
   const exited = new Promise(resolve => child.once('exit', (code, signal) => resolve({ code, signal })));
-  return { progress, child, readyPath, exited, readinessElapsedMs, stderr: () => stderr };
+  return { progress, child, readyPath, exited, display, readinessElapsedMs, stderr: () => stderr };
 }
 
 test('native AppKit window survives all installer stages and closes only after installed', { skip: !native, timeout: 15000 }, async t => {
@@ -129,7 +131,7 @@ test('native AppKit window survives all installer stages and closes only after i
 });
 
 test('native failure, rollback, and cancellation close buttons exit cleanly without signalling the viewer', { skip: !native, timeout: 15000 }, async t => {
-  for (const status of ['helper_failed', 'rolled_back', 'cancelled']) {
+  for (const status of ['helper_failed', 'rolled_back', 'cancelled', 'cleanup_failed']) {
     const input = await fixture(t);
     const record = JSON.stringify({ status, message: '安装测试未完成。当前应用未修改。' });
     await writeFile(input.resultPath, record);
@@ -143,6 +145,45 @@ test('native failure, rollback, and cancellation close buttons exit cleanly with
     assert.equal(await readFile(input.resultPath, 'utf8'), record, 'closing the viewer cannot cancel or rewrite installation');
     await assert.rejects(lstat(path.dirname(viewer.readyPath)), { code: 'ENOENT' });
   }
+});
+
+test('native confirmed cleanup failure reports completion and automatically dismisses the independent viewer', { skip: !native, timeout: 8000 }, async t => {
+  const input = await fixture(t);
+  const record = JSON.stringify({ status: 'cleanup_failed', startupConfirmed: true,
+    message: '新版已启动，临时旧版未能完成清理，已保留记录以便重试。' });
+  await writeFile(input.resultPath, record);
+  const viewer = await nativeViewer(input);
+  t.after(() => viewer.progress.close());
+  assert.equal(viewer.display.heading, '已安装 v1.8.2');
+  assert.equal(viewer.display.stage, '安装已完成 · 临时旧版清理待重试');
+  assert.equal(viewer.display.progress, 9);
+  assert.equal(viewer.display.closeVisible, true);
+  assert.deepEqual(await Promise.race([viewer.exited, delay(5500, { timeout: true })]),
+    { code: 0, signal: null }, viewer.stderr());
+  assert.equal(await readFile(input.resultPath, 'utf8'), record, 'completion warning preserves the cleanup receipt');
+  await assert.rejects(lstat(path.dirname(viewer.readyPath)), { code: 'ENOENT' });
+});
+
+test('native confirmed cleanup warning can be dismissed immediately with either close button', { skip: !native, timeout: 10000 }, async t => {
+  for (const action of ['button', 'window']) {
+    const input = await fixture(t);
+    const record = JSON.stringify({ status: 'cleanup_failed', startupConfirmed: true, message: '清理待重试。' });
+    await writeFile(input.resultPath, record);
+    const viewer = await nativeViewer(input, action);
+    t.after(() => viewer.progress.close());
+    assert.deepEqual(await Promise.race([viewer.exited, delay(2500, { timeout: true })]),
+      { code: 0, signal: null }, viewer.stderr());
+    assert.equal(await readFile(input.resultPath, 'utf8'), record, 'either close control leaves installation state intact');
+  }
+});
+
+test('native active installation can be dismissed with its visible close button', { skip: !native, timeout: 6000 }, async t => {
+  const input = await fixture(t);
+  const viewer = await nativeViewer(input, 'button');
+  t.after(() => viewer.progress.close());
+  assert.deepEqual(await Promise.race([viewer.exited, delay(4000, { timeout: true })]),
+    { code: 0, signal: null }, viewer.stderr());
+  assert.deepEqual(JSON.parse(await readFile(input.resultPath, 'utf8')), { status: 'preparing' });
 });
 
 test('native window close control dismisses active progress without cancelling installation', { skip: !native, timeout: 6000 }, async t => {

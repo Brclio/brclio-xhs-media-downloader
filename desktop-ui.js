@@ -92,6 +92,12 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     updateProgress: element("desktop-update-progress"),
     updateProgressText: element("desktop-update-progress-text"),
     updateError: element("desktop-update-error"),
+    updateProxy: element("desktop-update-proxy"),
+    updateProxyStatus: element("desktop-update-proxy-status"),
+    updateProxyToggle: element("desktop-update-proxy-toggle"),
+    updateDialogProxy: element("desktop-update-dialog-proxy"),
+    updateDialogProxyStatus: element("desktop-update-dialog-proxy-status"),
+    updateDialogProxyToggle: element("desktop-update-dialog-proxy-toggle"),
     updateManual: element("desktop-update-manual"),
     updateManualDownload: element("desktop-update-manual-download"),
     updateManualStatus: element("desktop-update-manual-status"),
@@ -190,6 +196,10 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   let updateHistoryPending = false;
   let updateState = { status: "idle" };
   let updatePending = null;
+  let updateProxyState = { mode: "off", manuallyDisabled: false };
+  let updateProxyPending = "";
+  let updateProxyRevision = 0;
+  let updateProxyMessage = "";
   let updateRequestId = 0;
   let manualInstallerPending = false;
   let manualInstallerMessage = "";
@@ -210,6 +220,8 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   let desktopInfo = {};
   const updatesAvailable = typeof bridge.getUpdateState === "function"
     && typeof bridge.checkForUpdates === "function";
+  const proxyControlsAvailable = typeof bridge.getUpdateProxyState === "function"
+    && typeof bridge.stopUpdateProxy === "function";
 
   document.body.classList.add("is-desktop");
   document.title = "Brclio 小红书下载器";
@@ -953,6 +965,52 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     }
   }
 
+  function renderUpdateProxy(next) {
+    if (next && typeof next === "object") updateProxyState = next;
+    const disabled = updateProxyState.manuallyDisabled === true;
+    const message = updateProxyMessage || (disabled
+      ? "已手动关闭内置升级代理。下次点击检查更新或下载安装包时自动启用，完成后自动关闭。"
+      : {
+        system: "使用系统代理，内置升级代理未启动。",
+        starting: "正在启动内置升级代理，遇到问题可手动关闭。",
+        internal: "内置升级代理正在运行，仅用于软件更新。",
+        error: "内置升级代理启动未完成，可关闭后重新检查更新。",
+        off: "内置升级代理未运行；仅在检查更新、下载安装包时自动启用。"
+      }[updateProxyState.mode] || "正在读取升级代理状态…");
+    for (const container of [ui.updateProxy, ui.updateDialogProxy]) {
+      if (container) container.hidden = !proxyControlsAvailable;
+    }
+    for (const status of [ui.updateProxyStatus, ui.updateDialogProxyStatus]) {
+      if (status) status.textContent = message;
+    }
+    for (const button of [ui.updateProxyToggle, ui.updateDialogProxyToggle]) {
+      if (!button) continue;
+      button.disabled = Boolean(updateProxyPending) || !proxyControlsAvailable;
+      button.textContent = updateProxyPending ? "正在关闭…" : "关闭软件内置代理";
+      button.setAttribute("aria-busy", String(Boolean(updateProxyPending)));
+    }
+  }
+
+  async function toggleUpdateProxy() {
+    if (updateProxyPending || !proxyControlsAvailable) return;
+    const requestedRevision = updateProxyRevision;
+    updateProxyPending = "stop";
+    updateProxyMessage = "";
+    renderUpdateProxy();
+    try {
+      const next = await bridge.stopUpdateProxy();
+      if (updateProxyRevision === requestedRevision) {
+        updateProxyRevision++;
+        renderUpdateProxy(next);
+      }
+    } catch {
+      updateProxyMessage = "暂时无法关闭内置升级代理，请重试。";
+    } finally {
+      updateProxyPending = "";
+      renderUpdateProxy();
+    }
+  }
+
   function renderManualInstaller() {
     const show = updateState.status === "error" && updateState.error?.phase === "install";
     const context = show ? JSON.stringify([updateState.latestVersion, updateState.error]) : "";
@@ -1459,6 +1517,8 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   }, { once: true });
 
   ui.updateCheck.addEventListener("click", () => void performUpdate("check"));
+  ui.updateProxyToggle?.addEventListener("click", () => void toggleUpdateProxy());
+  ui.updateDialogProxyToggle?.addEventListener("click", () => void toggleUpdateProxy());
   ui.updateRetry.addEventListener("click", () => void performUpdate("check"));
   ui.updateDownload.addEventListener("click", () => void performUpdate("download"));
   ui.updateCancel.addEventListener("click", () => void performUpdate("cancel"));
@@ -1550,6 +1610,26 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     void bridge.getUpdateHistory().then(next => {
       if (updateHistoryRevision === requestedRevision) renderUpdateHistory(next);
     }).catch(() => {});
+  }
+  renderUpdateProxy();
+  if (proxyControlsAvailable) {
+    if (typeof bridge.onUpdateProxy === "function") {
+      const cleanup = bridge.onUpdateProxy(next => {
+        updateProxyRevision++;
+        updateProxyMessage = "";
+        renderUpdateProxy(next);
+      });
+      if (typeof cleanup === "function") window.addEventListener("pagehide", cleanup, { once: true });
+    }
+    const requestedRevision = updateProxyRevision;
+    void bridge.getUpdateProxyState().then(next => {
+      if (updateProxyRevision === requestedRevision) renderUpdateProxy(next);
+    }).catch(() => {
+      if (updateProxyRevision === requestedRevision) {
+        updateProxyMessage = "暂时无法读取升级代理状态，仍可手动关闭内置代理。";
+        renderUpdateProxy();
+      }
+    });
   }
   renderUpdateState(updateState);
   if (typeof bridge.onUpdateState === "function") {

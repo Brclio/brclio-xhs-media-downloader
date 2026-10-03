@@ -6,7 +6,9 @@
 
 客户端只使用管理后台提供的订阅列表，发行包不携带预设链接。构建脚本不读取旧订阅环境变量或私有本地配置文件；即使开发机留有这些配置，也不会写入软件资源。为兼容原有资源布局，生成的 `subscription.json` 仅包含 `{"subscriptionUrls":[],"subscriptionUrl":""}`，客户端不将它作为订阅来源。
 
-GitHub Actions 桌面和 Android 工作流不注入订阅 Secret，正式构建也不要求订阅配置。订阅的增加、修改、删除和启停均在管理后台完成，最多支持 8 个来源；客户端每次进入更新网络任务时获取最新配置，并保存后台配置缓存以便配置接口暂时不可达时使用。明确禁用的新版配置优先于旧缓存，无后台配置时不启用代理。配置接口及订阅抓取直连，更新任务使用自己的本地代理连接，系统代理、VPN 和普通业务连接不变。
+GitHub Actions 桌面和 Android 工作流不注入订阅 Secret，正式构建也不要求订阅配置。订阅的增加、修改、删除和启停均在管理后台完成，最多支持 8 个来源；客户端需要内置代理时获取最新配置，并保存后台配置缓存以便配置接口暂时不可达时使用。明确禁用的新版配置优先于旧缓存，无后台配置时不启用内置代理。已有系统代理或 Android 应用 VPN 时，更新直接沿用系统网络，跳过内核准备；手动停用且尚无新的明确用户操作时同样跳过内核准备。其它情况下配置接口及订阅抓取直连，更新任务使用自己的本地代理连接。系统代理、VPN 和普通业务连接不变。
+
+内置代理的手动关闭涵盖配置获取、订阅下载、内核启动、测速与更新传输阶段，只取消软件拥有的内置代理会话。关闭偏好持久保存，重启和后台自动检查保持停用；下次已接受的明确检查更新、下载更新或下载安装包地址请求自动恢复资格，任务完成、失败或取消后自动关闭代理。本地安装无需启动代理。网络传输实现参考 [Electron 会话代理 API](https://www.electronjs.org/docs/latest/api/session#sessetproxyconfig) 和 [Android 默认 HTTP 代理 API](https://developer.android.com/reference/android/net/ConnectivityManager#getDefaultProxy())；检测或停止不会写入用户的系统代理设置。
 
 桌面内核资源位于 `Resources/proxy/`，包含 `mihomo`（Windows 为 `mihomo.exe`）、空的兼容 `subscription.json`、`build-info.json`、`LICENSE`、`NOTICE` 和 `corresponding-source.tar.gz`。Android 的三种 ABI 为 `arm64-v8a`、`armeabi-v7a` 和 `x86_64`，内核由 Android 安装器解压到 nativeLibraryDir，其名称为 `libbrclio_update_proxy.so`，空的兼容文件及声明位于应用 assets 的 `update-proxy/`。
 

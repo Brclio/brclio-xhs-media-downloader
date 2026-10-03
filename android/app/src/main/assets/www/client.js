@@ -21,6 +21,10 @@ let manualNotice = '';
 let manualTone = '';
 let updateNotice = '';
 let updateTone = '';
+let updateProxy = { mode: 'off', manuallyDisabled: false, canStop: true };
+let changingUpdateProxy = false;
+let updateProxyNotice = '';
+let updateProxyGeneration = 0;
 
 function message(text, tone = '') {
   $('status').hidden = !text;
@@ -103,6 +107,7 @@ function finishOperation() {
 window.brclioEvent = event => {
   if (event.type === 'share') receiveShare(event.text);
   if (event.type === 'update') applyUpdateState(event);
+  if (event.type === 'update-proxy') applyUpdateProxyState(event);
   if (event.type === 'progress' && busy) {
     $('transfer').hidden = false;
     $('transfer-title').textContent = event.stage === 'write' ? '正在保存文件' : '正在读取原始素材';
@@ -163,7 +168,41 @@ function renderUpdater() {
   if (!mayInstall && update) text = '当前是调试包，请先从官网下载并安装正式版；正式版支持后续在线更新。';
   $('update-status').textContent = text;
   $('update-status').dataset.tone = updateTone;
+  renderUpdateProxy();
 }
+
+function renderUpdateProxy() {
+  const messages = {
+    off: '内置升级代理已关闭，检查和下载更新时会按需启动。',
+    system: '已检测到系统代理或 VPN，更新使用系统网络。',
+    starting: '正在准备内置升级代理，可随时手动关闭。',
+    internal: '正在使用内置升级代理。',
+    error: '内置升级代理启动失败，可手动关闭后重试更新。',
+  };
+  $('update-proxy-status').textContent = updateProxyNotice || (updateProxy.manuallyDisabled
+    ? '内置升级代理已手动关闭，下次点击检查更新或下载更新时自动启用。'
+    : messages[updateProxy.mode] || messages.off);
+  $('stop-update-proxy').disabled = !native || changingUpdateProxy || updateProxy.manuallyDisabled || updateProxy.canStop === false;
+}
+
+function applyUpdateProxyState(next) {
+  updateProxyGeneration++;
+  updateProxy = { ...updateProxy, ...next };
+  updateProxyNotice = '';
+  renderUpdateProxy();
+}
+
+$('stop-update-proxy').addEventListener('click', async () => {
+  if (changingUpdateProxy) return;
+  changingUpdateProxy = true; updateProxyNotice = ''; renderUpdateProxy();
+  const proxyGeneration = updateProxyGeneration;
+  try {
+    const state = await call('stopUpdateProxy');
+    if (proxyGeneration === updateProxyGeneration) applyUpdateProxyState(state);
+  }
+  catch (error) { if (proxyGeneration === updateProxyGeneration) updateProxyNotice = error.message; }
+  finally { changingUpdateProxy = false; renderUpdateProxy(); }
+});
 
 function applyUpdateState(next) {
   updater = { ...updater, ...next };
@@ -186,17 +225,17 @@ function applyUpdateState(next) {
   renderUpdater();
 }
 
-async function checkForUpdate() {
+async function checkForUpdate(manual = true) {
   if (!native || checkingUpdate || downloadingUpdate) return;
   checkingUpdate = true;
   updateNotice = '正在检查安卓正式版本…'; updateTone = '';
   renderUpdater();
-  try { applyUpdateState(await call('checkUpdate')); }
+  try { applyUpdateState(await call('checkUpdate', { manual: manual === true })); }
   catch (error) { updateNotice = `检查失败：${error.message}`; updateTone = 'error'; }
   finally { checkingUpdate = false; renderUpdater(); }
 }
 
-$('check-update').addEventListener('click', checkForUpdate);
+$('check-update').addEventListener('click', () => checkForUpdate(true));
 $('show-update').addEventListener('click', () => $('updates').scrollIntoView({ behavior: 'smooth', block: 'start' }));
 $('download-update').addEventListener('click', async () => {
   if (!updater.update || downloadingUpdate) return;
@@ -384,5 +423,9 @@ if (!native) message('当前为界面预览。解析、复制与保存请在安�
 else call('ready').then(result => {
   if (result.version) { $('version').textContent = result.version; updater.currentVersion = result.version; }
   if (result.sharedText) receiveShare(result.sharedText);
-  void checkForUpdate();
+  const proxyGeneration = updateProxyGeneration;
+  void call('updateProxyState').then(state => {
+    if (proxyGeneration === updateProxyGeneration) applyUpdateProxyState(state);
+  }).catch(() => {});
+  void checkForUpdate(false);
 }).catch(error => message(error.message, 'error'));

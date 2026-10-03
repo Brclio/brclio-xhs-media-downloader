@@ -48,6 +48,13 @@ contextBridge.exposeInMainWorld('xhsDesktop', {
     return state;
   }),
   getUpdateState: () => invoke('getUpdateState'),
+  getUpdateProxyState: () => invoke('getUpdateProxyState').then(state => {
+    ipcRenderer.send('ui-fixture:proxy-read-delivered');
+    return state;
+  }),
+  stopUpdateProxy: () => invoke('stopUpdateProxy'),
+  resumeUpdateProxy: () => invoke('resumeUpdateProxy'),
+  onUpdateProxy: callback => subscribe('ui-fixture:update-proxy', callback),
   getUpdateHistory: () => invoke('getUpdateHistory'),
   dismissUpdateHistory: id => invoke('dismissUpdateHistory', id),
   onUpdateHistory: callback => subscribe('ui-fixture:update-history', callback),
@@ -84,6 +91,8 @@ app.whenReady().then(async () => {
   ipcMain.on('ui-fixture:desktop-ready', event => readyEvents.set(event.sender.id, (readyEvents.get(event.sender.id) || 0) + 1));
   let loginReadDeliveries = 0;
   ipcMain.on('ui-fixture:login-read-delivered', () => { loginReadDeliveries++; });
+  let proxyReadDeliveries = 0;
+  ipcMain.on('ui-fixture:proxy-read-delivered', () => { proxyReadDeliveries++; });
   const failedId = (126).toString(16).padStart(24, '0');
   const failedUrl = `https://www.xiaohongshu.com/explore/${failedId}?xsec_token=fixture%2Btoken%2Fsignature%3D&xsec_source=pc_user&source=web_profile`;
   const fixtureTitle = '测试笔记 <img src=x onerror=alert(1)>';
@@ -104,6 +113,12 @@ app.whenReady().then(async () => {
     membership: { type: 'none', active: false }, device: { status: 'authorized' }, serverTime: '2026-09-20T12:00:00Z'
   } };
   let update = { status: 'idle', currentVersion: '1.6.0' };
+  let updateProxy = { mode: 'off', manuallyDisabled: false };
+  let initialProxyPending = true;
+  let resolveInitialProxy;
+  let stopProxyMode = 'pending';
+  let resolveStopProxy;
+  let externalProxyActive = false;
   let updateHistory = null;
   let historyReadPending = true;
   let resolveHistoryRead;
@@ -139,6 +154,9 @@ app.whenReady().then(async () => {
   const publishLogin = value => { xhsLogin = value; win.webContents.send('ui-fixture:login', value); return value; };
   const publishAccount = value => { account = value; win.webContents.send('ui-fixture:account', value); return value; };
   const publishUpdate = value => { update = value; win.webContents.send('ui-fixture:update', value); return value; };
+  const publishProxy = value => { updateProxy = value; win.webContents.send('ui-fixture:update-proxy', value); return value; };
+  const beginFixtureUpdateProxy = () => publishProxy({ mode: externalProxyActive ? 'system' : 'internal', manuallyDisabled: false });
+  const finishFixtureUpdateProxy = () => publishProxy({ mode: 'off', manuallyDisabled: updateProxy.manuallyDisabled });
   const publishHistory = value => { updateHistory = value; win.webContents.send('ui-fixture:update-history', value); return value; };
   const previousInstall = {
     id: 'fixture-previous-install', targetVersion: '1.5.9', previousVersion: '1.5.8', currentVersion: '1.6.0',
@@ -192,6 +210,19 @@ app.whenReady().then(async () => {
       return profile;
     }
     if (method === 'getUpdateState') return update;
+    if (method === 'getUpdateProxyState') {
+      if (initialProxyPending) {
+        initialProxyPending = false;
+        return new Promise(resolve => { resolveInitialProxy = resolve; });
+      }
+      return updateProxy;
+    }
+    if (method === 'stopUpdateProxy') {
+      if (stopProxyMode === 'error') throw new Error('fixture stop failure <img src=x>');
+      if (stopProxyMode === 'pending') return new Promise(resolve => { resolveStopProxy = resolve; });
+      return publishProxy({ mode: updateProxy.mode === 'system' ? 'system' : 'off', manuallyDisabled: true });
+    }
+    if (method === 'resumeUpdateProxy') return publishProxy({ mode: 'off', manuallyDisabled: false });
     if (method === 'getUpdateHistory') {
       if (historyReadPending) {
         historyReadPending = false;
@@ -211,20 +242,27 @@ app.whenReady().then(async () => {
       items: profile.items.map(item => item.id === value ? { ...item, status: 'downloading', error: '' } : item)
     });
     if (method === 'checkForUpdates') {
+      beginFixtureUpdateProxy();
       if (checkMode === 'retained-failure') {
         const previous = update;
         publishUpdate({ ...previous, status: 'checking', error: null, checkError: null, canRetry: false });
-        return new Promise(resolve => { resolveUpdateCheck = () => resolve(publishUpdate({
-          ...previous, status: 'available', error: null, checkError: retainedCheckError, canRetry: false
-        })); });
+        return new Promise(resolve => { resolveUpdateCheck = () => {
+          finishFixtureUpdateProxy();
+          resolve(publishUpdate({ ...previous, status: 'available', error: null, checkError: retainedCheckError, canRetry: false }));
+        }; });
       }
+      finishFixtureUpdateProxy();
       return publishUpdate(available());
     }
     if (method === 'downloadUpdate') {
-      if (downloadMode === 'downloaded') return publishUpdate({ ...available(), status: 'downloaded' });
+      beginFixtureUpdateProxy();
+      if (downloadMode === 'downloaded') {
+        finishFixtureUpdateProxy();
+        return publishUpdate({ ...available(), status: 'downloaded' });
+      }
       const receivedBytes = update.download?.canResume ? 768 : 512;
       publishUpdate({ ...available(), status: 'downloading', download: { receivedBytes, totalBytes: 1024, canResume: false } });
-      return new Promise(resolve => { resolveDownload = resolve; });
+      return new Promise(resolve => { resolveDownload = state => { finishFixtureUpdateProxy(); resolve(state); }; });
     }
     if (method === 'cancelUpdateDownload') {
       const state = publishUpdate({ ...available(), download: { ...update.download, canResume: true } });
@@ -398,6 +436,70 @@ app.whenReady().then(async () => {
   await check(`document.body.dataset.desktopReady === 'true'`, 'desktop readiness follows successful info and profile initialization');
   await verifyShortcut(win);
   assert.equal(readyEvents.get(win.webContents.id), 1, 'successful initialization emits exactly one desktop-ready event');
+  const proxyScreenshots = {};
+  const proxyButtonsAvailable = `['desktop-update-proxy-toggle', 'desktop-update-dialog-proxy-toggle']
+    .every(id => !document.getElementById(id).disabled && document.getElementById(id).getAttribute('aria-busy') === 'false')`;
+  await click('#about-tab');
+  await check(`!document.querySelector('#desktop-update-proxy').hidden && ${proxyButtonsAvailable}`, 'manual proxy control is available before the initial state read finishes');
+  externalProxyActive = true;
+  publishProxy({ mode: 'system', manuallyDisabled: false });
+  await check(`document.querySelector('#desktop-update-proxy-status').textContent === '使用系统代理，内置升级代理未启动。'`, 'external proxy state explains why the internal proxy stays off');
+  resolveInitialProxy({ mode: 'internal', manuallyDisabled: false });
+  for (let attempt = 0; attempt < 50 && proxyReadDeliveries === 0; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(proxyReadDeliveries, 1, 'late initial proxy snapshot reaches the renderer bridge');
+  await paint();
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-proxy-status').textContent`), '使用系统代理，内置升级代理未启动。',
+    'a late initial snapshot cannot overwrite a newer proxy state event');
+  const updateBeforeProxyStop = structuredClone(update);
+  await click('#desktop-update-proxy-toggle');
+  await check(`['desktop-update-proxy-toggle', 'desktop-update-dialog-proxy-toggle'].every(id => {
+    const button = document.getElementById(id); return button.disabled && button.getAttribute('aria-busy') === 'true'
+      && button.textContent === '正在关闭…';
+  })`, 'both proxy surfaces share pending shutdown state');
+  await click('#desktop-update-proxy-toggle');
+  await click('#desktop-update-dialog-proxy-toggle');
+  assert.equal(calls.filter(call => call.method === 'stopUpdateProxy').length, 1, 'repeated proxy shutdown clicks issue only one native request');
+  publishProxy({ mode: 'system', manuallyDisabled: true });
+  await check(`['desktop-update-proxy-toggle', 'desktop-update-dialog-proxy-toggle'].every(id => {
+    const button = document.getElementById(id); return button.disabled && button.textContent === '正在关闭…';
+  })`, 'a shutdown state event arriving before its IPC reply cannot change the pending action label');
+  resolveStopProxy({ mode: 'internal', manuallyDisabled: false });
+  await check(`${proxyButtonsAvailable} && document.querySelector('#desktop-update-proxy-toggle').textContent === '关闭软件内置代理'`,
+    'shutdown completion retains the close action for subsequent update operations');
+  assert.match(await evaluate(`document.querySelector('#desktop-update-proxy-status').textContent`), /已.*关闭内置升级代理/,
+    'a stale shutdown reply cannot overwrite a newer disabled state event');
+  assert.equal(updateProxy.mode, 'system', 'manual internal shutdown retains the external system proxy mode');
+  assert.deepEqual(update, updateBeforeProxyStop, 'proxy UI actions do not replace the updater state');
+  externalProxyActive = false;
+  stopProxyMode = 'error';
+  publishProxy({ mode: 'error', manuallyDisabled: false });
+  await click('#desktop-update-proxy-toggle');
+  await check(`${proxyButtonsAvailable} && document.querySelector('#desktop-update-proxy-status').textContent === '暂时无法关闭内置升级代理，请重试。'`,
+    'failed manual shutdown does not strand the close button');
+  stopProxyMode = 'success';
+  await click('#desktop-update-proxy-toggle');
+  await check(`${proxyButtonsAvailable} && document.querySelector('#desktop-update-proxy-toggle').textContent === '关闭软件内置代理'`,
+    'shutdown failure can retry successfully');
+  for (const [width, height] of [[390, 844], [320, 480]]) {
+    await resizeViewport(width, height);
+    await evaluate(`document.querySelector('#desktop-update-proxy').scrollIntoView({ block: 'center' })`);
+    const geometry = await evaluate(`(() => {
+      const container = document.querySelector('#desktop-update-proxy'), button = document.querySelector('#desktop-update-proxy-toggle');
+      const bounds = container.getBoundingClientRect(), action = button.getBoundingClientRect();
+      return { fits: container.scrollWidth <= container.clientWidth && document.documentElement.scrollWidth <= innerWidth
+        && action.left >= bounds.left && action.right <= bounds.right && action.top >= 0 && action.bottom <= innerHeight,
+        bounds: bounds.toJSON(), action: action.toJSON() };
+    })()`);
+    assert.equal(geometry.fits, true, `${width}px: manual proxy control remains fully visible without overflow: ${JSON.stringify(geometry)}`);
+    proxyScreenshots[`about-${width}`] = path.join(temporary, `desktop-update-proxy-about-${width}.png`);
+    writeFileSync(proxyScreenshots[`about-${width}`], await captureFrame());
+  }
+  assert.equal(calls.filter(call => call.method === 'resumeUpdateProxy').length, 0, 'manual stop requires no separate resume control');
+  assert.equal(updateProxy.manuallyDisabled, true, 'idle UI actions leave the manually stopped proxy off');
+  await resizeViewport(1180, 980);
+  await click('#profile-tab');
   // Use the real reset renderer with a delayed native confirmation/cleanup
   // response. The storage reset itself is verified separately with real data.
   const loginResetScreenshots = {};
@@ -922,12 +1024,18 @@ app.whenReady().then(async () => {
   await check(`document.querySelector('#desktop-update-announcement').hidden && !document.querySelector('#desktop-update-dialog').open`, 'dismissed version is not repeatedly announced');
   await click('#about-tab');
   assert.equal(await evaluate(`document.body.dataset.desktopPage`), 'about');
+  assert.equal(updateProxy.manuallyDisabled, true, 'the idle manual-stop preference survives unrelated UI actions');
   await click('#desktop-check-updates');
   await check(`document.querySelector('#desktop-update-dialog').open`, 'manual check reopens dismissed version');
   await check(`!document.querySelector('#desktop-update-download').hidden && !document.querySelector('#desktop-update-download').disabled`, 'update available');
   assert.match(await evaluate(`document.querySelector('#desktop-update-title').textContent`), /1\.6\.1/);
   assert.equal(await evaluate(`document.querySelector('#desktop-update-notes').querySelectorAll('img').length`), 0, 'release notes render as text');
   assert.equal(calls.filter(call => call.method === 'installUpdate').length, 0, 'no automatic installation');
+  assert.deepEqual(updateProxy, { mode: 'off', manuallyDisabled: false }, 'the next explicit check re-enables proxy eligibility and automatically closes after finishing');
+  await check(`document.querySelector('#desktop-update-proxy-status').textContent.includes('未运行')`, 'completed explicit check leaves an idle proxy status');
+  await click('#desktop-update-dialog-proxy-toggle');
+  await check(`${proxyButtonsAvailable}`, 'idle proxy shutdown is still available before downloading');
+  assert.equal(updateProxy.manuallyDisabled, true, 'the manual stop applies until the next explicit update operation');
   await click('#desktop-update-dialog-action');
   await check(`!document.querySelector('#desktop-update-cancel').hidden && !document.querySelector('#desktop-update-cancel').disabled`, 'pause works during pending download IPC');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-cancel').textContent`), '暂停下载');
@@ -936,6 +1044,32 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '暂停下载');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-later').textContent`), '后台下载');
   assert.match(await evaluate(`document.querySelector('#desktop-update-progress-text').textContent`), /50%/);
+  assert.deepEqual(updateProxy, { mode: 'internal', manuallyDisabled: false }, 'the next explicit download re-enables the temporary internal proxy without a resume button');
+  publishProxy({ mode: 'starting', manuallyDisabled: false });
+  await check(`${proxyButtonsAvailable} && document.querySelector('#desktop-update-dialog-proxy-status').textContent.includes('正在启动')`,
+    'proxy shutdown remains available during pending download and core preparation');
+  const pendingDownloadBeforeProxyStop = structuredClone(update);
+  await click('#desktop-update-dialog-proxy-toggle');
+  await check(`${proxyButtonsAvailable} && document.querySelector('#desktop-update-dialog-proxy-toggle').textContent === '关闭软件内置代理'`,
+    'modal proxy shutdown finishes independently of the pending download IPC');
+  assert.deepEqual(update, pendingDownloadBeforeProxyStop, 'proxy controls never synthesize a replacement download state');
+  assert.equal(updateProxy.manuallyDisabled, true, 'the stopped pending operation does not silently re-enable the proxy');
+  for (const [width, height] of [[390, 844], [390, 480], [320, 480]]) {
+    await resizeViewport(width, height);
+    const geometry = await evaluate(`(() => {
+      const dialog = document.querySelector('#desktop-update-dialog'), bounds = dialog.getBoundingClientRect();
+      const proxy = document.querySelector('#desktop-update-dialog-proxy'), button = document.querySelector('#desktop-update-dialog-proxy-toggle');
+      const action = button.getBoundingClientRect();
+      return { fits: dialog.open && bounds.top >= 0 && bounds.bottom <= innerHeight && dialog.scrollWidth <= dialog.clientWidth
+        && proxy.scrollWidth <= proxy.clientWidth && action.left >= bounds.left && action.right <= bounds.right
+        && action.top >= bounds.top && action.bottom <= bounds.bottom && action.height >= 40,
+        bounds: bounds.toJSON(), action: action.toJSON() };
+    })()`);
+    assert.equal(geometry.fits, true, `${width}×${height}: proxy shutdown fits alongside pending update actions: ${JSON.stringify(geometry)}`);
+    proxyScreenshots[`dialog-${width}x${height}`] = path.join(temporary, `desktop-update-proxy-dialog-${width}x${height}.png`);
+    writeFileSync(proxyScreenshots[`dialog-${width}x${height}`], await captureFrame());
+  }
+  await resizeViewport(1180, 980);
   publishUpdate({ ...update, download: { receivedBytes: 46, totalBytes: 100, canResume: false } });
   await check(`document.querySelector('#desktop-update-progress').value === 46`, 'download at the reported 46 percent');
   await evaluate(`document.querySelector('#desktop-update-dialog-action').focus()`);
@@ -967,6 +1101,7 @@ app.whenReady().then(async () => {
   writeFileSync(screenshot, await captureFrame());
   await click('#desktop-update-dialog-action');
   await check(`!document.querySelector('#desktop-update-download').hidden && !document.querySelector('#desktop-update-download').disabled`, 'pause returns to available');
+  assert.equal(updateProxy.mode, 'off', 'a paused download automatically closes its temporary proxy');
   assert.equal(calls.filter(call => call.method === 'cancelUpdateDownload').length, 1);
   assert.equal(await evaluate(`document.querySelector('#desktop-update-download').textContent`), '继续下载');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-progress-wrap').hidden`), false, 'paused progress remains visible');
@@ -1218,12 +1353,25 @@ app.whenReady().then(async () => {
       download: { receivedBytes, totalBytes: 1024, canResume: receivedBytes > 0 } };
     publishUpdate(retained);
     await check(`!document.querySelector('#desktop-update-download').hidden && !document.querySelector('#desktop-update-download').disabled`, 'known release is available before a recheck');
+    await click('#desktop-update-proxy-toggle');
+    await check(`${proxyButtonsAvailable}`, 'the manual-stop response settles before the next explicit check');
+    assert.equal(updateProxy.manuallyDisabled, true, 'manual stop precedes the explicit retry operation');
     checkMode = 'retained-failure';
     await click('#desktop-check-updates');
     await check(`document.querySelector('#desktop-update-panel').dataset.status === 'checking' && document.querySelector('#desktop-update-download').disabled`, 'recheck enters a real pending checking state');
+    assert.deepEqual(updateProxy, { mode: 'internal', manuallyDisabled: false }, 'a new explicit check automatically restores temporary proxy use');
+    publishProxy({ mode: 'starting', manuallyDisabled: false });
+    await check(`${proxyButtonsAvailable}`, 'manual proxy controls remain enabled during the pending check IPC');
+    await click('#desktop-update-proxy-toggle');
+    await check(`${proxyButtonsAvailable} && document.querySelector('#desktop-update-proxy-toggle').textContent === '关闭软件内置代理'`,
+      'pending metadata checks do not block manual proxy shutdown');
+    assert.equal(updateProxy.manuallyDisabled, true, 'stopping a pending check keeps the proxy off until another explicit update request');
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-panel').dataset.status`), 'checking',
+      'proxy toggle responses cannot claim that a pending check has completed');
     resolveUpdateCheck();
     resolveUpdateCheck = null;
     await check(`document.querySelector('#desktop-update-dialog').open && document.querySelector('#desktop-update-dialog-action').dataset.action === 'download' && !document.querySelector('#desktop-update-dialog-action').disabled`, 'failed recheck preserves the known release download action');
+    assert.equal(updateProxy.mode, 'off', 'a failed or stopped explicit check automatically closes its temporary proxy');
     const expectedAction = receivedBytes ? '继续下载' : '立即更新';
     assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), expectedAction);
     assert.equal(await evaluate(`document.querySelector('#desktop-update-download').textContent`), receivedBytes ? '继续下载' : '下载更新');
@@ -1425,9 +1573,12 @@ app.whenReady().then(async () => {
   assert.equal(readyEvents.get(failedInitializationId) || 0, 0, 'failed initialization never emits desktop-ready');
   failedInitialization.destroy();
   assert.deepEqual(rendererErrors, [], 'no renderer console errors');
+  assert.equal(calls.filter(call => call.method === 'resumeUpdateProxy').length, 0, 'the renderer never requires a separate proxy resume request');
+  assert.ok(calls.filter(call => ['checkForUpdates', 'downloadUpdate'].includes(call.method)).every(call => call.value === undefined),
+    'renderer update requests supply no automatic or manual intent override');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['XHS login reset confirmation cancel, pending deduplication, success, retry and safe error rendering', 'XHS reset rejects unconfirmed cleanup and stale initial login discovery', '760px and 390px login/reset controls with long nickname', 'iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'eight independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], loginResetScreenshots, learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['proxy close controls share pending state, deduplicate shutdown and retry failures', 'late initial and stop proxy snapshots cannot overwrite newer state events', 'system proxy precedence survives manual internal shutdown', 'manual proxy controls stay available during pending check and download IPC', 'explicit checks and downloads re-enable stopped proxy and close automatically without a resume control', 'proxy controls fit at 390px and 320px including short update dialogs', 'XHS login reset confirmation cancel, pending deduplication, success, retry and safe error rendering', 'XHS reset rejects unconfirmed cleanup and stale initial login discovery', '760px and 390px login/reset controls with long nickname', 'iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'eight independent pages', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], loginResetScreenshots, learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots, proxyScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

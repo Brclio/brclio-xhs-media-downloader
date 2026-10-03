@@ -37,6 +37,7 @@ let manager;
 let loginReset;
 let pythonBackend;
 let updateManager;
+let updateNetwork;
 let updateHistory;
 let updateCheckTimer;
 let updatePeriodicTimer;
@@ -205,6 +206,9 @@ function registerIpc() {
     diagnostic(event, fields); return true;
   });
   handle('desktop:get-update-state', () => updateManager.snapshot());
+  handle('desktop:get-update-proxy-state', () => updateNetwork.snapshot());
+  handle('desktop:stop-update-proxy', () => updateNetwork.stopInternalProxy());
+  handle('desktop:resume-update-proxy', () => updateNetwork.resumeInternalProxy());
   handle('desktop:get-update-history', () => updateHistory?.snapshot() || null);
   handle('desktop:dismiss-update-history', id => updateHistory?.dismiss(id) || null);
   handle('desktop:check-for-updates', () => updateManager.checkForUpdates());
@@ -391,10 +395,14 @@ async function boot() {
       }
     });
   }
-  const updateNetwork = new UpdateProxyNetwork({ net, session, endpoint: accountClient.endpoint,
+  updateNetwork = new UpdateProxyNetwork({ net, session, endpoint: accountClient.endpoint,
     runtimeDirectory: app.isPackaged ? path.join(process.resourcesPath, 'proxy') : path.join(app.getAppPath(), 'desktop-runtime',
       `${process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : 'linux'}-${process.arch}`, 'proxy'),
-    cacheDirectory: path.join(app.getPath('userData'), 'updates'), onDiagnostic: diagnostic });
+    cacheDirectory: path.join(app.getPath('userData'), 'updates'), onDiagnostic: diagnostic,
+    onStateChange(state) {
+      if (!quitting && mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:update-proxy-state', state);
+    } });
+  await updateNetwork.loadPreference();
   updateManager = new UpdateManager({ currentVersion: app.getVersion(),
     directory: path.join(app.getPath('userData'), 'updates'),
     portable: process.platform === 'win32' && Boolean(process.env.PORTABLE_EXECUTABLE_DIR),
@@ -492,7 +500,7 @@ async function refreshPreviousMacUpdate() {
 }
 function automaticUpdateCheck() {
   if (!updateManager || ['checking', 'downloading', 'downloaded', 'installing'].includes(updateManager.snapshot().status)) return;
-  lastAutomaticCheck = Date.now(); void updateManager.checkForUpdates();
+  lastAutomaticCheck = Date.now(); void updateManager.checkForUpdates({ manual: false });
 }
 function navigateDesktop(page, purchase = false) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -522,6 +530,9 @@ else {
       try { await feedbackClient?.shutdown(); await updateManager?.shutdown(); await manager?.shutdown(); }
       catch { dialog.showErrorBox('保存任务失败', '本次下载进度未能完整保存，请检查磁盘剩余空间和文件夹权限。'); }
       finally {
+        // A manual proxy stop can be a separate pending IPC when the window
+        // closes. Persist that choice before exiting, without changing it.
+        await updateNetwork?.flushPreferences();
         browser?.close();
         pythonBackend?.close();
         await diagnostics?.record('app.stopped', {}); await diagnostics?.flush();

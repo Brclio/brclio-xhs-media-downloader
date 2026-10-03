@@ -128,10 +128,10 @@ async function runPage({ payload = release(), fetchError, status = 200, navigato
 test('static download anchors point to one complete branded release', () => {
   const current = snapshot(documentFixture());
   const tag = current.versions[0];
-  assert.equal(tag, 'v2.0.3');
+  assert.equal(tag, 'v2.0.4');
   for (const [key, suffix] of Object.entries(suffixes)) {
     assert.equal(current.links[key], `${base}/download/${tag}/Brclio-XHS-${tag.slice(1)}-${suffix}`);
-    assert.match(current.sizes[key], /^(?:\d+\.\d MB|大小以发布附件为准)$/);
+    assert.match(current.sizes[key], /^(?:\d+\.\d MB|大小以发布附件为准|发布后同步)$/);
   }
   assert.ok(current.releaseLinks.every(url => url === `${base}/tag/${tag}`));
 });
@@ -247,10 +247,10 @@ test('FAQ hash links open the question on initial load and later navigation', as
 test('static Android APK, checksum and release links remain available without JavaScript', () => {
   const document = documentFixture();
   const android = androidSnapshot(document);
-  assert.deepEqual(android.versions, ['v1.0.10']);
-  assert.equal(android.apk, `${base}/download/android-v1.0.10/Brclio-XHS-Android-1.0.10-release.apk`);
+  assert.deepEqual(android.versions, ['v1.0.11']);
+  assert.equal(android.apk, `${base}/download/android-v1.0.11/Brclio-XHS-Android-1.0.11-release.apk`);
   assert.equal(android.checksum, `${android.apk}.sha256`);
-  assert.ok(android.releaseLinks.every(url => url === `${base}/tag/android-v1.0.10`));
+  assert.ok(android.releaseLinks.every(url => url === `${base}/tag/android-v1.0.11`));
   assert.equal(document.querySelector('[data-platform="android"]').attributes.id, 'android-download');
   assert.match(html, /Android 8\.0 或更新版本/);
   assert.match(html, /安卓当前提供单篇功能/);

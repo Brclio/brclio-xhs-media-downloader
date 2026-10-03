@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { parseDocument } from 'yaml';
 import { createElectronUpdateFetch } from './update-manager.js';
+import { detectSystemProxy } from './system-proxy.js';
 
 export const UPDATE_HOSTS = Object.freeze(['api.github.com', 'github.com',
   'release-assets.githubusercontent.com', 'objects.githubusercontent.com', 'github-releases.githubusercontent.com']);
@@ -22,6 +23,17 @@ const MAX_NODES = 256;
 const PROBE_URL = 'https://api.github.com/zen';
 
 function proxyError(code, message) { return Object.assign(new Error(message), { code }); }
+function abortable(promise, signal) {
+  if (signal.aborted) {
+    void Promise.resolve(promise).catch(() => {});
+    signal.throwIfAborted();
+  }
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(signal.reason);
+    signal.addEventListener('abort', abort, { once: true });
+    Promise.resolve(promise).then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+  });
+}
 function privateHost(host) {
   const value = host.toLowerCase().replace(/^\[|\]$/g, '');
   return !value || value === 'localhost' || value.endsWith('.localhost') || value.endsWith('.local')
@@ -134,7 +146,7 @@ async function boundedText(response, maximum, signal) {
   try {
     while (true) {
       signal.throwIfAborted();
-      const { value, done } = await reader.read();
+      const { value, done } = await abortable(reader.read(), signal);
       if (done) break;
       bytes += value.byteLength;
       if (bytes > maximum) throw proxyError('PROXY_SUBSCRIPTION_INVALID', '更新代理响应超过大小限制。');
@@ -145,11 +157,22 @@ async function boundedText(response, maximum, signal) {
 }
 
 export class UpdateProxyNetwork {
-  constructor({ net, session, endpoint, runtimeDirectory, cacheDirectory, fetchDirect = null, launchCore = null, onDiagnostic = () => {} }) {
+  constructor({ net, session, endpoint, runtimeDirectory, cacheDirectory, fetchDirect = null, launchCore = null,
+    onDiagnostic = () => {}, onStateChange = () => {}, detectExternalProxy = detectSystemProxy,
+    platform = process.platform, env = process.env, configuredProxyDetector } = {}) {
     this.net = net; this.sessions = session; this.endpoint = endpoint;
     this.runtimeDirectory = runtimeDirectory; this.cacheDirectory = cacheDirectory;
     this.fetchDirect = fetchDirect; this.launchCore = launchCore; this.onDiagnostic = onDiagnostic;
+    this.onStateChange = onStateChange; this.detectExternalProxy = detectExternalProxy;
+    this.platform = platform; this.env = env; this.configuredProxyDetector = configuredProxyDetector;
     this.active = new Map();
+    this.manuallyDisabled = false;
+    this.lastProxyError = false;
+    this.preferenceLoaded = false;
+    this.preferenceLoad = null;
+    this.preferenceGeneration = 0;
+    this.preferenceQueue = Promise.resolve();
+    this.stopOperation = null;
     this.configQueue = Promise.resolve();
     this.lastConfig = null;
     this.fetch = (url, options) => {
@@ -160,6 +183,104 @@ export class UpdateProxyNetwork {
     };
   }
   diagnostic(event, data = {}) { try { this.onDiagnostic(event, data); } catch { /* diagnostics cannot interrupt cleanup */ } }
+
+  snapshot() {
+    const scopes = [...this.active.values()];
+    const internal = scopes.filter(scope => scope.internal);
+    const mode = internal.some(scope => scope.ready) ? 'internal' : internal.length ? 'starting'
+      : scopes.some(scope => scope.external) ? 'system' : this.lastProxyError && !this.manuallyDisabled ? 'error' : 'off';
+    return { mode, manuallyDisabled: this.manuallyDisabled, canStop: !this.manuallyDisabled,
+      activeScopes: scopes.length, internalScopes: internal.length };
+  }
+
+  publishState() { try { this.onStateChange(this.snapshot()); } catch { /* UI state cannot interrupt networking */ } }
+
+  async loadPreference() {
+    if (this.preferenceLoaded) return;
+    if (!this.preferenceLoad) {
+      const generation = this.preferenceGeneration;
+      this.preferenceLoad = (async () => {
+        let disabled = false;
+        try {
+          const value = JSON.parse(await readFile(path.join(this.cacheDirectory, 'proxy-preference.json'), 'utf8'));
+          if (value.schemaVersion !== 1 || typeof value.manuallyDisabled !== 'boolean') throw new Error('Invalid preference');
+          disabled = value.manuallyDisabled;
+        } catch (error) { if (error.code !== 'ENOENT') this.diagnostic('update.proxy_preference_read_failed'); }
+        // A manual action is authoritative even while an older disk read is
+        // pending. Loading an old false flag must never undo a user's stop.
+        if (generation === this.preferenceGeneration) this.manuallyDisabled = disabled;
+        this.preferenceLoaded = true;
+        this.publishState();
+      })();
+    }
+    await this.preferenceLoad;
+  }
+
+  rememberPreference(manuallyDisabled) {
+    const save = async () => {
+      const file = path.join(this.cacheDirectory, 'proxy-preference.json');
+      const temporary = `${file}.${randomUUID()}.tmp`;
+      try {
+        await mkdir(this.cacheDirectory, { recursive: true, mode: 0o700 });
+        await writeFile(temporary, JSON.stringify({ schemaVersion: 1, manuallyDisabled }), { mode: 0o600 });
+        await rename(temporary, file);
+      } catch { this.diagnostic('update.proxy_preference_write_failed'); }
+      finally { await rm(temporary, { force: true }).catch(() => {}); }
+    };
+    const result = this.preferenceQueue.then(save, save);
+    this.preferenceQueue = result.catch(() => {});
+    return result;
+  }
+
+  async stopInternalProxy() {
+    this.preferenceGeneration++;
+    this.preferenceLoaded = true;
+    this.manuallyDisabled = true;
+    this.lastProxyError = false;
+    const scopes = [...this.active.values()].filter(scope => scope.internal);
+    for (const scope of scopes) {
+      scope.controller.abort(proxyError('CANCELED', '已关闭软件内置升级代理。'));
+      // Abort pending connections immediately, including during preparation.
+      // These sessions belong only to the internal core, never the OS proxy.
+      scope.session.closeAllConnections().catch(() => {});
+      try { scope.child?.stdin?.end(); } catch { /* normal cleanup also stops the supervisor */ }
+    }
+    this.publishState();
+    const stopping = Promise.all([this.rememberPreference(true), ...scopes.map(scope => scope.done)]).then(() => {
+      this.diagnostic('update.proxy_manually_disabled');
+      return this.snapshot();
+    });
+    this.stopOperation = stopping;
+    try { return await stopping; }
+    finally { if (this.stopOperation === stopping) this.stopOperation = null; }
+  }
+
+  async requestInternalProxyForUserOperation() {
+    const generation = ++this.preferenceGeneration;
+    await this.loadPreference();
+    await this.stopOperation;
+    // If a newer click closed the proxy while this action waited for cleanup,
+    // the newer user decision wins and this action continues without a core.
+    if (generation !== this.preferenceGeneration) return this.snapshot();
+    this.manuallyDisabled = false;
+    this.lastProxyError = false;
+    this.publishState();
+    await this.rememberPreference(false);
+    if (generation === this.preferenceGeneration) this.diagnostic('update.proxy_manually_enabled');
+    return this.snapshot();
+  }
+
+  resumeInternalProxy() { return this.requestInternalProxyForUserOperation(); }
+
+  async flushPreferences() {
+    // Exit must wait for a stop IPC's independent persistence work even when
+    // no updater operation is running. Draining never changes the preference.
+    while (true) {
+      const stopping = this.stopOperation, queued = this.preferenceQueue;
+      await Promise.all([stopping, queued]);
+      if (this.stopOperation === stopping && this.preferenceQueue === queued) return this.snapshot();
+    }
+  }
 
   validateConfiguration(config) {
     if (!Number.isSafeInteger(config?.revision) || config.revision < 0 || typeof config.enabled !== 'boolean') throw new Error('Invalid configuration');
@@ -207,8 +328,8 @@ export class UpdateProxyNetwork {
     let config;
     try {
       const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(12000)]);
-      const response = await direct(this.endpoint, { method: 'POST', redirect: 'error', cache: 'no-store', signal: requestSignal,
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update-proxy-config', input: {} }) });
+      const response = await abortable(direct(this.endpoint, { method: 'POST', redirect: 'error', cache: 'no-store', signal: requestSignal,
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update-proxy-config', input: {} }) }), requestSignal);
       const body = JSON.parse(await boundedText(response, 65536, requestSignal));
       if (body.ok !== true) throw new Error();
       config = this.validateConfiguration(body.proxyConfig);
@@ -227,13 +348,34 @@ export class UpdateProxyNetwork {
   async run(controller, work) {
     const signal = controller.signal;
     signal.throwIfAborted();
-    const scope = { session: this.sessions.fromPartition(`brclio-update-${randomUUID()}`, { cache: false }), child: null, directory: null, workStarted: false };
+    let finish;
+    const scope = { session: this.sessions.fromPartition(`brclio-update-${randomUUID()}`, { cache: false }), controller,
+      child: null, directory: null, workStarted: false, internal: false, external: false, ready: false,
+      done: new Promise(resolve => { finish = resolve; }) };
+    this.active.set(signal, scope);
+    this.lastProxyError = false;
     try {
-      await scope.session.setProxy({ mode: 'direct' });
-      const direct = this.fetchDirect || createElectronUpdateFetch(this.net, { session: scope.session });
-      const config = await this.getConfiguration(direct, signal);
-      if (config.enabled) await this.prepare(scope, direct, config, signal);
+      await abortable(this.loadPreference(), signal);
+      const external = await abortable(this.detectExternalProxy(scope.session, UPDATE_HOSTS.map(host => `https://${host}/`),
+        { platform: this.platform, env: this.env, configured: this.configuredProxyDetector, signal }), signal);
       signal.throwIfAborted();
+      scope.external = external.enabled;
+      if (scope.external) this.diagnostic('update.proxy_system_selected', { source: external.source });
+      if (!scope.external && !this.manuallyDisabled) {
+        scope.internal = true;
+        this.publishState();
+        await scope.session.setProxy({ mode: 'direct' });
+        signal.throwIfAborted();
+        const direct = this.fetchDirect || createElectronUpdateFetch(this.net, { session: scope.session });
+        const config = await this.getConfiguration(direct, signal);
+        signal.throwIfAborted();
+        if (config.enabled) {
+          await this.prepare(scope, direct, config, signal);
+          scope.ready = true;
+        } else scope.internal = false;
+      }
+      signal.throwIfAborted();
+      this.publishState();
       const transport = createElectronUpdateFetch(this.net, { session: scope.session });
       scope.fetch = async (url, options) => {
         while (true) {
@@ -254,20 +396,22 @@ export class UpdateProxyNetwork {
           return response;
         }
       };
-      this.active.set(signal, scope);
       scope.workStarted = true;
+      // Update work owns installer file handles and its partial-byte accounting.
+      // It must complete its abort/finally path before a new download can begin.
       return await work();
     } catch (error) {
+      if (scope.internal && typeof error?.code === 'string' && error.code.startsWith('PROXY_')) this.lastProxyError = true;
       if (scope.workStarted) throw error;
       signal.throwIfAborted();
+      if (scope.internal) this.lastProxyError = true;
       if (typeof error?.code === 'string' && error.code.startsWith('PROXY_')) throw error;
       throw proxyError('PROXY_START_FAILED', '更新代理启动失败，请稍后重试或在管理后台检查订阅。');
     } finally {
-      this.active.delete(signal);
       await scope.session.setProxy({ mode: 'direct' }).catch(() => {});
       await scope.session.closeAllConnections().catch(() => {});
       if (scope.child) {
-        scope.child.stdin?.end();
+        try { scope.child.stdin?.end(); } catch { /* supervisor may already have closed after cancellation */ }
         if (scope.child.exitCode === null && scope.child.signalCode === null) {
           await Promise.race([new Promise(resolve => scope.child.once('exit', resolve)), delay(3000)]);
           if (scope.child.exitCode === null && scope.child.signalCode === null) scope.child.kill();
@@ -275,6 +419,9 @@ export class UpdateProxyNetwork {
       }
       await scope.session.clearStorageData().catch(() => {});
       if (scope.directory) await rm(scope.directory, { recursive: true, force: true }).catch(() => {});
+      this.active.delete(signal);
+      finish();
+      this.publishState();
       this.diagnostic('update.proxy_stopped');
     }
   }
@@ -284,8 +431,8 @@ export class UpdateProxyNetwork {
     let target = subscriptionUrl(url), response;
     for (let redirects = 0; redirects <= 3; redirects++) {
       requestSignal.throwIfAborted();
-      response = await direct(target, { method: 'GET', redirect: 'manual', signal: requestSignal,
-        cache: 'no-store', headers: { 'User-Agent': 'clash.meta', Accept: 'application/yaml, text/yaml, application/json, text/plain' } });
+      response = await abortable(direct(target, { method: 'GET', redirect: 'manual', signal: requestSignal,
+        cache: 'no-store', headers: { 'User-Agent': 'clash.meta', Accept: 'application/yaml, text/yaml, application/json, text/plain' } }), requestSignal);
       if (![301, 302, 303, 307, 308].includes(response.status)) break;
       await response.body?.cancel().catch(() => {});
       const location = response.headers.get('location');
@@ -316,13 +463,18 @@ export class UpdateProxyNetwork {
     }
     this.diagnostic('update.proxy_subscriptions_refreshed', { sources: sources.length, available: available.length, nodes: nodes.length });
     const proxyPort = await freePort();
+    signal.throwIfAborted();
     let controllerPort = await freePort();
     while (controllerPort === proxyPort) controllerPort = await freePort();
+    signal.throwIfAborted();
     const secret = randomBytes(32).toString('hex');
     await mkdir(this.cacheDirectory, { recursive: true, mode: 0o700 });
+    signal.throwIfAborted();
     scope.directory = await mkdtemp(path.join(this.cacheDirectory, 'proxy-'));
+    signal.throwIfAborted();
     const file = path.join(scope.directory, 'config.json');
     await writeFile(file, JSON.stringify(coreConfig(nodes, { proxyPort, controllerPort, secret })), { mode: 0o600 });
+    signal.throwIfAborted();
     const executable = path.join(this.runtimeDirectory, process.platform === 'win32' ? 'mihomo.exe' : 'mihomo');
     const launch = this.launchCore || ((binary, directory, configFile) => spawn(process.execPath,
       [fileURLToPath(new URL('./proxy-core-supervisor.cjs', import.meta.url)), binary, directory, configFile],
@@ -332,8 +484,8 @@ export class UpdateProxyNetwork {
     scope.child.on('error', () => { launchFailed = true; });
     const api = async (pathname, options = {}) => {
       const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(7000)]);
-      const response = await direct(`http://127.0.0.1:${controllerPort}${pathname}`, { redirect: 'error', signal: requestSignal,
-        ...options, headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' } });
+      const response = await abortable(direct(`http://127.0.0.1:${controllerPort}${pathname}`, { redirect: 'error', signal: requestSignal,
+        ...options, headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' } }), requestSignal);
       if (!response.ok) { await response.body?.cancel(); throw new Error('Controller failed'); }
       if (response.status === 204) return null;
       return JSON.parse(await boundedText(response, MAX_SUBSCRIPTION, requestSignal));

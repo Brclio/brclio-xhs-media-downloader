@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { UpdateProxyNetwork, coreConfig, isUpdateUrl, lowestLatency, subscriptionNodes, subscriptionUrl, subscriptionUrls, UPDATE_HOSTS } from '../desktop/update-proxy.js';
+import { UpdateManager, LATEST_RELEASE_URL } from '../desktop/update-manager.js';
 
 const endpoint = 'https://updates.example.com/api/account';
 const url = 'https://subscription.example.com/sub?token=test-private-value';
@@ -20,20 +22,21 @@ async function fixture(t, options = {}) {
   const runtimeDirectory = path.join(directory, 'runtime'), cacheDirectory = path.join(directory, 'cache');
   await mkdir(runtimeDirectory); await mkdir(cacheDirectory);
   await writeFile(path.join(runtimeDirectory, 'subscription.json'), JSON.stringify({ subscriptionUrl: url }));
-  const sessions = [], requests = [], events = [], configs = [], children = [];
+  const sessions = [], requests = [], events = [], configs = [], children = [], states = [];
   const session = { fromPartition(partition, settings) {
     const value = { partition, settings, proxies: [], closeCount: 0, cleared: false,
       async setProxy(config) { this.proxies.push(config); },
+      async resolveProxy(target) { return typeof options.resolvedProxy === 'function' ? options.resolvedProxy(target) : options.resolvedProxy || 'DIRECT'; },
       async closeAllConnections() { this.closeCount++; }, async clearStorageData() { this.cleared = true; } };
     sessions.push(value); return value;
   } };
   const updateStatus = options.updateStatus;
-  const net = { request(options) {
-    requests.push(options); const request = new EventEmitter();
+  const net = { request(requestOptions) {
+    requests.push(requestOptions); const request = new EventEmitter();
     request.abort = () => {};
     request.end = () => queueMicrotask(() => {
-      const incoming = Readable.from([Buffer.from('fixture update metadata')]);
-      incoming.statusCode = updateStatus ? updateStatus(requests.length) : 200; incoming.headers = {};
+      const incoming = options.updateResponse ? options.updateResponse(requestOptions) : Readable.from([Buffer.from('fixture update metadata')]);
+      incoming.statusCode ??= updateStatus ? updateStatus(requests.length) : 200; incoming.headers ??= {};
       request.emit('response', incoming);
     }); return request;
   } };
@@ -65,9 +68,13 @@ async function fixture(t, options = {}) {
     child.kill = () => { child.exitCode = 0; child.emit('exit', 0); };
     children.push(child); configs.push(readFile(file, 'utf8').then(JSON.parse)); return child;
   };
-  const network = new UpdateProxyNetwork({ net, session, endpoint, runtimeDirectory, cacheDirectory, fetchDirect: direct,
-    launchCore, onDiagnostic: (event, data) => events.push({ event, data }) });
-  return { network, cacheDirectory, runtimeDirectory, sessions, requests, events, configs, children, directRequests };
+  const networkOptions = { net, session, endpoint, runtimeDirectory, cacheDirectory, fetchDirect: direct,
+    launchCore, env: {}, platform: options.platform,
+    configuredProxyDetector: async () => options.configuredProxy || false,
+    onStateChange: state => states.push(state), onDiagnostic: (event, data) => events.push({ event, data }) };
+  const network = new UpdateProxyNetwork(networkOptions);
+  return { network, reloadNetwork: () => new UpdateProxyNetwork(networkOptions), cacheDirectory, runtimeDirectory,
+    sessions, requests, events, configs, children, directRequests, states };
 }
 
 test('subscriptions yield only standalone nodes with TLS verification and no local file or chained dialer', () => {
@@ -151,7 +158,7 @@ test('admin disable overrides built-in and cached subscriptions, and persists ac
   offline = true;
   await f.network.run(new AbortController(), async () => {});
   assert.equal(f.children.length, 0); assert.equal(f.directRequests.includes(url), false);
-  assert.ok(f.sessions.every(value => value.proxies.every(config => config.mode === 'direct')));
+  assert.ok(f.sessions.every(value => value.proxies.every(config => ['direct', 'system'].includes(config.mode))));
 });
 
 test('unconfigured service ignores embedded URLs, unavailable service uses only administrator configuration', async t => {
@@ -305,5 +312,260 @@ test('a fresh installation with an unavailable backend never activates an old bu
   const f = await fixture(t, { registry: () => { throw new Error('backend unavailable'); } });
   await f.network.run(new AbortController(), async () => {});
   assert.equal(f.children.length, 0); assert.equal(f.directRequests.includes(url), false);
-  assert.ok(f.sessions[0].proxies.every(configuration => configuration.mode === 'direct'));
+  assert.ok(f.sessions[0].proxies.every(configuration => ['direct', 'system'].includes(configuration.mode)));
+});
+
+test('existing system proxy routes and configured PAC DIRECT skip config, subscriptions and built-in core on every desktop platform', async t => {
+  for (const platform of ['darwin', 'win32', 'linux']) for (const configuredProxy of [false, true]) {
+    const f = await fixture(t, { platform, configuredProxy, resolvedProxy: configuredProxy ? 'DIRECT' : 'PROXY 127.0.0.1:7890' });
+    const controller = new AbortController();
+    await f.network.run(controller, async () => {
+      assert.equal(f.network.snapshot().mode, 'system');
+      assert.equal(f.sessions[0].proxies.at(-1).mode, 'system');
+      const response = await f.network.fetch('https://api.github.com/zen', { signal: controller.signal });
+      assert.equal(await response.text(), 'fixture update metadata');
+    });
+    assert.equal(f.directRequests.length, 0); assert.equal(f.children.length, 0);
+    assert.equal(f.network.snapshot().mode, 'off');
+    assert.equal(f.sessions[0].cleared, true);
+  }
+});
+
+test('manual stop cancels pending configuration even if a transport ignores abort, latches off and explicit resume permits internal proxy', async t => {
+  let requested, blocked = true;
+  const ready = new Promise(resolve => { requested = resolve; });
+  const f = await fixture(t, { registry: () => {
+    if (blocked) { requested(); return new Promise(() => {}); }
+    return Response.json({ ok: true, proxyConfig: { enabled: true, revision: 1, subscriptionUrl: url } });
+  } });
+  const controller = new AbortController();
+  const pending = f.network.run(controller, async () => assert.fail('canceled startup cannot run update work'));
+  const canceled = assert.rejects(pending, { code: 'CANCELED' });
+  await ready;
+  assert.equal(f.network.snapshot().mode, 'starting'); assert.equal(f.network.active.size, 1);
+  const stopped = await f.network.stopInternalProxy(); await canceled;
+  assert.equal(controller.signal.reason.code, 'CANCELED');
+  assert.deepEqual(stopped, { mode: 'off', manuallyDisabled: true, canStop: false, activeScopes: 0, internalScopes: 0 });
+  assert.equal(f.children.length, 0); assert.equal(f.sessions[0].cleared, true);
+  blocked = false;
+  await f.network.run(new AbortController(), async () => {});
+  assert.equal(f.directRequests.filter(value => value === endpoint).length, 1);
+  assert.equal(f.children.length, 0);
+  await f.network.resumeInternalProxy();
+  await f.network.run(new AbortController(), async () => assert.equal(f.network.snapshot().mode, 'internal'));
+  assert.equal(f.children.length, 1); assert.equal(f.children[0].exitCode, 0);
+});
+
+test('manual stop during subscription refresh and node probes cleans all starting scopes without running updater work', async t => {
+  for (const phase of ['subscription', 'probe']) {
+    let entered;
+    const ready = new Promise(resolve => { entered = resolve; });
+    const blocked = () => { entered(); return new Promise(() => {}); };
+    const f = await fixture(t, phase === 'subscription' ? { subscription: blocked } : { probe: blocked });
+    const controller = new AbortController();
+    const pending = f.network.run(controller, async () => assert.fail('startup canceled'));
+    const canceled = assert.rejects(pending, { code: 'CANCELED' });
+    await ready;
+    await f.network.stopInternalProxy(); await canceled;
+    assert.equal(f.network.active.size, 0); assert.equal(f.sessions[0].cleared, true);
+    assert.ok(f.children.every(child => child.exitCode === 0));
+    assert.deepEqual((await readdir(f.cacheDirectory)).filter(value => !['proxy-config.json', 'proxy-preference.json'].includes(value)), []);
+  }
+});
+
+test('manual stop cancels every internal scope while concurrent system-only work remains connected', async t => {
+  let resolutions = 0;
+  const f = await fixture(t, { resolvedProxy: () => ++resolutions <= UPDATE_HOSTS.length * 2 ? 'DIRECT' : 'PROXY localhost:7890' });
+  const controllers = [new AbortController(), new AbortController(), new AbortController()];
+  const pending = [];
+  for (let index = 0; index < 2; index++) {
+    let entered;
+    const ready = new Promise(resolve => { entered = resolve; });
+    const run = f.network.run(controllers[index], () => new Promise((_, reject) => {
+      entered(); controllers[index].signal.addEventListener('abort', () => reject(controllers[index].signal.reason), { once: true });
+    }));
+    pending.push(assert.rejects(run, { code: 'CANCELED' })); await ready;
+  }
+  let entered, release;
+  const ready = new Promise(resolve => { entered = resolve; });
+  const system = f.network.run(controllers[2], async () => { entered(); await new Promise(resolve => { release = resolve; }); });
+  await ready;
+  const systemConnections = f.sessions[2].closeCount;
+  assert.equal(f.network.snapshot().internalScopes, 2);
+  await f.network.stopInternalProxy(); await Promise.all(pending);
+  assert.equal(controllers[2].signal.aborted, false);
+  assert.equal(f.sessions[2].closeCount, systemConnections);
+  assert.equal(f.sessions[2].proxies.at(-1).mode, 'system');
+  assert.equal(f.network.snapshot().mode, 'system'); assert.equal(f.network.active.size, 1);
+  release(); await system; assert.equal(f.network.active.size, 0);
+});
+
+test('startup error state remains available for manual stop after child and files are cleaned', async t => {
+  const f = await fixture(t, { probe: async () => { throw new Error('offline'); } });
+  await assert.rejects(f.network.run(new AbortController(), async () => {}), { code: 'PROXY_NODES_UNAVAILABLE' });
+  assert.equal(f.network.snapshot().mode, 'error'); assert.equal(f.network.active.size, 0);
+  assert.ok(f.children.every(child => child.exitCode === 0));
+  assert.equal((await f.network.stopInternalProxy()).mode, 'off');
+});
+
+test('manual internal stop preserves updater partial bytes and waits for operation cleanup before another download', async t => {
+  const installer = Buffer.from('fixture installer bytes for manual proxy stop');
+  const digest = createHash('sha256').update(installer).digest('hex');
+  const name = 'Brclio-XHS-2.0.4-mac-arm64.dmg';
+  const prefix = 'https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.4/';
+  const release = { tag_name: 'v2.0.4', draft: false, prerelease: false,
+    html_url: 'https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.4', body: '', published_at: '2026-10-03T00:00:00Z',
+    assets: [{ name, size: installer.length, browser_download_url: `${prefix}${name}`, digest: `sha256:${digest}` }] };
+  const f = await fixture(t, { updateResponse: request => {
+    if (request.url === LATEST_RELEASE_URL) return Readable.from([Buffer.from(JSON.stringify(release))]);
+    const incoming = new Readable({ read() {} }); incoming.push(installer.subarray(0, 5));
+    incoming.headers = { 'content-length': String(installer.length) };
+    return incoming;
+  } });
+  let downloaded;
+  const progress = new Promise(resolve => { downloaded = resolve; });
+  const manager = new UpdateManager({ currentVersion: '2.0.3', platform: 'darwin', arch: 'arm64',
+    directory: f.cacheDirectory, networkScope: f.network, fetchImpl: f.network.fetch,
+    onUpdate: state => { if (state.download.receivedBytes === 5) downloaded(); } });
+  assert.equal((await manager.checkForUpdates()).status, 'available');
+  let cleaning, releaseCleanup;
+  const cleanup = new Promise(resolve => { cleaning = resolve; });
+  const gate = new Promise(resolve => { releaseCleanup = resolve; });
+  const scopedRun = f.network.run.bind(f.network);
+  f.network.run = (controller, work) => scopedRun(controller, async () => {
+    try { return await work(); } finally { cleaning(); await gate; }
+  });
+  const download = manager.downloadUpdate(); await progress;
+  const stop = f.network.stopInternalProxy(); await cleanup;
+  assert.ok(manager.operation); assert.ok(manager.controller); assert.equal(f.network.active.size, 1);
+  const requests = f.requests.length;
+  const repeated = manager.downloadUpdate();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.requests.length, requests); assert.equal(f.children.length, 2);
+  releaseCleanup(); await stop; const state = await download; await repeated;
+  assert.equal(state.status, 'available'); assert.equal(state.error, null);
+  assert.equal(state.download.receivedBytes, 5); assert.equal(state.download.canResume, true);
+  assert.deepEqual(await readFile(path.join(f.cacheDirectory, `${name}.${digest}.partial`)), installer.subarray(0, 5));
+  assert.equal(manager.operation, null); assert.equal(manager.controller, null);
+  assert.equal(f.network.active.size, 0); assert.ok(f.children.every(child => child.exitCode === 0));
+});
+
+test('manual off preference survives reload and background work, explicit user action clears it before a fresh scoped start', async t => {
+  const f = await fixture(t);
+  const configFile = path.join(f.cacheDirectory, 'proxy-config.json');
+  await writeFile(configFile, JSON.stringify({ enabled: true, revision: 8, subscriptionUrl: url }));
+  const configBytes = await readFile(configFile, 'utf8');
+  await f.network.stopInternalProxy();
+  const preference = path.join(f.cacheDirectory, 'proxy-preference.json');
+  assert.deepEqual(JSON.parse(await readFile(preference, 'utf8')), { schemaVersion: 1, manuallyDisabled: true });
+  const reloaded = f.reloadNetwork();
+  await reloaded.run(new AbortController(), async () => assert.equal(reloaded.snapshot().mode, 'off'));
+  assert.equal(reloaded.snapshot().manuallyDisabled, true);
+  assert.equal(f.children.length, 0); assert.equal(f.directRequests.length, 0);
+  assert.equal(await readFile(configFile, 'utf8'), configBytes, 'preference never overwrites admin subscription cache');
+  await reloaded.requestInternalProxyForUserOperation();
+  assert.equal(reloaded.snapshot().manuallyDisabled, false); assert.equal(f.children.length, 0, 'explicit enable does not start a standalone proxy');
+  assert.deepEqual(JSON.parse(await readFile(preference, 'utf8')), { schemaVersion: 1, manuallyDisabled: false });
+  await reloaded.run(new AbortController(), async () => assert.equal(reloaded.snapshot().mode, 'internal'));
+  assert.equal(reloaded.snapshot().mode, 'off'); assert.equal(f.children.length, 1); assert.equal(f.children[0].exitCode, 0);
+  const afterUserAction = f.reloadNetwork(); await afterUserAction.loadPreference();
+  assert.equal(afterUserAction.snapshot().manuallyDisabled, false);
+});
+
+test('persisted manual off and explicit user enable both preserve existing system proxy priority', async t => {
+  const f = await fixture(t, { configuredProxy: true });
+  await f.network.stopInternalProxy();
+  const reloaded = f.reloadNetwork();
+  const controller = new AbortController();
+  await reloaded.run(controller, async () => {
+    assert.equal(reloaded.snapshot().mode, 'system'); assert.equal(reloaded.snapshot().manuallyDisabled, true);
+    const response = await reloaded.fetch('https://api.github.com/zen', { signal: controller.signal });
+    assert.equal(await response.text(), 'fixture update metadata');
+  });
+  await reloaded.requestInternalProxyForUserOperation();
+  await reloaded.run(new AbortController(), async () => assert.equal(reloaded.snapshot().mode, 'system'));
+  assert.equal(f.children.length, 0); assert.equal(f.directRequests.length, 0);
+});
+
+test('explicit enable waits canceled internal work cleanup, then starts fresh; a newer manual stop wins', async t => {
+  const f = await fixture(t);
+  let ready, cleaning, finish;
+  const workReady = new Promise(resolve => { ready = resolve; });
+  const cleanupReady = new Promise(resolve => { cleaning = resolve; });
+  const cleanupGate = new Promise(resolve => { finish = resolve; });
+  const controller = new AbortController();
+  const pending = f.network.run(controller, async () => {
+    try {
+      ready(); await new Promise((_, reject) => controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true }));
+    } finally { cleaning(); await cleanupGate; }
+  });
+  const canceled = assert.rejects(pending, { code: 'CANCELED' });
+  await workReady;
+  const stop = f.network.stopInternalProxy(); await cleanupReady;
+  let enabled = false;
+  const enable = f.network.requestInternalProxyForUserOperation().then(() => { enabled = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(enabled, false); assert.equal(f.network.snapshot().manuallyDisabled, true);
+  finish(); await stop; await enable; await canceled;
+  assert.equal(f.network.active.size, 0); assert.equal(f.network.snapshot().manuallyDisabled, false);
+  await f.network.run(new AbortController(), async () => assert.equal(f.network.snapshot().mode, 'internal'));
+  assert.equal(f.children.length, 2); assert.ok(f.children.every(child => child.exitCode === 0));
+  await f.network.stopInternalProxy();
+  const earlierEnable = f.network.requestInternalProxyForUserOperation();
+  const newerStop = f.network.stopInternalProxy();
+  await earlierEnable; await newerStop;
+  assert.equal(f.network.snapshot().manuallyDisabled, true);
+  assert.equal(JSON.parse(await readFile(path.join(f.cacheDirectory, 'proxy-preference.json'), 'utf8')).manuallyDisabled, true);
+});
+
+test('manual stop before lazy preference loading completes cannot be undone by an older disk false flag', async t => {
+  const f = await fixture(t);
+  await writeFile(path.join(f.cacheDirectory, 'proxy-preference.json'), JSON.stringify({ schemaVersion: 1, manuallyDisabled: false }));
+  const loading = f.network.loadPreference();
+  const stop = f.network.stopInternalProxy();
+  await loading; await stop;
+  assert.equal(f.network.snapshot().manuallyDisabled, true);
+  await f.network.run(new AbortController(), async () => {});
+  assert.equal(f.children.length, 0); assert.equal(f.directRequests.length, 0);
+  assert.equal(JSON.parse(await readFile(path.join(f.cacheDirectory, 'proxy-preference.json'), 'utf8')).manuallyDisabled, true);
+});
+
+test('exit flush waits a blocked manual-close persistence queue so the next process observes closed state', async t => {
+  const f = await fixture(t);
+  await f.network.requestInternalProxyForUserOperation();
+  const preference = path.join(f.cacheDirectory, 'proxy-preference.json');
+  assert.equal(JSON.parse(await readFile(preference, 'utf8')).manuallyDisabled, false);
+  let releaseStorage;
+  f.network.preferenceQueue = new Promise(resolve => { releaseStorage = resolve; });
+  const stopping = f.network.stopInternalProxy();
+  let flushed = false;
+  const exit = f.network.flushPreferences().then(() => { flushed = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.network.snapshot().manuallyDisabled, true);
+  assert.equal(flushed, false, 'quit must wait rather than rely on unrelated task or diagnostic shutdown');
+  assert.equal(JSON.parse(await readFile(preference, 'utf8')).manuallyDisabled, false, 'storage really remains blocked');
+  releaseStorage(); await exit; await stopping;
+  assert.equal(JSON.parse(await readFile(preference, 'utf8')).manuallyDisabled, true);
+  const nextProcess = f.reloadNetwork(); await nextProcess.loadPreference();
+  assert.equal(nextProcess.snapshot().manuallyDisabled, true);
+});
+
+test('normal exit flush drains a pending explicit-enable write without manufacturing manual-close state', async t => {
+  const f = await fixture(t);
+  await f.network.flushPreferences();
+  await assert.rejects(readFile(path.join(f.cacheDirectory, 'proxy-preference.json')), { code: 'ENOENT' });
+  assert.equal(f.network.snapshot().manuallyDisabled, false);
+  await f.network.stopInternalProxy();
+  let releaseStorage;
+  f.network.preferenceQueue = new Promise(resolve => { releaseStorage = resolve; });
+  const enabling = f.network.requestInternalProxyForUserOperation();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.network.snapshot().manuallyDisabled, false);
+  let flushed = false;
+  const exit = f.network.flushPreferences().then(() => { flushed = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(flushed, false);
+  releaseStorage(); await enabling; await exit;
+  assert.equal(f.network.snapshot().manuallyDisabled, false);
+  assert.equal(JSON.parse(await readFile(path.join(f.cacheDirectory, 'proxy-preference.json'), 'utf8')).manuallyDisabled, false);
 });

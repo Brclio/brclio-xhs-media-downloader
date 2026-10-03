@@ -16,7 +16,8 @@ const check = (name, callback) => test(name, { skip: process.platform === 'win32
 const appId = 'cn.bornforthis.xhs-downloader';
 const inode = stat => `${stat.dev}:${stat.ino}`;
 
-async function fixture(t, { modern = false, status = 'installed', targetVersion = modern ? '1.8.3' : '1.8.2' } = {}) {
+async function fixture(t, { modern = false, status = 'installed', currentVersion = '1.8.3',
+  targetVersion = modern ? currentVersion : '1.8.2', backupVersion = '1.8.1', schemaVersion = 2 } = {}) {
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'xhs-cleanup-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   const current = path.join(root, 'Current.app'), cache = path.join(root, 'cache');
@@ -28,18 +29,18 @@ async function fixture(t, { modern = false, status = 'installed', targetVersion 
       CFBundlePackageType: 'APPL', CFBundleExecutable: 'fixture', CFBundleShortVersionString: version }));
     await writeFile(path.join(directory, 'Contents/MacOS/fixture'), 'fixture executable');
   }
-  await bundle(current, '1.8.3');
+  await bundle(current, currentVersion);
   await mkdir(cache, { mode: 0o700 });
   const work = await mkdtemp(path.join(cache, 'mac-install-'));
   const stage = await mkdtemp(path.join(root, '.brclio-update-'));
-  const backup = path.join(stage, 'previous.app'); await bundle(backup, '1.8.1');
+  const backup = path.join(stage, 'previous.app'); await bundle(backup, backupVersion);
   const recordPath = path.join(work, 'install-result.json');
   const lock = path.join(root, `.brclio-update-${createHash('sha256').update(current).digest('hex').slice(0, 16)}.lock`);
   const record = { status, version: targetVersion, appId, currentAppPath: current, backupPath: backup,
     failedAppPath: path.join(stage, 'failed.app'), lockPath: lock, launchRequested: status === 'installed' };
-  if (modern) Object.assign(record, { schemaVersion: 2, startupToken: '1'.repeat(64),
+  if (modern) Object.assign(record, { schemaVersion, startupToken: '1'.repeat(64),
     installedIdentity: inode(await lstat(current)), stageIdentity: inode(await lstat(stage)),
-    backupIdentity: inode(await lstat(backup)), backupVersion: '1.8.1',
+    backupIdentity: inode(await lstat(backup)), backupVersion,
     backupInfoHash: createHash('sha256').update(await readFile(path.join(backup, 'Contents/Info.plist'))).digest('hex') });
   const save = () => writeFile(recordPath, JSON.stringify(record), { mode: 0o600 });
   await save();
@@ -49,7 +50,7 @@ async function fixture(t, { modern = false, status = 'installed', targetVersion 
     assert.fail(`Unexpected native command ${command}`);
   };
   return { root, current, cache, stage, work, backup, recordPath, lock, record, save, data, unrelated,
-    options: { cacheDirectory: cache, currentAppPath: current, currentVersion: '1.8.3' },
+    options: { cacheDirectory: cache, currentAppPath: current, currentVersion },
     dependencies: { platform: 'darwin', uid: (await lstat(root)).uid, run } };
 }
 
@@ -87,6 +88,93 @@ check('modern startup acknowledges the exact transaction then waits for the help
   assert.equal(installed.status, 'installed');
   assert.equal(installed.backupRemoved, true);
 });
+
+for (const status of ['installed', 'cleanup_pending', 'cleanup_failed']) {
+  check(`a proven same-version reinstall cleans its modern ${status} backup`, async t => {
+    const f = await fixture(t, { modern: true, schemaVersion: 3, status,
+      currentVersion: '2.0.2', targetVersion: '2.0.2', backupVersion: '2.0.2' });
+    if (status === 'cleanup_failed') { f.record.startupConfirmed = true; await f.save(); }
+    const currentInfo = await readFile(path.join(f.current, 'Contents/Info.plist'));
+    const result = await confirmMacUpdateStartup(f.options, f.dependencies);
+    assert.equal(result.cleaned, true, JSON.stringify(result));
+    await assert.rejects(lstat(f.stage), { code: 'ENOENT' });
+    assert.deepEqual(await readFile(path.join(f.current, 'Contents/Info.plist')), currentInfo, 'the current app remains intact');
+    assert.equal(await readFile(f.data, 'utf8'), 'keep downloaded media');
+    assert.equal(await readFile(path.join(f.unrelated, 'keep.txt'), 'utf8'), 'keep this app');
+    const final = JSON.parse(await readFile(f.recordPath, 'utf8'));
+    assert.equal(final.status, 'installed');
+    assert.equal(final.backupRemoved, true);
+    assert.equal(final.cleanupProof.backupInfoHash, f.record.backupInfoHash, 'the retry proof records the validated Info.plist hash');
+    assert.equal((await confirmMacUpdateStartup(f.options, f.dependencies)).cleaned, false, 'same-version cleanup is idempotent');
+  });
+}
+
+check('a healthy newer app retries a confirmed same-version reinstall receipt from the earlier release', async t => {
+  const f = await fixture(t, { modern: true, schemaVersion: 3, status: 'cleanup_failed',
+    currentVersion: '2.0.3', targetVersion: '2.0.2', backupVersion: '2.0.2' });
+  Object.assign(f.record, { startupConfirmed: true, installedIdentity: '99:99' });
+  await f.save();
+  const currentInfo = await readFile(path.join(f.current, 'Contents/Info.plist'));
+  const result = await confirmMacUpdateStartup(f.options, f.dependencies);
+  assert.equal(result.cleaned, true, JSON.stringify(result));
+  await assert.rejects(lstat(f.stage), { code: 'ENOENT' });
+  assert.deepEqual(await readFile(path.join(f.current, 'Contents/Info.plist')), currentInfo, 'the newer current app is not altered');
+  assert.equal(JSON.parse(await readFile(f.recordPath, 'utf8')).backupRemoved, true);
+  assert.equal(await readFile(f.data, 'utf8'), 'keep downloaded media');
+});
+
+for (const change of ['legacy', 'missing startup token', 'invalid schema', 'readable receipt', 'wrong installed identity',
+  'wrong staging identity', 'wrong backup identity', 'missing backup hash', 'changed backup hash', 'newer current app', 'newer backup']) {
+  check(`a same-version backup remains for ${change}`, async t => {
+    const f = await fixture(t, { modern: change !== 'legacy', schemaVersion: 3,
+      currentVersion: change === 'newer current app' ? '2.0.3' : '2.0.2', targetVersion: '2.0.2',
+      backupVersion: change === 'newer backup' ? '2.0.3' : '2.0.2' });
+    if (change === 'missing startup token') delete f.record.startupToken;
+    if (change === 'invalid schema') f.record.schemaVersion = '3';
+    if (change === 'wrong installed identity') f.record.installedIdentity = '0:1';
+    if (change === 'wrong staging identity') f.record.stageIdentity = '0:1';
+    if (change === 'wrong backup identity') f.record.backupIdentity = '0:1';
+    if (change === 'missing backup hash') delete f.record.backupInfoHash;
+    if (change === 'changed backup hash') f.record.backupInfoHash = 'a'.repeat(64);
+    await f.save();
+    if (change === 'readable receipt') await chmod(f.recordPath, 0o644);
+    const result = await confirmMacUpdateStartup(f.options, f.dependencies);
+    assert.equal(result.cleaned, false, JSON.stringify(result));
+    assert.equal((await lstat(f.backup)).isDirectory(), true);
+    assert.equal(await readFile(f.data, 'utf8'), 'keep downloaded media');
+    assert.equal(await readFile(path.join(f.unrelated, 'keep.txt'), 'utf8'), 'keep this app');
+  });
+}
+
+for (const interruption of ['renamed partial deletion', 'empty staging directory', 'removed staging directory', 'healthy newer current app', 'changed backup identity', 'changed proof hash', 'legacy proof']) {
+  check(`a same-version cleanup proof resumes safely after ${interruption}`, async t => {
+    const f = await fixture(t, { modern: interruption !== 'legacy proof', schemaVersion: 3,
+      currentVersion: interruption === 'healthy newer current app' ? '2.0.3' : '2.0.2',
+      targetVersion: '2.0.2', backupVersion: '2.0.2' });
+    const removingName = `.removing-${'b'.repeat(32)}.app`;
+    Object.assign(f.record, { status: 'cleanup_failed', startupConfirmed: true, cleanupProof: {
+      stageIdentity: inode(await lstat(f.stage)), backupIdentity: inode(await lstat(f.backup)),
+      backupVersion: '2.0.2', backupInfoHash: f.record.backupInfoHash, removingName
+    } });
+    const removing = path.join(f.stage, removingName);
+    await rename(f.backup, removing);
+    if (['renamed partial deletion', 'healthy newer current app'].includes(interruption)) await rm(path.join(removing, 'Contents'), { recursive: true });
+    if (interruption === 'healthy newer current app') f.record.installedIdentity = '99:99';
+    if (interruption === 'empty staging directory') await rm(removing, { recursive: true });
+    if (interruption === 'removed staging directory') await rm(f.stage, { recursive: true });
+    if (interruption === 'changed backup identity') f.record.cleanupProof.backupIdentity = '0:1';
+    if (interruption === 'changed proof hash') f.record.cleanupProof.backupInfoHash = 'a'.repeat(64);
+    await f.save();
+    const result = await confirmMacUpdateStartup(f.options, f.dependencies);
+    const shouldClean = ['renamed partial deletion', 'empty staging directory', 'removed staging directory', 'healthy newer current app'].includes(interruption);
+    assert.equal(result.cleaned, shouldClean, JSON.stringify(result));
+    if (shouldClean) {
+      await assert.rejects(lstat(f.stage), { code: 'ENOENT' });
+      assert.equal(JSON.parse(await readFile(f.recordPath, 'utf8')).backupRemoved, true);
+    } else assert.equal((await lstat(removing)).isDirectory(), true, 'unproven same-version cleanup leaves the backup intact');
+    assert.equal(await readFile(f.data, 'utf8'), 'keep downloaded media');
+  });
+}
 
 check('legacy helper launching race waits for installed success before cleaning this first upgrade', async t => {
   const f = await fixture(t, { status: 'launching', targetVersion: '1.8.3' });
@@ -253,13 +341,21 @@ test('unsupported platform or invalid startup metadata has no filesystem side ef
   }
 });
 
-test('real Electron removes an archived bundle and resumes a legacy app.asar-only failed cleanup', {
+test('real Electron removes archived old and same-version bundles and resumes legacy app.asar-only cleanup', {
   skip: process.platform !== 'darwin' || process.env.XHS_MAC_UPDATE_NATIVE !== '1', timeout: 45000
 }, async t => {
   const require = createRequire(import.meta.url);
   const { createPackage } = require('@electron/asar');
-  for (const legacyPartial of [false, true]) {
-    const f = await fixture(t, { modern: !legacyPartial });
+  for (const { legacyPartial, sameVersion, healthyNewer } of [{ legacyPartial: false, sameVersion: false },
+    { legacyPartial: true, sameVersion: false }, { legacyPartial: false, sameVersion: true },
+    { legacyPartial: false, sameVersion: true, healthyNewer: true }]) {
+    const f = await fixture(t, { modern: !legacyPartial,
+      ...(sameVersion ? { schemaVersion: 3, currentVersion: healthyNewer ? '2.0.3' : '2.0.2',
+        targetVersion: '2.0.2', backupVersion: '2.0.2' } : {}) });
+    if (healthyNewer) {
+      Object.assign(f.record, { startupConfirmed: true, installedIdentity: '99:99' });
+      await f.save();
+    }
     const source = path.join(f.root, 'archive-source');
     await mkdir(source); await writeFile(path.join(source, 'entry.js'), 'module.exports = "archive fixture";');
     if (legacyPartial) {

@@ -76,9 +76,11 @@ try {
   report.error = result.error;
   report.activeScopesAfterCheck = network.active.size;
   report.proxySelected = report.events.some(value => value.event === 'update.proxy_selected');
+  report.systemProxySelected = report.events.some(value => value.event === 'update.proxy_system_selected');
+  report.networkRoute = report.systemProxySelected ? 'system' : report.proxySelected ? 'internal' : 'direct';
   report.proxyStopped = report.events.some(value => value.event === 'update.proxy_stopped');
   report.defaultSessionUnchanged &&= await session.defaultSession.resolveProxy('https://api.github.com/zen') === proxyBefore;
-  const success = !result.error && report.proxySelected && report.proxyStopped && network.active.size === 0
+  const success = !result.error && (report.proxySelected || report.systemProxySelected) && report.proxyStopped && network.active.size === 0
     && report.defaultSessionUnchanged && (!download || report.downloadVerified);
   const output = path.join(root, 'dist-desktop/proxy-validation'); await mkdir(output, { recursive: true });
   const suffix = report.configurationFixture ? `-source-${report.configurationFixture.source}` : '';

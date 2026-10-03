@@ -182,9 +182,11 @@ export async function verifyPackagedUpdateNetwork(appPath, { live = false } = {}
     assert.equal(state.error, null);
     await cdp.evaluate('window.xhsDesktop.getDiagnosticsInfo()');
     const events = await diagnosticEvents(profile);
-    const proxyEvents = events.filter(event => event.event === 'update.proxy_selected' || event.event === 'update.proxy_stopped');
+    const proxyEvents = events.filter(event => ['update.proxy_selected', 'update.proxy_system_selected', 'update.proxy_stopped'].includes(event.event));
     const selected = proxyEvents.filter(event => event.event === 'update.proxy_selected');
-    assert.ok(selected.length, 'Packaged update check did not select a real proxy node.');
+    const systemSelected = proxyEvents.filter(event => event.event === 'update.proxy_system_selected');
+    assert.ok(selected.length || systemSelected.length, 'Packaged update check did not select an internal or system network route.');
+    if (systemSelected.length) assert.equal(selected.length, 0, 'System proxy precedence must skip internal proxy startup.');
     assert.ok(proxyEvents.some(event => event.event === 'update.proxy_stopped'), 'Packaged update check did not close its proxy scope.');
     for (const event of selected) {
       assert.match(event.details?.node || '', /^node-\d{3}$/);
@@ -203,7 +205,8 @@ export async function verifyPackagedUpdateNetwork(appPath, { live = false } = {}
     report = { result: 'PASS', packagedUpdateNetworkVerified: true, checkedAt: new Date().toISOString(),
       version: info.version, latestVersion: state.latestVersion, status: state.status, signedPackageVerified: true,
       sourceMatchesCurrentWorkspace: true, preloadAndIPCVerified: true, profile: 'temporary', keychain: 'mock',
-      proxySelected: true, proxyStopped: true, diagnosticsRedacted: true,
+      proxySelected: selected.length > 0, systemProxySelected: systemSelected.length > 0,
+      networkRoute: systemSelected.length ? 'system' : 'internal', proxyStopped: true, diagnosticsRedacted: true,
       selectedNodes: selected.map(event => ({ node: event.details.node, latencyMs: event.details.latencyMs, nodes: event.details.nodes })),
       activeProxyProcessesAfterCheck: 0, installed: false, installerDownloaded: false, published: false };
   } catch (error) { failure = error; }

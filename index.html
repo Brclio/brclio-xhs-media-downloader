@@ -82,6 +82,10 @@
         </div>
         <p id="desktop-update-dialog-check-note" class="desktop-update-check-note" role="status" aria-live="polite" hidden></p>
         <p id="desktop-update-dialog-error" class="desktop-update-error" role="alert" hidden></p>
+        <div id="desktop-update-dialog-proxy" class="desktop-update-proxy" hidden>
+          <p id="desktop-update-dialog-proxy-status" role="status" aria-live="polite"></p>
+          <button id="desktop-update-dialog-proxy-toggle" class="button button-secondary" type="button">关闭软件内置代理</button>
+        </div>
         <div id="desktop-update-dialog-manual-actions" class="desktop-update-dialog-actions desktop-manual-installer-actions" hidden>
           <button id="desktop-update-dialog-manual-download" class="desktop-update-dialog-primary" type="button">手动下载安装包</button>
         </div>
@@ -216,6 +220,10 @@
             </div>
           </div>
           <p id="desktop-update-check-note" class="desktop-update-check-note" role="status" aria-live="polite" hidden></p>
+          <div id="desktop-update-proxy" class="desktop-update-proxy" hidden>
+            <div><strong>升级代理</strong><p id="desktop-update-proxy-status" role="status" aria-live="polite"></p></div>
+            <button id="desktop-update-proxy-toggle" class="button button-secondary" type="button">关闭软件内置代理</button>
+          </div>
           <div id="desktop-update-progress-wrap" class="desktop-update-progress-wrap" hidden>
             <progress id="desktop-update-progress" max="100" aria-label="更新安装包下载进度"></progress>
             <p id="desktop-update-progress-text"></p>

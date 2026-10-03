@@ -290,7 +290,7 @@ public final class MainActivity extends Activity {
                 case "save": startSave(request, params); break;
                 case "copyImages": startImages(request, params, false); break;
                 case "shareImages": startImages(request, params, true); break;
-                case "checkUpdate": updater.check(updateCallback(request)); break;
+                case "checkUpdate": updater.check(params.optBoolean("manual", false), updateCallback(request)); break;
                 case "downloadUpdate": updater.download(updateCallback(request)); break;
                 case "openManualUpdate": updater.openManualDownload(updateCallback(request)); break;
                 case "installUpdate":
@@ -299,6 +299,9 @@ public final class MainActivity extends Activity {
                     break;
                 case "cancelUpdate": request.success(updater.cancel()); break;
                 case "updateState": request.success(updater.state()); break;
+                case "updateProxyState": request.success(updater.proxyState()); break;
+                case "stopUpdateProxy": request.success(updater.stopProxy()); break;
+                case "resumeUpdateProxy": request.success(updater.resumeProxy()); break;
                 case "cancel":
                     boolean cancelled = transfer != null;
                     if (transfer != null) transfer.cancellation.cancel();

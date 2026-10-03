@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -126,7 +128,7 @@ final class UpdateManager {
         }
     }
 
-    private static final class Job {
+    private static final class Job implements UpdateProxyControl.Owner {
         final NativeTransfer.Cancellation cancellation = new NativeTransfer.Cancellation();
         final long startedAt = System.nanoTime();
         final long deadlineMs;
@@ -147,14 +149,27 @@ final class UpdateManager {
                 if (currentSession != null) currentSession.close();
             } finally {
                 if (currentCall != null) UpdateNetworkCleanup.start(currentCall::cancel);
+                if (currentSession == null && client != null) {
+                    OkHttpClient ownedClient = client;
+                    UpdateNetworkCleanup.start(() -> {
+                        try { ownedClient.dispatcher().cancelAll(); }
+                        finally {
+                            try { ownedClient.connectionPool().evictAll(); }
+                            finally { ownedClient.dispatcher().executorService().shutdownNow(); }
+                        }
+                    });
+                }
             }
         }
         void cancel() { cancellation.cancel(); stopNetwork(); }
+        @Override public void stop() { cancel(); }
     }
 
     private final Activity activity;
     private final Events events;
     private final InstallGate installGate;
+    private final UpdateProxyControl proxyControl;
+    private final SharedPreferences proxyPreferences;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final File directory;
     private final Object lock = new Object();
@@ -175,6 +190,8 @@ final class UpdateManager {
         this.activity = activity;
         this.events = events;
         this.installGate = installGate;
+        this.proxyPreferences = activity.getSharedPreferences("update-proxy-control", Context.MODE_PRIVATE);
+        this.proxyControl = new UpdateProxyControl(proxyPreferences.getBoolean("manuallyDisabled", false));
         this.directory = new File(activity.getCacheDir(), "updates");
         this.canInstallBuild = !BuildConfig.DEBUG && activity.getPackageName().equals(UpdatePolicy.APPLICATION_ID);
         File[] oldFiles = directory.listFiles();
@@ -214,8 +231,38 @@ final class UpdateManager {
         }
     }
 
+    JSONObject proxyState() {
+        UpdateProxyControl.State state = proxyControl.state(UpdateSystemProxy.enabled(activity));
+        return object("mode", state.mode, "manuallyDisabled", state.manuallyDisabled, "canStop", state.canStop);
+    }
+
+    JSONObject stopProxy() {
+        boolean stopped;
+        synchronized (lock) {
+            stopped = proxyControl.stop();
+            proxyPreferences.edit().putBoolean("manuallyDisabled", true).apply();
+        }
+        emitProxy();
+        JSONObject result = proxyState();
+        put(result, "stopped", stopped);
+        return result;
+    }
+
+    JSONObject resumeProxy() {
+        synchronized (lock) {
+            proxyControl.resume();
+            proxyPreferences.edit().putBoolean("manuallyDisabled", false).apply();
+        }
+        emitProxy();
+        return proxyState();
+    }
+
     void check(Callback callback) {
-        Job job = begin("checking", callback);
+        check(false, callback);
+    }
+
+    void check(boolean manual, Callback callback) {
+        Job job = begin("checking", callback, manual);
         if (job == null) return;
         worker.execute(() -> {
             try {
@@ -268,7 +315,7 @@ final class UpdateManager {
         final Job job;
         synchronized (lock) {
             previousStatus = status;
-            job = begin("manual_download", callback);
+            job = begin("manual_download", callback, true);
         }
         if (job == null) return;
         worker.execute(() -> {
@@ -285,6 +332,8 @@ final class UpdateManager {
                 UpdatePolicy.checksum(new String(checksum, StandardCharsets.UTF_8), release.filename);
                 job.check();
                 job.stopNetwork();
+                proxyControl.finished(job, false);
+                emitProxy();
                 activity.runOnUiThread(() -> {
                     try {
                         job.check();
@@ -308,6 +357,8 @@ final class UpdateManager {
 
     private void finishManualDownload(Job job, String previousStatus, Callback callback, String version, Exception failure) {
         job.stopNetwork();
+        proxyControl.finished(job, failure != null && !job.cancellation.isCancelled());
+        emitProxy();
         synchronized (lock) {
             if (active != job) return;
             active = null;
@@ -333,7 +384,7 @@ final class UpdateManager {
         final Release release;
         synchronized (lock) { release = available; }
         if (release == null) { callback.failure("请先检查并确认有可用的安卓新版。"); return; }
-        Job job = begin("downloading", callback);
+        Job job = begin("downloading", callback, true);
         if (job == null) return;
         worker.execute(() -> {
             File part = null;
@@ -494,6 +545,10 @@ final class UpdateManager {
     }
 
     private Job begin(String nextStatus, Callback callback) {
+        return begin(nextStatus, callback, false);
+    }
+
+    private Job begin(String nextStatus, Callback callback, boolean manual) {
         synchronized (lock) {
             if (closed) { callback.failure("应用已关闭。"); return null; }
             // Some installers never return a result; a user-requested browser fallback remains usable.
@@ -503,6 +558,10 @@ final class UpdateManager {
             if (active != null) { callback.failure("已有版本检查或更新任务正在进行，请稍候。"); return null; }
             // Never launch a browser after the renderer's 90-second request has expired.
             active = new Job(nextStatus.equals("manual_download") || nextStatus.equals("checking") ? 80_000L : DEADLINE_MS);
+            if (proxyControl.acceptOperation(manual)) {
+                proxyPreferences.edit().putBoolean("manuallyDisabled", false).apply();
+                emitProxy();
+            }
             status = nextStatus;
             if (!nextStatus.equals("manual_download")) error = null;
             if (nextStatus.equals("downloading")) { bytes = 0; total = available == null ? 0 : available.size; }
@@ -513,6 +572,8 @@ final class UpdateManager {
 
     private void finish(Job job, Callback callback, Exception failure) {
         job.stopNetwork();
+        proxyControl.finished(job, failure != null && !job.cancellation.isCancelled());
+        emitProxy();
         Download cancelledOutput = null;
         synchronized (lock) {
             if (active != job) return;
@@ -554,6 +615,13 @@ final class UpdateManager {
         if (closed) return;
         JSONObject event = state();
         put(event, "type", "update");
+        events.emit(event);
+    }
+
+    private void emitProxy() {
+        if (closed) return;
+        JSONObject event = proxyState();
+        put(event, "type", "update-proxy");
         events.emit(event);
     }
 
@@ -616,9 +684,21 @@ final class UpdateManager {
 
     private void prepareNetwork(Job job) throws IOException {
         job.check();
-        UpdateProxySession session = new UpdateProxySession(job::check);
+        UpdateProxyControl.Route route = proxyControl.begin(job, UpdateSystemProxy.enabled(activity));
+        emitProxy();
+        if (route != UpdateProxyControl.Route.INTERNAL) {
+            job.client = UpdateProxySession.systemClient();
+            job.check();
+            return;
+        }
+        UpdateProxySession session = new UpdateProxySession(job::check, () -> UpdateSystemProxy.enabled(activity));
         job.proxySession = session;
-        try { job.client = session.prepare(activity); job.check(); }
+        try {
+            job.client = session.prepare(activity);
+            job.check();
+            proxyControl.ready(job, session.usesInternalProxy());
+            emitProxy();
+        }
         catch (Exception failure) {
             session.close();
             if (failure instanceof IOException) throw (IOException) failure;

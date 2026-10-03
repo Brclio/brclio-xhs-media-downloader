@@ -129,6 +129,23 @@
   flex-shrink: 0;
 }
 
+.desktop-update-proxy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(12px, 2vw, 20px);
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.desktop-update-proxy strong { font-size: .83rem; color: var(--blue-deep); }
+.desktop-update-proxy p { margin: 4px 0 0; font-size: .76rem; line-height: 1.7; color: var(--ink-light); }
+.desktop-update-proxy .button { flex-shrink: 0; font-size: .76rem; padding: 9px 12px; }
+.desktop-update-dialog-bottom .desktop-update-proxy { margin: 0 0 14px; }
+@media (max-width: 600px) {
+  .desktop-update-proxy { align-items: flex-start; flex-direction: column; }
+}
+
 .desktop-update-actions .button {
   min-height: 42px;
   padding: 9px 15px;

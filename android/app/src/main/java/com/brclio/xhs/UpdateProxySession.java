@@ -39,25 +39,31 @@ import okhttp3.OkHttpClient;
 /** One update operation owns one private process; application/WebView/media networking is untouched. */
 final class UpdateProxySession implements AutoCloseable {
     interface Check { void run() throws IOException; }
+    interface SystemRoute { boolean enabled(); }
     private static final URI CONFIG_URI = URI.create("https://xhs.download.brclio.com/api/account");
     private static final UpdateProxyConfiguration CONFIGURATION = new UpdateProxyConfiguration();
     private final Check check;
+    private final SystemRoute systemRoute;
     private final Set<HttpURLConnection> connections = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final ExecutorService probes = Executors.newFixedThreadPool(8);
     private volatile boolean closed;
     private volatile Process process;
     private volatile File directory;
     private volatile OkHttpClient client;
+    private volatile boolean internal;
     private boolean cleanupScheduled;
     private String secret;
     private int controllerPort;
     private final List<Delay> ranked = new ArrayList<>();
     private int selectedIndex;
 
-    UpdateProxySession(Check check) { this.check = check; }
+    UpdateProxySession(Check check, SystemRoute systemRoute) { this.check = check; this.systemRoute = systemRoute; }
+
+    boolean usesInternalProxy() { return internal; }
 
     OkHttpClient prepare(Activity activity) throws IOException {
         check();
+        if (systemRoute.enabled()) return useSystemClient();
         JSONObject config = newestConfiguration(activity);
         synchronized (this) {
             check();
@@ -88,6 +94,7 @@ final class UpdateProxySession implements AutoCloseable {
         try { nodes = UpdateProxyPolicy.mergeNodes(sources); }
         catch (IllegalArgumentException invalid) { throw new IOException(invalid.getMessage()); }
         if (nodes.isEmpty()) throw new IOException("更新订阅暂不可用（" + sourceFailures.summary() + "），请联系管理员或稍后重试。");
+        if (systemRoute.enabled()) return useSystemClient();
         int proxyPort = unusedPort();
         controllerPort = unusedPort();
         while (proxyPort == controllerPort) controllerPort = unusedPort();
@@ -113,6 +120,7 @@ final class UpdateProxySession implements AutoCloseable {
         check();
         synchronized (this) {
             check();
+            if (systemRoute.enabled()) return useSystemClient();
             process = new ProcessBuilder(launcher.getAbsolutePath(), executable.getAbsolutePath(), "-d", directory.getAbsolutePath(),
                     "-f", configuration.getAbsolutePath()).redirectErrorStream(true).start();
         }
@@ -148,6 +156,7 @@ final class UpdateProxySession implements AutoCloseable {
                     if (response.request().header("Proxy-Authorization") != null) return null;
                     return response.request().newBuilder().header("Proxy-Authorization", authorization).build();
                 }).build();
+            internal = true;
         }
         return client;
     }
@@ -157,6 +166,19 @@ final class UpdateProxySession implements AutoCloseable {
                 .followRedirects(false).followSslRedirects(false)
                 .connectTimeout(15, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(false).build();
+    }
+
+    /** Leaving proxy unset preserves Android's ProxySelector, PAC rules and active VPN. */
+    static OkHttpClient systemClient() {
+        return new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
+                .connectTimeout(15, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(false).build();
+    }
+
+    private synchronized OkHttpClient useSystemClient() throws IOException {
+        check();
+        client = systemClient();
+        return client;
     }
 
     private JSONObject newestConfiguration(Activity activity) throws IOException {

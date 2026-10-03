@@ -310,6 +310,18 @@ app.on('browser-window-created', (_event, win) => {
         const info = await window.xhsDesktop.getInfo();
         const state = await window.xhsDesktop.getProfileState();
         const update = await window.xhsDesktop.getUpdateState();
+        const proxyEvents = [];
+        const unsubscribeProxy = window.xhsDesktop.onUpdateProxy(value => proxyEvents.push(value));
+        const initialProxy = await window.xhsDesktop.getUpdateProxyState();
+        const stoppedProxy = await window.xhsDesktop.stopUpdateProxy();
+        const resumedProxy = await window.xhsDesktop.resumeUpdateProxy();
+        await new Promise(resolve => setTimeout(resolve, 25));
+        unsubscribeProxy();
+        const updateProxyBridgeVerified = initialProxy.manuallyDisabled === false
+          && stoppedProxy.manuallyDisabled === true && stoppedProxy.activeScopes === 0
+          && resumedProxy.manuallyDisabled === false && resumedProxy.activeScopes === 0
+          && proxyEvents.some(value => value.manuallyDisabled === true)
+          && proxyEvents.some(value => value.manuallyDisabled === false);
         await window.xhsDesktop.recordDiagnostic('renderer.smoke', { message: 'bridge verified' });
         const diagnostics = await window.xhsDesktop.getDiagnosticsInfo();
         // The window now opens before the OS finishes unlocking credentials.
@@ -334,7 +346,7 @@ app.on('browser-window-created', (_event, win) => {
         }
         // Module initialization awaits the bridge; drain promises before inspecting.
         await new Promise(resolve=>setTimeout(resolve,100));
-        return {info,status:state.status,updateStatus:update.status,updateMethods,clipboardBridgeVerified,payloads,
+        return {info,status:state.status,updateStatus:update.status,updateMethods,updateProxyBridgeVerified,clipboardBridgeVerified,payloads,
           diagnosticsVerified: diagnostics.totalBytes > 0 && !('text' in diagnostics), feedbackGuestRejected: !feedback.ok && feedback.error?.code === 'UNAUTHENTICATED',
           profileVisible:!document.querySelector('#profile-panel').hidden,
           tabsVisible:!document.querySelector('#desktop-navigation').hidden,
@@ -342,7 +354,7 @@ app.on('browser-window-created', (_event, win) => {
           secureContext:window.isSecureContext};
       })()`);
       if (result.info.name !== 'Brclio 小红书下载器' || !result.info.pythonAvailable || result.status !== 'idle' || !result.profileVisible
-          || !result.tabsVisible || result.nodeAvailable || !result.secureContext || !result.updateMethods || !result.clipboardBridgeVerified || result.updateStatus !== 'idle' || !result.diagnosticsVerified || !result.feedbackGuestRejected
+          || !result.tabsVisible || result.nodeAvailable || !result.secureContext || !result.updateMethods || !result.updateProxyBridgeVerified || !result.clipboardBridgeVerified || result.updateStatus !== 'idle' || !result.diagnosticsVerified || !result.feedbackGuestRejected
           || result.payloads.some(value => !value.success || value.images !== 1 || value.status !== 200)) {
         throw new Error(JSON.stringify(result));
       }

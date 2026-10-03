@@ -9,6 +9,7 @@ import path from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { UpdateManager, LATEST_RELEASE_URL, allowedAssetRedirect, checksumFromManifest,
   compareVersions, createElectronUpdateFetch, installerName, parseRelease } from '../desktop/update-manager.js';
+import { UpdateProxyNetwork } from '../desktop/update-proxy.js';
 
 const content = Buffer.from('fake installer bytes for network and integrity tests');
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -38,6 +39,149 @@ test('shutdown cancels update network preparation before its first metadata requ
   assert.equal(f.manager.snapshot().status, 'checking');
   await f.manager.shutdown(); await operation;
   assert.equal(f.requests.length, 0); assert.equal(f.manager.snapshot().status, 'idle');
+});
+
+test('only accepted explicit update checks, downloads and recovery enable internal proxy; background checks and installation do not', async t => {
+  const actions = []; let active = false;
+  const networkScope = {
+    async requestInternalProxyForUserOperation() { actions.push('enable'); },
+    async run(controller, work) {
+      assert.equal(active, false); assert.equal(controller.signal.aborted, false);
+      active = true; actions.push('open');
+      try { return await work(); } finally { active = false; actions.push('close'); }
+    }
+  };
+  const f = await fixture(t, { networkScope,
+    confirmInstall: async () => { assert.equal(active, false); return true; },
+    openInstaller: async () => { assert.equal(active, false); return ''; },
+    openExternal: async () => { assert.equal(active, false); actions.push('browser'); } });
+  await f.manager.checkForUpdates({ manual: false });
+  assert.deepEqual(actions, ['open', 'close']);
+  await f.manager.checkForUpdates();
+  assert.deepEqual(actions.slice(2), ['enable', 'open', 'close']);
+  await f.manager.downloadUpdate();
+  assert.deepEqual(actions.slice(5), ['enable', 'open', 'close']);
+  const beforeInstallation = [...actions];
+  await f.manager.installUpdate();
+  assert.deepEqual(actions, beforeInstallation);
+  await f.manager.openLatestInstaller();
+  assert.deepEqual(actions.slice(8), ['enable', 'open', 'close', 'browser']);
+});
+
+test('duplicate manual clicks during enable preparation share the pending updater without requesting another enable', async t => {
+  let enableCount = 0, scopeCount = 0, proceed;
+  const ready = new Promise(resolve => { proceed = resolve; });
+  const networkScope = {
+    async requestInternalProxyForUserOperation() { enableCount++; await ready; },
+    async run(controller, work) { scopeCount++; return work(); }
+  };
+  const f = await fixture(t, { networkScope });
+  const first = f.manager.checkForUpdates();
+  const second = f.manager.checkForUpdates();
+  const downloadClick = f.manager.downloadUpdate();
+  const autoClick = f.manager.checkForUpdates({ manual: false });
+  assert.equal(enableCount, 1); assert.equal(scopeCount, 0); assert.equal(f.requests.length, 0);
+  assert.ok(f.manager.operation); assert.ok(f.manager.controller);
+  proceed();
+  const states = await Promise.all([first, second, downloadClick, autoClick]);
+  assert.ok(states.every(state => state.status === 'available'));
+  assert.equal(enableCount, 1); assert.equal(scopeCount, 1); assert.equal(f.requests.length, 1);
+  assert.equal(f.manager.operation, null);
+});
+
+test('manual clicks during an automatic check and its canceled cleanup never re-enable the canceled scope', async t => {
+  let entered, cleaning, finish, enableCount = 0, scopeCount = 0;
+  const ready = new Promise(resolve => { entered = resolve; });
+  const cleanupReady = new Promise(resolve => { cleaning = resolve; });
+  const cleanupGate = new Promise(resolve => { finish = resolve; });
+  const networkScope = {
+    async requestInternalProxyForUserOperation() { enableCount++; },
+    async run(controller, work) {
+      if (++scopeCount !== 1) return work();
+      try {
+        entered();
+        await new Promise((_, reject) => controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true }));
+      } finally { cleaning(); await cleanupGate; }
+    }
+  };
+  const f = await fixture(t, { networkScope });
+  const automatic = f.manager.checkForUpdates({ manual: false }); await ready;
+  const whileAutomatic = f.manager.checkForUpdates();
+  const downloadWhileAutomatic = f.manager.downloadUpdate();
+  assert.equal(enableCount, 0); assert.equal(scopeCount, 1);
+  f.manager.controller.abort(Object.assign(new Error('manual proxy close'), { code: 'CANCELED' }));
+  await cleanupReady;
+  const duringCleanup = f.manager.checkForUpdates();
+  assert.ok(f.manager.operation); assert.equal(enableCount, 0); assert.equal(f.requests.length, 0);
+  finish();
+  const states = await Promise.all([automatic, whileAutomatic, downloadWhileAutomatic, duringCleanup]);
+  assert.ok(states.every(state => state.status === 'idle' && state.error === null));
+  assert.equal(enableCount, 0); assert.equal(scopeCount, 1); assert.equal(f.manager.operation, null);
+  assert.equal((await f.manager.checkForUpdates()).status, 'available');
+  assert.equal(enableCount, 1); assert.equal(scopeCount, 2); assert.equal(f.requests.length, 1);
+});
+
+test('duplicate latest-installer recovery clicks enable only once while a later accepted recovery enables again', async t => {
+  let enableCount = 0, scopeCount = 0, browserCount = 0, proceed;
+  const gate = new Promise(resolve => { proceed = resolve; });
+  const networkScope = {
+    async requestInternalProxyForUserOperation() { if (++enableCount === 1) await gate; },
+    async run(controller, work) { scopeCount++; return work(); }
+  };
+  const f = await fixture(t, { networkScope, openExternal: async () => { browserCount++; } });
+  const first = f.manager.openLatestInstaller();
+  const duplicate = f.manager.openLatestInstaller();
+  assert.equal(first, duplicate); assert.equal(enableCount, 1); assert.equal(scopeCount, 0);
+  proceed(); assert.equal((await first).ok, true); await duplicate;
+  assert.equal(enableCount, 1); assert.equal(scopeCount, 1); assert.equal(browserCount, 1); assert.equal(f.requests.length, 1);
+  assert.equal((await f.manager.openLatestInstaller()).ok, true);
+  assert.equal(enableCount, 2); assert.equal(scopeCount, 2); assert.equal(browserCount, 2);
+});
+
+test('real proxy preference stays closed for background checks, resets for manual check and download, and every scope closes', async t => {
+  const f = await fixture(t, { confirmInstall: async () => true, openInstaller: async () => '', openExternal: async () => {} });
+  const sessions = [], children = []; let prepared = 0, configurations = 0;
+  const network = new UpdateProxyNetwork({ net: { request() { assert.fail('manager fetch fixture supplies update bodies'); } },
+    session: { fromPartition() {
+      const scoped = { modes: [], closed: 0, cleared: false,
+        async setProxy(value) { this.modes.push(value.mode); }, async closeAllConnections() { this.closed++; },
+        async clearStorageData() { this.cleared = true; } };
+      sessions.push(scoped); return scoped;
+    } }, endpoint: 'https://updates.example.com/account', cacheDirectory: f.directory, runtimeDirectory: path.join(f.directory, 'runtime'),
+    fetchDirect: async () => {
+      configurations++;
+      return Response.json({ ok: true, proxyConfig: { enabled: true, revision: 1,
+        subscriptionUrls: ['https://subscription.example.com/fixture'] } });
+    }, detectExternalProxy: async scoped => { await scoped.setProxy({ mode: 'system' }); return { enabled: false, source: 'none' }; } });
+  // Native provisioning/selection is independently covered by proxy tests.
+  // This fixture leaves the real preference and scope lifecycle intact.
+  network.prepare = async scoped => {
+    prepared++;
+    const child = new EventEmitter(); child.exitCode = null; child.signalCode = null;
+    child.stdin = { end() { child.exitCode = 0; queueMicrotask(() => child.emit('exit', 0)); } };
+    child.kill = () => { child.exitCode = 0; child.emit('exit', 0); };
+    scoped.child = child; children.push(child);
+    await scoped.session.setProxy({ mode: 'fixed_servers' });
+  };
+  f.manager.networkScope = network;
+  const preference = path.join(f.directory, 'proxy-preference.json');
+  const disabled = async () => JSON.parse(await readFile(preference, 'utf8')).manuallyDisabled;
+  await network.stopInternalProxy();
+  assert.equal((await f.manager.checkForUpdates({ manual: false })).status, 'available');
+  assert.equal(await disabled(), true); assert.equal(prepared, 0); assert.equal(configurations, 0);
+  assert.equal((await f.manager.checkForUpdates()).status, 'available');
+  assert.equal(await disabled(), false); assert.equal(prepared, 1); assert.equal(network.snapshot().mode, 'off');
+  await network.stopInternalProxy(); assert.equal(await disabled(), true);
+  assert.equal((await f.manager.downloadUpdate()).status, 'downloaded');
+  assert.equal(await disabled(), false); assert.equal(prepared, 2); assert.equal(network.snapshot().mode, 'off');
+  await network.stopInternalProxy();
+  await f.manager.installUpdate();
+  assert.equal(await disabled(), true); assert.equal(prepared, 2, 'local installation never re-enables the proxy');
+  assert.equal((await f.manager.openLatestInstaller()).ok, true);
+  assert.equal(await disabled(), false); assert.equal(prepared, 3); assert.equal(configurations, 3);
+  assert.equal(network.active.size, 0); assert.equal(network.snapshot().mode, 'off');
+  assert.ok(children.every(child => child.exitCode === 0));
+  assert.ok(sessions.every(scoped => scoped.cleared && scoped.modes.at(-1) === 'direct'));
 });
 
 function mockElectronNet(onEnd) {

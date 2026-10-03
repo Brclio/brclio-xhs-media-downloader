@@ -254,7 +254,7 @@ export class UpdateManager {
     try { this.onUpdate(this.snapshot()); } catch { /* A closed window cannot interrupt an update. */ }
   }
 
-  async run(phase, work) {
+  async run(phase, work, { manual = true } = {}) {
     if (this.operation) return this.operation;
     const controller = new AbortController();
     this.controller = controller;
@@ -263,7 +263,13 @@ export class UpdateManager {
       try {
         if (phase === 'check' && this.state.status !== 'downloaded') this.emit({ status: 'checking', error: null, checkError: null, canRetry: false });
         if (phase === 'download' && this.candidate) this.emit({ status: 'downloading', error: null, canRetry: false });
-        if (this.networkScope && ['check', 'download'].includes(phase)) await this.networkScope.run(controller, () => work(controller));
+        if (this.networkScope && ['check', 'download'].includes(phase)) {
+          if (manual && typeof this.networkScope.requestInternalProxyForUserOperation === 'function') {
+            await this.networkScope.requestInternalProxyForUserOperation();
+            controller.signal.throwIfAborted();
+          }
+          await this.networkScope.run(controller, () => work(controller));
+        }
         else await work(controller);
       }
       catch (error) {
@@ -390,6 +396,10 @@ export class UpdateManager {
     // error, replace its verified candidate, or accept a URL from the renderer.
     this.latestInstallerOperation = (async () => {
       try {
+        if (typeof this.networkScope?.requestInternalProxyForUserOperation === 'function') {
+          await this.networkScope.requestInternalProxyForUserOperation();
+          controller.signal.throwIfAborted();
+        }
         const readCandidate = async () => {
           const release = await this.readLatestRelease(controller);
           return parseRelease(release, this.state, { includeInstaller: true }).candidate;
@@ -409,7 +419,7 @@ export class UpdateManager {
     return this.latestInstallerOperation;
   }
 
-  checkForUpdates() {
+  checkForUpdates({ manual = true } = {}) {
     return this.run('check', async controller => {
       if (this.state.status === 'downloaded') return;
       this.emit({ status: 'checking', error: null, checkError: null, canRetry: false });
@@ -425,7 +435,7 @@ export class UpdateManager {
       this.verifiedFile = null;
       this.emit({ ...metadata, status: candidate ? 'available' : 'up-to-date', error: null, checkError: null, canRetry: false,
         download: downloadProgress(received, candidate?.size || 0) });
-    });
+    }, { manual });
   }
 
   async cacheDirectory() {

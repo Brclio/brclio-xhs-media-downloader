@@ -12,7 +12,7 @@ ObjC.import('Foundation');
 
 function run(argv) {
   var resultPath = argv[0], readyPath = argv[1], version = argv[2];
-  var installedAt = 0, lastUpdate = Date.now(), missingSince = 0;
+  var closeAt = 0, lastUpdate = Date.now(), missingSince = 0;
   var previous = '', terminal = false;
   var stages = { preparing: 0, opening: 1, verifying: 2, copying: 3, checking: 4,
     prepared: 5, ready: 5, waiting: 5, validating: 5, replacing: 6, launching: 7,
@@ -49,7 +49,7 @@ function run(argv) {
     content.addSubview(field);
     return field;
   }
-  label('正在安装 v' + version, 24, 179, 472, 28, 18, true);
+  var heading = label('正在安装 v' + version, 24, 179, 472, 28, 18, true);
   var detail = label(messages.preparing, 24, 120, 472, 48, 13, false);
   var bar = $.NSProgressIndicator.alloc.initWithFrame($.NSMakeRect(24, 98, 472, 16));
   bar.style = $.NSProgressIndicatorStyleBar;
@@ -63,21 +63,37 @@ function run(argv) {
   var closeButton = $.NSButton.alloc.initWithFrame($.NSMakeRect(398, 15, 98, 30));
   closeButton.title = '关闭';
   closeButton.bezelStyle = $.NSBezelStyleRounded;
-  closeButton.hidden = true;
+  closeButton.hidden = false;
+  closeButton.enabled = true;
   content.addSubview(closeButton);
-  // Let Cocoa close the window directly, without re-entering this JXA script
-  // from a native button action or window delegate notification.
-  // Both this button and the title-bar close control use NSWindow directly.
+  // Hiding this independent viewer never cancels or changes installation.
+  // orderOut: has no close-delegate veto or nested script callback; the timer
+  // observes the hidden window and exits the viewer's event loop.
   closeButton.target = window;
-  closeButton.action = 'performClose:';
+  closeButton.action = 'orderOut:';
   closeButton.keyEquivalent = '\u001b';
+  var titleCloseButton = window.standardWindowButton($.NSWindowCloseButton);
+  titleCloseButton.target = window;
+  titleCloseButton.action = 'orderOut:';
+  var closeHint = label('关闭此窗口不会中断安装。', 24, 18, 348, 22, 11, false);
+  closeHint.textColor = $.NSColor.secondaryLabelColor;
 
   function showFailure(message) {
     terminal = true;
-    installedAt = 0;
+    closeAt = 0;
+    heading.stringValue = '安装更新 v' + version;
     detail.stringValue = message;
     stageLabel.stringValue = '安装未完成 · 请查看提示';
     closeButton.hidden = false;
+  }
+  function showCleanupWarning(message) {
+    terminal = true;
+    heading.stringValue = '已安装 v' + version;
+    bar.doubleValue = 9;
+    detail.stringValue = message || '新版已启动，临时旧版稍后重试清理。';
+    stageLabel.stringValue = '安装已完成 · 临时旧版清理待重试';
+    closeHint.stringValue = '可以继续使用新版，此窗口将自动关闭。';
+    closeAt = Date.now() + 4000;
   }
   function refresh() {
     if (terminal) return;
@@ -92,12 +108,20 @@ function run(argv) {
     }
     missingSince = 0;
     if (text !== previous) { lastUpdate = Date.now(); previous = text; }
+    if (state.status === 'cleanup_failed' && state.startupConfirmed === true) {
+      showCleanupWarning(typeof state.message === 'string' ? state.message : '');
+      return;
+    }
     if (Object.prototype.hasOwnProperty.call(stages, state.status)) {
       var stage = stages[state.status];
       bar.doubleValue = stage;
       detail.stringValue = typeof state.message === 'string' && state.message ? state.message : messages[state.status];
       stageLabel.stringValue = '安装阶段 ' + stage + ' / 9 · ' + messages[state.status].replace(/[…。]+$/, '');
-      if (state.status === 'installed') { if (!installedAt) installedAt = Date.now(); }
+      if (state.status === 'installed') {
+        heading.stringValue = '已安装 v' + version;
+        closeHint.stringValue = '安装已完成，此窗口将自动关闭。';
+        if (!closeAt) closeAt = Date.now() + 1000;
+      }
       else if (Date.now() - lastUpdate > 15 * 60 * 1000) showFailure('安装进度长时间未更新。请查看应用中的更新结果或安装记录。');
     } else {
       showFailure(typeof state.message === 'string' && state.message ? state.message : '安装未完成，请查看安装记录。');
@@ -120,7 +144,7 @@ function run(argv) {
       try {
         if (!window.visible) { stop(); return; }
         refresh();
-        if (installedAt && Date.now() - installedAt >= 1000) { window.close; stop(); return; }
+        if (closeAt && Date.now() >= closeAt) { window.orderOut(null); stop(); return; }
         if (!acknowledged) {
           // The acknowledgement comes from inside AppKit's event loop, not
           // merely from constructing an NSWindow that has a window number.

@@ -1,6 +1,6 @@
 # Brclio 小红书下载器
 
-桌面 v2.0.3 与 Android v1.0.10 为相同功能的测试发布，仅递增版本号，便于验证客户端软件更新代理。详见 [桌面说明](docs/releases/v2.0.3.md) 与 [Android 说明](docs/releases/android-v1.0.10.md)。
+桌面 v2.0.4 与 Android v1.0.11 新增系统代理优先和「关闭软件内置代理」控制：手动关闭状态持续保存，下次明确检查或下载时自动恢复，任务结束后自动关闭。Mac 同时修复同版本重装的临时旧版清理及无法关闭的安装提示。详见 [桌面说明](docs/releases/v2.0.4.md) 与 [Android 说明](docs/releases/android-v1.0.11.md)。
 
 v2.0.1 新增「清除登录记录」按钮：确认后暂停主页任务，清空下载器保存的小红书登录、Cookie、网站存储与缓存，方便重新登录其它账号。已有下载文件、任务记录和软件会员账号保留。详见 [版本说明](docs/releases/v2.0.1.md)。
 
@@ -66,7 +66,7 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 新增独立 Android 客户端工程，面向 Android 8.0 及以上，聚焦单篇笔记的原图、实况、视频、文案、ZIP、图片复制与系统分享。可粘贴分享文案，也可从其他应用分享文字进入；文件由 Android 系统文件选择器保存。解析沿用在线服务，安装者无需 Python 或 Node.js。检测到平台原视频后，可通过「下载无水印视频 · 会员」在系统浏览器打开网页版，登录软件账号并验证会员后下载；Android 原生层不保存该账号会话。当前不包含主页批量或小红书登录。
 
-前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 独立编号为 `1.0.10`，使用固定签名支持后续覆盖升级。
+前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 独立编号为 `1.0.11`，使用固定签名支持后续覆盖升级。
 
 开发者配置 JDK 与 Android SDK 后运行 `npm run android:build` 生成 debug APK。构建、正式签名、安装与设备验证说明见 [Android 客户端说明](android/README.md)。Mac / Windows 使用独立的桌面版本与更新通道。
 

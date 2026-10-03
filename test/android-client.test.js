@@ -300,8 +300,78 @@ async function clientFixture(t) {
   element('engine').value = 'node';
   return { element, requests, next, respond, click, parse, flush,
     share: text => window.brclioEvent({ type: 'share', text }),
+    proxy: data => window.brclioEvent({ type: 'update-proxy', ...data }),
     update: data => window.brclioEvent({ type: 'update', ...data }) };
 }
+
+test('Android startup stays automatic and emergency proxy close lasts until the next explicit update click', async t => {
+  const ui = await clientFixture(t);
+  assert.deepEqual(ui.next('checkUpdate').params, { manual: false });
+  ui.proxy({ mode: 'starting', manuallyDisabled: false, canStop: true });
+  assert.match(ui.element('update-proxy-status').textContent, /正在准备/);
+  assert.equal(ui.element('check-update').disabled, true);
+  ui.click('stop-update-proxy');
+  assert.equal(ui.element('stop-update-proxy').disabled, true);
+  assert.deepEqual(ui.next('stopUpdateProxy').params, {});
+  assert.equal(ui.next('cancelUpdate'), undefined, 'Emergency close delegates cancellation ownership to native code');
+  await ui.respond(ui.next('stopUpdateProxy'), { mode: 'off', manuallyDisabled: true, canStop: false });
+  assert.equal(ui.element('stop-update-proxy').disabled, true);
+  assert.match(ui.element('update-proxy-status').textContent, /下次点击检查更新或下载更新.*自动启用/);
+  await ui.respond(ui.next('checkUpdate'), { status: 'cancelled' });
+  ui.click('check-update');
+  assert.deepEqual(ui.next('checkUpdate').params, { manual: true });
+  ui.proxy({ mode: 'starting', manuallyDisabled: false, canStop: true });
+  assert.equal(ui.element('stop-update-proxy').disabled, false);
+  await ui.respond(ui.next('checkUpdate'), { status: 'latest', update: null });
+  ui.proxy({ mode: 'off', manuallyDisabled: false, canStop: true });
+  assert.match(ui.element('update-proxy-status').textContent, /已关闭/);
+  assert.equal(ui.next('resumeUpdateProxy'), undefined, 'The next explicit update click supplies recovery without a resume control');
+});
+
+test('Android displays system proxy use and can disable built-in fallback without cancelling system updates', async t => {
+  const ui = await clientFixture(t);
+  ui.proxy({ mode: 'system', manuallyDisabled: false, canStop: true });
+  assert.match(ui.element('update-proxy-status').textContent, /系统代理或 VPN/);
+  ui.click('stop-update-proxy');
+  await ui.respond(ui.next('stopUpdateProxy'), { mode: 'system', manuallyDisabled: true, canStop: false, stopped: false });
+  assert.equal(ui.next('cancelUpdate'), undefined);
+  await ui.respond(ui.next('checkUpdate'), { status: 'latest', update: null });
+  assert.match(ui.element('update-status').textContent, /最新/);
+  assert.equal(ui.element('stop-update-proxy').disabled, true);
+});
+
+test('Android proxy close remains usable during downloads and reports native failures for retry', async t => {
+  const ui = await clientFixture(t);
+  await ui.respond(ui.next('checkUpdate'), newAndroidRelease());
+  ui.click('download-update');
+  ui.proxy({ mode: 'internal', manuallyDisabled: false, canStop: true });
+  assert.equal(ui.element('stop-update-proxy').disabled, false);
+  ui.click('stop-update-proxy');
+  await ui.respond(ui.next('stopUpdateProxy'), {}, '关闭失败，请重试');
+  assert.match(ui.element('update-proxy-status').textContent, /关闭失败/);
+  assert.equal(ui.element('stop-update-proxy').disabled, false);
+  ui.click('stop-update-proxy');
+  await ui.respond(ui.next('stopUpdateProxy'), { mode: 'off', manuallyDisabled: true, canStop: false });
+  await ui.respond(ui.next('downloadUpdate'), { status: 'cancelled' });
+  assert.equal(ui.element('stop-update-proxy').disabled, true);
+  ui.click('download-update');
+  ui.proxy({ mode: 'starting', manuallyDisabled: false, canStop: true });
+  assert.equal(ui.element('stop-update-proxy').disabled, false, 'An accepted explicit download starts a new internal-proxy opportunity');
+  await ui.respond(ui.next('downloadUpdate'), { status: 'cancelled' });
+  ui.proxy({ mode: 'off', manuallyDisabled: false, canStop: true });
+});
+
+test('Android late proxy state and command replies cannot overwrite newer native events', async t => {
+  const ui = await clientFixture(t);
+  ui.proxy({ mode: 'internal', manuallyDisabled: false, canStop: true });
+  await ui.respond(ui.next('updateProxyState'), { mode: 'off', manuallyDisabled: false, canStop: true });
+  assert.match(ui.element('update-proxy-status').textContent, /正在使用/);
+  ui.click('stop-update-proxy');
+  ui.proxy({ mode: 'system', manuallyDisabled: true, canStop: false });
+  await ui.respond(ui.next('stopUpdateProxy'), { mode: 'internal', manuallyDisabled: false, canStop: true });
+  assert.equal(ui.element('stop-update-proxy').disabled, true);
+  assert.match(ui.element('update-proxy-status').textContent, /下次点击/);
+});
 
 test('Android shows the hosted member entry for original-only videos and clears it with the next parse', async t => {
   const ui = await clientFixture(t);
@@ -424,7 +494,7 @@ test('Android displays untrusted caption and video labels as literal text', asyn
   assert.equal(ui.element('note-title').textContent, payload.title);
   assert.equal(ui.element('caption').textContent, payload.content);
   assert.equal(ui.element('quality').children[0].textContent, payload.videos[0].label);
-  assert.deepEqual(ui.requests.map(request => request.method), ['ready', 'checkUpdate', 'parse']);
+  assert.deepEqual(ui.requests.map(request => request.method), ['ready', 'updateProxyState', 'checkUpdate', 'parse']);
 });
 
 const newAndroidRelease = () => ({

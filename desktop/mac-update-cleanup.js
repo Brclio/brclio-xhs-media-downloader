@@ -148,9 +148,25 @@ export async function confirmMacUpdateStartup({ cacheDirectory, currentAppPath, 
         || record.failedAppPath !== path.join(stage, 'failed.app')) reject('恢复文件不在本应用的临时安装目录。');
       let stageStat;
       const proof = record.cleanupProof;
+      // Reinstalling the same public version is legitimate. Equal versions
+      // alone do not authorize deletion: require the private modern transaction
+      // and exact validated backup. A healthy later release may have replaced
+      // the installed inode only after this transaction confirmed its startup.
+      const sameVersionReceipt = Number.isSafeInteger(record.schemaVersion) && record.schemaVersion >= 2
+        && (record.version === currentVersion ? record.installedIdentity === identity(running.stat)
+          : record.startupConfirmed === true && older(record.version, currentVersion))
+        && /^[0-9]+:[0-9]+$/.test(record.installedIdentity || '')
+        && /^[a-f0-9]{64}$/.test(record.startupToken || '')
+        && /^[0-9]+:[0-9]+$/.test(record.stageIdentity || '')
+        && /^[0-9]+:[0-9]+$/.test(record.backupIdentity || '')
+        && /^[a-f0-9]{64}$/.test(record.backupInfoHash || '')
+        && record.backupVersion === record.version && ((await safeStat(recordPath)).mode & 0o077) === 0;
+      const sameVersionProof = proof && sameVersionReceipt && proof.backupVersion === record.version
+        && proof.stageIdentity === record.stageIdentity && proof.backupIdentity === record.backupIdentity
+        && proof.backupInfoHash === record.backupInfoHash;
       const resumeCleanup = record.startupConfirmed === true && ['cleaning', 'cleanup_failed'].includes(record.status) && proof
         && /^[0-9]+:[0-9]+$/.test(proof.stageIdentity || '') && /^[0-9]+:[0-9]+$/.test(proof.backupIdentity || '')
-        && versionPattern.test(proof.backupVersion || '') && older(proof.backupVersion, record.version)
+        && versionPattern.test(proof.backupVersion || '') && (older(proof.backupVersion, record.version) || sameVersionProof)
         && /^\.removing-[a-f0-9]{32}\.app$/.test(proof.removingName || '');
       const finish = async () => {
         // A previous attempt may have deleted the app and crashed before its
@@ -177,7 +193,10 @@ export async function confirmMacUpdateStartup({ cacheDirectory, currentAppPath, 
       } else {
         if (entries.length !== 1 || entries[0] !== 'previous.app') reject('临时安装目录包含其他内容，已保留。');
         previous = await bundleInfo(source);
-        if (!older(previous.version, record.version)) reject('恢复文件不是本次更新之前的版本。');
+        const verifiedReinstall = sameVersionReceipt && previous.version === record.version
+          && record.stageIdentity === identity(stageStat) && record.backupIdentity === identity(previous.stat)
+          && record.backupInfoHash === previous.infoHash;
+        if (!older(previous.version, record.version) && !verifiedReinstall) reject('恢复文件不是本次更新之前的版本。');
         if (modern && (record.backupIdentity !== identity(previous.stat) || record.backupInfoHash !== previous.infoHash
           || record.backupVersion !== previous.version)) reject('恢复文件已被其他操作替换。');
       }
@@ -186,7 +205,8 @@ export async function confirmMacUpdateStartup({ cacheDirectory, currentAppPath, 
         || identity(await safeStat(source, true)) !== identity(previous.stat)) reject('应用目录在清理前发生变化。');
       const removingName = resumeCleanup ? proof.removingName : `.removing-${randomBytes(16).toString('hex')}.app`;
       record = { ...record, status: 'cleaning', startupConfirmed: true, message: '新版已成功启动，正在清理临时旧版文件。',
-        cleanupProof: { stageIdentity: identity(stageStat), backupIdentity: identity(previous.stat), backupVersion: previous.version, removingName } };
+        cleanupProof: { stageIdentity: identity(stageStat), backupIdentity: identity(previous.stat), backupVersion: previous.version,
+          backupInfoHash: resumeCleanup ? proof.backupInfoHash : previous.infoHash, removingName } };
       await store(recordPath, record);
       const removing = path.join(stage, removingName);
       if (source !== removing) await rename(source, removing);
