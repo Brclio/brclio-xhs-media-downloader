@@ -1,0 +1,888 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "version": "2.0.4",
+  "sourceSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+  "verifiedAt": "2026-10-03T10:00:27.260065+00:00",
+  "scope": {
+    "purpose": "Publish system-proxy precedence, persistent manual internal-proxy stop, operation-scoped update transport, and Mac installer progress recovery",
+    "previousVersion": "2.0.3"
+  },
+  "nativeBuild": {
+    "id": 37113135515,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37113135515",
+    "headSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 111174760864,
+        "name": "mac-arm64",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 111174760940,
+        "name": "mac-intel",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 111174760988,
+        "name": "windows-x64",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 111176577481,
+        "name": "Publish verified installers",
+        "status": "completed",
+        "conclusion": "skipped"
+      }
+    ]
+  },
+  "publication": {
+    "run": {
+      "id": 37113900428,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37113900428",
+      "headSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 111176872641,
+          "name": "publish",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "strictRunTagSourceArtifactAndUploadedBytesGatesPassed": true,
+    "provenance": {
+      "schemaVersion": 1,
+      "repository": "Brclio/brclio-xhs-media-downloader",
+      "sourceCommit": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+      "tags": {
+        "desktop": {
+          "name": "v2.0.4",
+          "commit": "0727258c54d0c8ef45e791c7490c9654856b60dd"
+        },
+        "android": {
+          "name": "android-v1.0.11",
+          "commit": "0727258c54d0c8ef45e791c7490c9654856b60dd"
+        }
+      },
+      "runs": {
+        "desktop": {
+          "id": 37113135515,
+          "workflowName": "Desktop installers",
+          "workflowId": 362432997,
+          "headSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11270846768,
+              "name": "Brclio-XHS-mac-arm64",
+              "bytes": 327289007,
+              "digest": "sha256:6cbb136bcc236ff020f1dc715f6f03cd09c43fccfa83dc5fb0f031959c897e47"
+            },
+            {
+              "id": 11271256517,
+              "name": "Brclio-XHS-mac-intel",
+              "bytes": 342801665,
+              "digest": "sha256:7a5ade00b68d50cc82fad5fc89f9912f719da7a0a5ddf9a8cefc58c7864b0e75"
+            },
+            {
+              "id": 11271280930,
+              "name": "Brclio-XHS-windows-x64",
+              "bytes": 286417599,
+              "digest": "sha256:5170d3ffa947ed7c582e9b407294b784b44e69f5ccf585efa2aa5b8dbd3fd407"
+            }
+          ]
+        },
+        "android": {
+          "id": 37113136436,
+          "workflowName": "Android signed release",
+          "workflowId": 368644334,
+          "headSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11270876731,
+              "name": "Android-release-37113136436-1",
+              "bytes": 72531542,
+              "digest": "sha256:c884d20ef57f6fc35e9de133a14bab9e54414882606f939b0ab2fcea44020513"
+            }
+          ]
+        }
+      },
+      "provenanceCheckedAt": "2026-10-03T09:41:40.440Z",
+      "publisherCheckedAt": {
+        "desktop": "2026-10-03T09:42:28.237Z",
+        "android": "2026-10-03T09:42:41.537Z"
+      },
+      "publicMetadataCheckedAt": "2026-10-03T09:42:42.244Z"
+    },
+    "evidenceArtifact": {
+      "id": 11271116955,
+      "name": "publication-evidence-37113900428-1",
+      "digest": "sha256:46aafe1d06c5428623dee6686733ef29c87ae0b94f83676e884468396b2af3c7"
+    }
+  },
+  "publicReadback": {
+    "version": "2.0.4",
+    "tag": "v2.0.4",
+    "sourceSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.4",
+    "publishedAt": "2026-10-03T09:42:27Z",
+    "verifiedAt": "2026-10-03T09:45:05.042Z",
+    "assetCount": 11,
+    "builds": [
+      {
+        "platform": "darwin",
+        "arch": "arm64",
+        "comparedSources": 223,
+        "sourceDirty": false
+      },
+      {
+        "platform": "darwin",
+        "arch": "x64",
+        "comparedSources": 223,
+        "sourceDirty": false
+      },
+      {
+        "platform": "win32",
+        "arch": "x64",
+        "comparedSources": 223,
+        "sourceDirty": false
+      }
+    ],
+    "updates": [
+      {
+        "platform": "darwin",
+        "arch": "arm64",
+        "fromVersion": "2.0.3",
+        "asset": "Brclio-XHS-2.0.4-mac-arm64.dmg",
+        "bytes": 164104533
+      },
+      {
+        "platform": "darwin",
+        "arch": "x64",
+        "fromVersion": "2.0.3",
+        "asset": "Brclio-XHS-2.0.4-mac-x64.dmg",
+        "bytes": 171801195
+      },
+      {
+        "platform": "win32",
+        "arch": "x64",
+        "fromVersion": "2.0.3",
+        "asset": "Brclio-XHS-2.0.4-windows-x64-setup.exe",
+        "bytes": 143316789
+      }
+    ],
+    "legacyUpdater": {
+      "version": "1.8.13",
+      "tag": "v1.8.13",
+      "sourceSha": "83830d4db9b52e7e81a890a4c02d44b5eb02095c"
+    },
+    "legacyUpdates": [
+      {
+        "platform": "darwin",
+        "arch": "arm64",
+        "fromVersion": "1.8.13",
+        "asset": "XHS-Downloader-2.0.4-mac-arm64.dmg",
+        "bytes": 164104533,
+        "sha256": "7ccaa570b6a5f42289cd49f1e8d44d3b541271cc84711f78c35729fc45b7c5d9",
+        "manifestChecksumVerified": true
+      },
+      {
+        "platform": "darwin",
+        "arch": "x64",
+        "fromVersion": "1.8.13",
+        "asset": "XHS-Downloader-2.0.4-mac-x64.dmg",
+        "bytes": 171801195,
+        "sha256": "e3c13c47e557806e24d4e89df6d8f54367e06f4d97991583ca05a2f8a049fb13",
+        "manifestChecksumVerified": true
+      },
+      {
+        "platform": "win32",
+        "arch": "x64",
+        "fromVersion": "1.8.13",
+        "asset": "XHS-Downloader-2.0.4-windows-x64-setup.exe",
+        "bytes": 143316789,
+        "sha256": "ffa2f790923ac9d19beba3702391601b90a37c0d88a5ec0fccc537f19c96bb2e",
+        "manifestChecksumVerified": true
+      }
+    ],
+    "compatibilityAliasesVerified": true,
+    "remoteDigestsVerified": true,
+    "publicManifestsVerified": true,
+    "anonymousUpdaterVisible": true,
+    "publicInstallerProbes": [
+      {
+        "name": "Brclio-XHS-2.0.4-mac-arm64.dmg",
+        "bytes": 164104533,
+        "sha256": "7ccaa570b6a5f42289cd49f1e8d44d3b541271cc84711f78c35729fc45b7c5d9",
+        "method": "HEAD",
+        "status": 200
+      },
+      {
+        "name": "Brclio-XHS-2.0.4-mac-arm64.zip",
+        "bytes": 165029835,
+        "sha256": "27a83ffaa0e2a79cdcfee839cb836110727c459417581c9ee64614fa1234fb2a",
+        "method": "HEAD",
+        "status": 200
+      },
+      {
+        "name": "Brclio-XHS-2.0.4-mac-x64.dmg",
+        "bytes": 171801195,
+        "sha256": "e3c13c47e557806e24d4e89df6d8f54367e06f4d97991583ca05a2f8a049fb13",
+        "method": "HEAD",
+        "status": 200
+      },
+      {
+        "name": "Brclio-XHS-2.0.4-mac-x64.zip",
+        "bytes": 172825532,
+        "sha256": "e96ec04bcbfb42f7603f9c2a7831b00411cc277bacebc41a32ff3e20ce7538d2",
+        "method": "HEAD",
+        "status": 200
+      },
+      {
+        "name": "Brclio-XHS-2.0.4-windows-x64-setup.exe",
+        "bytes": 143316789,
+        "sha256": "ffa2f790923ac9d19beba3702391601b90a37c0d88a5ec0fccc537f19c96bb2e",
+        "method": "HEAD",
+        "status": 200
+      },
+      {
+        "name": "Brclio-XHS-2.0.4-windows-x64-portable.exe",
+        "bytes": 143078279,
+        "sha256": "7ed9bf44b8d316418af40c0717a0357e9a093eb1686684f707299aa85af47c50",
+        "method": "HEAD",
+        "status": 200
+      },
+      {
+        "name": "XHS-Downloader-2.0.4-mac-arm64.dmg",
+        "bytes": 164104533,
+        "sha256": "7ccaa570b6a5f42289cd49f1e8d44d3b541271cc84711f78c35729fc45b7c5d9",
+        "method": "HEAD",
+        "status": 200
+      },
+      {
+        "name": "XHS-Downloader-2.0.4-mac-x64.dmg",
+        "bytes": 171801195,
+        "sha256": "e3c13c47e557806e24d4e89df6d8f54367e06f4d97991583ca05a2f8a049fb13",
+        "method": "HEAD",
+        "status": 200
+      },
+      {
+        "name": "XHS-Downloader-2.0.4-windows-x64-setup.exe",
+        "bytes": 143316789,
+        "sha256": "ffa2f790923ac9d19beba3702391601b90a37c0d88a5ec0fccc537f19c96bb2e",
+        "method": "HEAD",
+        "status": 200
+      }
+    ]
+  },
+  "packagedBuildProof": {
+    "result": "PASS",
+    "tag": "v2.0.4",
+    "sourceSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+    "builds": [
+      {
+        "platform": "darwin",
+        "arch": "arm64",
+        "sourceDirty": false,
+        "comparedSources": 223,
+        "nativeUpgradeVerified": true,
+        "files": [
+          {
+            "name": "Brclio-XHS-2.0.4-mac-arm64.dmg",
+            "bytes": 164104533,
+            "sha256": "7ccaa570b6a5f42289cd49f1e8d44d3b541271cc84711f78c35729fc45b7c5d9"
+          },
+          {
+            "name": "Brclio-XHS-2.0.4-mac-arm64.zip",
+            "bytes": 165029835,
+            "sha256": "27a83ffaa0e2a79cdcfee839cb836110727c459417581c9ee64614fa1234fb2a"
+          }
+        ]
+      },
+      {
+        "platform": "darwin",
+        "arch": "x64",
+        "sourceDirty": false,
+        "comparedSources": 223,
+        "nativeUpgradeVerified": true,
+        "files": [
+          {
+            "name": "Brclio-XHS-2.0.4-mac-x64.dmg",
+            "bytes": 171801195,
+            "sha256": "e3c13c47e557806e24d4e89df6d8f54367e06f4d97991583ca05a2f8a049fb13"
+          },
+          {
+            "name": "Brclio-XHS-2.0.4-mac-x64.zip",
+            "bytes": 172825532,
+            "sha256": "e96ec04bcbfb42f7603f9c2a7831b00411cc277bacebc41a32ff3e20ce7538d2"
+          }
+        ]
+      },
+      {
+        "platform": "win32",
+        "arch": "x64",
+        "sourceDirty": false,
+        "comparedSources": 223,
+        "nativeUpgradeVerified": true,
+        "files": [
+          {
+            "name": "Brclio-XHS-2.0.4-windows-x64-setup.exe",
+            "bytes": 143316789,
+            "sha256": "ffa2f790923ac9d19beba3702391601b90a37c0d88a5ec0fccc537f19c96bb2e"
+          },
+          {
+            "name": "Brclio-XHS-2.0.4-windows-x64-portable.exe",
+            "bytes": 143078279,
+            "sha256": "7ed9bf44b8d316418af40c0717a0357e9a093eb1686684f707299aa85af47c50"
+          }
+        ]
+      }
+    ]
+  },
+  "website": {
+    "result": "PASS",
+    "deploymentSourceCommit": "3e82f45115128da1676006ae1a19963df88ec587",
+    "worker": {
+      "name": "brclio-xhs-downloader",
+      "versionId": "dd405763-1ee5-4db5-997f-b01e69114d8b",
+      "deploymentSucceeded": true
+    },
+    "pages": {
+      "url": "https://d30e3fbc.brclio-xhs-pages.pages.dev",
+      "deploymentSucceeded": true,
+      "apiChecks": {
+        "ok": true,
+        "passed": 55,
+        "total": 55
+      },
+      "staticAcceptance": {
+        "result": "PASS",
+        "scope": "anonymous Pages static version, true sizes, source hashes and article history",
+        "checkedAt": "2026-10-03T09:52:49.098Z",
+        "origin": "https://d30e3fbc.brclio-xhs-pages.pages.dev",
+        "webSourceSha": "3e82f45115128da1676006ae1a19963df88ec587",
+        "clientSourceSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+        "remoteWrites": 0,
+        "download": {
+          "desktopTag": "v2.0.4",
+          "androidTag": "android-v1.0.11",
+          "desktopPublishedDate": "2026.10.03",
+          "androidPublishedDate": "2026.10.03",
+          "sizesMatch": true,
+          "staticLinksMatch": true,
+          "placeholdersRemoved": true
+        },
+        "changelog": {
+          "latestEntry": true,
+          "latestSummary": true,
+          "releaseLinksMatch": true,
+          "historicalArticlesPreserved": 50,
+          "historicalComparison": "exact article bytes from client release source commit"
+        },
+        "staticChecks": [
+          {
+            "file": "download.html",
+            "status": 200,
+            "bytes": 26111,
+            "sha256": "fb3e71df3b792c82478c4317c7866248f7a56c58f81031debf0c6b30f982d182",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "download.js",
+            "status": 200,
+            "bytes": 9796,
+            "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "download.css",
+            "status": 200,
+            "bytes": 23755,
+            "sha256": "c88c11fa656bc0d3c0aa22a6ab98e20e7c389cc8c012c1de435de22215f3e235",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "changelog.html",
+            "status": 200,
+            "bytes": 140520,
+            "sha256": "6fc08d6170050c53e720662f960475e2c0d9068c74f5ca9b92ffde24502bfb0a",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "changelog.js",
+            "status": 200,
+            "bytes": 4344,
+            "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "changelog.css",
+            "status": 200,
+            "bytes": 18431,
+            "sha256": "264ed94c224f8dcc943824ea221cdb56ac3eaa0b0b74c1291c5c07f5a03fc30d",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "style.css",
+            "status": 200,
+            "bytes": 33474,
+            "sha256": "3ac6cd52f1f5a884cf9fd7b079847b0b2e721585ac405598b055954aced223f4",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "site-header.css",
+            "status": 200,
+            "bytes": 6334,
+            "sha256": "cdcef719e45dd8b2e60ac23e4f31c772d042ec958bb076c5445bdd152c68e3de",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "visit-counter.css",
+            "status": 200,
+            "bytes": 6743,
+            "sha256": "4e48341f90f394d3434187f6624f8900debbd5d6ca8da8e84fc8c24a2f004c6c",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "visit-counter.js",
+            "status": 200,
+            "bytes": 5786,
+            "sha256": "630332089e0b540eb9b55b4d4095fe96f145588bcab96441308ddb9516747661",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "aiyc.svg",
+            "status": 200,
+            "bytes": 3913,
+            "sha256": "6c9919d43f082026aee9a4a57243f3d12b6ac94b38d68fc3653ef718c3362b50",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "favicon.svg",
+            "status": 200,
+            "bytes": 370,
+            "sha256": "829b051b8ef0a80fa95d7f1909af52af9e4c32bad4ce82c70618a5c901d0719b",
+            "exactPublicSourceMatch": true
+          },
+          {
+            "file": "assets/downloads/desktop-scrapbook.webp",
+            "status": 200,
+            "bytes": 266064,
+            "sha256": "5ac0dc3aa3667b35c68f40ef925a86916fc6ddbecc8274c811045615ec38ae60",
+            "exactPublicSourceMatch": true
+          }
+        ],
+        "render": "production origin covered separately"
+      }
+    },
+    "formalApiChecks": {
+      "ok": true,
+      "passed": 55,
+      "total": 55
+    },
+    "formal": {
+      "result": "PASS",
+      "checkedAt": "2026-10-03T09:57:52.511Z",
+      "targetHost": "xhs.download.brclio.com",
+      "mode": "anonymous-read-only",
+      "remoteWrites": 0,
+      "authenticationRequests": 0,
+      "clientSourceSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+      "webSourceSha": "3e82f45115128da1676006ae1a19963df88ec587",
+      "sourceRevisionsDiffer": true,
+      "buildProof": {
+        "clientSourceSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+        "desktopEvidenceSha256": "e393cc04fe5a82f15dc3c1fea5d85b3e8ac60b8e327b6452ea1db6479f7e362f",
+        "androidEvidenceSha256": "a8fb89082eb1e6623a556b483c2fd24b295a158452a999f2f81683362dd030e8",
+        "installerDigestsMatchBuildProof": true
+      },
+      "download": {
+        "desktopTag": "v2.0.4",
+        "androidTag": "android-v1.0.11",
+        "desktopPublishedDate": "2026.10.03",
+        "androidPublishedDate": "2026.10.03",
+        "sizesMatch": true,
+        "staticLinksMatch": true,
+        "placeholdersRemoved": true
+      },
+      "changelog": {
+        "latestEntry": true,
+        "latestSummary": true,
+        "releaseLinksMatch": true,
+        "historicalArticlesPreserved": 50,
+        "historicalComparison": "exact article bytes from client release source commit"
+      },
+      "newPublicLinks": [
+        {
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.4",
+          "status": 200,
+          "finalHost": "github.com",
+          "expectedBytes": null,
+          "headContentLength": null,
+          "headContentEncoding": "gzip"
+        },
+        {
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.11",
+          "status": 200,
+          "finalHost": "github.com",
+          "expectedBytes": null,
+          "headContentLength": null,
+          "headContentEncoding": "gzip"
+        },
+        {
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.4/Brclio-XHS-2.0.4-mac-arm64.dmg",
+          "status": 200,
+          "finalHost": "release-assets.githubusercontent.com",
+          "expectedBytes": 164104533,
+          "headContentLength": 164104533,
+          "headContentEncoding": null
+        },
+        {
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.4/Brclio-XHS-2.0.4-mac-x64.dmg",
+          "status": 200,
+          "finalHost": "release-assets.githubusercontent.com",
+          "expectedBytes": 171801195,
+          "headContentLength": 171801195,
+          "headContentEncoding": null
+        },
+        {
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.4/Brclio-XHS-2.0.4-windows-x64-setup.exe",
+          "status": 200,
+          "finalHost": "release-assets.githubusercontent.com",
+          "expectedBytes": 143316789,
+          "headContentLength": 143316789,
+          "headContentEncoding": null
+        },
+        {
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.4/Brclio-XHS-2.0.4-windows-x64-portable.exe",
+          "status": 200,
+          "finalHost": "release-assets.githubusercontent.com",
+          "expectedBytes": 143078279,
+          "headContentLength": 143078279,
+          "headContentEncoding": null
+        },
+        {
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.11/Brclio-XHS-Android-1.0.11-release.apk",
+          "status": 200,
+          "finalHost": "release-assets.githubusercontent.com",
+          "expectedBytes": 73148870,
+          "headContentLength": 73148870,
+          "headContentEncoding": null
+        },
+        {
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.11/Brclio-XHS-Android-1.0.11-release.apk.sha256",
+          "status": 200,
+          "finalHost": "release-assets.githubusercontent.com",
+          "expectedBytes": 104,
+          "headContentLength": 104,
+          "headContentEncoding": null
+        }
+      ],
+      "staticChecks": [
+        {
+          "file": "download.html",
+          "status": 200,
+          "bytes": 26111,
+          "sha256": "fb3e71df3b792c82478c4317c7866248f7a56c58f81031debf0c6b30f982d182",
+          "sourceSha256": "ad327a741fdd418e721ed7599fdfd6e40fe1ef927e00459cc1648794200aade0",
+          "publicTransformApplied": true,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "download.js",
+          "status": 200,
+          "bytes": 9796,
+          "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+          "sourceSha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "download.css",
+          "status": 200,
+          "bytes": 23755,
+          "sha256": "c88c11fa656bc0d3c0aa22a6ab98e20e7c389cc8c012c1de435de22215f3e235",
+          "sourceSha256": "c88c11fa656bc0d3c0aa22a6ab98e20e7c389cc8c012c1de435de22215f3e235",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "changelog.html",
+          "status": 200,
+          "bytes": 140520,
+          "sha256": "6fc08d6170050c53e720662f960475e2c0d9068c74f5ca9b92ffde24502bfb0a",
+          "sourceSha256": "6fc08d6170050c53e720662f960475e2c0d9068c74f5ca9b92ffde24502bfb0a",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "changelog.js",
+          "status": 200,
+          "bytes": 4344,
+          "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+          "sourceSha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "changelog.css",
+          "status": 200,
+          "bytes": 18431,
+          "sha256": "264ed94c224f8dcc943824ea221cdb56ac3eaa0b0b74c1291c5c07f5a03fc30d",
+          "sourceSha256": "264ed94c224f8dcc943824ea221cdb56ac3eaa0b0b74c1291c5c07f5a03fc30d",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "style.css",
+          "status": 200,
+          "bytes": 33474,
+          "sha256": "3ac6cd52f1f5a884cf9fd7b079847b0b2e721585ac405598b055954aced223f4",
+          "sourceSha256": "3ac6cd52f1f5a884cf9fd7b079847b0b2e721585ac405598b055954aced223f4",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "site-header.css",
+          "status": 200,
+          "bytes": 6334,
+          "sha256": "cdcef719e45dd8b2e60ac23e4f31c772d042ec958bb076c5445bdd152c68e3de",
+          "sourceSha256": "cdcef719e45dd8b2e60ac23e4f31c772d042ec958bb076c5445bdd152c68e3de",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "visit-counter.css",
+          "status": 200,
+          "bytes": 6743,
+          "sha256": "4e48341f90f394d3434187f6624f8900debbd5d6ca8da8e84fc8c24a2f004c6c",
+          "sourceSha256": "4e48341f90f394d3434187f6624f8900debbd5d6ca8da8e84fc8c24a2f004c6c",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "visit-counter.js",
+          "status": 200,
+          "bytes": 5786,
+          "sha256": "630332089e0b540eb9b55b4d4095fe96f145588bcab96441308ddb9516747661",
+          "sourceSha256": "630332089e0b540eb9b55b4d4095fe96f145588bcab96441308ddb9516747661",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "aiyc.svg",
+          "status": 200,
+          "bytes": 3913,
+          "sha256": "6c9919d43f082026aee9a4a57243f3d12b6ac94b38d68fc3653ef718c3362b50",
+          "sourceSha256": "6c9919d43f082026aee9a4a57243f3d12b6ac94b38d68fc3653ef718c3362b50",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "favicon.svg",
+          "status": 200,
+          "bytes": 370,
+          "sha256": "829b051b8ef0a80fa95d7f1909af52af9e4c32bad4ce82c70618a5c901d0719b",
+          "sourceSha256": "829b051b8ef0a80fa95d7f1909af52af9e4c32bad4ce82c70618a5c901d0719b",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        },
+        {
+          "file": "assets/downloads/desktop-scrapbook.webp",
+          "status": 200,
+          "bytes": 266064,
+          "sha256": "5ac0dc3aa3667b35c68f40ef925a86916fc6ddbecc8274c811045615ec38ae60",
+          "sourceSha256": "5ac0dc3aa3667b35c68f40ef925a86916fc6ddbecc8274c811045615ec38ae60",
+          "publicTransformApplied": false,
+          "exactSourceMatch": true
+        }
+      ],
+      "render": {
+        "ok": true,
+        "origin": "https://xhs.download.brclio.com",
+        "webSourceSha": "3e82f45115128da1676006ae1a19963df88ec587",
+        "clientSourceSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+        "readOnly": true,
+        "reports": [
+          {
+            "page": "download",
+            "width": 1440,
+            "scrollWidth": 1440,
+            "viewportWidth": 1440,
+            "desktopVersion": "v2.0.4",
+            "androidVersion": "v1.0.11",
+            "assetSizes": {
+              "mac-arm64": "164.1 MB",
+              "mac-x64": "171.8 MB",
+              "windows-setup": "143.3 MB",
+              "windows-portable": "143.1 MB"
+            },
+            "androidSize": "73.1 MB",
+            "loadedStyleSheets": true,
+            "imagesLoaded": true,
+            "entryPresent": false,
+            "entryTitle": null,
+            "rendererErrors": [],
+            "screenshotSha256": "201877be18c116d5336d4df62e13ed9b43199a62a226243fb3edceb0788403ff"
+          },
+          {
+            "page": "download",
+            "width": 390,
+            "scrollWidth": 390,
+            "viewportWidth": 390,
+            "desktopVersion": "v2.0.4",
+            "androidVersion": "v1.0.11",
+            "assetSizes": {
+              "mac-arm64": "164.1 MB",
+              "mac-x64": "171.8 MB",
+              "windows-setup": "143.3 MB",
+              "windows-portable": "143.1 MB"
+            },
+            "androidSize": "73.1 MB",
+            "loadedStyleSheets": true,
+            "imagesLoaded": true,
+            "entryPresent": false,
+            "entryTitle": null,
+            "rendererErrors": [],
+            "screenshotSha256": "676fe5d37421cc5eb68ca81ff9d569e5bb89dfce3434b9cfe7190f2ae6f67883"
+          },
+          {
+            "page": "download",
+            "width": 320,
+            "scrollWidth": 320,
+            "viewportWidth": 320,
+            "desktopVersion": "v2.0.4",
+            "androidVersion": "v1.0.11",
+            "assetSizes": {
+              "mac-arm64": "164.1 MB",
+              "mac-x64": "171.8 MB",
+              "windows-setup": "143.3 MB",
+              "windows-portable": "143.1 MB"
+            },
+            "androidSize": "73.1 MB",
+            "loadedStyleSheets": true,
+            "imagesLoaded": true,
+            "entryPresent": false,
+            "entryTitle": null,
+            "rendererErrors": [],
+            "screenshotSha256": "82f8736752cad447910f1b577cb22811abb2158de0c95b60a3772931d368f973"
+          },
+          {
+            "page": "changelog",
+            "width": 1440,
+            "scrollWidth": 1440,
+            "viewportWidth": 1440,
+            "desktopVersion": null,
+            "androidVersion": null,
+            "assetSizes": {},
+            "androidSize": null,
+            "loadedStyleSheets": true,
+            "imagesLoaded": true,
+            "entryPresent": true,
+            "entryTitle": "系统代理优先，内置更新代理可手动关闭",
+            "queries": [
+              {
+                "term": "v2.0.4",
+                "visible": 1,
+                "newEntryVisible": true
+              },
+              {
+                "term": "Android 1.0.11",
+                "visible": 1,
+                "newEntryVisible": true
+              }
+            ],
+            "rendererErrors": [],
+            "screenshotSha256": "b031aa6e55de0794c91d57e73f1d34870a2721a15a11c17f0e192d7e295b0f95"
+          },
+          {
+            "page": "changelog",
+            "width": 390,
+            "scrollWidth": 390,
+            "viewportWidth": 390,
+            "desktopVersion": null,
+            "androidVersion": null,
+            "assetSizes": {},
+            "androidSize": null,
+            "loadedStyleSheets": true,
+            "imagesLoaded": true,
+            "entryPresent": true,
+            "entryTitle": "系统代理优先，内置更新代理可手动关闭",
+            "queries": [
+              {
+                "term": "v2.0.4",
+                "visible": 1,
+                "newEntryVisible": true
+              },
+              {
+                "term": "Android 1.0.11",
+                "visible": 1,
+                "newEntryVisible": true
+              }
+            ],
+            "rendererErrors": [],
+            "screenshotSha256": "0c504818c16f698ea4883081dfcec13fc02428a590e59e68c5e7551250bbc28f"
+          },
+          {
+            "page": "changelog",
+            "width": 320,
+            "scrollWidth": 320,
+            "viewportWidth": 320,
+            "desktopVersion": null,
+            "androidVersion": null,
+            "assetSizes": {},
+            "androidSize": null,
+            "loadedStyleSheets": true,
+            "imagesLoaded": true,
+            "entryPresent": true,
+            "entryTitle": "系统代理优先，内置更新代理可手动关闭",
+            "queries": [
+              {
+                "term": "v2.0.4",
+                "visible": 1,
+                "newEntryVisible": true
+              },
+              {
+                "term": "Android 1.0.11",
+                "visible": 1,
+                "newEntryVisible": true
+              }
+            ],
+            "rendererErrors": [],
+            "screenshotSha256": "c324da9ba38436ac52c3d5d31981323f711b4a1a37472f69ef95c53d18a80998"
+          }
+        ]
+      }
+    }
+  },
+  "backend": {
+    "result": "PASS",
+    "mode": "anonymous-read-only",
+    "writes": 0,
+    "enabled": true,
+    "revision": 1,
+    "sources": 1,
+    "firstSelectedSourceMatch": true,
+    "noStore": true,
+    "checkedAt": "2026-10-03T09:30:33.332Z"
+  },
+  "verificationLimits": {
+    "userInstalledApplicationModified": false,
+    "userInstalledVersionVerifiedAfterThisPublication": false,
+    "localFullInstallerDownloadRepeated": false,
+    "installerBytesVerified": "Native CI and strict publisher hashed complete immutable artifacts; public release API digests, checksum manifests and anonymous installer HEAD responses match them."
+  }
+}

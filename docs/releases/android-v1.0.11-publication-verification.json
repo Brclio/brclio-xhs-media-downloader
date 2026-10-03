@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "version": "1.0.11",
+  "versionCode": 10011,
+  "sourceSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+  "verifiedAt": "2026-10-03T10:00:27.260065+00:00",
+  "scope": {
+    "purpose": "Publish system HTTP/PAC and VPN precedence, persistent manual internal-proxy stop, and operation-scoped update transport",
+    "previousVersion": "1.0.10"
+  },
+  "nativeBuild": {
+    "id": 37113136436,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37113136436",
+    "headSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 111174763494,
+        "name": "build",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 111175045809,
+        "name": "upgrade-emulator",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 111175958978,
+        "name": "publish",
+        "status": "completed",
+        "conclusion": "skipped"
+      }
+    ]
+  },
+  "publication": {
+    "run": {
+      "id": 37113900428,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37113900428",
+      "headSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 111176872641,
+          "name": "publish",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "strictRunTagSourceArtifactAndUploadedBytesGatesPassed": true,
+    "provenance": {
+      "schemaVersion": 1,
+      "repository": "Brclio/brclio-xhs-media-downloader",
+      "sourceCommit": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+      "tags": {
+        "desktop": {
+          "name": "v2.0.4",
+          "commit": "0727258c54d0c8ef45e791c7490c9654856b60dd"
+        },
+        "android": {
+          "name": "android-v1.0.11",
+          "commit": "0727258c54d0c8ef45e791c7490c9654856b60dd"
+        }
+      },
+      "runs": {
+        "desktop": {
+          "id": 37113135515,
+          "workflowName": "Desktop installers",
+          "workflowId": 362432997,
+          "headSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11270846768,
+              "name": "Brclio-XHS-mac-arm64",
+              "bytes": 327289007,
+              "digest": "sha256:6cbb136bcc236ff020f1dc715f6f03cd09c43fccfa83dc5fb0f031959c897e47"
+            },
+            {
+              "id": 11271256517,
+              "name": "Brclio-XHS-mac-intel",
+              "bytes": 342801665,
+              "digest": "sha256:7a5ade00b68d50cc82fad5fc89f9912f719da7a0a5ddf9a8cefc58c7864b0e75"
+            },
+            {
+              "id": 11271280930,
+              "name": "Brclio-XHS-windows-x64",
+              "bytes": 286417599,
+              "digest": "sha256:5170d3ffa947ed7c582e9b407294b784b44e69f5ccf585efa2aa5b8dbd3fd407"
+            }
+          ]
+        },
+        "android": {
+          "id": 37113136436,
+          "workflowName": "Android signed release",
+          "workflowId": 368644334,
+          "headSha": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+          "runAttempt": 1,
+          "status": "completed",
+          "conclusion": "success",
+          "artifacts": [
+            {
+              "id": 11270876731,
+              "name": "Android-release-37113136436-1",
+              "bytes": 72531542,
+              "digest": "sha256:c884d20ef57f6fc35e9de133a14bab9e54414882606f939b0ab2fcea44020513"
+            }
+          ]
+        }
+      },
+      "provenanceCheckedAt": "2026-10-03T09:41:40.440Z",
+      "publisherCheckedAt": {
+        "desktop": "2026-10-03T09:42:28.237Z",
+        "android": "2026-10-03T09:42:41.537Z"
+      },
+      "publicMetadataCheckedAt": "2026-10-03T09:42:42.244Z"
+    },
+    "evidenceArtifact": {
+      "id": 11271116955,
+      "name": "publication-evidence-37113900428-1",
+      "digest": "sha256:46aafe1d06c5428623dee6686733ef29c87ae0b94f83676e884468396b2af3c7"
+    }
+  },
+  "publicRelease": {
+    "id": 402440585,
+    "tag_name": "android-v1.0.11",
+    "html_url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.11",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-10-03T09:42:39Z"
+  },
+  "publicReadback": {
+    "result": "PASS",
+    "version": "1.0.11",
+    "tag": "android-v1.0.11",
+    "sourceCommit": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+    "sourceDirty": false,
+    "versionCode": 10011,
+    "apk": {
+      "name": "Brclio-XHS-Android-1.0.11-release.apk",
+      "bytes": 73148870,
+      "sha256": "ed1fe139b4ded221fadbd31bf141b5c44cabf5f67f2ffd21cec6d847aa905779"
+    },
+    "signingCertificateMatches": true,
+    "emulatorUpgrade": {
+      "verifiedAt": "2026-10-03T09:35:29.231Z",
+      "method": "adb install -r",
+      "apiLevel": 35,
+      "sourceCommit": "0727258c54d0c8ef45e791c7490c9654856b60dd",
+      "apkSha256": "ed1fe139b4ded221fadbd31bf141b5c44cabf5f67f2ffd21cec6d847aa905779",
+      "targetVersion": "1.0.11",
+      "targetVersionCode": 10011,
+      "baselineVersion": "1.0.2",
+      "baselineVersionCode": 10002,
+      "signaturesVerified": true,
+      "oldAndNewLaunchVerified": true,
+      "uidPreserved": true,
+      "firstInstallTimePreserved": true,
+      "userSettingPreserved": true,
+      "updateCheckUiVerified": true,
+      "inAppInstallerConfirmationTested": false,
+      "manualFallbackFixtureVerified": true,
+      "vipCommunityVerified": true
+    },
+    "publicChecksumFilesVerified": [
+      "Brclio-XHS-Android-1.0.11-release.apk.sha256",
+      "SHA256SUMS.txt"
+    ],
+    "publicApkHeadStatus": 200,
+    "publicAssetDigestMatches": true,
+    "publicFullFileReadback": "Successful strict publisher downloaded and revalidated all four public Android assets",
+    "checkedAt": "2026-10-03T09:47:41.539Z",
+    "userDeviceInstallationPerformed": false
+  },
+  "website": {
+    "result": "PASS",
+    "deploymentSourceCommit": "3e82f45115128da1676006ae1a19963df88ec587",
+    "downloadUrl": "https://xhs.download.brclio.com/download",
+    "versionAndSizeVerified": true,
+    "formalApiChecks": {
+      "ok": true,
+      "passed": 55,
+      "total": 55
+    },
+    "pagesApiChecks": {
+      "ok": true,
+      "passed": 55,
+      "total": 55
+    },
+    "detailedSharedEvidence": "v2.0.4-publication-verification.json#website"
+  },
+  "backend": {
+    "result": "PASS",
+    "mode": "anonymous-read-only",
+    "writes": 0,
+    "enabled": true,
+    "revision": 1,
+    "sources": 1,
+    "firstSelectedSourceMatch": true,
+    "noStore": true,
+    "checkedAt": "2026-10-03T09:30:33.332Z"
+  },
+  "verificationLimits": {
+    "userDeviceInstallationPerformed": false,
+    "localFullApkDownloadRepeated": false,
+    "publicFullFileReadbackPerformedBySuccessfulStrictPublisher": true,
+    "inAppInstallerConfirmationTested": false,
+    "emulatorUpgradeMethod": "adb install -r"
+  }
+}
