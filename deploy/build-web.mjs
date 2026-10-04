@@ -10,6 +10,7 @@ export const PUBLIC_FILES = [
   'feedback.html', 'feedback.css', 'feedback.js',
   'product.html', 'product.css', 'product.js',
   'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js',
+  'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js',
   'learn.html', 'learn.css', 'learn.js',
   'vip.html', 'vip.css', 'vip.js',
   'membership.html', 'membership.css', 'membership.js',

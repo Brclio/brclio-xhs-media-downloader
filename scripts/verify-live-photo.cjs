@@ -14,6 +14,12 @@ const root = path.resolve(__dirname, '..');
 const staticRoot = process.argv.includes('--built') ? path.join(root, 'dist-web') : root;
 const engineOnly = process.argv.includes('--engine-only');
 const uiOnly = process.argv.includes('--ui-only');
+const webOnly = process.argv.includes('--web-only');
+const requestedOrigin = process.argv.find(value => value.startsWith('--web-origin='))?.slice('--web-origin='.length);
+const publicOrigin = requestedOrigin ? new URL(requestedOrigin).origin : null;
+if (requestedOrigin && (!/^https?:$/.test(new URL(requestedOrigin).protocol) || publicOrigin !== requestedOrigin.replace(/\/$/, ''))) {
+  throw new Error('--web-origin must be an HTTP(S) origin without a path.');
+}
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'brclio-live-photo-'));
 const screenshots = path.join(temporary, 'screenshots');
 fs.mkdirSync(screenshots);
@@ -23,7 +29,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'xhs-app', privileges: {
 } }]);
 app.commandLine.appendSwitch('force-prefers-reduced-motion');
 let win, server, finished = false;
-const evidence = { artifacts: [], checks: [], screenshots, temporary };
+const evidence = { artifacts: [], checks: [], screenshots, temporary, publicOrigin };
 const timeout = setTimeout(() => void finish(1, new Error('LIVE_PHOTO_VERIFICATION_TIMEOUT')), 240_000);
 async function finish(code, error) {
   if (finished) return;
@@ -76,7 +82,18 @@ function nativeVerifier() {
   fs.writeFileSync(source, `import Foundation
 import Photos
 import AppKit
+import ImageIO
 let urls = CommandLine.arguments.dropFirst().map { URL(fileURLWithPath: $0) }
+guard let stillURL = urls.first,
+      let image = CGImageSourceCreateWithURL(stillURL as CFURL, nil),
+      CGImageSourceGetCount(image) == 1,
+      let decoded = CGImageSourceCreateImageAtIndex(image, 0, nil),
+      let properties = CGImageSourceCopyPropertiesAtIndex(image, 0, nil) as? [String: Any],
+      let apple = properties[kCGImagePropertyMakerAppleDictionary as String] as? [String: Any],
+      let identifier = apple["17"] as? String,
+      let expected = ProcessInfo.processInfo.environment["LIVE_PHOTO_UUID"] else { exit(2) }
+if identifier != expected || decoded.width < 2 || decoded.height < 2 { exit(3) }
+print("stillDecoded=true width=\\(decoded.width) height=\\(decoded.height) pairing=true type=\\(CGImageSourceGetType(image) ?? \"unknown\" as CFString)")
 var finished = false
 var success = false
 PHLivePhoto.request(withResourceFileURLs: urls, placeholderImage: nil, targetSize: NSSize(width: 320, height: 320), contentMode: .aspectFit) { photo, info in
@@ -117,7 +134,7 @@ app.whenReady().then(async () => {
     return nativeHandler(request);
   });
   const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml',
-    '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
+    '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.wasm': 'application/wasm' };
   server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://127.0.0.1');
     if (url.pathname === '/__engine__.html') {
@@ -136,7 +153,7 @@ app.whenReady().then(async () => {
   win = new BrowserWindow({ show: false, width: 1440, height: 1000,
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false } });
   win.webContents.session.webRequest.onBeforeRequest((details, callback) => callback({
-    cancel: ![origin + '/', 'xhs-app://local/', 'data:', 'blob:'].some(prefix => details.url.startsWith(prefix)),
+    cancel: ![origin + '/', 'xhs-app://local/', 'data:', 'blob:', ...(publicOrigin ? [publicOrigin + '/'] : [])].some(prefix => details.url.startsWith(prefix)),
   }));
   const errors = [];
   evidence.rendererErrors = errors;
@@ -145,6 +162,18 @@ app.whenReady().then(async () => {
   });
   const evaluate = script => win.webContents.executeJavaScript(script, true);
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
+  const download = async (selector, filename, label) => {
+    let downloaded;
+    win.webContents.session.once('will-download', (_event, item) => {
+      item.setSavePath(filename);
+      downloaded = new Promise((resolve, reject) => item.once('done', (_done, status) => {
+        if (status === 'completed') resolve(); else reject(new Error(label + ': download ' + status));
+      }));
+    });
+    await click(selector);
+    await until(() => Boolean(downloaded), label + ': download begins');
+    await downloaded;
+  };
   const capture = async name => {
     await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
     fs.writeFileSync(path.join(screenshots, name + '.png'), (await win.webContents.capturePage()).toPNG());
@@ -222,7 +251,8 @@ app.whenReady().then(async () => {
       assert.ok(Math.abs(artifact.audioPayload.second.frequency - 880) < 8, name + ': second audio second is from source trim 2–3 s');
     }
     if (native) {
-      artifact.nativeRecognition = run(native, [jpg, mov], { timeout: 25_000 });
+      artifact.nativeRecognition = run(native, [jpg, mov], { timeout: 25_000,
+        env: { ...process.env, LIVE_PHOTO_UUID: output.assetIdentifier } });
       assert.match(artifact.nativeRecognition, /recognized=true/, name + ': native Apple Photos recognizes the pair');
     }
     evidence.checks.push(name + ': actual H264 decoder, ffprobe timing/audio/metadata, shared identifier' + (native ? ', native Apple Photos recognition' : ''));
@@ -262,9 +292,13 @@ app.whenReady().then(async () => {
 
   // UI assertions are intentionally performed against the actual page module.
   // No encoder, inspection, or Blob API is stubbed.
-  for (const [surface, pageOrigin] of [['web', origin], ['desktop', 'xhs-app://local']]) {
+  for (const [surface, pageOrigin] of [[publicOrigin ? 'production-web' : 'web', publicOrigin || origin],
+    ...(webOnly ? [] : [['desktop', 'xhs-app://local']])]) {
     await win.loadURL(pageOrigin + '/live.html');
     await until(() => evaluate("document.documentElement.dataset.liveReady === 'true'"), surface + ': UI initialized');
+    await evaluate(`window.liveVerifyRevoked = [];
+      const nativeRevoke = URL.revokeObjectURL.bind(URL);
+      URL.revokeObjectURL = url => { window.liveVerifyRevoked.push(url); nativeRevoke(url); }; undefined`);
     await evaluate(`window.liveVerifyFixtures = ${JSON.stringify(fixtures)};
       window.liveVerifyUpload = names => { const transfer = new DataTransfer(); for (const name of names) {
         const f = window.liveVerifyFixtures[name]; transfer.items.add(new File([Uint8Array.from(atob(f.base64), c => c.charCodeAt(0))], f.name, { type: f.type })); }
@@ -298,33 +332,60 @@ app.whenReady().then(async () => {
     await evaluate("document.querySelector('#result-panel').scrollIntoView({ block: 'center', behavior: 'instant' })");
     await capture(surface + '-390-complete');
     const exported = path.join(temporary, surface + '-ui.zip');
-    let downloaded;
-    win.webContents.session.once('will-download', (_event, item) => {
-      item.setSavePath(exported);
-      downloaded = new Promise((resolve, reject) => item.once('done', (_done, status) => {
-        if (status === 'completed') resolve(); else reject(new Error(surface + ': ZIP download ' + status));
-      }));
-    });
-    await click('#download-live');
-    await until(() => Boolean(downloaded), surface + ': ZIP download begins');
-    await downloaded;
+    await download('#download-live', exported, surface + ': ZIP');
     const entries = run('unzip', ['-Z1', exported]).trim().split('\n');
     assert.equal(entries.length, 3, surface + ': export contains pair and instructions');
-    const jpegName = entries.find(name => /\.JPG$/.test(name));
+    const photoName = entries.find(name => /\.HEIC$/.test(name));
     const movName = entries.find(name => /\.MOV$/.test(name));
-    assert.ok(jpegName && movName && jpegName.slice(0, -4) === movName.slice(0, -4), surface + ': same-name JPG/MOV pair');
+    assert.ok(photoName && movName && photoName.replace(/\.HEIC$/, '') === movName.replace(/\.MOV$/, ''), surface + ': same-name HEIC/MOV pair');
     assert.ok(entries.some(name => /README.*\.txt$/.test(name)), surface + ': import instructions');
     const extracted = path.join(temporary, surface + '-ui-export');
     fs.mkdirSync(extracted);
     run('unzip', ['-q', exported, '-d', extracted]);
+    for (const [id, filename] of [['download-photo', photoName], ['download-mov', movName]]) {
+      const actualName = await evaluate(`document.querySelector('#${id}').download`);
+      assert.equal(actualName, filename, surface + ': direct download uses the paired filename');
+      const directPath = path.join(temporary, surface + '-direct-' + filename);
+      await download('#' + id, directPath, surface + ': ' + id);
+      assert.deepEqual(fs.readFileSync(directPath), fs.readFileSync(path.join(extracted, filename)), surface + ': direct download and ZIP bytes match');
+    }
     const zipEvidence = { surface, exported, entries };
-    if (native) zipEvidence.nativeRecognition = run(native, [path.join(extracted, jpegName), path.join(extracted, movName)]);
+    if (native) zipEvidence.nativeRecognition = run(native, [path.join(extracted, photoName), path.join(extracted, movName)], {
+      env: { ...process.env, LIVE_PHOTO_UUID: photoName.slice('Brclio-Live-'.length, -'.HEIC'.length) }
+    });
     evidence.checks.push({ name: surface + ': actual ZIP download and native recognition', ...zipEvidence });
+    const previousURLs = await evaluate("['download-live', 'download-photo', 'download-mov'].map(id => document.querySelector('#' + id).href).concat(document.querySelector('#result-video').src)");
+    await evaluate("document.querySelector('#photo-format').value = 'jpeg'; document.querySelector('#photo-format').dispatchEvent(new Event('change', { bubbles: true }));");
+    assert.equal(await evaluate("document.querySelector('#result-panel').hidden"), true, surface + ': format change removes the old result');
+    assert.equal(await evaluate("['download-live', 'download-photo', 'download-mov'].every(id => !document.querySelector('#' + id).hasAttribute('href'))"), true, surface + ': format change clears all downloads');
+    const revoked = await evaluate('window.liveVerifyRevoked');
+    assert.ok(previousURLs.every(url => revoked.includes(url)), surface + ': all four prior output URLs revoked');
+    await evaluate("document.querySelector('#include-audio').checked = false; document.querySelector('#include-audio').dispatchEvent(new Event('change')); document.querySelector('#duration-number').value = '1'; document.querySelector('#duration-number').dispatchEvent(new Event('change'));");
+    await click('#create-live');
+    await until(() => evaluate("!document.querySelector('#result-panel').hidden && !document.querySelector('#create-live').disabled"), surface + ': optional JPEG output');
+    const fallback = await evaluate(`({ format: document.documentElement.dataset.livePhotoFormat,
+      photoName: document.querySelector('#download-photo').download, movName: document.querySelector('#download-mov').download })`);
+    assert.equal(fallback.format, 'jpeg');
+    assert.ok(fallback.photoName.endsWith('.JPG') && fallback.movName.endsWith('.MOV'));
+    assert.equal(fallback.photoName.slice(0, -4), fallback.movName.slice(0, -4));
+    const fallbackPhoto = path.join(temporary, surface + '-optional.jpg'), fallbackMov = path.join(temporary, surface + '-optional.mov');
+    await download('#download-photo', fallbackPhoto, surface + ': optional JPG');
+    await download('#download-mov', fallbackMov, surface + ': optional MOV');
+    assert.deepEqual(Array.from(fs.readFileSync(fallbackPhoto).subarray(0, 2)), [255, 216], surface + ': JPEG choice encodes real JPEG');
+    const fallbackRecognition = native ? run(native, [fallbackPhoto, fallbackMov], {
+      env: { ...process.env, LIVE_PHOTO_UUID: fallback.photoName.slice('Brclio-Live-'.length, -4) }
+    }) : undefined;
+    evidence.checks.push({ name: surface + ': explicit JPEG choice and format-change cleanup', nativeRecognition: fallbackRecognition });
     await click('#clear-files');
     assert.equal(await evaluate("document.querySelector('#result-panel').hidden"), true, surface + ': reset removes prior output');
     evidence.checks.push(surface + ': actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390');
   }
 
+  if (webOnly) {
+    assert.deepEqual(errors, [], 'no renderer errors');
+    evidence.finishedAt = new Date().toISOString();
+    await finish(0); return;
+  }
   // The real desktop shell is loaded with an in-memory bridge. Every bridge
   // function is a disposable fixture; no main process, keychain or login runs.
   win.setContentSize(1440, 1000);

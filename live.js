@@ -7,9 +7,11 @@ const ui = Object.fromEntries([
   'source-meta', 'source-list', 'clear-files', 'settings-fields', 'duration', 'duration-number',
   'video-settings', 'start', 'start-number', 'clip-range', 'key-photo', 'key-photo-label',
   'motion-settings', 'motion', 'audio-settings', 'include-audio', 'audio-hint', 'preview-button',
+  'photo-format', 'photo-format-badge', 'photo-format-hint', 'import-pair-hint',
   'preview-empty', 'source-video', 'source-canvas', 'result-video', 'live-pill', 'preview-caption',
   'create-live', 'cancel-live', 'progress-panel', 'progress-label', 'progress-percent',
-  'live-progress', 'live-status', 'live-error', 'result-panel', 'result-summary', 'download-live'
+  'live-progress', 'live-status', 'live-error', 'result-panel', 'result-summary', 'download-live',
+  'result-format', 'result-pair-hint', 'download-photo', 'download-mov'
 ].map(id => [id, byId(id)]));
 
 const state = {
@@ -39,6 +41,24 @@ function fileUrl(file) {
   if (!state.urls.has(file)) state.urls.set(file, URL.createObjectURL(file));
   return state.urls.get(file);
 }
+function photoFormat() { return ui['photo-format'].value === 'jpeg' ? 'jpeg' : 'heic'; }
+function syncPhotoFormatLabels() {
+  const extension = photoFormat() === 'heic' ? 'HEIC' : 'JPG';
+  const heicUnavailable = photoFormat() === 'heic' && state.support?.heicSupported === false;
+  ui['photo-format-badge'].textContent = extension;
+  const hint = heicUnavailable
+    ? '当前设备无法制作 HEIC，请手动选择 JPEG + MOV，或换用支持 HEIC 的设备。'
+    : `${extension} 是照片部分，MOV 是动态部分；完整实况需要一起保存这两个配对文件。`;
+  if (ui['photo-format-hint'].textContent !== hint) ui['photo-format-hint'].textContent = hint;
+  if (typeof state.support?.message === 'string') {
+    const supportMessage = state.support.supported && heicUnavailable
+      ? '当前设备无法制作所选的 HEIC 格式，可手动选择 JPEG + MOV。'
+      : state.support.message;
+    if (ui['support-note'].textContent !== supportMessage) ui['support-note'].textContent = supportMessage;
+    ui['support-note'].dataset.supported = String(state.support.supported && !heicUnavailable);
+  }
+  ui['import-pair-hint'].textContent = `下载并解压 ZIP，或分别下载同名 .${extension} 与 .MOV。完整实况需要这两个文件，不要只保留照片或视频。`;
+}
 function releaseSources() {
   stopPreview();
   ui['source-video'].removeAttribute('src');
@@ -55,8 +75,12 @@ function resetResult() {
   state.resultUrls = [];
   ui['result-panel'].hidden = true;
   ui['result-video'].hidden = true;
-  ui['download-live'].removeAttribute('href');
+  for (const id of ['download-live', 'download-photo', 'download-mov']) {
+    ui[id].removeAttribute('href');
+    ui[id].removeAttribute('download');
+  }
   document.documentElement.dataset.liveResult = 'none';
+  delete document.documentElement.dataset.livePhotoFormat;
 }
 function audioRequired() {
   return state.metadata?.kind === 'video' && state.metadata.hasAudio !== false && ui['include-audio'].checked;
@@ -72,6 +96,7 @@ function updateControls() {
   ui['preview-button'].disabled = busy || !loaded
     || (state.metadata?.kind === 'video' && ui['source-video'].readyState < 1);
   ui['create-live'].disabled = busy || !loaded || !state.support?.supported
+    || (photoFormat() === 'heic' && state.support.heicSupported === false)
     || (audioRequired() && !state.support.audioSupported);
   ui['create-live'].textContent = state.busy === 'generating' ? '正在制作…' : '制作实况照片 ↗';
   ui['cancel-live'].hidden = !busy;
@@ -81,6 +106,7 @@ function updateControls() {
       || (button.dataset.action === 'down' && Number(button.dataset.index) === state.files.length - 1);
   });
   document.documentElement.dataset.liveState = state.busy || (loaded ? 'ready' : 'empty');
+  syncPhotoFormatLabels();
 }
 function setProgress({ progress = 0, message = '正在制作…' } = {}) {
   const value = clamp(Number(progress) || 0, 0, 1);
@@ -368,38 +394,63 @@ async function generate() {
   const controller = new AbortController();
   state.controller = controller;
   state.busy = 'generating';
+  const requestedPhotoFormat = photoFormat();
   setProgress({ message: '准备制作实况…' });
   updateControls();
   try {
     const result = await createLivePhoto({
       files: [...state.files], start: state.start, duration: state.duration,
       keyPhotoTime: state.keyPhotoTime, motion: ui['motion'].value,
+      photoFormat: requestedPhotoFormat,
       includeAudio: ui['include-audio'].checked, signal: controller.signal,
       onProgress: progress => { if (revision === state.revision && !controller.signal.aborted) setProgress(progress); }
     });
     if (controller.signal.aborted || revision !== state.revision) return;
-    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
-    const stem = `Brclio-Live-${stamp}`;
+    const expectedExtension = requestedPhotoFormat === 'heic' ? 'HEIC' : 'JPG';
+    const extension = String(result.photoExtension || '').toUpperCase();
+    if (!(result.photo instanceof Uint8Array) || extension !== expectedExtension
+      || result.photoFormat !== requestedPhotoFormat) {
+      throw new Error('生成的照片格式与所选格式不一致，请重新制作。');
+    }
+    const assetIdentifier = String(result.assetIdentifier || '');
+    if (!/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(assetIdentifier)) {
+      throw new Error('无法确认实况配对标识，请重新制作。');
+    }
+    const stem = `Brclio-Live-${assetIdentifier}`;
     const readme = new TextEncoder().encode('\uFEFF' + [
       'Brclio 实况照片 · 导入说明', '',
       `实况时长：${seconds(result.duration)} 秒`, `尺寸：${result.width} × ${result.height}`,
       `封面：片段内 ${seconds(result.keyPhotoTime)} 秒`, '',
-      `1. 解压 ZIP，保留同名的 ${stem}.JPG 与 ${stem}.MOV。`,
+      `照片格式：${extension}`, `配对标识：${assetIdentifier}`, '',
+      `1. 解压 ZIP，或分别下载并保留同名的 ${stem}.${extension} 与 ${stem}.MOV。`,
       '2. 在 Mac「照片」选择「文件 → 导入」，同时选中这一对文件。',
       '3. 检查导入结果是否显示 LIVE，并长按或播放确认动态内容。',
       '4. 需要同步到 iPhone 时，在两台设备上开启同一账号的 iCloud 照片，并等待同步。', '',
       'ZIP 下载到手机的文件夹，不会自动存入相册或自动变成实况。',
+      `完整实况需要 ${extension} 照片与 MOV 动态文件，不能只保留其中一个。`,
       '导入与识别结果取决于系统和相册版本；请保留原始配对文件。', ''
     ].join('\n'));
     const zip = makeZipBlob([
-      { name: `${stem}.JPG`, data: result.jpeg }, { name: `${stem}.MOV`, data: result.mov },
+      { name: `${stem}.${extension}`, data: result.photo }, { name: `${stem}.MOV`, data: result.mov },
       { name: 'README.txt', data: readme }
     ]);
     const zipUrl = URL.createObjectURL(zip);
+    state.resultUrls.push(zipUrl);
+    const photoUrl = URL.createObjectURL(new Blob([result.photo], { type: result.photoMimeType }));
+    state.resultUrls.push(photoUrl);
+    const movUrl = URL.createObjectURL(new Blob([result.mov], { type: 'video/quicktime' }));
+    state.resultUrls.push(movUrl);
     const previewUrl = URL.createObjectURL(result.previewBlob);
-    state.resultUrls = [zipUrl, previewUrl];
+    state.resultUrls.push(previewUrl);
     ui['download-live'].href = zipUrl;
     ui['download-live'].download = `${stem}.zip`;
+    ui['download-photo'].href = photoUrl;
+    ui['download-photo'].download = `${stem}.${extension}`;
+    ui['download-photo'].textContent = `下载 ${extension} 照片 ↓`;
+    ui['download-mov'].href = movUrl;
+    ui['download-mov'].download = `${stem}.MOV`;
+    ui['result-format'].textContent = `${extension} + MOV`;
+    ui['result-pair-hint'].textContent = `完整实况需要同名 ${extension} 与 MOV 两个文件；ZIP 同时包含配对文件与导入说明。`;
     ui['result-video'].src = previewUrl;
     ui['result-video'].load();
     ui['result-video'].hidden = false;
@@ -408,11 +459,12 @@ async function generate() {
     ui['preview-empty'].hidden = true;
     ui['result-panel'].hidden = false;
     ui['preview-caption'].textContent = '制作完成 · 播放预览，或下载配对文件';
-    ui['result-summary'].textContent = `${seconds(result.duration)} 秒 · ${result.width} × ${result.height} · ZIP ${bytesLabel(zip.size)}`;
+    ui['result-summary'].textContent = `${extension} + MOV · ${seconds(result.duration)} 秒 · ${result.width} × ${result.height} · ZIP ${bytesLabel(zip.size)}`;
     document.documentElement.dataset.liveResult = 'ready';
-    setStatus('已生成 JPG 与 MOV 配对文件。下载后按下方说明导入相册。');
+    document.documentElement.dataset.livePhotoFormat = result.photoFormat;
+    setStatus(`已生成 ${extension} 与 MOV 配对文件。可下载完整 ZIP，或分别保存这两个同名文件后一起导入相册。`);
   } catch (error) {
-    if (revision === state.revision && error?.name !== 'AbortError') { showError(error); showCover(); }
+    if (revision === state.revision && error?.name !== 'AbortError') { resetResult(); showError(error); showCover(); }
   } finally {
     if (revision === state.revision) {
       state.busy = null;
@@ -450,6 +502,12 @@ for (const id of ['start', 'start-number']) ui[id].addEventListener(id === 'star
 ui['key-photo'].addEventListener('input', event => settingChanged('keyPhotoTime', event.target.value));
 ui['motion'].addEventListener('change', () => settingChanged());
 ui['include-audio'].addEventListener('change', () => settingChanged());
+ui['photo-format'].addEventListener('change', () => {
+  if (state.busy) return;
+  syncPhotoFormatLabels();
+  if (state.metadata) settingChanged();
+  else { resetResult(); clearError(); updateControls(); }
+});
 ui['preview-button'].addEventListener('click', playPreview);
 ui['source-video'].addEventListener('loadedmetadata', updateControls);
 ui['source-video'].addEventListener('loadeddata', () => { if (!state.playing) showCover(); });

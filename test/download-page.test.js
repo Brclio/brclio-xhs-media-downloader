@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 const html = await readFile(new URL('../download.html', import.meta.url), 'utf8');
 const script = await readFile(new URL('../download.js', import.meta.url), 'utf8');
+const packageVersion = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 const repository = 'Brclio/brclio-xhs-media-downloader';
 const base = `https://github.com/${repository}/releases`;
 const suffixes = {
@@ -128,7 +129,8 @@ async function runPage({ payload = release(), fetchError, status = 200, navigato
 test('static download anchors point to one complete branded release', () => {
   const current = snapshot(documentFixture());
   const tag = current.versions[0];
-  assert.equal(tag, 'v2.0.6');
+  assert.equal(tag, 'v2.0.7');
+  assert.equal(tag, `v${packageVersion}`);
   for (const [key, suffix] of Object.entries(suffixes)) {
     assert.equal(current.links[key], `${base}/download/${tag}/Brclio-XHS-${tag.slice(1)}-${suffix}`);
     assert.match(current.sizes[key], /^(?:\d+\.\d MB|大小以发布附件为准|发布后同步)$/);

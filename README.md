@@ -2,6 +2,8 @@
 
 v2.0.6 已发布，为 Mac / Windows 桌面更新增加内置代理自动续传重试：下载中断或超时后自动重新连接，实时显示连续失败次数；连续失败 10 次后暂停自动重试，点击“继续下载”或“重试下载”开始新一轮。暂停、退出和手动关闭代理保留已下载进度。三平台构建、公开附件与官网已核验，正式 Mac arm64 包启动和联网检查通过。详见[版本说明](docs/releases/v2.0.6.md)、[公开发布核验](docs/releases/v2.0.6-publication-verification.json)、[官网验收](docs/releases/v2.0.6-web-verification.json)与[更新网络配置](docs/update-proxy-config.md)。Android 保持 v1.0.11。
 
+当前源码的[实况制作更新](docs/live-photo-maker.md)默认导出 HEIC + MOV，可选 JPEG + MOV，并提供照片、MOV 两个直接下载入口及完整 ZIP。两文件使用同一 UUID 文件名与配对标识；HEIC 在本机 Worker 中通过 WebAssembly 版 libheif / Kvazaar 编码，画面来自 8 位 Canvas，不保留源素材的 HDR 或 10 位信息。**这次 HEIC 更新仍待联调与发布，未包含在已发布的 v2.0.6 中。**
+
 v2.0.5 已发布，新增本地[实况制作](docs/live-photo-maker.md)：网页和桌面支持将单张图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整图片顺序、视频片段、封面和声音，导出配对 JPG + MOV ZIP。素材在本机处理，无需会员。Mac arm64、Mac x64、Windows x64 的原生编码验证与安装包构建通过，生产网页已验证图片、视频、声音及实际 ZIP 导出。详见[版本说明与发布附件](docs/releases/v2.0.5.md)、[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37176396468)、[网页验证](docs/releases/v2.0.5-web-verification.json)与[公开发布核验](docs/releases/v2.0.5-publication-verification.json)。Android 仍为 v1.0.11，本次不更新 Android 安装包。
 
 桌面 v2.0.4 与 Android v1.0.11 新增系统代理优先和「关闭软件内置代理」控制：手动关闭状态持续保存，下次明确检查或下载时自动恢复，任务结束后自动关闭。Mac 同时修复同版本重装的临时旧版清理及无法关闭的安装提示。详见 [桌面说明](docs/releases/v2.0.4.md) 与 [Android 说明](docs/releases/android-v1.0.11.md)。
@@ -95,7 +97,9 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 使用步骤、保存规则、打包方式和平台验证情况见 [桌面版说明](desktop/README.md)。主页下载受实际登录状态、作者可见范围和平台访问限制影响；间隔只能降低请求频率，不能保证不触发限制。私密、已删除或当前账号不可见的内容无法下载。
 
-实况制作导出的 ZIP 包含同名 JPG、MOV 和 `README.txt`。解压后一起导入 Mac「照片」，确认 LIVE 标记，再通过同一账号的 iCloud 照片同步到 iPhone；将 ZIP 下载到手机文件夹不会自动存入相册。网页需要设备支持相应的视频编码能力，保留声音还需要音频编码支持，页面会先检查并提示。GIF 以静态图片处理；本轮已验证真实配对文件的 Apple 实况识别，手机原生导入、iCloud 同步全流程及 Windows 设备上的相册识别仍需对应设备验证。制作与原有小红书 JPG + MP4 素材下载分别使用各自入口，详见[实况制作说明](docs/live-photo-maker.md)。
+已发布的实况制作导出 JPG + MOV ZIP；待发布的源码更新默认改为 HEIC + MOV，可选 JPEG，并支持分别下载照片与 MOV。完整 ZIP 包含 `Brclio-Live-<UUID>.HEIC`（JPEG 选项为 `.JPG`）、同名 `.MOV` 和 `README.txt`。完整实况需要保留这两个配对文件；[Apple「照片」导出说明](https://support.apple.com/zh-cn/guide/photos/pht6e157c5f/mac)也说明，导出未修改的实况原片会得到静态图片和视频两个文件。
+
+解压或下载后一起导入 Mac「照片」，确认 LIVE 标记，再通过同一账号的 iCloud 照片同步到 iPhone；将 ZIP 下载到手机文件夹不会自动存入相册。网页需要相应的视频编码能力，保留声音还需要音频编码支持；HEIC 编码需要 Worker / WebAssembly，无法编码时会提示，不会自动改为 JPEG。GIF 以静态图片处理，此次仅增加 HEIC 输出，不承诺 HEIC 源图片的读取。既有 JPG + MOV 已验证 Apple 实况识别；新 HEIC 路径仍在联调，手机原生导入、iCloud 同步全流程及 Windows 设备上的相册识别仍需对应设备验证。制作与原有小红书 JPG + MP4 素材下载分别使用各自入口，详见[实况制作说明](docs/live-photo-maker.md)。
 
 **从旧版升级：** v1.5.0 没有内置更新入口，需要从 Releases 手动安装一次。v1.6.1–v1.7.1 可检查并下载安装包，Mac 仍需把 DMG 内应用拖入“应用程序”；安装 v1.8.0 后，后续更新支持原位覆盖。Windows 沿用安装向导；便携版更新为安装版。v1.6.3 首次更名升级可能保留旧名称应用，确认新版正常后可移除旧应用，数据目录继续沿用。Mac 完整包使用 ad hoc 签名，尚无 Apple Developer ID 签名或公证；Windows 尚无发布者代码签名。外部 Mac 的系统安全提示与 Windows 安装向导仍需在对应用户机器验收。
 

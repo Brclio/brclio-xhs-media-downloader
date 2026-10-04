@@ -6,7 +6,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#fefcf6">
-  <meta name="description" content="用本地图片或视频制作 Live Photo 实况照片。裁剪短片、选择封面，导出配对 JPG 与 MOV 文件。">
+  <meta name="description" content="用本地图片或视频制作 Live Photo 实况照片。裁剪短片、选择封面，导出配对 HEIC 与 MOV，也可选择 JPEG 与 MOV。">
   <title>实况制作 · Brclio</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./live.css">
@@ -24,7 +24,7 @@
   <main class="app-content container" id="main">
     <section class="intro" aria-labelledby="page-title">
       <div><p class="eyebrow">LIVE PHOTO STUDIO</p><h1 id="page-title">把片刻，做成实况。</h1><p>选一段视频，或让几张照片连成一个小故事。素材在本机处理。</p></div>
-      <span class="format-badge">JPG <span aria-hidden="true">＋</span> MOV <span class="badge-label">配对导出</span></span>
+      <span class="format-badge"><span id="photo-format-badge">HEIC</span> <span class="format-plus" aria-hidden="true">＋</span> MOV <span class="badge-label">配对导出</span></span>
     </section>
 
     <p class="support-note" id="support-note" role="status">正在检查实况制作能力…</p>
@@ -68,6 +68,11 @@
               <select id="motion"><option value="zoom">轻微推进</option><option value="still">保持静止</option></select>
               <p class="field-hint">多张图片按上方顺序均分时长；GIF 作为静态图片处理。</p>
             </div>
+            <div class="control-group">
+              <label class="select-label" for="photo-format">导出照片格式</label>
+              <select id="photo-format" aria-describedby="photo-format-hint"><option value="heic" selected>HEIC + MOV（默认）</option><option value="jpeg">JPEG（.JPG）+ MOV</option></select>
+              <p class="field-hint" id="photo-format-hint" role="status" aria-live="polite">HEIC 是照片部分，MOV 是动态部分；完整实况需要一起保存这两个配对文件。</p>
+            </div>
             <div class="audio-settings" id="audio-settings" hidden><label class="checkbox-label"><input id="include-audio" type="checkbox" checked><span>保留视频声音</span></label><p class="field-hint" id="audio-hint">关闭后制作静音实况。</p></div>
           </fieldset>
         </section>
@@ -87,14 +92,14 @@
         <div class="progress-panel" id="progress-panel" hidden><div class="progress-heading"><span id="progress-label">准备素材…</span><output id="progress-percent">0%</output></div><progress id="live-progress" max="1" value="0" aria-labelledby="progress-label"></progress></div>
         <p class="status-message" id="live-status" role="status" aria-live="polite"></p>
         <div class="notice notice-error" id="live-error" role="alert" hidden></div>
-        <div class="result-panel" id="result-panel" hidden><span class="success-label">实况文件已制作</span><p id="result-summary"></p><a class="button button-yellow" id="download-live" download="Brclio-Live-Photo.zip">下载实况 ZIP <span aria-hidden="true">↓</span></a><p class="field-hint">内含配对 JPG、MOV 与导入说明。<a href="#import-help">查看如何存入相册</a></p></div>
+        <div class="result-panel" id="result-panel" hidden><div class="result-heading"><span class="success-label">实况文件已制作</span><span class="result-format" id="result-format">HEIC + MOV</span></div><p id="result-summary"></p><a class="button button-yellow" id="download-live" download="Brclio-Live-Photo.zip">下载完整实况 ZIP <span aria-hidden="true">↓</span></a><div class="direct-downloads" aria-label="分别下载配对文件"><a class="button button-quiet" id="download-photo" download="Brclio-Live-Photo.HEIC">下载 HEIC 照片 <span aria-hidden="true">↓</span></a><a class="button button-quiet" id="download-mov" download="Brclio-Live-Photo.MOV">下载 MOV 视频 <span aria-hidden="true">↓</span></a></div><p class="field-hint"><span id="result-pair-hint">完整实况需要同名 HEIC 与 MOV 两个文件；ZIP 同时包含配对文件与导入说明。</span> <a href="#import-help">查看如何存入相册</a></p></div>
         <p class="export-note">导出后请按说明导入「照片」；将 ZIP 下载到手机文件夹，不会自动变成相册里的实况。</p>
       </section>
     </section>
 
     <section class="import-section" id="import-help" aria-labelledby="import-title">
       <div class="import-heading"><p class="eyebrow">FROM FILES TO PHOTOS</p><h2 id="import-title">让实况，回到相册。</h2><p>实况由一张照片和一段视频配对组成。请保留同名文件，一起导入。</p></div>
-      <ol class="import-steps"><li><span class="step-number">1</span><div><h3>下载并解压 ZIP</h3><p>找到同名的 .JPG 与 .MOV 文件，不要只保留其中一个。</p></div></li><li><span class="step-number">2</span><div><h3>一起导入 Mac「照片」</h3><p>在「照片」中选择「文件 → 导入」，同时选中这一对文件，再检查是否显示 LIVE 标记。</p></div></li><li><span class="step-number">3</span><div><h3>通过 iCloud 同步到 iPhone</h3><p>Mac 与 iPhone 开启同一账号的 iCloud 照片后，等待同步，并在手机相册长按确认。导入结果取决于系统与相册版本。</p></div></li></ol>
+      <ol class="import-steps"><li><span class="step-number">1</span><div><h3>保存完整配对文件</h3><p id="import-pair-hint">下载并解压 ZIP，或分别下载同名 .HEIC 与 .MOV。完整实况需要这两个文件，不要只保留照片或视频。</p></div></li><li><span class="step-number">2</span><div><h3>一起导入 Mac「照片」</h3><p>在「照片」中选择「文件 → 导入」，同时选中这一对文件，再检查是否显示 LIVE 标记。</p></div></li><li><span class="step-number">3</span><div><h3>通过 iCloud 同步到 iPhone</h3><p>Mac 与 iPhone 开启同一账号的 iCloud 照片后，等待同步，并在手机相册长按确认。导入结果取决于系统与相册版本。</p></div></li></ol>
     </section>
   </main>
   <footer class="page-footer container"><a href="./index.html">Brclio <span aria-hidden="true">.</span></a><p>写代码，教编程，做产品。</p><span>© 2026 Brclio</span></footer>

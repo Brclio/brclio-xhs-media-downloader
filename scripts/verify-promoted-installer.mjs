@@ -40,6 +40,7 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   for (const name of ['account-ui.js', 'account-ui.css', 'download.html', 'download.css', 'download.js',
     'changelog.js', 'ios-shortcut.js', 'ios-shortcut.css', 'product.html', 'product.css', 'product.js',
     'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js',
+    'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js', 'assets/vendor/heic/heic-encoder.js',
     'learn.html', 'learn.css', 'learn.js', 'vip.html', 'vip.css', 'vip.js', 'membership.html', 'membership.css', 'membership.js', 'site-header.css', 'desktop/account-client.js',
     'desktop/account-storage.js', 'lib/membership-policy.js', 'desktop/diagnostic-log.js',
     'desktop/feedback-client.js', 'desktop/mac-update.js', 'desktop/mac-architecture.js', 'desktop/mac-install-progress.js',
@@ -88,6 +89,16 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     for (const name of ['assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png']) {
       assert.ok(extract(name).equals(await readFile(path.join(sourceDirectory, name))),
         `Packaged learning asset differs from release tag: ${name}`);
+    }
+  }
+  if (expectedSources.includes('lib/live-photo-heic-encoder.js')) {
+    const base = 'assets/vendor/heic/';
+    const manifest = JSON.parse(await readFile(path.join(sourceDirectory, base + 'provenance.json'), 'utf8'));
+    const names = ['heic-encoder.wasm', 'NOTICE.md', 'provenance.json', ...manifest.notices,
+      ...manifest.libraries.map(library => library.sourceArchive.file), ...manifest.buildSources.map(file => file.file)];
+    for (const name of names) {
+      assert.ok(extract(base + name).equals(await readFile(path.join(sourceDirectory, base + name))),
+        `Packaged HEIC codec or corresponding source differs from review: ${name}`);
     }
   }
   if (expectedSources.includes('vip.html')) {

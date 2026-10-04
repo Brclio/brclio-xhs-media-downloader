@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "purpose": "Encoder-only RGBA to HEIC for local Live Photo covers",
+  "buildDate": "2026-10-04",
+  "toolchain": {
+    "target": "wasm32-unknown-emscripten",
+    "emscripten": "4.0.10",
+    "emscriptenCommit": "b7dc6e5747465580df5984e723b9d1f10d8e804b",
+    "emsdkReleaseSnapshot": "8103ffedfb0c42d231c6af6859a5a1a832260b43",
+    "cmake": "3.31.6",
+    "ninjaDistribution": "1.11.1.3",
+    "ninjaBinary": "1.11.1.git.kitware.jobserver-1"
+  },
+  "libraries": [
+    {
+      "name": "libheif",
+      "version": "1.23.5",
+      "license": "LGPL-3.0-or-later",
+      "repository": "https://github.com/strukturag/libheif",
+      "tag": "v1.23.5",
+      "commit": "413e2a87e6a70b3eccc3a3adc5801179dd2d9e00",
+      "sourceArchive": {
+        "file": "source/libheif-1.23.5.tar.gz",
+        "bytes": 2220568,
+        "sha256": "86b2c12a90b0d59db9cbdb7b212d0ee0d6c280ac3937948cb6c8911dc3b52322"
+      },
+      "modifications": [],
+      "configuration": "Kvazaar encoder only; all decoder plugins disabled; upstream __EMSCRIPTEN_STANDALONE_WASM__ switch disables Embind APIs"
+    },
+    {
+      "name": "Kvazaar",
+      "version": "2.3.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/ultravideo/kvazaar",
+      "tag": "v2.3.2",
+      "commit": "6040962bed5cc68c5ad01234c38c08b8b2822068",
+      "sourceArchive": {
+        "file": "source/kvazaar-2.3.2.tar.gz",
+        "bytes": 599732,
+        "sha256": "52cfc5f6eefa1ed5fd4e9ac695be696783f969883781b6705742134e9f4baca9"
+      },
+      "modifications": []
+    }
+  ],
+  "archives": "git archive --format=tar.gz at the recorded commits; complete unmodified repository trees",
+  "runtime": {
+    "dynamicExecution": false,
+    "filesystem": false,
+    "threading": false,
+    "initialMemoryBytes": 33554432,
+    "maximumMemoryBytes": 268435456,
+    "maximumInputDimension": 1440,
+    "maximumOutputBytes": 20971520,
+    "publicExports": [
+      "_malloc",
+      "_free",
+      "_encode_heic",
+      "_get_result_data",
+      "_get_result_size",
+      "_get_error",
+      "_release_heic"
+    ],
+    "assets": [
+      {
+        "file": "heic-encoder.js",
+        "bytes": 20916,
+        "sha256": "6ab24a00f26b6b877df48444fb344b916571bba5135188beba1134b1cc4b5b80"
+      },
+      {
+        "file": "heic-encoder.wasm",
+        "bytes": 1244949,
+        "sha256": "3b3281af4c463fca86f8a2bd956951df16f91256c9ac3514196b947793af02c0"
+      }
+    ]
+  },
+  "buildSources": [
+    {
+      "file": "build/encode.cpp",
+      "bytes": 4042,
+      "sha256": "6e90e4939c315a91fc5ebeba9cbf62f75f275c751fb3a83fe4cf10a6bba388d0"
+    },
+    {
+      "file": "build/rebuild.sh",
+      "bytes": 3100,
+      "sha256": "2ebc9880e1fbf7338eb153dd9d3e16da316566c087fcd17c36d923907eef5828"
+    }
+  ],
+  "notices": [
+    "LICENSE-Emscripten.txt",
+    "LICENSE-GPL-3.txt",
+    "LICENSE-Kvazaar-extras.txt",
+    "LICENSE-compiler-rt.txt",
+    "LICENSE-kvazaar.txt",
+    "LICENSE-libcxx.txt",
+    "LICENSE-libcxxabi.txt",
+    "LICENSE-libheif.txt",
+    "LICENSE-musl.txt"
+  ],
+  "rebuild": "Activate Emscripten 4.0.10 and run bash assets/vendor/heic/build/rebuild.sh with the documented CMake/Ninja versions. No library source downloads are needed."
+}

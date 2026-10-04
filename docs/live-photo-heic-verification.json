@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "release": "v2.0.7",
+  "status": "local-validation-passed",
+  "date": "2026-10-04",
+  "platform": "macOS arm64",
+  "nodeTests": {
+    "passed": 1010,
+    "skipped": 12
+  },
+  "pythonTests": {
+    "passed": 27
+  },
+  "finalScopedChecks": 93,
+  "heicEncoder": {
+    "fixtureMs": 52.5,
+    "largeMs": 157.79999999701977,
+    "cancellation": true,
+    "cleanup": true,
+    "limits": true,
+    "sizes": {
+      "fixture": 3003,
+      "large": 12959
+    },
+    "strictCsp": "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; img-src blob:; style-src 'none'",
+    "localRequests": [
+      "/",
+      "/lib/live-photo-heic-encoder.js",
+      "/lib/live-photo-heic-worker.js",
+      "/assets/vendor/heic/heic-encoder.js",
+      "/assets/vendor/heic/heic-encoder.wasm"
+    ],
+    "imageIO": {
+      "small": "ImageIO decoded public.heic 320x192 with correct red/blue pixels",
+      "large": "ImageIO decoded public.heic 1440x960 with correct red/blue pixels"
+    }
+  },
+  "nativeCodecs": {
+    "result": "PASS",
+    "platform": "darwin",
+    "support": {
+      "supported": true,
+      "audioSupported": true,
+      "heicSupported": true,
+      "message": "本地制作已就绪。"
+    },
+    "checks": [
+      "JPEG image playback",
+      "JPEG slideshow playback",
+      "HEIC slideshow pair",
+      "native H264/AAC fixture",
+      "HEIC trimmed audio-video pair and playback",
+      "decoded audible PCM",
+      "image/audio/HEIC cancellation cleanup"
+    ],
+    "audioRms": 0.20041444734487293
+  },
+  "actualWebAndDesktopUI": {
+    "builtWeb": true,
+    "checks": [
+      {
+        "name": "web: actual ZIP download and native recognition",
+        "surface": "web",
+        "entries": [
+          "Brclio-Live-f7c0900c-6307-4626-9c8e-d01079adc593.HEIC",
+          "Brclio-Live-f7c0900c-6307-4626-9c8e-d01079adc593.MOV",
+          "README.txt"
+        ],
+        "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.heic\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+      },
+      {
+        "name": "web: explicit JPEG choice and format-change cleanup",
+        "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+      },
+      "web: actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390",
+      {
+        "name": "desktop: actual ZIP download and native recognition",
+        "surface": "desktop",
+        "entries": [
+          "Brclio-Live-4843e3d7-0f99-46e9-93d3-dd55c9efe606.HEIC",
+          "Brclio-Live-4843e3d7-0f99-46e9-93d3-dd55c9efe606.MOV",
+          "README.txt"
+        ],
+        "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.heic\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+      },
+      {
+        "name": "desktop: explicit JPEG choice and format-change cleanup",
+        "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+      },
+      "desktop: actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390",
+      {
+        "name": "actual desktop sidebar/iframe with isolated mocked native bridge; selected tab, compact view, no privileged iframe bridge, generated result preserved across tabs",
+        "url": "xhs-app://local/live.html?source=desktop",
+        "compact": true,
+        "selected": "true",
+        "bridgeAbsent": true,
+        "topOverflow": false,
+        "frameOverflow": false
+      }
+    ],
+    "rendererErrors": []
+  },
+  "jpegCompatibilityFixtures": [
+    {
+      "name": "single-image",
+      "width": 640,
+      "height": 360,
+      "duration": 1.5,
+      "keyPhotoTime": 0.7666666666666667,
+      "assetIdentifier": "e0266604-da62-4dae-8f49-0ad1473cdf22",
+      "decoded": {
+        "width": 640,
+        "height": 360,
+        "duration": 1.5,
+        "currentTime": 0.048787
+      },
+      "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    },
+    {
+      "name": "multi-images",
+      "width": 640,
+      "height": 360,
+      "duration": 3,
+      "keyPhotoTime": 1.5,
+      "assetIdentifier": "04678ddd-427e-4dfc-8f60-edbd9a18d349",
+      "decoded": {
+        "width": 640,
+        "height": 360,
+        "duration": 3,
+        "currentTime": 0.044512
+      },
+      "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    },
+    {
+      "name": "trimmed-audio-video",
+      "width": 640,
+      "height": 360,
+      "duration": 2,
+      "keyPhotoTime": 0.7,
+      "assetIdentifier": "73e1a364-b455-4634-93ce-59230239bf8c",
+      "decoded": {
+        "width": 640,
+        "height": 360,
+        "duration": 2,
+        "currentTime": 0.027958
+      },
+      "audioPayload": {
+        "duration": 2,
+        "first": {
+          "rms": 0.180777322633129,
+          "frequency": 440
+        },
+        "second": {
+          "rms": 0.1795102549401726,
+          "frequency": 880
+        }
+      },
+      "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    },
+    {
+      "name": "portrait-video",
+      "width": 360,
+      "height": 640,
+      "duration": 1.2,
+      "keyPhotoTime": 0.4,
+      "assetIdentifier": "d99db4a9-79e4-465b-96db-d5c67bc231ed",
+      "decoded": {
+        "width": 360,
+        "height": 640,
+        "duration": 1.2,
+        "currentTime": 0.048123
+      },
+      "nativeRecognition": "stillDecoded=true width=360 height=640 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    },
+    {
+      "name": "silent-video",
+      "width": 640,
+      "height": 360,
+      "duration": 1.4,
+      "keyPhotoTime": 0.8,
+      "assetIdentifier": "ea64a74f-3b87-489b-8e60-e6e1c15e950b",
+      "decoded": {
+        "width": 640,
+        "height": 360,
+        "duration": 1.4,
+        "currentTime": 0.046234
+      },
+      "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    }
+  ],
+  "commands": [
+    "npm test",
+    "node --test test/live-photo-heic.test.js",
+    "npm run desktop:verify:live-photo-codecs",
+    "electron scripts/verify-heic-encoder.cjs",
+    "npm run desktop:verify:live-photo -- --built --ui-only",
+    "npm run desktop:verify:live-photo -- --engine-only"
+  ],
+  "limits": [
+    "User Photos library was not changed.",
+    "iPhone device import and full iCloud sync were not verified.",
+    "Windows native encoding is subject to the release CI gate.",
+    "HEIC cover uses 8-bit canvas; source HDR and 10-bit precision are not retained."
+  ]
+}

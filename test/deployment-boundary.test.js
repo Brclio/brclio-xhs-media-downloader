@@ -80,7 +80,8 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   for (const name of ['product.html', 'product.css', 'product.js']) {
     assert.ok(files.includes(name), `product introduction asset is public: ${name}`);
   }
-  for (const name of ['live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js']) {
+  for (const name of ['live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js',
+    'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js']) {
     assert.ok(files.includes(name), `Live Photo maker asset is public: ${name}`);
   }
   for (const name of ['feedback.html', 'feedback.css', 'feedback.js']) {

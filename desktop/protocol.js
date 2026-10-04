@@ -14,6 +14,8 @@ const STATIC_FILES = new Set([
   'ios-shortcut.css', 'ios-shortcut.js',
   'product.html', 'product.css', 'product.js',
   'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js',
+  'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js',
+  'assets/vendor/heic/heic-encoder.js', 'assets/vendor/heic/heic-encoder.wasm',
   'learn.html', 'learn.css', 'learn.js',
   'vip.html', 'vip.css', 'vip.js',
   'membership.html', 'membership.css', 'membership.js',
@@ -22,7 +24,7 @@ const STATIC_FILES = new Set([
 ]);
 const MIME_TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
-  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.wasm': 'application/wasm' };
 const NODE_HANDLERS = { '/api/parse': parseHandler, '/api/image': imageHandler };
 const PYTHON_ROUTES = new Set(['/api/python_parse', '/api/python_image', '/api/python_video']);
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.xhscdn.com https://ci.xiaohongshu.com; media-src 'self' blob: https://*.xhscdn.com; connect-src 'self' https://*.xhscdn.com https://ci.xiaohongshu.com; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'none'";
@@ -126,7 +128,9 @@ export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandle
         'Content-Type': MIME_TYPES[path.extname(name)] || 'application/octet-stream',
         // Only the workspace may embed packaged pages. Embedded content retains
         // the stricter policy and cannot create further frames.
-        'Content-Security-Policy': name === 'index.html' ? CSP.replace("frame-src 'none'", "frame-src 'self'") : CSP,
+        'Content-Security-Policy': name === 'index.html' ? CSP.replace("frame-src 'none'", "frame-src 'self'")
+          : ['live.html', 'lib/live-photo-heic-worker.js'].includes(name)
+            ? CSP.replace("script-src 'self';", "script-src 'self' 'wasm-unsafe-eval';") : CSP,
         'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-cache'
       } });
     } catch (error) {

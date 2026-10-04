@@ -21,11 +21,13 @@ function finish(error, result) {
   app.exit(error ? 1 : 0);
 }
 app.whenReady().then(async () => {
-  const allowed = new Set(['/lib/live-photo-maker.js', '/lib/live-photo-format.js']);
+  const allowed = new Set(['/lib/live-photo-maker.js', '/lib/live-photo-format.js',
+    '/lib/live-photo-heic.js', '/lib/live-photo-heic-encoder.js', '/lib/live-photo-heic-worker.js',
+    '/assets/vendor/heic/heic-encoder.js', '/assets/vendor/heic/heic-encoder.wasm']);
   server = http.createServer((request, response) => {
     if (request.url === '/') { response.writeHead(200, { 'Content-Type': 'text/html' }); response.end('<!doctype html><title>Native Live Photo codecs</title>'); return; }
     if (!allowed.has(request.url)) { response.writeHead(404); response.end(); return; }
-    response.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store' });
+    response.writeHead(200, { 'Content-Type': request.url.endsWith('.wasm') ? 'application/wasm' : 'text/javascript', 'Cache-Control': 'no-store' });
     response.end(fs.readFileSync(path.join(root, request.url.slice(1))));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -43,7 +45,13 @@ app.whenReady().then(async () => {
     const check = (value, message) => { if (!value) throw new Error(message); };
     const support = await maker.checkLivePhotoSupport();
     check(support.supported && support.audioSupported, 'Native H264 and AAC encoding must both be available: ' + JSON.stringify(support));
-    const urls = new Set(), encoders = new Set(), contexts = new Set();
+    check(support.heicSupported, 'Local HEIC worker encoding must be available.');
+    const urls = new Set(), encoders = new Set(), contexts = new Set(), workers = new Set();
+    const NativeWorker = Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(...args) { super(...args); workers.add(this); }
+      terminate() { workers.delete(this); return super.terminate(); }
+    };
     const createURL = URL.createObjectURL.bind(URL), revokeURL = URL.revokeObjectURL.bind(URL);
     URL.createObjectURL = value => { const url = createURL(value); urls.add(url); return url; };
     URL.revokeObjectURL = url => { urls.delete(url); revokeURL(url); };
@@ -73,6 +81,22 @@ app.whenReady().then(async () => {
     const options = { duration: 1, keyPhotoTime: 0.5, includeAudio: false };
     await play(await maker.createLivePhoto({ files: [red], ...options }));
     await play(await maker.createLivePhoto({ files: [red, blue], ...options, motion: 'still' }));
+    const heicPair = async result => {
+      check(result.photoFormat === 'heic' && result.photoExtension === 'HEIC' && result.photoMimeType === 'image/heic', 'HEIC output must declare its actual format.');
+      check(result.heic === result.photo && !result.jpeg, 'HEIC must not silently return JPEG.');
+      const data = result.photo, view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+      check(String.fromCharCode(...data.subarray(4, 8)) === 'ftyp', 'HEIC must be an ISO image container.');
+      const brands = String.fromCharCode(...data.subarray(8, view.getUint32(0)));
+      check(/heic|heix|hevc|hevx/.test(brands), 'HEIC must declare HEVC image compatibility.');
+      // The formatter validates HEVC image items, property associations and
+      // extents again while replacing Exif, so a renamed JPEG cannot pass.
+      const pair = await import('/lib/live-photo-heic.js');
+      pair.pairLivePhotoHeic(data, result.assetIdentifier);
+      check(new TextDecoder().decode(data).includes(result.assetIdentifier), 'HEIC Exif must carry the pairing UUID.');
+      check(new TextDecoder().decode(result.mov).includes(result.assetIdentifier), 'MOV must carry the same pairing UUID.');
+      await play(result);
+    };
+    await heicPair(await maker.createLivePhoto({ files: [red, blue], ...options, photoFormat: 'heic' }));
     // Generate a real native H264 + sine-wave AAC input instead of relying on a
     // platform fixture decoder or a prebuilt stream of unknown provenance.
     const videoSamples = [], audioSamples = []; let videoConfig, audioConfig, failure;
@@ -111,8 +135,8 @@ app.whenReady().then(async () => {
     const source = new File([mov], 'native-audio.mov', { type: 'video/quicktime' });
     const metadata = await maker.inspectLivePhotoFiles([source]);
     check(metadata.kind === 'video' && Math.abs(metadata.duration - 2) < 0.03, 'Native input must load.');
-    const result = await maker.createLivePhoto({ files: [source], start: 0.25, duration: 1, keyPhotoTime: 0.5, includeAudio: true });
-    await play(result);
+    const result = await maker.createLivePhoto({ files: [source], start: 0.25, duration: 1, keyPhotoTime: 0.5, includeAudio: true, photoFormat: 'heic' });
+    await heicPair(result);
     // Read the produced AAC samples and use the native AAC decoder to prove the
     // selected-audio path retained sound, rather than merely adding an empty track.
     const data = result.mov, view = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -149,10 +173,17 @@ app.whenReady().then(async () => {
       finally { clearTimeout(timer); }
     };
     await cancel([red], false); await cancel([source], true);
+    const heicCancel = new AbortController(); let heicAborted = false;
+    try {
+      await maker.createLivePhoto({ files: [red], ...options, photoFormat: 'heic', signal: heicCancel.signal,
+        onProgress: state => { if (state.progress >= 0.92 && !heicAborted) { heicAborted = true; setTimeout(() => heicCancel.abort(), 0); } } });
+      throw new Error('HEIC cancellation unexpectedly completed.');
+    } catch (error) { check(error.name === 'AbortError' && heicAborted, 'HEIC stage must cancel with AbortError.'); }
     check(urls.size === 0, 'Every object URL must be released after success and cancellation.');
     check([...encoders].every(encoder => encoder.state === 'closed'), 'Every native encoder must close.');
     check([...contexts].every(context => context.state === 'closed'), 'Every audio context must close.');
-    return { support, checks: ['image playback', 'slideshow playback', 'native H264/AAC fixture', 'trimmed audio-video playback', 'decoded audible PCM', 'image/audio cancellation cleanup'], audioRms: rms };
+    check(workers.size === 0, 'Every HEIC worker must terminate after success and cancellation.');
+    return { support, checks: ['JPEG image playback', 'JPEG slideshow playback', 'HEIC slideshow pair', 'native H264/AAC fixture', 'HEIC trimmed audio-video pair and playback', 'decoded audible PCM', 'image/audio/HEIC cancellation cleanup'], audioRms: rms };
   })()`, true);
   assert.deepEqual(rendererErrors, [], 'Renderer must have no console errors');
   finish(null, result);

@@ -41,7 +41,7 @@ body.live-embedded .intro h1 { font-size: 24px; }
 .intro h1 { margin-block: 8px 12px; font-family: var(--serif); font-size: clamp(22px, 2.4vw, 30px); line-height: 1.5; font-weight: 750; }
 .intro > div > p:last-child { font-size: 13px; color: var(--ink-light); }
 .format-badge { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 10px; padding: 10px 15px; background: var(--cream-dark); border: 1px solid var(--line); border-radius: 5px; font-size: 13px; font-weight: 650; }
-.format-badge > span:first-child { color: var(--blue); }
+.format-badge .format-plus { color: var(--blue); }
 .badge-label { font-size: 10px; color: var(--ink-light); font-weight: 450; }
 .support-note { font-size: 11px; color: var(--ink-light); padding-block: 16px 24px; }
 .support-note[data-supported="false"] { color: #a93545; }
@@ -125,8 +125,12 @@ progress::-moz-progress-bar { background: var(--blue); }
 .notice { border-radius: 5px; padding: 12px 14px; font-size: 11px; overflow-wrap: anywhere; }
 .notice-error { border: 1px solid #dfbfc2; color: #9c2e3d; background: #faefea; margin-top: 14px; }
 .result-panel { padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--line); }
+.result-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 7px 12px; }
+.result-format { padding: 3px 7px; background: var(--cream-dark); border: 1px solid var(--line); border-radius: 4px; font-size: 9px; color: var(--ink-light); }
 .success-label { font-size: 11px; color: var(--blue-deep); font-weight: 650; }
 .result-panel > p:not(.field-hint) { font-size: 11px; margin-block: 7px 15px; }
+.direct-downloads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 10px; }
+.direct-downloads .button { min-width: 0; padding: 9px 10px; font-size: 11px; gap: 7px; }
 .result-panel .field-hint a { text-decoration: underline; text-underline-offset: 3px; }
 .export-note { color: #686453; font-size: 10px; margin-top: 17px; }
 .import-section { display: grid; grid-template-columns: .7fr 1fr; gap: clamp(28px, 5vw, 70px); border-top: 1px solid var(--line); margin-top: clamp(40px, 6vw, 72px); padding-top: clamp(28px, 4vw, 45px); }

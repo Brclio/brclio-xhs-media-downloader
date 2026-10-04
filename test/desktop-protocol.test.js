@@ -29,13 +29,22 @@ test('desktop protocol serves the cropped membership QR images locally', async (
 });
 
 test('Live Photo maker and its complete local encoding graph are served under the sandbox policy', async () => {
-  for (const name of ['live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js']) {
+  for (const name of ['live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js',
+    'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js', 'assets/vendor/heic/heic-encoder.js']) {
     const response = await handler(new Request(`xhs-app://local/${name}`));
     assert.equal(response.status, 200, name);
     assert.ok((await response.text()).length > 0, name);
     assert.match(response.headers.get('content-security-policy'), /media-src 'self' blob:/);
-    assert.match(response.headers.get('content-security-policy'), /script-src 'self';/);
+    if (['live.html', 'lib/live-photo-heic-worker.js'].includes(name))
+      assert.match(response.headers.get('content-security-policy'), /script-src 'self' 'wasm-unsafe-eval';/);
+    else assert.match(response.headers.get('content-security-policy'), /script-src 'self';/);
   }
+  const wasm = await handler(new Request('xhs-app://local/assets/vendor/heic/heic-encoder.wasm'));
+  assert.equal(wasm.status, 200);
+  assert.equal(wasm.headers.get('content-type'), 'application/wasm');
+  assert.deepEqual(new Uint8Array(await wasm.arrayBuffer()).slice(0, 4), new Uint8Array([0, 97, 115, 109]));
+  const home = await handler(new Request('xhs-app://local/index.html'));
+  assert.doesNotMatch(home.headers.get('content-security-policy'), /wasm-unsafe-eval|script-src[^;]*'unsafe-eval'/);
 });
 
 test('only the workspace can embed its local learning page and all learning assets are packaged', async () => {

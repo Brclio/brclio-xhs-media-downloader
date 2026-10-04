@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 4 日，桌面 v2.0.6 新增内置代理更新自动重试，保留下载进度并实时显示失败次数，连续失败 10 次后等待手动继续。Android 保持 v1.0.11。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 4 日，v2.0.7 实况制作默认导出 HEIC + MOV，可分别下载两文件或完整 ZIP，也可选择 JPEG + MOV。Android 保持 v1.0.11。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -58,7 +58,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次优化桌面版更新：内置代理下载遇到连接中断时自动重试，保留已有进度，实时显示失败次数。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次升级实况导出：默认保存 HEIC + MOV，可分别下载这两个配对文件，也可一次下载完整 ZIP。
             </p>
 
             <div class="release-hero-actions">
@@ -73,18 +73,18 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.6</strong>
+              <strong>v2.0.7</strong>
               <small>2026.10.04 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
                 <strong>Web</strong>
-                <span>下载与实况制作</span>
+                <span>HEIC 实况制作</span>
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>更新自动重试</span>
+                <span>实况两文件下载</span>
               </div>
               <div class="summary-stat">
                 <strong>1.0.11</strong>
@@ -96,8 +96,8 @@
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 内置代理更新自动重试，实时显示连续失败次数；失败 10 次后等待你手动继续，已有下载进度保留。</p>
-            <a class="release-summary-link" href="#update-proxy-retry-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 默认 HEIC + MOV，也可选择 JPEG；完整实况需要保留同名照片与动态视频两个文件。</p>
+            <a class="release-summary-link" href="#live-photo-heic-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.6、自动重试、Android 1.0.11" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.7、HEIC、Android 1.0.11" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,6 +129,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#live-photo-heic-update"><span>v2.0.7</span><strong>HEIC 实况与两文件下载</strong></a>
               <a href="#update-proxy-retry-update"><span>v2.0.6</span><strong>内置代理更新自动重试</strong></a>
               <a href="#live-photo-maker-update"><span>v2.0.5</span><strong>把图片与视频制作成实况</strong></a>
               <a href="#update-proxy-control-update"><span>v2.0.4</span><strong>系统代理优先，内置代理可关闭</strong></a>
@@ -190,6 +191,21 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
+            <article id="live-photo-heic-update" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-04"><span>10.04</span><small>2026 · HEIC 实况</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.7</span><span class="release-badge release-badge-blue">网页 + 桌面</span><span class="release-status">网页 / Mac / Windows</span></div><h3>实况默认 HEIC + MOV，两个文件都能直接保存</h3></div></header>
+                <p class="release-lead">从本地图片、图片组或视频制作实况后，默认导出 HEIC 照片与配对 MOV。可分别下载这两个文件，也可一次保存含导入说明的完整 ZIP；JPEG + MOV 继续作为可选格式。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>保留照片与动态视频的配对</strong>两个文件使用共同的 UUID 名称，内部写入相同配对标识。完整实况需要保留二者，单独保存照片或视频只保留其中一部分。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>继续调整片段、封面与声音</strong>制作 0.5–3 秒实况，可调整图片顺序、视频起点、封面时刻及保留声音或静音。改动素材或格式后清除旧结果，可取消后重新制作。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>本机生成 HEIC 文件</strong>素材在本机处理，HEIC 编码器不需要上传图片。画面来自 8 位 Canvas，不承诺保留 HDR 或 10 位信息；当前增加的是 HEIC 输出，源图片仍需浏览器能够读取。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>一起导入，再确认 LIVE</strong>同时将同名照片与 MOV 导入 Mac「照片」，确认 LIVE 与动态播放后再通过 iCloud 照片同步。手机文件夹中的 ZIP 不会自动存入相册。</p></div>
+                </div>
+                <p class="release-card-note">本机已通过 HEIC 图片组、有声视频、AAC 声音解码、JPEG 兼容与 Worker 取消释放；网页和桌面实际分别下载的文件与 ZIP 一致，macOS 原生接口识别完整实况。安装包由三平台原生构建、打包与更新验证统一把关，核验记录见版本说明。Android 保持 v1.0.11。</p>
+                <div class="release-card-footer"><a href="/live.html">打开实况制作 ↗</a><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.7" target="_blank" rel="noopener noreferrer">桌面版 v2.0.7 说明 ↗</a><a href="/download.html">查看客户端下载 ↗</a><span>HEIC 实况导出 · 2026.10.04</span></div>
+              </div>
+            </article>
             <article id="update-proxy-retry-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-04"><span>10.04</span><small>2026 · 更新重试</small></time></div>
               <div class="release-card">
