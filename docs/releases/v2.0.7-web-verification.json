@@ -1,0 +1,163 @@
+{
+  "version": "2.0.7",
+  "result": "passed",
+  "checkedAt": "2026-10-04T10:24:46.889Z",
+  "origin": "https://xhs.download.brclio.com",
+  "deployment": {
+    "id": "c8b34533",
+    "url": "https://c8b34533.brclio-xhs-pages.pages.dev",
+    "branch": "main",
+    "sourceSha": "7e051649b43080fb2200ab2113226d5289c43ed7"
+  },
+  "releaseSourceSha": "dabc75ce2b4019adcc8bcd68d83cab01afe4c907",
+  "resources": [
+    {
+      "name": "live.html",
+      "bytes": 11244,
+      "sha256": "e31775625d5e2e8fe26baeb54d589ac79336b39272cff4c987972d786e685b7a",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "name": "live.js",
+      "bytes": 27534,
+      "sha256": "8e9469c055832307d850a53ffa3d864aa80c7804623aae60442a7f6e34a0bbf5",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "name": "live.css",
+      "bytes": 14639,
+      "sha256": "2525e30c2ca37f4589befd8a4d001e19a877b85c7856a31928464e2e75502953",
+      "status": 200,
+      "contentType": "text/css; charset=utf-8"
+    },
+    {
+      "name": "lib/archive.js",
+      "bytes": 6890,
+      "sha256": "afde62f237a971f6554354d64d8b8f146a529f530fbc761ffc29174522ab904b",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "name": "lib/live-photo-maker.js",
+      "bytes": 19928,
+      "sha256": "66a768e864d02bf5d0ad50f1d70b909d2f1612119669e4ba3f4e2108a4443aa1",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "name": "lib/live-photo-format.js",
+      "bytes": 16824,
+      "sha256": "e4b2039d7a93170329e8cfbdb8e839aa6642013289f6d228181a27fcc5b57989",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "name": "lib/live-photo-heic.js",
+      "bytes": 19407,
+      "sha256": "633d21486079a16cddd5bca32b3d1d809a40fdaed53703fdf8ca933674318c4d",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "name": "lib/live-photo-heic-encoder.js",
+      "bytes": 2981,
+      "sha256": "87957c8d170d6c1ed132d30ed7f5ea7012ba8c7eba886b6237e1e381cef59650",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "name": "lib/live-photo-heic-worker.js",
+      "bytes": 2169,
+      "sha256": "e510265d91f51a4b687fe0a6030365303d488c02674c9ccce19bce7eedccfe34",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "name": "assets/vendor/heic/heic-encoder.js",
+      "bytes": 20916,
+      "sha256": "6ab24a00f26b6b877df48444fb344b916571bba5135188beba1134b1cc4b5b80",
+      "status": 200,
+      "contentType": "application/javascript"
+    },
+    {
+      "name": "assets/vendor/heic/heic-encoder.wasm",
+      "bytes": 1244949,
+      "sha256": "3b3281af4c463fca86f8a2bd956951df16f91256c9ac3514196b947793af02c0",
+      "status": 200,
+      "contentType": "application/wasm"
+    },
+    {
+      "name": "assets/vendor/heic/NOTICE.md",
+      "bytes": 3847,
+      "sha256": "7d9f4b1fdcb5dc212bf7d0d80d03f264a7a88d0dd4b97e10b6bed212c0710220",
+      "status": 200,
+      "contentType": "text/markdown; charset=utf-8"
+    },
+    {
+      "name": "assets/vendor/heic/provenance.json",
+      "bytes": 3202,
+      "sha256": "17676388ae59fec57a75524af2998fabc1dc1abd9eef7f0e3f19716862bb9143",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "name": "assets/vendor/heic/source/libheif-1.23.5.tar.gz",
+      "bytes": 2220568,
+      "sha256": "86b2c12a90b0d59db9cbdb7b212d0ee0d6c280ac3937948cb6c8911dc3b52322",
+      "status": 200,
+      "contentType": "application/gzip"
+    },
+    {
+      "name": "assets/vendor/heic/source/kvazaar-2.3.2.tar.gz",
+      "bytes": 599732,
+      "sha256": "52cfc5f6eefa1ed5fd4e9ac695be696783f969883781b6705742134e9f4baca9",
+      "status": 200,
+      "contentType": "application/gzip"
+    },
+    {
+      "name": "download.html",
+      "bytes": 26781,
+      "sha256": "f65daae9c5cfe0e05cc7301c0f616937ae6b1dd6d2e6e12c971ca2e809de3367",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "name": "changelog.html",
+      "bytes": 150853,
+      "sha256": "3ca088330d86a7012dac02233dbd519d64d430c9ed20444221105415d683a86b",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8"
+    }
+  ],
+  "checks": [
+    {
+      "name": "production-web: actual ZIP download and native recognition",
+      "surface": "production-web",
+      "entries": [
+        "Brclio-Live-d45d0b2b-4130-4806-886f-b96f4dcac5d7.HEIC",
+        "Brclio-Live-d45d0b2b-4130-4806-886f-b96f4dcac5d7.MOV",
+        "README.txt"
+      ],
+      "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.heic\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    },
+    {
+      "name": "production-web: explicit JPEG choice and format-change cleanup",
+      "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    },
+    "production-web: actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390"
+  ],
+  "rendererErrors": [],
+  "directDownloadsMatchedZipBytes": true,
+  "heicNativeImageIODecoded": true,
+  "heicAndJpegNativePHLivePhotoRecognized": true,
+  "localInputsOnly": true,
+  "androidVersion": "1.0.11",
+  "limits": [
+    "User Photos library was not changed.",
+    "iPhone import and full iCloud sync were not tested.",
+    "WebCodecs browser capability is required for MOV encoding.",
+    "HEIC output uses 8-bit Canvas."
+  ]
+}

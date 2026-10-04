@@ -1,0 +1,574 @@
+{
+  "version": "2.0.7",
+  "tag": "v2.0.7",
+  "sourceSha": "dabc75ce2b4019adcc8bcd68d83cab01afe4c907",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.7",
+  "publishedAt": "2026-10-04T10:17:17Z",
+  "verifiedAt": "2026-10-04T10:26:23.115Z",
+  "assetCount": 11,
+  "result": "PASS",
+  "builds": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "comparedSources": 232,
+      "sourceDirty": false,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "macCodeSigning": "adhoc",
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "comparedSources": 232,
+      "sourceDirty": false,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "macCodeSigning": "adhoc",
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "comparedSources": 232,
+      "sourceDirty": false,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "packagedWindowsUpdateVerified": true,
+      "packagedWindowsPortableVerified": true
+    }
+  ],
+  "updates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "2.0.6",
+      "asset": "Brclio-XHS-2.0.7-mac-arm64.dmg",
+      "bytes": 167436379,
+      "sha256": "dadd235ca6aa3a86e78c261c60dd605fb7bd961d131681a250c77c60dc396d54",
+      "sizeFieldVerified": true
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "2.0.6",
+      "asset": "Brclio-XHS-2.0.7-mac-x64.dmg",
+      "bytes": 175129779,
+      "sha256": "2a216b785792626bd0ecce6ca993349f29af469062adcf53e3d771c2c9ae9500",
+      "sizeFieldVerified": true
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "2.0.6",
+      "asset": "Brclio-XHS-2.0.7-windows-x64-setup.exe",
+      "bytes": 146502687,
+      "sha256": "27ebb747c2d3f3d667decef1a1d817cb51f1a04a53e696155f7ddf2ac8e2c13a",
+      "sizeFieldVerified": true
+    }
+  ],
+  "remoteTag": {
+    "annotated": true,
+    "tagObjectSha": "69ea40f29bf1a09a2b1ff62d4064119912a80691",
+    "resolvedCommit": "dabc75ce2b4019adcc8bcd68d83cab01afe4c907"
+  },
+  "compatibilityAliases": [
+    {
+      "name": "XHS-Downloader-2.0.7-mac-arm64.dmg",
+      "sourceName": "Brclio-XHS-2.0.7-mac-arm64.dmg",
+      "bytes": 167436379,
+      "sha256": "dadd235ca6aa3a86e78c261c60dd605fb7bd961d131681a250c77c60dc396d54",
+      "identicalSizeAndSha256": true
+    },
+    {
+      "name": "XHS-Downloader-2.0.7-mac-x64.dmg",
+      "sourceName": "Brclio-XHS-2.0.7-mac-x64.dmg",
+      "bytes": 175129779,
+      "sha256": "2a216b785792626bd0ecce6ca993349f29af469062adcf53e3d771c2c9ae9500",
+      "identicalSizeAndSha256": true
+    },
+    {
+      "name": "XHS-Downloader-2.0.7-windows-x64-setup.exe",
+      "sourceName": "Brclio-XHS-2.0.7-windows-x64-setup.exe",
+      "bytes": 146502687,
+      "sha256": "27ebb747c2d3f3d667decef1a1d817cb51f1a04a53e696155f7ddf2ac8e2c13a",
+      "identicalSizeAndSha256": true
+    }
+  ],
+  "compatibilityAliasesVerified": true,
+  "remoteDigestsVerified": true,
+  "publicManifestsVerified": true,
+  "publicManifestVerification": {
+    "files": [
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 906,
+        "sha256": "1476796ff98290051b9c63299fb3a49840f3de9e92c70de5fecf278f725ed2d9",
+        "assetDigestMatched": true
+      },
+      {
+        "name": "build-evidence.json",
+        "bytes": 6987,
+        "sha256": "d76c912717e139da4e718561cd0b7d17ab59ff24d59c089a994a4685658421fa",
+        "assetDigestMatched": true
+      }
+    ],
+    "publicRetrieval": "Public Release copies downloaded with GitHub CLI; hashes independently matched to the release asset digests. Anonymous latest and installer availability checked separately."
+  },
+  "authenticatedLatestVerified": true,
+  "anonymousUpdaterVisible": true,
+  "publicInstallerProbes": [
+    {
+      "name": "Brclio-XHS-2.0.7-mac-arm64.dmg",
+      "bytes": 167436379,
+      "sha256": "dadd235ca6aa3a86e78c261c60dd605fb7bd961d131681a250c77c60dc396d54",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 167436379,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 2.615111,
+          "contentLength": 167436379,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "name": "Brclio-XHS-2.0.7-mac-arm64.zip",
+      "bytes": 168356255,
+      "sha256": "8b5dac2c9a43487c892087cc0ef8fa4b2cad7f4ab645d23d52ba20ce455ff0a3",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 168356255,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 3.210924,
+          "contentLength": 168356255,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "name": "Brclio-XHS-2.0.7-mac-x64.dmg",
+      "bytes": 175129779,
+      "sha256": "2a216b785792626bd0ecce6ca993349f29af469062adcf53e3d771c2c9ae9500",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 175129779,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 2.732941,
+          "contentLength": 175129779,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "name": "Brclio-XHS-2.0.7-mac-x64.zip",
+      "bytes": 176151956,
+      "sha256": "5445b976e29a957346fbf1f7b02c97363b29061139f1ee8cc077a34aa2c14389",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 176151956,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 2.397408,
+          "contentLength": 176151956,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "name": "Brclio-XHS-2.0.7-windows-x64-portable.exe",
+      "bytes": 146264181,
+      "sha256": "189024bc97bb9dbd5c68a28fdd45ea2c070b843e9cd114d0bcffe03fc3625388",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 146264181,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 3.330444,
+          "contentLength": 146264181,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "name": "Brclio-XHS-2.0.7-windows-x64-setup.exe",
+      "bytes": 146502687,
+      "sha256": "27ebb747c2d3f3d667decef1a1d817cb51f1a04a53e696155f7ddf2ac8e2c13a",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 146502687,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 2.509366,
+          "contentLength": 146502687,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "name": "XHS-Downloader-2.0.7-mac-arm64.dmg",
+      "bytes": 167436379,
+      "sha256": "dadd235ca6aa3a86e78c261c60dd605fb7bd961d131681a250c77c60dc396d54",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 167436379,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 3.215051,
+          "contentLength": 167436379,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "name": "XHS-Downloader-2.0.7-mac-x64.dmg",
+      "bytes": 175129779,
+      "sha256": "2a216b785792626bd0ecce6ca993349f29af469062adcf53e3d771c2c9ae9500",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 175129779,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 2.594847,
+          "contentLength": 175129779,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    },
+    {
+      "name": "XHS-Downloader-2.0.7-windows-x64-setup.exe",
+      "bytes": 146502687,
+      "sha256": "27ebb747c2d3f3d667decef1a1d817cb51f1a04a53e696155f7ddf2ac8e2c13a",
+      "ok": true,
+      "method": "HEAD",
+      "status": 200,
+      "contentLength": 146502687,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": 200,
+          "exitCode": 0,
+          "redirects": 1,
+          "elapsedSeconds": 2.921094,
+          "contentLength": 146502687,
+          "redirectsTrusted": true
+        }
+      ],
+      "verified": true
+    }
+  ],
+  "workflow": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37194318192",
+    "workflowSha": "dabc75ce2b4019adcc8bcd68d83cab01afe4c907",
+    "event": "push",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "windows-x64",
+        "id": 111412887924,
+        "status": "completed",
+        "conclusion": "success",
+        "acceptanceSteps": [
+          {
+            "name": "Run npm run test:node",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify native Mac replacement and rollback in temporary signed apps",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+            "conclusion": "success"
+          },
+          {
+            "name": "Build complete Mac installers with ad hoc code signatures",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Build complete Windows installers with bundled Python",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify packaged source, native runtime, installers, and checksums",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify native image clipboard and multi-file paste",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify retry and update controls in the real desktop renderer",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "mac-arm64",
+        "id": 111412888068,
+        "status": "completed",
+        "conclusion": "success",
+        "acceptanceSteps": [
+          {
+            "name": "Run npm run test:node",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify native Mac replacement and rollback in temporary signed apps",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+            "conclusion": "success"
+          },
+          {
+            "name": "Build complete Mac installers with ad hoc code signatures",
+            "conclusion": "success"
+          },
+          {
+            "name": "Build complete Windows installers with bundled Python",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Verify packaged source, native runtime, installers, and checksums",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Verify native image clipboard and multi-file paste",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify retry and update controls in the real desktop renderer",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "mac-intel",
+        "id": 111412888076,
+        "status": "completed",
+        "conclusion": "success",
+        "acceptanceSteps": [
+          {
+            "name": "Run npm run test:node",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify native Mac replacement and rollback in temporary signed apps",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+            "conclusion": "success"
+          },
+          {
+            "name": "Build complete Mac installers with ad hoc code signatures",
+            "conclusion": "success"
+          },
+          {
+            "name": "Build complete Windows installers with bundled Python",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Verify packaged source, native runtime, installers, and checksums",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Verify native image clipboard and multi-file paste",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify retry and update controls in the real desktop renderer",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Publish verified installers",
+        "id": 111414474233,
+        "status": "completed",
+        "conclusion": "success",
+        "acceptanceSteps": []
+      }
+    ],
+    "nativeClipboardVerified": true,
+    "livePhotoHeicGates": [
+      {
+        "job": "windows-x64",
+        "jobId": 111412887924,
+        "gateConclusion": "success",
+        "result": "PASS",
+        "platform": "win32",
+        "support": {
+          "supported": true,
+          "audioSupported": true,
+          "heicSupported": true,
+          "message": "本地制作已就绪。"
+        },
+        "checks": [
+          "JPEG image playback",
+          "JPEG slideshow playback",
+          "HEIC slideshow pair",
+          "native H264/AAC fixture",
+          "HEIC trimmed audio-video pair and playback",
+          "decoded audible PCM",
+          "image/audio/HEIC cancellation cleanup"
+        ],
+        "audioRms": 0.20623901404382233
+      },
+      {
+        "job": "mac-arm64",
+        "jobId": 111412888068,
+        "gateConclusion": "success",
+        "result": "PASS",
+        "platform": "darwin",
+        "support": {
+          "supported": true,
+          "audioSupported": true,
+          "heicSupported": true,
+          "message": "本地制作已就绪。"
+        },
+        "checks": [
+          "JPEG image playback",
+          "JPEG slideshow playback",
+          "HEIC slideshow pair",
+          "native H264/AAC fixture",
+          "HEIC trimmed audio-video pair and playback",
+          "decoded audible PCM",
+          "image/audio/HEIC cancellation cleanup"
+        ],
+        "audioRms": 0.20041444734487293
+      },
+      {
+        "job": "mac-intel",
+        "jobId": 111412888076,
+        "gateConclusion": "success",
+        "result": "PASS",
+        "platform": "darwin",
+        "support": {
+          "supported": true,
+          "audioSupported": true,
+          "heicSupported": true,
+          "message": "本地制作已就绪。"
+        },
+        "checks": [
+          "JPEG image playback",
+          "JPEG slideshow playback",
+          "HEIC slideshow pair",
+          "native H264/AAC fixture",
+          "HEIC trimmed audio-video pair and playback",
+          "decoded audible PCM",
+          "image/audio/HEIC cancellation cleanup"
+        ],
+        "audioRms": 0.20045698338337573
+      }
+    ]
+  },
+  "limitations": [
+    "No installers were downloaded in full or installed on this user computer during this read-only publication audit.",
+    "Local PHLivePhoto recognition and production web UI validation are recorded separately by the root agent."
+  ],
+  "verificationTransport": {
+    "metadata": "GitHub CLI authenticated metadata",
+    "public": "Anonymous curl HTTP/1.1, at most two attempts per request; 8 second connection timeout and 20 second request timeout."
+  },
+  "publicLatestProbe": {
+    "ok": true,
+    "method": "GET",
+    "status": 200,
+    "contentLength": 25643,
+    "attempts": [
+      {
+        "attempt": 1,
+        "status": 200,
+        "exitCode": 0,
+        "redirects": 0,
+        "elapsedSeconds": 1.508442,
+        "contentLength": 25643,
+        "redirectsTrusted": true
+      }
+    ],
+    "assetSnapshotMatched": true
+  },
+  "publicInstallerAvailabilityVerified": true
+}
