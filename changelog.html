@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 3 日，桌面 v2.0.4 与 Android v1.0.11 优先使用系统代理，支持手动关闭并保存更新代理设置；下次主动检查或下载时恢复，结束后自动关闭，并修复 Mac 安装清理与结果窗口关闭。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 4 日，v2.0.5 网页与桌面新增本地实况制作：图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整片段、封面与声音，导出配对 JPG + MOV ZIP。Android 保持 v1.0.11。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -43,9 +43,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="记录整理至 2026 年 10 月 3 日">
+          <div class="header-status" aria-label="记录整理至 2026 年 10 月 4 日">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>更新至 2026.10.03</span>
+            <span>更新至 2026.10.04</span>
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次让软件更新优先使用已开启的系统代理，增加内置代理关闭按钮，并修复 Mac 安装后的清理与窗口关闭。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次新增实况制作：把本地图片与短视频变成实况照片，选好片段与封面，导出配对文件。
             </p>
 
             <div class="release-hero-actions">
@@ -73,31 +73,31 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.4</strong>
-              <small>2026.10.03 · Mac / Windows</small>
+              <strong>v2.0.5</strong>
+              <small>2026.10.04 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
                 <strong>Web</strong>
-                <span>浏览器单篇下载</span>
+                <span>下载与实况制作</span>
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>桌面主页批量</span>
+                <span>批量与实况制作</span>
               </div>
               <div class="summary-stat">
                 <strong>1.0.11</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
-                <strong>10.03</strong>
+                <strong>10.04</strong>
                 <span>最近整理 · 2026</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 系统代理优先；手动关闭设置持久保存，下次主动检查或下载时恢复，更新结束自动关闭。</p>
-            <a class="release-summary-link" href="#update-proxy-control-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 本地素材制作 0.5–3 秒实况，导出 JPG + MOV；无需会员。正式安装包以三平台核验后的发布附件为准。</p>
+            <a class="release-summary-link" href="#live-photo-maker-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.4、Android 1.0.11、系统代理" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.5、实况制作、Android 1.0.11" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,6 +129,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#live-photo-maker-update"><span>v2.0.5</span><strong>把图片与视频制作成实况</strong></a>
               <a href="#update-proxy-control-update"><span>v2.0.4</span><strong>系统代理优先，内置代理可关闭</strong></a>
               <a href="#update-proxy-republish"><span>v2.0.3</span><strong>相同功能再发布，测试更新代理</strong></a>
               <a href="#update-network-update"><span>v2.0.2</span><strong>软件更新自动选择节点</strong></a>
@@ -188,6 +189,21 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
+            <article id="live-photo-maker-update" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-04"><span>10.04</span><small>2026 · 实况制作</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.5</span><span class="release-badge release-badge-blue">网页 + 桌面</span><span class="release-status">网页 / Mac / Windows</span></div><h3>把图片与视频制作成实况照片</h3></div></header>
+                <p class="release-lead">从本地选择一段视频，或 1–12 张图片，制作成 0.5–3 秒 Live Photo。素材在本机处理，无需登录或会员；网页提供独立入口，桌面在主窗口内切换「制作实况」。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>让片段与封面刚刚好</strong>视频可调整起点与时长，选择片段内的封面时刻，保留声音或改为静音。图片可前移、后移、移除，单张图片可选择轻微推进或保持静止。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>预览、制作与重新调整</strong>制作前预览所选内容，制作中显示进度并可取消。修改素材或设置后清空旧结果，避免把上一次的内容误当作新结果下载。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>导出配对 JPG 与 MOV</strong>ZIP 内包含同名照片、动态视频与中文导入说明。解压后一起导入 Mac「照片」，确认 LIVE，再通过 iCloud 照片同步到 iPhone；手机文件夹中的 ZIP 不会自动存入相册。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>先检查当前设备能力</strong>网页制作依赖浏览器视频与音频编码支持，不可用时会提示；GIF 按静态图片处理。总素材上限 150 MB，图片总像素上限 6400 万，输出长边最多 1440 像素。</p></div>
+                </div>
+                <p class="release-card-note">功能已通过真实渲染器、实际 ZIP 下载解压与 Apple 实况识别核验。手机原生导入、iCloud 同步全流程和 Windows 设备上的相册识别仍需对应设备验证；Android 保持 v1.0.11。正式安装包以三平台构建核验后的发布附件为准。</p>
+                <div class="release-card-footer"><a href="/live.html">打开实况制作 ↗</a><a href="https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v2.0.5.md" target="_blank" rel="noopener noreferrer">桌面版 v2.0.5 说明 ↗</a><a href="/download.html">查看客户端下载 ↗</a><span>本地实况制作 · 2026.10.04</span></div>
+              </div>
+            </article>
             <article id="update-proxy-control-update" class="release-entry release-entry-featured" data-release-platforms="desktop android">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-03"><span>10.03</span><small>2026 · 更新网络</small></time></div>
               <div class="release-card">
@@ -1621,7 +1637,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.03 · 桌面 v2.0.4 · Android v1.0.11。</p>
+        <p>网页版与客户端记录整理至 2026.10.04 · 桌面 v2.0.5 记录 · Android v1.0.11。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

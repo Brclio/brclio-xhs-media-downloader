@@ -13,6 +13,7 @@ const STATIC_FILES = new Set([
   'download.html', 'download.css', 'download.js',
   'ios-shortcut.css', 'ios-shortcut.js',
   'product.html', 'product.css', 'product.js',
+  'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js',
   'learn.html', 'learn.css', 'learn.js',
   'vip.html', 'vip.css', 'vip.js',
   'membership.html', 'membership.css', 'membership.js',

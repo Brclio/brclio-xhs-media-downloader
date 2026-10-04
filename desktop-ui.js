@@ -239,6 +239,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
 
   const pages = [
     ["single", ui.singleTab, ui.singlePanel],
+    ["live", element("live-photo-tab"), element("desktop-live-photo-page")],
     ["profile", ui.profileTab, ui.panel],
     ["account", element("account-tab"), element("desktop-account-page")],
     ["membership", element("desktop-membership-link"), element("desktop-membership-page")],
@@ -254,6 +255,21 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   let currentPage = "profile";
   let returnFromLearning = "profile";
   const learningFrame = element("desktop-learning-frame");
+  const liveFrame = element("desktop-live-photo-frame");
+  liveFrame.addEventListener("load", () => {
+    const content = liveFrame.contentDocument;
+    if (!content?.body) return;
+    content.body.classList.add("live-embedded");
+    content.addEventListener("click", event => {
+      const link = event.target.closest?.("a[href]");
+      if (!link) return;
+      const target = new URL(link.href);
+      if (target.protocol === location.protocol && target.host === location.host
+        && ["/", "/index.html"].includes(target.pathname)) {
+        event.preventDefault(); navigate("single");
+      }
+    });
+  });
   let learningScroll = null;
   let learningScrollRevision = 0;
   let learningScrollPending = false;
@@ -407,6 +423,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
       if (selected) currentPage = name;
     }
     document.body.dataset.desktopPage = currentPage;
+    if (currentPage === "live" && !liveFrame.hasAttribute("src")) liveFrame.src = liveFrame.dataset.src;
     if (currentPage === "membership" && !membershipFrame.hasAttribute("src")) membershipFrame.src = membershipFrame.dataset.src;
     if (currentPage === "vip" && !vipFrame.hasAttribute("src")) vipFrame.src = vipFrame.dataset.src;
     if (currentPage === "learning" && !learningFrame.hasAttribute("src")) learningFrame.src = learningFrame.dataset.src;

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<!-- Adapted from Brclio Design System's app template and components 1B, 9, 18.
+     Design: © 2026 Brclio · CC BY-NC-SA 4.0. -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fefcf6">
+  <meta name="description" content="用本地图片或视频制作 Live Photo 实况照片。裁剪短片、选择封面，导出配对 JPG 与 MOV 文件。">
+  <title>实况制作 · Brclio</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./live.css">
+  <script type="module" src="./live.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到实况制作</a>
+  <header class="app-header">
+    <div class="container header-inner">
+      <a class="brand" href="./index.html" aria-label="Brclio 下载工具首页"><img src="./aiyc.svg" width="32" height="32" alt=""><span>Brclio <span class="brand-note">/ AI悦创</span></span></a>
+      <nav aria-label="页面导航"><a href="#maker" aria-current="page">实况制作</a><a href="#import-help">导入说明</a></nav>
+      <a class="back-link" href="./index.html"><span aria-hidden="true">←</span> 返回下载工具</a>
+    </div>
+  </header>
+  <main class="app-content container" id="main">
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">LIVE PHOTO STUDIO</p><h1 id="page-title">把片刻，做成实况。</h1><p>选一段视频，或让几张照片连成一个小故事。素材在本机处理。</p></div>
+      <span class="format-badge">JPG <span aria-hidden="true">＋</span> MOV <span class="badge-label">配对导出</span></span>
+    </section>
+
+    <p class="support-note" id="support-note" role="status">正在检查实况制作能力…</p>
+    <noscript><p class="notice notice-error">请启用 JavaScript 后使用实况制作。</p></noscript>
+
+    <section class="studio" id="maker" aria-labelledby="maker-title">
+      <div class="editor-column">
+        <section class="source-section" aria-labelledby="maker-title">
+          <div class="section-heading"><h2 id="maker-title"><span class="section-index">01</span> 选择素材</h2><span class="small-note" id="source-count">尚未选择</span></div>
+          <div class="drop-zone" id="drop-zone">
+            <span class="upload-mark" aria-hidden="true">＋</span>
+            <p class="upload-title">一段视频，或 1–12 张图片</p>
+            <p class="upload-description" id="file-hint">图片支持 JPG、PNG、WebP、GIF；视频需能在当前设备播放。也可以把文件拖到这里。</p>
+            <button class="button button-blue" id="choose-files" type="button">选择本地文件</button>
+            <input class="visually-hidden" id="file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/*,.jpg,.jpeg,.png,.webp,.gif,.mp4,.mov,.m4v,.webm" multiple aria-label="选择图片或一段视频" aria-describedby="file-hint">
+          </div>
+          <div class="source-details" id="source-details" hidden><p class="source-meta" id="source-meta"></p><ol class="source-list" id="source-list" aria-label="素材顺序"></ol><button class="text-button" id="clear-files" type="button">清空素材</button></div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="settings-title">
+          <div class="section-heading"><h2 id="settings-title"><span class="section-index">02</span> 调整实况</h2><span class="small-note">默认 3 秒</span></div>
+          <fieldset id="settings-fields" disabled>
+            <legend class="visually-hidden">实况制作参数</legend>
+            <div class="control-group">
+              <div class="control-heading"><label for="duration">实况时长</label><div class="number-unit"><input class="number-input" id="duration-number" type="number" min="0.5" max="3" step="0.01" value="3" aria-label="实况时长，秒"><span>秒</span></div></div>
+              <input id="duration" type="range" min="0.5" max="3" step="0.01" value="3" aria-describedby="duration-hint">
+              <p class="field-hint" id="duration-hint">可选 0.5–3 秒。3 秒是常见实况时长，较短视频会自动缩短。</p>
+            </div>
+            <div class="control-group" id="video-settings" hidden>
+              <div class="control-heading"><label for="start">视频起点</label><div class="number-unit"><input class="number-input" id="start-number" type="number" min="0" max="0" step="0.01" value="0" aria-label="视频起点，秒"><span>秒</span></div></div>
+              <input id="start" type="range" min="0" max="0" step="0.01" value="0" aria-describedby="clip-range">
+              <p class="field-hint" id="clip-range">选中的片段：0.00–3.00 秒</p>
+            </div>
+            <div class="control-group">
+              <div class="control-heading"><label for="key-photo">封面时刻</label><output id="key-photo-label" for="key-photo">片段内 1.50 秒</output></div>
+              <input id="key-photo" type="range" min="0" max="2.9667" step="0.01" value="1.5" aria-describedby="key-photo-hint">
+              <p class="field-hint" id="key-photo-hint">这一帧会成为实况照片的静态封面。</p>
+            </div>
+            <div class="control-group" id="motion-settings" hidden>
+              <label class="select-label" for="motion">单张图片的动效</label>
+              <select id="motion"><option value="zoom">轻微推进</option><option value="still">保持静止</option></select>
+              <p class="field-hint">多张图片按上方顺序均分时长；GIF 作为静态图片处理。</p>
+            </div>
+            <div class="audio-settings" id="audio-settings" hidden><label class="checkbox-label"><input id="include-audio" type="checkbox" checked><span>保留视频声音</span></label><p class="field-hint" id="audio-hint">关闭后制作静音实况。</p></div>
+          </fieldset>
+        </section>
+      </div>
+
+      <section class="preview-column" aria-labelledby="preview-title">
+        <div class="section-heading"><h2 id="preview-title"><span class="section-index">03</span> 预览与导出</h2><button class="text-button" id="preview-button" type="button" disabled>播放片段 <span aria-hidden="true">▷</span></button></div>
+        <div class="preview-stage" id="preview-stage">
+          <div class="preview-empty" id="preview-empty"><svg viewBox="0 0 48 48" width="48" height="48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"/><circle cx="24" cy="24" r="13" stroke="currentColor" stroke-width="1.5"/><circle cx="24" cy="24" r="5" fill="currentColor"/></svg><p>一个片刻，等你放进来。</p><span>选择素材后，可预览片段与封面</span></div>
+          <video id="source-video" playsinline preload="metadata" hidden aria-label="素材视频预览"></video>
+          <canvas id="source-canvas" hidden aria-label="图片实况预览"></canvas>
+          <video id="result-video" playsinline controls preload="metadata" hidden aria-label="生成的实况动态预览"></video>
+          <span class="live-pill" id="live-pill" hidden><span aria-hidden="true">◉</span> LIVE</span>
+        </div>
+        <p class="preview-caption" id="preview-caption">预览会展示你选中的内容。</p>
+        <div class="export-actions"><button class="button button-blue export-button" id="create-live" type="button" disabled>制作实况照片 <span aria-hidden="true">↗</span></button><button class="button button-quiet" id="cancel-live" type="button" hidden>取消</button></div>
+        <div class="progress-panel" id="progress-panel" hidden><div class="progress-heading"><span id="progress-label">准备素材…</span><output id="progress-percent">0%</output></div><progress id="live-progress" max="1" value="0" aria-labelledby="progress-label"></progress></div>
+        <p class="status-message" id="live-status" role="status" aria-live="polite"></p>
+        <div class="notice notice-error" id="live-error" role="alert" hidden></div>
+        <div class="result-panel" id="result-panel" hidden><span class="success-label">实况文件已制作</span><p id="result-summary"></p><a class="button button-yellow" id="download-live" download="Brclio-Live-Photo.zip">下载实况 ZIP <span aria-hidden="true">↓</span></a><p class="field-hint">内含配对 JPG、MOV 与导入说明。<a href="#import-help">查看如何存入相册</a></p></div>
+        <p class="export-note">导出后请按说明导入「照片」；将 ZIP 下载到手机文件夹，不会自动变成相册里的实况。</p>
+      </section>
+    </section>
+
+    <section class="import-section" id="import-help" aria-labelledby="import-title">
+      <div class="import-heading"><p class="eyebrow">FROM FILES TO PHOTOS</p><h2 id="import-title">让实况，回到相册。</h2><p>实况由一张照片和一段视频配对组成。请保留同名文件，一起导入。</p></div>
+      <ol class="import-steps"><li><span class="step-number">1</span><div><h3>下载并解压 ZIP</h3><p>找到同名的 .JPG 与 .MOV 文件，不要只保留其中一个。</p></div></li><li><span class="step-number">2</span><div><h3>一起导入 Mac「照片」</h3><p>在「照片」中选择「文件 → 导入」，同时选中这一对文件，再检查是否显示 LIVE 标记。</p></div></li><li><span class="step-number">3</span><div><h3>通过 iCloud 同步到 iPhone</h3><p>Mac 与 iPhone 开启同一账号的 iCloud 照片后，等待同步，并在手机相册长按确认。导入结果取决于系统与相册版本。</p></div></li></ol>
+    </section>
+  </main>
+  <footer class="page-footer container"><a href="./index.html">Brclio <span aria-hidden="true">.</span></a><p>写代码，教编程，做产品。</p><span>© 2026 Brclio</span></footer>
+</body>
+</html>

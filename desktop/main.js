@@ -113,7 +113,7 @@ function desktopRoute(url) {
   if (!isAppUrl(url)) return null;
   const target = new URL(url);
   if (['/', '/index.html'].includes(target.pathname) && target.searchParams.get('membership') === 'open') return { page: 'account', purchase: true };
-  const page = { '/learn.html': 'learning', '/vip.html': 'vip', '/membership.html': 'membership' }[target.pathname];
+  const page = { '/learn.html': 'learning', '/vip.html': 'vip', '/membership.html': 'membership', '/live.html': 'live' }[target.pathname];
   return page ? { page } : null;
 }
 

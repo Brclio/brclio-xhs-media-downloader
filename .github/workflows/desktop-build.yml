@@ -71,6 +71,8 @@ jobs:
           XHS_MAC_UPDATE_NATIVE: '1'
           MAC_INSTALL_PROGRESS_NATIVE: '1'
       - run: python -m unittest discover -s test -p 'test_python_*.py'
+      - name: Verify native Live Photo image, slideshow, video and audio encoding
+        run: npm run desktop:verify:live-photo-codecs
       - if: runner.os != 'Windows'
         run: python scripts/build-mac-python.py
       - if: runner.os == 'Windows'

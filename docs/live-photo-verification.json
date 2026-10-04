@@ -1,0 +1,159 @@
+{
+  "result": "PASS",
+  "verifiedAt": "2026-10-04T00:42:00.376Z",
+  "platform": "macOS",
+  "version": "2.0.4",
+  "scope": "Local renderer, built web, native xhs-app protocol and real desktop shell with disposable mocked native bridge. No Photos library import or phone installation was performed.",
+  "engine": {
+    "command": "npx electron scripts/verify-live-photo.cjs --engine-only",
+    "sourceReport": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/verification.json",
+    "cases": [
+      {
+        "name": "single-image",
+        "dimensions": [
+          640,
+          360
+        ],
+        "duration": 1.5,
+        "keyPhotoTime": 0.7666666666666667,
+        "jpeg": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/single-image.jpg",
+        "mov": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/single-image.mov",
+        "applePhotosRecognized": true,
+        "timedMetadataPts": [
+          "0.766667"
+        ]
+      },
+      {
+        "name": "multi-images",
+        "dimensions": [
+          640,
+          360
+        ],
+        "duration": 3,
+        "keyPhotoTime": 1.5,
+        "jpeg": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/multi-images.jpg",
+        "mov": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/multi-images.mov",
+        "applePhotosRecognized": true,
+        "timedMetadataPts": [
+          "1.500000"
+        ]
+      },
+      {
+        "name": "trimmed-audio-video",
+        "dimensions": [
+          640,
+          360
+        ],
+        "duration": 2,
+        "keyPhotoTime": 0.7,
+        "jpeg": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/trimmed-audio-video.jpg",
+        "mov": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/trimmed-audio-video.mov",
+        "applePhotosRecognized": true,
+        "timedMetadataPts": [
+          "0.700000"
+        ],
+        "audioPayload": {
+          "duration": 2,
+          "first": {
+            "rms": 0.180777322633129,
+            "frequency": 440
+          },
+          "second": {
+            "rms": 0.1795102549401726,
+            "frequency": 880
+          }
+        }
+      },
+      {
+        "name": "portrait-video",
+        "dimensions": [
+          360,
+          640
+        ],
+        "duration": 1.2,
+        "keyPhotoTime": 0.4,
+        "jpeg": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/portrait-video.jpg",
+        "mov": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/portrait-video.mov",
+        "applePhotosRecognized": true,
+        "timedMetadataPts": [
+          "0.400000"
+        ]
+      },
+      {
+        "name": "silent-video",
+        "dimensions": [
+          640,
+          360
+        ],
+        "duration": 1.4,
+        "keyPhotoTime": 0.8,
+        "jpeg": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/silent-video.jpg",
+        "mov": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-Ed1eXN/silent-video.mov",
+        "applePhotosRecognized": true,
+        "timedMetadataPts": [
+          "0.800000"
+        ]
+      }
+    ],
+    "rejectedInvalidOptions": [
+      "duration above 3 seconds",
+      "trim past video end",
+      "mixed image and video"
+    ],
+    "activeCancellation": "AbortError",
+    "actualH264DecoderPlayback": true,
+    "sharedJpegMovUuid": true,
+    "quickTimeContentIdentifierReadable": true
+  },
+  "ui": {
+    "command": "npx electron scripts/verify-live-photo.cjs --ui-only --built",
+    "sourceReport": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-2KTSsC/verification.json",
+    "screenshots": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-2KTSsC/screenshots",
+    "widths": [
+      1440,
+      768,
+      390
+    ],
+    "uploadedActualFiles": true,
+    "imageReorder": true,
+    "clearSelectionAndResult": true,
+    "activeAudioStageCancellation": true,
+    "immediateRetryWithActualEncoder": true,
+    "actualDownloads": [
+      {
+        "name": "web: actual ZIP download and native recognition",
+        "surface": "web",
+        "exported": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-2KTSsC/web-ui.zip",
+        "entries": [
+          "Brclio-Live-20261004-004152.JPG",
+          "Brclio-Live-20261004-004152.MOV",
+          "README.txt"
+        ],
+        "nativeRecognition": "callback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+      },
+      {
+        "name": "desktop: actual ZIP download and native recognition",
+        "surface": "desktop",
+        "exported": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-2KTSsC/desktop-ui.zip",
+        "entries": [
+          "Brclio-Live-20261004-004159.JPG",
+          "Brclio-Live-20261004-004159.MOV",
+          "README.txt"
+        ],
+        "nativeRecognition": "callback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+      }
+    ],
+    "desktopShell": {
+      "realSidebarAndIframe": true,
+      "nativeBridgeMocked": true,
+      "privilegedBridgeAbsentInsideIframe": true,
+      "compactStyles": true,
+      "noShellOrIframeOverflowAtAllWidths": true,
+      "preservesGeneratedBlobAcrossTabSwitches": true,
+      "iframeReturnLinkSelectsSingleNoteTab": true,
+      "preservesGeneratedBlobAfterReturnLink": true,
+      "subtitleUsesSeparateLineAndFitsButton": true
+    },
+    "rendererErrors": []
+  }
+}

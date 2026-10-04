@@ -28,6 +28,16 @@ test('desktop protocol serves the cropped membership QR images locally', async (
   }
 });
 
+test('Live Photo maker and its complete local encoding graph are served under the sandbox policy', async () => {
+  for (const name of ['live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js']) {
+    const response = await handler(new Request(`xhs-app://local/${name}`));
+    assert.equal(response.status, 200, name);
+    assert.ok((await response.text()).length > 0, name);
+    assert.match(response.headers.get('content-security-policy'), /media-src 'self' blob:/);
+    assert.match(response.headers.get('content-security-policy'), /script-src 'self';/);
+  }
+});
+
 test('only the workspace can embed its local learning page and all learning assets are packaged', async () => {
   const workspace = await handler(new Request('xhs-app://local/'));
   assert.match(workspace.headers.get('content-security-policy'), /frame-src 'self';/);
