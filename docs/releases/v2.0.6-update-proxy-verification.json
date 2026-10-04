@@ -1,0 +1,502 @@
+{
+  "version": "2.0.6",
+  "implementationSourceSha": "07b0471bc194b6a166aa222f74b6a0f892cfe9b7",
+  "scope": "Temporary Electron session using the v2.0.6 source and live administrator configuration; downloaded the existing v2.0.5 Mac arm64 installer while v2.0.6 CI was running. System proxy settings unchanged. No installation.",
+  "result": "PASS",
+  "networkScopes": 7,
+  "failedDownloadAttemptsRecovered": 5,
+  "explicitProxyEnables": 2,
+  "stoppedScopes": 7,
+  "automaticRetryRecoveryVerified": true,
+  "report": {
+    "isolatedInternalProxySession": true,
+    "platform": "darwin",
+    "arch": "arm64",
+    "checkedAt": "2026-10-04T05:58:19.125Z",
+    "events": [
+      {
+        "event": "update.proxy_manually_enabled",
+        "details": {}
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "getConfiguration"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "getConfiguration",
+          "enabled": true,
+          "revision": 1,
+          "sources": 1
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "update.proxy_subscriptions_refreshed",
+        "details": {
+          "sources": 1,
+          "available": 1,
+          "nodes": 16
+        }
+      },
+      {
+        "event": "update.proxy_selected",
+        "details": {
+          "node": "node-013",
+          "latencyMs": 197,
+          "nodes": 16,
+          "revision": 1
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      },
+      {
+        "event": "update.proxy_manually_enabled",
+        "details": {}
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "getConfiguration"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "getConfiguration",
+          "enabled": true,
+          "revision": 1,
+          "sources": 1
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "verification.stage_failed",
+        "details": {
+          "stage": "fetchSubscription",
+          "type": "Error",
+          "code": "PROXY_FETCH_FAILED",
+          "sourceLine": "25"
+        }
+      },
+      {
+        "event": "verification.stage_failed",
+        "details": {
+          "stage": "prepare",
+          "type": "Error",
+          "code": "PROXY_FETCH_FAILED",
+          "sourceLine": "25"
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "getConfiguration"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "getConfiguration",
+          "enabled": true,
+          "revision": 1,
+          "sources": 1
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "verification.stage_failed",
+        "details": {
+          "stage": "fetchSubscription",
+          "type": "DOMException",
+          "code": null,
+          "sourceLine": null
+        }
+      },
+      {
+        "event": "verification.stage_failed",
+        "details": {
+          "stage": "prepare",
+          "type": "DOMException",
+          "code": null,
+          "sourceLine": null
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "getConfiguration"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "getConfiguration",
+          "enabled": true,
+          "revision": 1,
+          "sources": 1
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "verification.stage_failed",
+        "details": {
+          "stage": "fetchSubscription",
+          "type": "Error",
+          "code": "PROXY_FETCH_FAILED",
+          "sourceLine": "25"
+        }
+      },
+      {
+        "event": "verification.stage_failed",
+        "details": {
+          "stage": "prepare",
+          "type": "Error",
+          "code": "PROXY_FETCH_FAILED",
+          "sourceLine": "25"
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "getConfiguration"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "getConfiguration",
+          "enabled": true,
+          "revision": 1,
+          "sources": 1
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "update.proxy_subscriptions_refreshed",
+        "details": {
+          "sources": 1,
+          "available": 1,
+          "nodes": 16
+        }
+      },
+      {
+        "event": "update.proxy_selected",
+        "details": {
+          "node": "node-014",
+          "latencyMs": 186,
+          "nodes": 16,
+          "revision": 1
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "getConfiguration"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "getConfiguration",
+          "enabled": true,
+          "revision": 1,
+          "sources": 1
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "verification.stage_failed",
+        "details": {
+          "stage": "fetchSubscription",
+          "type": "DOMException",
+          "code": null,
+          "sourceLine": null
+        }
+      },
+      {
+        "event": "verification.stage_failed",
+        "details": {
+          "stage": "prepare",
+          "type": "DOMException",
+          "code": null,
+          "sourceLine": null
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "detectExternalProxy"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "getConfiguration"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "getConfiguration",
+          "enabled": true,
+          "revision": 1,
+          "sources": 1
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "verification.stage_started",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "fetchSubscription"
+        }
+      },
+      {
+        "event": "update.proxy_subscriptions_refreshed",
+        "details": {
+          "sources": 1,
+          "available": 1,
+          "nodes": 16
+        }
+      },
+      {
+        "event": "update.proxy_selected",
+        "details": {
+          "node": "node-007",
+          "latencyMs": 187,
+          "nodes": 16,
+          "revision": 1
+        }
+      },
+      {
+        "event": "verification.stage_finished",
+        "details": {
+          "stage": "prepare"
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      }
+    ],
+    "defaultSessionUnchanged": true,
+    "networkFailure": {
+      "code": "PROXY_START_FAILED",
+      "type": "Error"
+    },
+    "downloadVerified": true,
+    "downloadBytes": 164121849,
+    "status": "downloaded",
+    "latestVersion": "2.0.5",
+    "error": null,
+    "activeScopesAfterCheck": 0,
+    "proxySelected": true,
+    "systemProxySelected": false,
+    "networkRoute": "internal",
+    "proxyStopped": true
+  }
+}
