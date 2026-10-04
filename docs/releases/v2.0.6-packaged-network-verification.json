@@ -1,0 +1,37 @@
+{
+  "version": "2.0.6",
+  "result": "passed",
+  "sourceSha": "07b0471bc194b6a166aa222f74b6a0f892cfe9b7",
+  "checkedAt": "2026-10-04T06:23:02.853Z",
+  "scope": "Published Mac arm64 ZIP launched from its extracted temporary directory with temporary profile and mock keychain. No change to the user installation. System proxy priority was exercised; internal proxy retry recovery is recorded separately.",
+  "artifact": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-mac-arm64.zip",
+    "bytes": 165056705,
+    "sha256": "01dc21229d9e11a7f813b64362cfab9f0d6fc96ed8dc981ebe77dee58404c765",
+    "checksumVerified": true
+  },
+  "verification": {
+    "result": "PASS",
+    "packagedUpdateNetworkVerified": true,
+    "checkedAt": "2026-10-04T06:23:02.853Z",
+    "version": "2.0.6",
+    "latestVersion": "2.0.6",
+    "status": "up-to-date",
+    "signedPackageVerified": true,
+    "sourceMatchesCurrentWorkspace": true,
+    "preloadAndIPCVerified": true,
+    "profile": "temporary",
+    "keychain": "mock",
+    "proxySelected": false,
+    "systemProxySelected": true,
+    "networkRoute": "system",
+    "proxyStopped": true,
+    "diagnosticsRedacted": true,
+    "selectedNodes": [],
+    "activeProxyProcessesAfterCheck": 0,
+    "installed": false,
+    "installerDownloaded": false,
+    "published": false,
+    "activeProxyProcessesAfterExit": 0
+  }
+}

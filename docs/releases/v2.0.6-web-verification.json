@@ -1,0 +1,534 @@
+{
+  "version": "2.0.6",
+  "result": "passed",
+  "checkedAt": "2026-10-04T06:18:44.295Z",
+  "origin": "https://xhs.download.brclio.com",
+  "deployment": {
+    "id": "62ef38d3",
+    "url": "https://62ef38d3.brclio-xhs-pages.pages.dev",
+    "branch": "main",
+    "sourceSha": "d946dea4981c13e78a7998008aa175c6cb5e18bf"
+  },
+  "scope": "Cloudflare Pages static deployment, public download and changelog, existing service routes. Desktop release only; Android remains v1.0.11.",
+  "sources": [
+    {
+      "file": "download.html",
+      "status": 200,
+      "sourceSha256": "4c0ee834225b37365cf6dcd181449f5b7d555945fe3bc8c3cb6fef34e9117de7",
+      "buildSha256": "e7fd92343e1a257449afaebccd9d0cf24b03443c2c2a4de46d0c7dd2a946ff30",
+      "productionSha256": "e7fd92343e1a257449afaebccd9d0cf24b03443c2c2a4de46d0c7dd2a946ff30",
+      "bytes": 26781
+    },
+    {
+      "file": "changelog.html",
+      "status": 200,
+      "sourceSha256": "e1eaa5ecb41f9a7257a49fffcdfd47976bceba8c8dc58997abe086fc60f228dc",
+      "buildSha256": "e1eaa5ecb41f9a7257a49fffcdfd47976bceba8c8dc58997abe086fc60f228dc",
+      "productionSha256": "e1eaa5ecb41f9a7257a49fffcdfd47976bceba8c8dc58997abe086fc60f228dc",
+      "bytes": 147459
+    },
+    {
+      "file": "desktop-ui.js",
+      "status": 200,
+      "sourceSha256": "12f8bf9ee0b0ffb241ef88b74d8a81b72d30ee784b00bc79786411adfaba6ef5",
+      "buildSha256": "12f8bf9ee0b0ffb241ef88b74d8a81b72d30ee784b00bc79786411adfaba6ef5",
+      "productionSha256": "12f8bf9ee0b0ffb241ef88b74d8a81b72d30ee784b00bc79786411adfaba6ef5",
+      "bytes": 97143
+    }
+  ],
+  "desktopLinks": [
+    "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-mac-arm64.dmg",
+    "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-mac-x64.dmg",
+    "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-windows-x64-setup.exe",
+    "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-windows-x64-portable.exe"
+  ],
+  "androidVersion": "1.0.11",
+  "cloudflare": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-10-04T06:13:35.262Z",
+    "passed": 55,
+    "total": 55,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1677
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 220
+      },
+      {
+        "name": "static/feedback-board",
+        "ok": true,
+        "status": 200,
+        "durationMs": 309
+      },
+      {
+        "name": "static/feedback-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 192
+      },
+      {
+        "name": "static/feedback-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 535
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 977
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 197
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 714
+      },
+      {
+        "name": "static/browser-account-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 269
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 296
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 207
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 801
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 365
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1210
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 520
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 354
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 518
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 300
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 610
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 316
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 298
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 226
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 748
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 299
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 201
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 329
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 198
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 322
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 191
+      },
+      {
+        "name": "node/video/original-meta-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 332
+      },
+      {
+        "name": "node/video/original-chunk-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 196
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 854
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 323
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 309
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 416
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 320
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 334
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 1443
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 206
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 531
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 519
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 320
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 520
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 204
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 325
+      },
+      {
+        "name": "python/video/original-meta-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 195
+      },
+      {
+        "name": "python/video/original-chunk-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 328
+      },
+      {
+        "name": "member-video/guest-resolve",
+        "ok": true,
+        "status": 401,
+        "durationMs": 305
+      },
+      {
+        "name": "member-video/guest-ticket-meta",
+        "ok": true,
+        "status": 401,
+        "durationMs": 306
+      },
+      {
+        "name": "member-video/guest-ticket-chunk",
+        "ok": true,
+        "status": 401,
+        "durationMs": 438
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 310
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 518
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 347
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 396
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 321
+      }
+    ]
+  },
+  "ui": {
+    "status": "passed",
+    "origin": "https://xhs.download.brclio.com",
+    "verifiedAt": "2026-10-04T06:18:17.592Z",
+    "desktopVersion": "2.0.6",
+    "androidVersion": "1.0.11",
+    "desktopAssets": [
+      {
+        "key": "mac-arm64",
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-mac-arm64.dmg"
+      },
+      {
+        "key": "mac-x64",
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-mac-x64.dmg"
+      },
+      {
+        "key": "windows-setup",
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-windows-x64-setup.exe"
+      },
+      {
+        "key": "windows-portable",
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-windows-x64-portable.exe"
+      }
+    ],
+    "androidApk": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.11/Brclio-XHS-Android-1.0.11-release.apk",
+    "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.11/Brclio-XHS-Android-1.0.11-release.apk.sha256",
+    "desktopMetadataStatus": "已核对最新正式版 v2.0.6，安装包由 GitHub Releases 提供。查看最新发布 ↗",
+    "androidMetadataStatus": "已核对安卓正式版 v1.0.11，APK 与 SHA-256 校验文件均已上传。",
+    "currentChangelogDesktopOnly": true,
+    "previousVersionPreserved": true,
+    "javascriptDisabledFallback": {
+      "verified": true,
+      "desktopVersion": "v2.0.6",
+      "androidVersion": "v1.0.11",
+      "staticAssets": [
+        {
+          "key": "mac-arm64",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-mac-arm64.dmg"
+        },
+        {
+          "key": "mac-x64",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-mac-x64.dmg"
+        },
+        {
+          "key": "windows-setup",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-windows-x64-setup.exe"
+        },
+        {
+          "key": "windows-portable",
+          "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.6/Brclio-XHS-2.0.6-windows-x64-portable.exe"
+        }
+      ]
+    },
+    "viewportChecks": [
+      {
+        "page": "download.html",
+        "javascript": true,
+        "width": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": true
+      },
+      {
+        "page": "download.html",
+        "javascript": true,
+        "width": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": true
+      },
+      {
+        "page": "download.html",
+        "javascript": true,
+        "width": 320,
+        "documentWidth": 320,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": true
+      },
+      {
+        "page": "changelog.html",
+        "javascript": true,
+        "width": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": true
+      },
+      {
+        "page": "changelog.html",
+        "javascript": true,
+        "width": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": true
+      },
+      {
+        "page": "changelog.html",
+        "javascript": true,
+        "width": 320,
+        "documentWidth": 320,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": true
+      },
+      {
+        "page": "download.html",
+        "javascript": false,
+        "width": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": "not evaluated with JavaScript disabled"
+      },
+      {
+        "page": "download.html",
+        "javascript": false,
+        "width": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": "not evaluated with JavaScript disabled"
+      },
+      {
+        "page": "download.html",
+        "javascript": false,
+        "width": 320,
+        "documentWidth": 320,
+        "horizontalOverflow": false,
+        "ctasVisible": true,
+        "hitTargets": "not evaluated with JavaScript disabled"
+      }
+    ],
+    "rendererErrors": [],
+    "blockedWrites": [
+      {
+        "method": "POST",
+        "url": "https://counter.bornforthis.cn/hit"
+      }
+    ],
+    "screenshotCount": 18,
+    "temporaryProfileRemoved": true,
+    "temporaryWorkspaceScriptRemoved": true,
+    "screenshotsRetainedLocally": true
+  }
+}
