@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 4 日，v2.0.5 网页与桌面新增本地实况制作：图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整片段、封面与声音，导出配对 JPG + MOV ZIP。Android 保持 v1.0.11。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 4 日，桌面 v2.0.6 新增内置代理更新自动重试，保留下载进度并实时显示失败次数，连续失败 10 次后等待手动继续。Android 保持 v1.0.11。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -58,7 +58,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次新增实况制作：把本地图片与短视频变成实况照片，选好片段与封面，导出配对文件。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次优化桌面版更新：内置代理下载遇到连接中断时自动重试，保留已有进度，实时显示失败次数。
             </p>
 
             <div class="release-hero-actions">
@@ -73,7 +73,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.5</strong>
+              <strong>v2.0.6</strong>
               <small>2026.10.04 · Mac / Windows</small>
             </div>
 
@@ -84,7 +84,7 @@
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>批量与实况制作</span>
+                <span>更新自动重试</span>
               </div>
               <div class="summary-stat">
                 <strong>1.0.11</strong>
@@ -96,8 +96,8 @@
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 本地素材制作 0.5–3 秒实况，导出 JPG + MOV；无需会员。网页已上线，三平台正式安装包已发布。</p>
-            <a class="release-summary-link" href="#live-photo-maker-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 内置代理更新自动重试，实时显示连续失败次数；失败 10 次后等待你手动继续，已有下载进度保留。</p>
+            <a class="release-summary-link" href="#update-proxy-retry-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.5、实况制作、Android 1.0.11" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.6、自动重试、Android 1.0.11" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,6 +129,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#update-proxy-retry-update"><span>v2.0.6</span><strong>内置代理更新自动重试</strong></a>
               <a href="#live-photo-maker-update"><span>v2.0.5</span><strong>把图片与视频制作成实况</strong></a>
               <a href="#update-proxy-control-update"><span>v2.0.4</span><strong>系统代理优先，内置代理可关闭</strong></a>
               <a href="#update-proxy-republish"><span>v2.0.3</span><strong>相同功能再发布，测试更新代理</strong></a>
@@ -189,6 +190,21 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
+            <article id="update-proxy-retry-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-04"><span>10.04</span><small>2026 · 更新重试</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.6</span><span class="release-badge release-badge-blue">桌面客户端</span><span class="release-status">Mac / Windows</span></div><h3>内置代理更新中断后，自动接着下载</h3></div></header>
+                <p class="release-lead">桌面版使用内置代理下载安装包时，连接中断或临时网络异常会自动重试，并从已保存的进度继续下载。「关于软件」和更新弹窗实时显示连续失败次数。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>中断后自动继续</strong>保留已收到的安装包内容，自动重试时继续显示下载字节与进度；你仍可点击「暂停下载」，或让下载在后台继续。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>连续失败 10 次，等待手动重试</strong>达到 10 次后停止自动尝试，明确显示失败原因。已有进度时点击「继续下载」，尚无进度时点击「重试下载」，重新开始一轮自动重试并清零计数。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>暂停与关闭代理保留进度</strong>暂停下载或点击「关闭软件内置代理」会结束当前请求与自动重试，已下载的内容保留；下次主动继续下载时再启用更新网络。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>校验与安全问题仍需手动处理</strong>安装包完整性、大小或来源检查失败，以及磁盘空间、文件权限等错误，会显示提示并等待手动处理。</p></div>
+                </div>
+                <p class="release-card-note">本次更新适用于 Mac / Windows 桌面客户端。Android 保持 v1.0.11；下载完成后仍需你确认安装。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.6" target="_blank" rel="noopener noreferrer">桌面版 v2.0.6 说明 ↗</a><a href="/download.html">下载最新版 ↗</a><span>内置代理更新重试 · 2026.10.04</span></div>
+              </div>
+            </article>
             <article id="live-photo-maker-update" class="release-entry release-entry-featured" data-release-platforms="web desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-04"><span>10.04</span><small>2026 · 实况制作</small></time></div>
               <div class="release-card">
@@ -1637,7 +1653,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.04 · 桌面 v2.0.5 记录 · Android v1.0.11。</p>
+        <p>网页版与客户端记录整理至 2026.10.04 · 桌面 v2.0.6 记录 · Android v1.0.11。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

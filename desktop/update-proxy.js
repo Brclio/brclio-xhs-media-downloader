@@ -345,7 +345,7 @@ export class UpdateProxyNetwork {
     return { enabled: false, revision: 0, subscriptionUrls: [], subscriptionUrl: '' };
   }
 
-  async run(controller, work) {
+  async run(controller, work, { onInternalProxy = () => {} } = {}) {
     const signal = controller.signal;
     signal.throwIfAborted();
     let finish;
@@ -370,6 +370,7 @@ export class UpdateProxyNetwork {
         const config = await this.getConfiguration(direct, signal);
         signal.throwIfAborted();
         if (config.enabled) {
+          onInternalProxy();
           await this.prepare(scope, direct, config, signal);
           scope.ready = true;
         } else scope.internal = false;

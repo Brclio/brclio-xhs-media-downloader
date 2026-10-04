@@ -1045,6 +1045,25 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-later').textContent`), '后台下载');
   assert.match(await evaluate(`document.querySelector('#desktop-update-progress-text').textContent`), /50%/);
   assert.deepEqual(updateProxy, { mode: 'internal', manuallyDisabled: false }, 'the next explicit download re-enables the temporary internal proxy without a resume button');
+  const retryScreenshots = {};
+  for (const consecutiveFailures of [1, 9]) {
+    publishUpdate({ ...update, retry: { active: true, consecutiveFailures, limit: 10, lastError: { code: 'UPDATE_NETWORK_ERROR', message: '测试连接中断' } } });
+    await check(`document.querySelector('#desktop-update-message').textContent.includes('连续失败 ${consecutiveFailures}/10 次')
+      && document.querySelector('#desktop-update-dialog-progress-text').textContent.includes('连续失败 ${consecutiveFailures}/10 次')`,
+      'automatic proxy retries update the live count in both views');
+    assert.match(await evaluate(`document.querySelector('#desktop-update-title').textContent`), /自动重试/);
+    assert.match(await evaluate(`document.querySelector('#desktop-update-dialog-title').textContent`), /自动重试/);
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value === 50 && document.querySelector('#desktop-update-dialog-progress').value === 50`), true,
+      'automatic retry keeps the received byte progress');
+    assert.equal(await evaluate(`!document.querySelector('#desktop-update-cancel').disabled && !document.querySelector('#desktop-update-dialog-action').disabled`), true,
+      'pause stays usable throughout automatic retry and pending download IPC');
+    assert.equal(await evaluate(`document.querySelector('#desktop-update-error').hidden && document.querySelector('#desktop-update-dialog-error').hidden`), true,
+      'automatic retries stay in downloading state without a terminal error alert');
+    for (const selector of ['#desktop-update-message', '#desktop-update-dialog-progress-text']) {
+      assert.equal(await evaluate(`document.querySelector('${selector}').getAttribute('role')`), 'status', 'automatic retry updates are announced politely');
+      assert.equal(await evaluate(`document.querySelector('${selector}').getAttribute('aria-live')`), 'polite');
+    }
+  }
   publishProxy({ mode: 'starting', manuallyDisabled: false });
   await check(`${proxyButtonsAvailable} && document.querySelector('#desktop-update-dialog-proxy-status').textContent.includes('正在启动')`,
     'proxy shutdown remains available during pending download and core preparation');
@@ -1068,6 +1087,7 @@ app.whenReady().then(async () => {
     assert.equal(geometry.fits, true, `${width}×${height}: proxy shutdown fits alongside pending update actions: ${JSON.stringify(geometry)}`);
     proxyScreenshots[`dialog-${width}x${height}`] = path.join(temporary, `desktop-update-proxy-dialog-${width}x${height}.png`);
     writeFileSync(proxyScreenshots[`dialog-${width}x${height}`], await captureFrame());
+    if (width === 320) retryScreenshots.active = proxyScreenshots[`dialog-${width}x${height}`];
   }
   await resizeViewport(1180, 980);
   publishUpdate({ ...update, download: { receivedBytes: 46, totalBytes: 100, canResume: false } });
@@ -1108,9 +1128,14 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 50);
   assert.match(await evaluate(`document.querySelector('#desktop-update-message').textContent`), /已保存下载进度/);
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '继续下载');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-message').textContent.includes('自动重试') || document.querySelector('#desktop-update-dialog-progress-text').textContent.includes('自动重试')`), false,
+    'pausing automatic retries clears their live status');
   await click('#desktop-update-dialog-action');
   await check(`document.querySelector('#desktop-update-progress').value === 75`, 'continued download progresses from retained bytes');
-  const interrupted = publishUpdate({ ...available(), status: 'error', download: { receivedBytes: 768, totalBytes: 1024, canResume: true }, error: { phase: 'download', message: '测试连接中断' } });
+  const interrupted = publishUpdate({ ...available(), status: 'error', canRetry: true,
+    download: { receivedBytes: 768, totalBytes: 1024, canResume: true },
+    retry: { active: false, consecutiveFailures: 10, limit: 10, lastError: { code: 'UPDATE_NETWORK_ERROR', message: '测试连接中断' } },
+    error: { phase: 'download', message: '测试连接中断' } });
   resolveDownload(interrupted);
   resolveDownload = null;
   await check(`document.querySelector('#desktop-update-download').textContent === '继续下载' && !document.querySelector('#desktop-update-download').disabled`, 'interrupted download can continue');
@@ -1118,10 +1143,31 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#desktop-update-progress').value`), 75);
   assert.match(await evaluate(`document.querySelector('#desktop-update-message').textContent`), /已保存下载进度/);
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '继续下载');
+  for (const selector of ['#desktop-update-message', '#desktop-update-error', '#desktop-update-dialog-error']) {
+    assert.match(await evaluate(`document.querySelector('${selector}').textContent`), /连续失败 10 次.*自动重试已停止.*点击“继续下载”/,
+      'ten failures explain why manual continuation is needed in both views');
+  }
+  assert.match(await evaluate(`document.querySelector('#desktop-update-dialog-error').textContent`), /测试连接中断/, 'retry limit guidance retains the underlying download error');
+  assert.equal(await evaluate(`!document.querySelector('#desktop-update-dialog-action').disabled`), true, 'ten failures re-enable manual continuation after the download IPC settles');
+  await resizeViewport(320, 480);
+  const exhaustedGeometry = await evaluate(`(() => {
+    const dialog = document.querySelector('#desktop-update-dialog'), bounds = dialog.getBoundingClientRect();
+    const button = document.querySelector('#desktop-update-dialog-action').getBoundingClientRect();
+    return { fits: dialog.open && bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight
+      && dialog.scrollWidth <= dialog.clientWidth && button.left >= bounds.left && button.right <= bounds.right
+      && button.top >= bounds.top && button.bottom <= bounds.bottom,
+      bounds: bounds.toJSON(), button: button.toJSON(), viewport: { width: innerWidth, height: innerHeight } };
+  })()`);
+  retryScreenshots.exhausted = path.join(temporary, 'desktop-update-retry-exhausted-320.png');
+  writeFileSync(retryScreenshots.exhausted, await captureFrame());
+  assert.equal(exhaustedGeometry.fits, true, `exhausted retry guidance keeps the manual action visible at 320px: ${JSON.stringify(exhaustedGeometry)}`);
+  await resizeViewport(1180, 980);
   downloadMode = 'downloaded';
   await click('#desktop-update-dialog-action');
   await check(`!document.querySelector('#desktop-update-install').hidden && !document.querySelector('#desktop-update-install').disabled`, 'continued download reaches ready to install');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-dialog-action').textContent`), '安装并重启');
+  assert.equal(await evaluate(`document.querySelector('#desktop-update-message').textContent.includes('自动重试') || document.querySelector('#desktop-update-dialog-progress-text').textContent.includes('自动重试')`), false,
+    'a successful manual continuation clears the old retry count');
   assert.equal(calls.filter(call => call.method === 'installUpdate').length, 0, 'completed download still requires installation action');
   await evaluate(`document.querySelector('#desktop-update-dialog-action').focus()`);
   await click('#desktop-update-dialog-action');
@@ -1166,9 +1212,15 @@ app.whenReady().then(async () => {
   win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
   win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
   await check(`!document.querySelector('#desktop-update-dialog').open`, 'Escape closes dialog');
-  publishUpdate({ ...available(), status: 'error', error: { phase: 'download', message: '测试下载失败' } });
+  publishUpdate({ ...available(), status: 'error', canRetry: true,
+    retry: { active: false, consecutiveFailures: 10, limit: 10, lastError: { code: 'UPDATE_NETWORK_ERROR', message: '测试下载失败' } },
+    error: { phase: 'download', message: '测试下载失败' } });
   await check(`document.querySelector('#desktop-update-download').textContent === '重试下载'`, 'download without retained bytes offers retry');
   assert.equal(await evaluate(`document.querySelector('#desktop-update-progress-wrap').hidden`), true, 'no partial download means no retained progress');
+  for (const selector of ['#desktop-update-message', '#desktop-update-error', '#desktop-update-dialog-error']) {
+    assert.match(await evaluate(`document.querySelector('${selector}').textContent`), /连续失败 10 次.*点击“重试下载”/,
+      'exhausted retries without retained bytes point to the matching manual button');
+  }
   await click('#desktop-update-download');
   await check(`!document.querySelector('#desktop-update-install').hidden && !document.querySelector('#desktop-update-install').disabled`, 'ready to install');
   assert.match(await evaluate(`document.querySelector('#desktop-update-installation-hint').textContent`), /覆盖当前应用/);
@@ -1578,7 +1630,7 @@ app.whenReady().then(async () => {
     'renderer update requests supply no automatic or manual intent override');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['proxy close controls share pending state, deduplicate shutdown and retry failures', 'late initial and stop proxy snapshots cannot overwrite newer state events', 'system proxy precedence survives manual internal shutdown', 'manual proxy controls stay available during pending check and download IPC', 'explicit checks and downloads re-enable stopped proxy and close automatically without a resume control', 'proxy controls fit at 390px and 320px including short update dialogs', 'XHS login reset confirmation cancel, pending deduplication, success, retry and safe error rendering', 'XHS reset rejects unconfirmed cleanup and stale initial login discovery', '760px and 390px login/reset controls with long nickname', 'iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'nine independent pages including Live Photo', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], loginResetScreenshots, learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots, proxyScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['proxy close controls share pending state, deduplicate shutdown and retry failures', 'late initial and stop proxy snapshots cannot overwrite newer state events', 'system proxy precedence survives manual internal shutdown', 'manual proxy controls stay available during pending check and download IPC', 'explicit checks and downloads re-enable stopped proxy and close automatically without a resume control', 'proxy controls fit at 390px and 320px including short update dialogs', 'XHS login reset confirmation cancel, pending deduplication, success, retry and safe error rendering', 'XHS reset rejects unconfirmed cleanup and stale initial login discovery', '760px and 390px login/reset controls with long nickname', 'iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'live proxy retry counts, pending pause, ten-failure manual recovery and 320px layout', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'nine independent pages including Live Photo', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], loginResetScreenshots, learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots, proxyScreenshots, retryScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

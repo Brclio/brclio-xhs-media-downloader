@@ -1084,13 +1084,13 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     }
   }
 
-  function renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes, checkNote }) {
+  function renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes, checkNote, retryText, errorText }) {
     if (!ui.updateDialog) return;
     ui.updateDialog.dataset.status = status;
     if (["idle", "up-to-date"].includes(status)) { closeUpdateDialog(); return; }
     ui.updateDialogTitle.textContent = status === "downloaded" ? "新版本已准备好"
       : status === "installing" ? "正在安装更新" : status === "checking" ? "正在检查更新"
-        : status === "error" ? "更新未完成" : "发现新版本";
+        : status === "error" ? "更新未完成" : retryText ? "正在自动重试下载" : "发现新版本";
     ui.updateDialogVersion.textContent = `${next.latestVersion ? `v${next.latestVersion}` : "新版本"}${version ? ` · 当前版本 v${version}` : ""}`;
     renderUpdateDialogNotes(notes);
     const showProgress = status === "downloading" || savedProgress;
@@ -1101,13 +1101,14 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     else ui.updateDialogProgress.value = percent;
     const message = status === "installing" ? "确认安装后会显示独立的安装进度窗口，完成后自动重新打开软件。"
       : status === "downloaded" ? "安装完成后会自动重新打开软件。"
-        : savedProgress ? `${progressText} · 进度已保存` : progressText;
+        : retryText ? `${progressText} · ${retryText}`
+          : savedProgress ? `${progressText} · 进度已保存` : progressText;
     ui.updateDialogProgressText.textContent = message;
     ui.updateDialogProgress.setAttribute("aria-valuetext", message);
     ui.updateDialogCheckNote.hidden = !checkNote;
     ui.updateDialogCheckNote.textContent = checkNote;
     ui.updateDialogError.hidden = status !== "error";
-    ui.updateDialogError.textContent = status === "error" ? String(next.error?.message || "更新未完成，请稍后重试。") : "";
+    ui.updateDialogError.textContent = status === "error" ? errorText : "";
     ui.updateDialogLater.textContent = status === "downloading" ? "后台下载" : "稍后再说";
     let action = "", label = "立即更新";
     if (status === "downloading") { action = "cancel"; label = updatePending === "cancel" ? "正在暂停…" : "暂停下载"; }
@@ -1144,6 +1145,15 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     const total = count(next.download?.totalBytes);
     const canResume = next.download?.canResume === true && received > 0;
     const savedProgress = canResume && (status === "available" || (failed && failedPhase === "download"));
+    const retryFailures = count(next.retry?.consecutiveFailures);
+    const retryLimit = count(next.retry?.limit) || 10;
+    const retrying = status === "downloading" && next.retry?.active === true;
+    const retryExhausted = failed && failedPhase === "download" && next.retry?.active === false && retryFailures >= retryLimit;
+    const retryText = retrying ? `内置代理自动重试中（连续失败 ${retryFailures}/${retryLimit} 次）` : "";
+    const exhaustedText = retryExhausted
+      ? `连续失败 ${retryFailures} 次，自动重试已停止。点击“${canResume ? "继续下载" : "重试下载"}”重试。` : "";
+    const lastErrorText = String(next.error?.message || next.retry?.lastError?.message || "操作未完成，请稍后重试。");
+    const errorText = exhaustedText ? `${exhaustedText} ${lastErrorText}` : lastErrorText;
     const busy = Boolean(updatePending) || ["checking", "downloading", "installing"].includes(status);
     if (version) ui.version.textContent = `本地版 v${version}`;
     ui.updateCheck.disabled = !updatesAvailable || busy;
@@ -1157,10 +1167,10 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
       checking: ["正在检查更新", "稍等片刻，检查完成后会在这里显示结果。"],
       "up-to-date": ["当前已是最新版本", version ? `你正在使用 v${version}。` : "暂时没有发现更新。"],
       available: [`发现新版本 ${latest}`, savedProgress ? "已保存下载进度，点击“继续下载”即可接着下载。" : "可以继续使用当前版本，准备好后再下载更新。"],
-      downloading: [`正在下载 ${latest}`, "下载期间可以继续使用应用，也可以随时暂停；已下载的进度会保留。"],
+      downloading: [retrying ? `正在自动重试下载 ${latest}` : `正在下载 ${latest}`, retryText ? `${retryText}；已下载的进度会保留，可以随时暂停。` : "下载期间可以继续使用应用，也可以随时暂停；已下载的进度会保留。"],
       downloaded: [`${latest} 已准备好安装`, "确认后将暂停当前任务并开始安装更新，请先保存正在编辑的内容。"],
       installing: ["正在准备安装更新", "请在确认窗口中选择是否暂停任务并继续安装。"],
-      error: [failedPhase === "install" ? "安装更新未完成" : failedPhase === "download" ? "更新下载失败" : "检查更新失败", savedProgress ? "已保存下载进度，点击“继续下载”即可接着下载。当前版本仍可继续使用。" : "当前版本仍可继续使用。"]
+      error: [failedPhase === "install" ? "安装更新未完成" : failedPhase === "download" ? "更新下载失败" : "检查更新失败", exhaustedText ? `${exhaustedText}${savedProgress ? "已保存下载进度。" : ""}当前版本仍可继续使用。` : savedProgress ? "已保存下载进度，点击“继续下载”即可接着下载。当前版本仍可继续使用。" : "当前版本仍可继续使用。"]
     }[status] || ["应用更新", "正在读取更新状态。"];
     ui.updateTitle.textContent = text[0];
     ui.updateMessage.textContent = text[1];
@@ -1186,7 +1196,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     ui.updateProgressText.textContent = progressText;
     ui.updateProgress.setAttribute("aria-valuetext", progressText);
     ui.updateError.hidden = !failed;
-    ui.updateError.textContent = failed ? String(next.error?.message || "操作未完成，请稍后重试。") : "";
+    ui.updateError.textContent = failed ? errorText : "";
     const showInstallHint = ["available", "downloading", "downloaded", "installing"].includes(status) || (failed && failedPhase === "install");
     const fallbackHint = desktopInfo.platform === "darwin"
       ? "Mac：安装方式与是否需要退出重启会在确认窗口中说明。"
@@ -1209,7 +1219,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
       element("desktop-update-announcement").hidden = currentPage === "about" || dismissedUpdate === next.latestVersion;
     }
     if (!newVersion) element("desktop-update-announcement").hidden = true;
-    renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes, checkNote });
+    renderUpdateDialog(next, { status, version, failedPhase, mayRetry, canResume, savedProgress, percent, progressText, notes, checkNote, retryText, errorText });
     restoreInstallFocus();
   }
 

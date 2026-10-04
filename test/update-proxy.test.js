@@ -147,6 +147,43 @@ test('each update gets fresh config and subscription, the fastest proxy and comp
   assert.ok(!JSON.stringify(f.events).includes('test-private-value'));
 });
 
+test('internal selection is reported before preparation failures and only for an enabled internal route', async t => {
+  let selected = 0;
+  const failing = await fixture(t, { subscription: () => {
+    assert.equal(selected, 1, 'download retry eligibility must be known before fetching subscriptions');
+    return new Response(null, { status: 503 });
+  } });
+  await assert.rejects(failing.network.run(new AbortController(), () => assert.fail('failed preparation cannot run work'),
+    { onInternalProxy: () => { selected++; } }), { code: 'PROXY_FETCH_FAILED' });
+  assert.equal(selected, 1); assert.equal(failing.network.active.size, 0);
+  assert.equal(failing.sessions[0].cleared, true);
+
+  for (const route of ['system', 'disabled', 'manual']) {
+    const f = await fixture(t, route === 'system' ? { resolvedProxy: 'PROXY localhost:7890' }
+      : route === 'disabled' ? { registry: () => Response.json({ ok: true, proxyConfig: { enabled: false, revision: 1, subscriptionUrl: '' } }) } : {});
+    if (route === 'manual') await f.network.stopInternalProxy();
+    await f.network.run(new AbortController(), async () => {},
+      { onInternalProxy: () => assert.fail(`${route} route must not enable automatic internal proxy retries`) });
+    assert.equal(f.children.length, 0); assert.equal(f.network.active.size, 0);
+  }
+});
+
+test('manual stop after internal selection cancels preparation and keeps the proxy disabled', async t => {
+  const f = await fixture(t);
+  let stopping, selections = 0;
+  const controller = new AbortController();
+  await assert.rejects(f.network.run(controller, () => assert.fail('manual stop cannot run work'), {
+    onInternalProxy: () => { selections++; stopping = f.network.stopInternalProxy(); }
+  }), { code: 'CANCELED' });
+  await stopping;
+  assert.equal(selections, 1); assert.equal(controller.signal.reason.code, 'CANCELED');
+  assert.equal(f.children.length, 0); assert.equal(f.network.active.size, 0);
+  assert.equal(f.sessions[0].cleared, true); assert.equal(f.network.snapshot().manuallyDisabled, true);
+  await f.network.run(new AbortController(), async () => {},
+    { onInternalProxy: () => assert.fail('automatic retry must respect the persisted manual stop') });
+  assert.equal(f.children.length, 0);
+});
+
 test('admin disable overrides built-in and cached subscriptions, and persists across config outage', async t => {
   let offline = false;
   const f = await fixture(t, { registry: async () => {
@@ -432,9 +469,9 @@ test('manual internal stop preserves updater partial bytes and waits for operati
   const cleanup = new Promise(resolve => { cleaning = resolve; });
   const gate = new Promise(resolve => { releaseCleanup = resolve; });
   const scopedRun = f.network.run.bind(f.network);
-  f.network.run = (controller, work) => scopedRun(controller, async () => {
+  f.network.run = (controller, work, options) => scopedRun(controller, async () => {
     try { return await work(); } finally { cleaning(); await gate; }
-  });
+  }, options);
   const download = manager.downloadUpdate(); await progress;
   const stop = f.network.stopInternalProxy(); await cleanup;
   assert.ok(manager.operation); assert.ok(manager.controller); assert.equal(f.network.active.size, 1);
@@ -448,6 +485,63 @@ test('manual internal stop preserves updater partial bytes and waits for operati
   assert.deepEqual(await readFile(path.join(f.cacheDirectory, `${name}.${digest}.partial`)), installer.subarray(0, 5));
   assert.equal(manager.operation, null); assert.equal(manager.controller, null);
   assert.equal(f.network.active.size, 0); assert.ok(f.children.every(child => child.exitCode === 0));
+});
+
+test('updater resumes an interrupted internal proxy download in a fresh scope and honors a stop between attempts', async t => {
+  const installer = Buffer.from('fixture installer bytes for internal proxy automatic retry');
+  const digest = createHash('sha256').update(installer).digest('hex');
+  const name = 'Brclio-XHS-2.0.4-mac-arm64.dmg';
+  const prefix = 'https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.4/';
+  const release = { tag_name: 'v2.0.4', draft: false, prerelease: false,
+    html_url: 'https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.4', body: '', published_at: '2026-10-03T00:00:00Z',
+    assets: [{ name, size: installer.length, browser_download_url: `${prefix}${name}`, digest: `sha256:${digest}` }] };
+  for (const action of ['retry', 'stop']) {
+    let firstStream, assetRequests = 0, stopping;
+    const retryStates = [], retryCleanup = [];
+    const f = await fixture(t, { updateResponse: request => {
+      if (request.url === LATEST_RELEASE_URL) return Readable.from([Buffer.from(JSON.stringify(release))]);
+      if (++assetRequests === 1) {
+        firstStream = new Readable({ read() {} }); firstStream.push(installer.subarray(0, 5));
+        firstStream.headers = { 'content-length': String(installer.length) };
+        return firstStream;
+      }
+      assert.equal(action, 'retry', 'manual stop must prevent a fresh download scope');
+      assert.equal(request.headers.range, 'bytes=5-');
+      const resumed = Readable.from([installer.subarray(5)]);
+      resumed.statusCode = 206;
+      resumed.headers = { 'content-length': String(installer.length - 5), 'content-range': `bytes 5-${installer.length - 1}/${installer.length}` };
+      return resumed;
+    } });
+    const manager = new UpdateManager({ currentVersion: '2.0.3', platform: 'darwin', arch: 'arm64',
+      directory: f.cacheDirectory, networkScope: f.network, fetchImpl: f.network.fetch, downloadRetryDelayMs: 5,
+      onUpdate: state => {
+        if (state.download.receivedBytes === 5 && firstStream && !firstStream.destroyed) {
+          firstStream.destroy(Object.assign(new Error('connection reset during installer download'), { code: 'ECONNRESET' }));
+        }
+        if (state.retry?.active && !retryStates.length) {
+          retryStates.push(state);
+          retryCleanup.push({ active: f.network.active.size, cleared: f.sessions[1].cleared, exitCode: f.children[1].exitCode });
+          if (action === 'stop') stopping = f.network.stopInternalProxy();
+        }
+      } });
+    assert.equal((await manager.checkForUpdates()).status, 'available');
+    const state = await manager.downloadUpdate();
+    await stopping;
+    assert.equal(retryStates.length, 1); assert.equal(retryStates[0].retry.consecutiveFailures, 1);
+    assert.deepEqual(retryCleanup, [{ active: 0, cleared: true, exitCode: 0 }], 'failed scope must finish cleanup before retry is published');
+    assert.equal(retryStates[0].download.receivedBytes, 5); assert.equal(state.retry, null);
+    if (action === 'retry') {
+      assert.equal(state.status, 'downloaded'); assert.equal(assetRequests, 2);
+      assert.deepEqual(await readFile(path.join(f.cacheDirectory, name)), installer);
+      assert.equal(f.sessions.length, 3); assert.notEqual(f.sessions[1].partition, f.sessions[2].partition);
+    } else {
+      assert.equal(state.status, 'available'); assert.equal(state.download.receivedBytes, 5); assert.equal(assetRequests, 1);
+      assert.equal(f.network.snapshot().manuallyDisabled, true); assert.equal(f.sessions.length, 2);
+      assert.deepEqual(await readFile(path.join(f.cacheDirectory, `${name}.${digest}.partial`)), installer.subarray(0, 5));
+    }
+    assert.equal(manager.operation, null); assert.equal(f.network.active.size, 0);
+    assert.ok(f.sessions.every(session => session.cleared)); assert.ok(f.children.every(child => child.exitCode === 0));
+  }
 });
 
 test('manual off preference survives reload and background work, explicit user action clears it before a fresh scoped start', async t => {

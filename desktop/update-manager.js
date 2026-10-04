@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { lstat, mkdir, open, readdir, realpath, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const REPOSITORY = 'Brclio/brclio-xhs-media-downloader';
 export const LATEST_RELEASE_URL = `https://api.github.com/repos/${REPOSITORY}/releases/latest`;
@@ -9,6 +10,11 @@ const CDN_HOSTS = new Set(['release-assets.githubusercontent.com', 'objects.gith
 const MAX_INSTALLER_BYTES = 2 * 1024 ** 3;
 const MAX_MANIFEST_BYTES = 128 * 1024;
 const MAX_RELEASE_BYTES = 1024 * 1024;
+const DOWNLOAD_FAILURE_LIMIT = 10;
+const RETRYABLE_DOWNLOAD_ERRORS = new Set(['NETWORK_ERROR', 'TIMEOUT', 'HTTP_ERROR', 'RATE_LIMITED', 'ACCESS_DENIED',
+  'DOWNLOAD_INCOMPLETE', 'EMPTY_RESPONSE', 'PROXY_START_FAILED', 'PROXY_FETCH_FAILED', 'PROXY_NODES_UNAVAILABLE', 'PROXY_CORE_UNAVAILABLE']);
+const NETWORK_ERROR_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ECONNABORTED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN',
+  'EHOSTUNREACH', 'ENETUNREACH', 'EPIPE']);
 
 // Electron net.fetch rejects manual redirects instead of exposing their response.
 // Adapt net.request so the manager can validate every Location before following it.
@@ -101,6 +107,22 @@ class UpdateError extends Error {
 }
 
 function fail(code, message) { throw new UpdateError(code, message); }
+
+function updateFailure(error, phase) {
+  return error instanceof UpdateError ? error : /^(?:MAC_UPDATE_|PROXY_)[A-Z_]+$/.test(error?.code || '')
+    ? new UpdateError(error.code, error.message) : new UpdateError(
+      error?.code === 'ENOSPC' ? 'DISK_FULL' : phase === 'install' ? 'INSTALL_FAILED' : 'NETWORK_ERROR',
+      error?.code === 'ENOSPC' ? '磁盘空间不足，请清理后重试。' : phase === 'install'
+        ? '无法完成安装前准备或打开安装程序，请重试。' : '更新请求失败，请检查网络连接后重试。');
+}
+
+function retryableDownloadError(error, failure) {
+  // Filesystem errors must not be mistaken for interrupted network requests.
+  if (typeof error?.code === 'string' && !(error instanceof UpdateError) && !error.code.startsWith('PROXY_')) {
+    return NETWORK_ERROR_CODES.has(error.code);
+  }
+  return RETRYABLE_DOWNLOAD_ERRORS.has(failure.code);
+}
 
 function versionParts(value) {
   if (typeof value !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value)) {
@@ -218,7 +240,7 @@ function partialName(candidate) { return `${candidate.name}.${candidate.sha256}.
 
 export class UpdateManager {
   constructor({ currentVersion, platform = process.platform, arch = process.arch, portable = false,
-    directory, fetchImpl = globalThis.fetch, onUpdate = () => {}, networkTimeoutMs = 30000,
+    directory, fetchImpl = globalThis.fetch, onUpdate = () => {}, networkTimeoutMs = 30000, downloadRetryDelayMs = 1000,
     confirmInstall = async () => false, pauseDownloads = async () => {},
     openInstaller = async () => fail('INSTALL_UNAVAILABLE', '当前环境无法打开安装程序。'),
     openExternal = async () => fail('BROWSER_OPEN_FAILED', '无法打开浏览器，请检查默认浏览器设置后重试。'), onInstalled = () => {}, networkScope = null }) {
@@ -229,6 +251,7 @@ export class UpdateManager {
     this.networkScope = networkScope;
     this.onUpdate = onUpdate;
     this.networkTimeoutMs = networkTimeoutMs;
+    this.downloadRetryDelayMs = downloadRetryDelayMs;
     this.confirmInstall = confirmInstall;
     this.pauseDownloads = pauseDownloads;
     this.openInstaller = openInstaller;
@@ -244,7 +267,7 @@ export class UpdateManager {
     this.state = { status: 'idle', currentVersion, latestVersion: null, platform, arch,
       releaseUrl: null, releaseNotes: '', publishedAt: '',
       download: downloadProgress(0, 0),
-      error: null, checkError: null, canRetry: false, installationHint: installationHint(platform, portable) };
+      error: null, checkError: null, retry: null, canRetry: false, installationHint: installationHint(platform, portable) };
   }
 
   snapshot() { return structuredClone(this.state); }
@@ -261,26 +284,24 @@ export class UpdateManager {
     this.phase = phase;
     this.operation = (async () => {
       try {
-        if (phase === 'check' && this.state.status !== 'downloaded') this.emit({ status: 'checking', error: null, checkError: null, canRetry: false });
-        if (phase === 'download' && this.candidate) this.emit({ status: 'downloading', error: null, canRetry: false });
+        if (phase === 'check' && this.state.status !== 'downloaded') this.emit({ status: 'checking', error: null, checkError: null, retry: null, canRetry: false });
+        if (phase === 'download' && this.candidate) this.emit({ status: 'downloading', error: null, retry: null, canRetry: false });
         if (this.networkScope && ['check', 'download'].includes(phase)) {
           if (manual && typeof this.networkScope.requestInternalProxyForUserOperation === 'function') {
             await this.networkScope.requestInternalProxyForUserOperation();
             controller.signal.throwIfAborted();
           }
-          await this.networkScope.run(controller, () => work(controller));
+          if (phase === 'download') await this.runDownloadAttempts(controller, work);
+          else await this.networkScope.run(controller, () => work(controller));
         }
         else await work(controller);
       }
       catch (error) {
         if (controller.signal.aborted && controller.signal.reason?.code === 'CANCELED') {
-          this.emit({ status: this.candidate ? 'available' : 'idle', error: null, canRetry: false });
+          this.emit({ status: this.candidate ? 'available' : 'idle', error: null, retry: null, canRetry: false });
         } else {
           const reason = controller.signal.aborted ? controller.signal.reason : error;
-          const failure = reason instanceof UpdateError ? reason : /^(?:MAC_UPDATE_|PROXY_)[A-Z_]+$/.test(error?.code || '') ? new UpdateError(error.code, error.message) : new UpdateError(
-            error?.code === 'ENOSPC' ? 'DISK_FULL' : phase === 'install' ? 'INSTALL_FAILED' : 'NETWORK_ERROR',
-            error?.code === 'ENOSPC' ? '磁盘空间不足，请清理后重试。' : phase === 'install'
-              ? '无法完成安装前准备或打开安装程序，请重试。' : '更新请求失败，请检查网络连接后重试。');
+          const failure = updateFailure(reason, phase);
           const retryPhase = phase === 'install' && !this.verifiedFile && this.candidate ? 'download' : phase;
           const detail = { code: failure.code, message: failure.message, phase: retryPhase };
           // A failed refresh says nothing about an already validated release.
@@ -297,6 +318,54 @@ export class UpdateManager {
     })();
     try { return await this.operation; }
     finally { this.operation = null; this.controller = null; this.phase = null; }
+  }
+
+  async runDownloadAttempts(controller, work) {
+    let consecutiveFailures = 0;
+    while (true) {
+      controller.signal.throwIfAborted();
+      // An automatic retry never overrides a newer manual proxy stop. There
+      // may be no active network scope while waiting between attempts.
+      if (consecutiveFailures && this.networkScope.snapshot?.().manuallyDisabled) {
+        controller.abort(new UpdateError('CANCELED', '已关闭软件内置升级代理。'));
+        controller.signal.throwIfAborted();
+      }
+      const attempt = new AbortController();
+      const abort = () => attempt.abort(controller.signal.reason);
+      controller.signal.addEventListener('abort', abort, { once: true });
+      let internalProxy = false;
+      try {
+        await this.networkScope.run(attempt, () => work(attempt), { onInternalProxy: () => { internalProxy = true; } });
+        controller.signal.throwIfAborted();
+        if (this.state.retry) this.emit({ retry: null });
+        return;
+      } catch (error) {
+        controller.signal.throwIfAborted();
+        const reason = attempt.signal.aborted ? attempt.signal.reason : error;
+        if (reason?.code === 'CANCELED') {
+          controller.abort(reason);
+          throw reason;
+        }
+        const failure = updateFailure(reason, 'download');
+        if (!internalProxy || !retryableDownloadError(reason, failure)) {
+          this.state.retry = null;
+          throw failure;
+        }
+        consecutiveFailures++;
+        const retry = { active: consecutiveFailures < DOWNLOAD_FAILURE_LIMIT, consecutiveFailures,
+          limit: DOWNLOAD_FAILURE_LIMIT, lastError: { code: failure.code, message: failure.message } };
+        if (!retry.active) {
+          this.state.retry = retry;
+          throw failure;
+        }
+        // All file handles and the previous proxy are closed before publishing
+        // retained progress and opening the next independently cancelable scope.
+        this.emit({ status: 'downloading', error: null, canRetry: false, retry });
+      } finally {
+        controller.signal.removeEventListener('abort', abort);
+      }
+      await delay(this.downloadRetryDelayMs, undefined, { signal: controller.signal });
+    }
   }
 
   async bounded(promise, controller) {
@@ -433,7 +502,7 @@ export class UpdateManager {
       // succeed, so a failed refresh cannot mix old notes with a new asset.
       this.candidate = candidate;
       this.verifiedFile = null;
-      this.emit({ ...metadata, status: candidate ? 'available' : 'up-to-date', error: null, checkError: null, canRetry: false,
+      this.emit({ ...metadata, status: candidate ? 'available' : 'up-to-date', error: null, checkError: null, retry: null, canRetry: false,
         download: downloadProgress(received, candidate?.size || 0) });
     }, { manual });
   }
@@ -495,7 +564,7 @@ export class UpdateManager {
         controller.signal.throwIfAborted();
         this.verifiedFile = final;
         await rm(partial, { force: true });
-        this.emit({ status: 'downloaded', download: downloadProgress(candidate.size, candidate.size, false) });
+        this.emit({ status: 'downloaded', retry: null, download: downloadProgress(candidate.size, candidate.size, false) });
         return;
       } catch (error) {
         controller.signal.throwIfAborted();
@@ -571,7 +640,7 @@ export class UpdateManager {
         await rm(final, { force: true });
         await rename(partial, final);
         this.verifiedFile = final;
-        this.emit({ status: 'downloaded', download: downloadProgress(candidate.size, candidate.size, false) });
+        this.emit({ status: 'downloaded', retry: null, download: downloadProgress(candidate.size, candidate.size, false) });
       } catch (error) {
         discard = error.code === 'HASH_MISMATCH' || (error.code === 'SIZE_MISMATCH' && readingBody);
         throw error;
