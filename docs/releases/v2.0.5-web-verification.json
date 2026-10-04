@@ -1,0 +1,135 @@
+{
+  "result": "PASS",
+  "evidence": {
+    "support": {
+      "supported": true,
+      "audioSupported": true,
+      "message": "本地制作已就绪。"
+    },
+    "checks": [
+      "image playback",
+      "slideshow playback",
+      "native H264/AAC fixture",
+      "trimmed audio-video playback",
+      "decoded audible PCM",
+      "image/audio cancellation cleanup"
+    ],
+    "audioRms": 0.20041444734487293,
+    "menu": {
+      "text": "制作实况",
+      "href": "https://xhs.download.brclio.com/live.html",
+      "visible": true
+    },
+    "hashes": [
+      {
+        "name": "live.css",
+        "sha256": "a979d1b471e2a90abfdf5a56d7f0d492c2d443cacd9640d752f6ca778db094e7",
+        "bytes": 14160,
+        "contentType": "text/css; charset=utf-8"
+      },
+      {
+        "name": "lib/archive.js",
+        "sha256": "afde62f237a971f6554354d64d8b8f146a529f530fbc761ffc29174522ab904b",
+        "bytes": 6890,
+        "contentType": "application/javascript"
+      },
+      {
+        "name": "lib/live-photo-format.js",
+        "sha256": "e4b2039d7a93170329e8cfbdb8e839aa6642013289f6d228181a27fcc5b57989",
+        "bytes": 16824,
+        "contentType": "application/javascript"
+      },
+      {
+        "name": "lib/live-photo-maker.js",
+        "sha256": "74f64bcce1bce5de6676dd0cc5c460d64b449bab1caff28e2b48a8955416d832",
+        "bytes": 18891,
+        "contentType": "application/javascript"
+      },
+      {
+        "name": "live.html",
+        "sha256": "d8d8bd824c7021d53926067213dacf96aef0eb93a717fdaaee45dda2afd912aa",
+        "bytes": 9982,
+        "contentType": "text/html; charset=utf-8"
+      },
+      {
+        "name": "live.js",
+        "sha256": "70c5ecdd087f3b67e6161ad52a117077bd15d5f3d36a999f5a21292c5a9be604",
+        "bytes": 23808,
+        "contentType": "application/javascript"
+      },
+      {
+        "name": "index.html",
+        "sha256": "8e85d227c6c934c4ed61d165e9d1e0abccbf96dc1aa85b52ecf2402a0f16ae54",
+        "bytes": 58870,
+        "contentType": "text/html; charset=utf-8"
+      }
+    ],
+    "ui": [
+      {
+        "fixture": "red",
+        "result": "ready",
+        "title": "实况制作 · Brclio",
+        "support": "本地制作已就绪。",
+        "summary": "1.00 秒 · 160 × 96 · ZIP 5 KB",
+        "zipBytes": 4666,
+        "entries": [
+          {
+            "name": "Brclio-Live-20261004-040957.JPG",
+            "bytes": 993
+          },
+          {
+            "name": "Brclio-Live-20261004-040957.MOV",
+            "bytes": 2622
+          },
+          {
+            "name": "README.txt",
+            "bytes": 657
+          }
+        ],
+        "download": "Brclio-Live-20261004-040957.zip",
+        "videoWidth": 160,
+        "videoHeight": 96,
+        "errorHidden": true
+      },
+      {
+        "fixture": "source",
+        "result": "ready",
+        "title": "实况制作 · Brclio",
+        "support": "本地制作已就绪。",
+        "summary": "1.00 秒 · 160 × 96 · ZIP 11 KB",
+        "zipBytes": 10479,
+        "entries": [
+          {
+            "name": "Brclio-Live-20261004-040958.JPG",
+            "bytes": 993
+          },
+          {
+            "name": "Brclio-Live-20261004-040958.MOV",
+            "bytes": 8435
+          },
+          {
+            "name": "README.txt",
+            "bytes": 657
+          }
+        ],
+        "download": "Brclio-Live-20261004-040958.zip",
+        "videoWidth": 160,
+        "videoHeight": 96,
+        "errorHidden": true
+      }
+    ],
+    "rendererErrors": []
+  },
+  "version": "2.0.5",
+  "sourceCommit": "e7eda0d0d104a2f4bcf9bbff80148da56a643024",
+  "verifiedAt": "2026-10-04T04:11:21.229Z",
+  "productionUrl": "https://xhs.download.brclio.com/live.html",
+  "deployment": {
+    "id": "808d40f4-3497-4a3e-adac-da080248c36e",
+    "environment": "Production",
+    "branch": "main",
+    "source": "e7eda0d",
+    "url": "https://808d40f4.brclio-xhs-pages.pages.dev"
+  },
+  "scope": "Public production assets and renderer with disposable local image and audio-video fixtures; native WebCodecs decoding and ZIP entries verified. No user media upload, Photos library import, or phone installation."
+}

@@ -1,6 +1,6 @@
 # Brclio 小红书下载器 · 桌面版
 
-当前源码版本为 v2.0.5，新增主窗口内的「制作实况」：将本地图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整片段、封面与声音，导出配对 JPG + MOV ZIP。功能已完成真实渲染器与 Apple 实况识别验证，正式安装包以三平台构建核验和 [v2.0.5 版本说明](../docs/releases/v2.0.5.md)中的发布附件为准。Android 保持 v1.0.11。
+当前正式版本为 v2.0.5，新增主窗口内的「制作实况」：将本地图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整片段、封面与声音，导出配对 JPG + MOV ZIP。Mac arm64、Mac x64、Windows x64 的原生编码验证与安装包构建通过，生产网页已验证图片、视频、声音及实际 ZIP 导出。安装包见 [v2.0.5 版本说明](../docs/releases/v2.0.5.md)，证据见[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37176396468)、[网页验证](../docs/releases/v2.0.5-web-verification.json)和[公开发布核验](../docs/releases/v2.0.5-publication-verification.json)。Android 保持 v1.0.11。
 
 v2.0.4 新增系统代理优先和内置升级代理关闭按钮，并修复 Mac 同版本重装清理及安装窗口关闭。手动关闭后持续停用，下次明确检查或下载时自动恢复，完成后关闭。详见 [v2.0.4 版本说明](../docs/releases/v2.0.4.md)。
 

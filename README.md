@@ -1,6 +1,6 @@
 # Brclio 小红书下载器
 
-v2.0.5 新增本地[实况制作](docs/live-photo-maker.md)：网页和桌面支持将单张图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整图片顺序、视频片段、封面和声音，导出配对 JPG + MOV ZIP。素材在本机处理，无需会员；功能已完成源码与打包页面验证，正式安装包以[版本说明与发布附件](docs/releases/v2.0.5.md)为准。Android 仍为 v1.0.11，本次不更新 Android 安装包。
+v2.0.5 已发布，新增本地[实况制作](docs/live-photo-maker.md)：网页和桌面支持将单张图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整图片顺序、视频片段、封面和声音，导出配对 JPG + MOV ZIP。素材在本机处理，无需会员。Mac arm64、Mac x64、Windows x64 的原生编码验证与安装包构建通过，生产网页已验证图片、视频、声音及实际 ZIP 导出。详见[版本说明与发布附件](docs/releases/v2.0.5.md)、[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37176396468)、[网页验证](docs/releases/v2.0.5-web-verification.json)与[公开发布核验](docs/releases/v2.0.5-publication-verification.json)。Android 仍为 v1.0.11，本次不更新 Android 安装包。
 
 桌面 v2.0.4 与 Android v1.0.11 新增系统代理优先和「关闭软件内置代理」控制：手动关闭状态持续保存，下次明确检查或下载时自动恢复，任务结束后自动关闭。Mac 同时修复同版本重装的临时旧版清理及无法关闭的安装提示。详见 [桌面说明](docs/releases/v2.0.4.md) 与 [Android 说明](docs/releases/android-v1.0.11.md)。
 
