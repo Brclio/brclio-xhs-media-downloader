@@ -1,8 +1,8 @@
 # Brclio 小红书下载器
 
-v2.0.6 已发布，为 Mac / Windows 桌面更新增加内置代理自动续传重试：下载中断或超时后自动重新连接，实时显示连续失败次数；连续失败 10 次后暂停自动重试，点击“继续下载”或“重试下载”开始新一轮。暂停、退出和手动关闭代理保留已下载进度。三平台构建、公开附件与官网已核验，正式 Mac arm64 包启动和联网检查通过。详见[版本说明](docs/releases/v2.0.6.md)、[公开发布核验](docs/releases/v2.0.6-publication-verification.json)、[官网验收](docs/releases/v2.0.6-web-verification.json)与[更新网络配置](docs/update-proxy-config.md)。Android 保持 v1.0.11。
+v2.0.7 已发布，[实况制作](docs/live-photo-maker.md)默认导出真正的 HEIC + MOV，可选 JPEG + MOV，提供照片、MOV 两个直接下载入口及完整 ZIP。两文件共用 UUID 名称与内部配对标识；Mac Apple 芯片、Mac Intel、Windows 的 HEIC 原生编码门禁、安装包构建和更新验收全部通过。素材在本机处理，照片来自 8 位 Canvas，不保留源 HDR / 10 位信息。详见[版本说明](docs/releases/v2.0.7.md)、[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37194318192)、[本机原生与下载验收](docs/live-photo-heic-verification.json)和[公开发布核验](docs/releases/v2.0.7-publication-verification.json)。Android 保持 v1.0.11。
 
-当前源码的[实况制作更新](docs/live-photo-maker.md)默认导出 HEIC + MOV，可选 JPEG + MOV，并提供照片、MOV 两个直接下载入口及完整 ZIP。两文件使用同一 UUID 文件名与配对标识；HEIC 在本机 Worker 中通过 WebAssembly 版 libheif / Kvazaar 编码，画面来自 8 位 Canvas，不保留源素材的 HDR 或 10 位信息。**这次 HEIC 更新仍待联调与发布，未包含在已发布的 v2.0.6 中。**
+v2.0.6 已发布，为 Mac / Windows 桌面更新增加内置代理自动续传重试：下载中断或超时后自动重新连接，实时显示连续失败次数；连续失败 10 次后暂停自动重试，点击“继续下载”或“重试下载”开始新一轮。暂停、退出和手动关闭代理保留已下载进度。三平台构建、公开附件与官网已核验，正式 Mac arm64 包启动和联网检查通过。详见[版本说明](docs/releases/v2.0.6.md)、[公开发布核验](docs/releases/v2.0.6-publication-verification.json)、[官网验收](docs/releases/v2.0.6-web-verification.json)与[更新网络配置](docs/update-proxy-config.md)。Android 保持 v1.0.11。
 
 v2.0.5 已发布，新增本地[实况制作](docs/live-photo-maker.md)：网页和桌面支持将单张图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整图片顺序、视频片段、封面和声音，导出配对 JPG + MOV ZIP。素材在本机处理，无需会员。Mac arm64、Mac x64、Windows x64 的原生编码验证与安装包构建通过，生产网页已验证图片、视频、声音及实际 ZIP 导出。详见[版本说明与发布附件](docs/releases/v2.0.5.md)、[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37176396468)、[网页验证](docs/releases/v2.0.5-web-verification.json)与[公开发布核验](docs/releases/v2.0.5-publication-verification.json)。Android 仍为 v1.0.11，本次不更新 Android 安装包。
 
