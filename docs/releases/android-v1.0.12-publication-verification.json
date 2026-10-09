@@ -1,0 +1,335 @@
+{
+  "schemaVersion": 1,
+  "result": "PASS",
+  "version": "1.0.12",
+  "versionCode": 10012,
+  "tag": "android-v1.0.12",
+  "sourceSha": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+  "verifiedAt": "2026-10-09T04:52:30.450808+00:00",
+  "scope": {
+    "purpose": "Individual native video and live MP4 saves stream to disk without fixed media size or total-duration caps; image, preview, archive and membership protections remain",
+    "previousVersion": "1.0.11"
+  },
+  "nativeBuild": {
+    "id": 37884999444,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37884999444",
+    "headSha": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 113672903768,
+        "name": "build",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 113673355802,
+        "name": "upgrade-emulator",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 113674776189,
+        "name": "publish",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "publicRelease": {
+    "id": 407518558,
+    "tag_name": "android-v1.0.12",
+    "html_url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.12",
+    "target_commitish": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-10-09T04:48:55Z"
+  },
+  "publicReadback": {
+    "result": "PASS",
+    "anonymousDownload": true,
+    "assets": [
+      {
+        "name": "android-update.json",
+        "bytes": 2583,
+        "sha256": "21625499232bee44d9fc4aafc72fea1c6bf490702ab426b5519fa051fb7f2c87",
+        "githubDigestMatches": true,
+        "anonymousHttpStatus": 200,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.12/android-update.json"
+      },
+      {
+        "name": "Brclio-XHS-Android-1.0.12-release.apk",
+        "bytes": 73149498,
+        "sha256": "ff038309a32d0fd67d07308cdc4ae37890b13cb581058f9077bf785153b88276",
+        "githubDigestMatches": true,
+        "anonymousHttpStatus": 200,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.12/Brclio-XHS-Android-1.0.12-release.apk"
+      },
+      {
+        "name": "Brclio-XHS-Android-1.0.12-release.apk.sha256",
+        "bytes": 104,
+        "sha256": "32378ef9b2e855ad9313c863df13615991491412582056b847169a0586d6612f",
+        "githubDigestMatches": true,
+        "anonymousHttpStatus": 200,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.12/Brclio-XHS-Android-1.0.12-release.apk.sha256"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 104,
+        "sha256": "32378ef9b2e855ad9313c863df13615991491412582056b847169a0586d6612f",
+        "githubDigestMatches": true,
+        "anonymousHttpStatus": 200,
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.12/SHA256SUMS.txt"
+      }
+    ],
+    "strictReleaseFileValidatorPassed": true,
+    "releaseBuild": {
+      "schemaVersion": 1,
+      "platform": "android",
+      "version": "1.0.12",
+      "versionCode": 10012,
+      "applicationId": "com.brclio.xhs",
+      "minSdk": 26,
+      "signingCertificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b",
+      "sourceCommit": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+      "sourceDirty": false,
+      "builtAt": "2026-10-09T04:42:28.450Z",
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true,
+      "bundledUpdateProxy": {
+        "version": "v1.19.32",
+        "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+        "apkSha256": "ff038309a32d0fd67d07308cdc4ae37890b13cb581058f9077bf785153b88276",
+        "bundledSubscriptionsAbsent": true,
+        "configurationSource": "management-api",
+        "sourceArchiveVerified": true,
+        "licenseVerified": true,
+        "launcherSourceVerified": true,
+        "coreCount": 3,
+        "launcherCount": 3,
+        "binaries": [
+          {
+            "abi": "arm64-v8a",
+            "coreSha256": "bb9afbd48717f92d59e07da35fb694b83d40d6edb63eb9033c2ee4174137d195",
+            "launcherSha256": "ff95c71875b2b74bec1de86eb84c3d07c56c835b1450f6153189950e81a6ac14",
+            "elfVerified": true
+          },
+          {
+            "abi": "armeabi-v7a",
+            "coreSha256": "10e85ebad5380e5cdcb4028b6ba40910593bc9c37ce6b50e9f3a21adfca1408d",
+            "launcherSha256": "ff81f7c906142998023476a721d999d5f70ca208e6db032c9da96404b86cb4c0",
+            "elfVerified": true
+          },
+          {
+            "abi": "x86_64",
+            "coreSha256": "1c5aa8e8a7006e4093560fe48505fd1587de29210879e806822cb1094b334413",
+            "launcherSha256": "7d1fd4b61597cae9b0095e8792612d21581125bb5eea2fa7f7152a2209f371a3",
+            "elfVerified": true
+          }
+        ]
+      },
+      "apk": {
+        "name": "Brclio-XHS-Android-1.0.12-release.apk",
+        "bytes": 73149498,
+        "sha256": "ff038309a32d0fd67d07308cdc4ae37890b13cb581058f9077bf785153b88276"
+      },
+      "emulatorUpgrade": {
+        "verifiedAt": "2026-10-09T04:48:19.232Z",
+        "method": "adb install -r",
+        "apiLevel": 35,
+        "sourceCommit": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+        "apkSha256": "ff038309a32d0fd67d07308cdc4ae37890b13cb581058f9077bf785153b88276",
+        "targetVersion": "1.0.12",
+        "targetVersionCode": 10012,
+        "baselineVersion": "1.0.2",
+        "baselineVersionCode": 10002,
+        "signaturesVerified": true,
+        "oldAndNewLaunchVerified": true,
+        "uidPreserved": true,
+        "firstInstallTimePreserved": true,
+        "userSettingPreserved": true,
+        "updateCheckUiVerified": true,
+        "inAppInstallerConfirmationTested": false,
+        "manualFallbackFixtureVerified": true,
+        "vipCommunityVerified": true
+      }
+    },
+    "checksumFilesMatchApk": true,
+    "tagCommitVerified": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+    "desktopLatestBeforeAndroidPublication": "v2.0.7",
+    "desktopLatestAfterAndroidPublication": "v2.0.7",
+    "desktopLatestPreserved": true
+  },
+  "independentApkVerification": {
+    "verified": true,
+    "minimumCheckedApi": 26,
+    "v1": false,
+    "v2": true,
+    "v3": false,
+    "v31": false,
+    "signerCertificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b",
+    "errors": 0,
+    "package": "com.brclio.xhs",
+    "version": "1.0.12",
+    "versionCode": 10012,
+    "minSdk": 26,
+    "targetSdk": 35,
+    "verifier": "Android apksig 8.9.2 on temporary JDK 17"
+  },
+  "apkSourceAssets": [
+    {
+      "apkEntry": "assets/www/index.html",
+      "source": "android/app/src/main/assets/www/index.html",
+      "bytes": 11110,
+      "sha256": "7fdb04cba47a44eb471122f14fbe501a192aa15cab7a8bbb652ba43b0c0c7f58",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/client.js",
+      "source": "android/app/src/main/assets/www/client.js",
+      "bytes": 23557,
+      "sha256": "e092654b770e04c80dd4c7b78a5251e06bbf1fcbdb08aa29c1b59cfaf5ee1f6c",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/media.js",
+      "source": "android/app/src/main/assets/www/media.js",
+      "bytes": 4876,
+      "sha256": "a8bb35a19e2e1e5b61c3cf4c8373b063241d4e2398b885a7c9f34f3d87790f03",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/client.css",
+      "source": "android/app/src/main/assets/www/client.css",
+      "bytes": 9746,
+      "sha256": "f1531f71c6618e1d70f5cbd9a09f581847ab702d7f7cd32113d6b4213815beb5",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/learn.html",
+      "source": "learn.html",
+      "bytes": 10041,
+      "sha256": "72824564b06cd13a662e042dca2381d6a5aa70b0a621a2e5f60778763d02c104",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/learn.css",
+      "source": "learn.css",
+      "bytes": 14887,
+      "sha256": "81f3303749afbdffcdae138a23492ebd97e4159f362571364404893ad15725f4",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/learn.js",
+      "source": "learn.js",
+      "bytes": 3180,
+      "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/vip.html",
+      "source": "vip.html",
+      "bytes": 4087,
+      "sha256": "c6aa33917314debcfb705d89cf0ea4abe0764983fa7e78ac27aadd415c83d7a7",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/vip.css",
+      "source": "vip.css",
+      "bytes": 5599,
+      "sha256": "8745e78c24ea73132ccb8e048fb1f7a418e5a9231e4b6baa6964f267453f1ab9",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/vip.js",
+      "source": "vip.js",
+      "bytes": 3180,
+      "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/aiyc.svg",
+      "source": "aiyc.svg",
+      "bytes": 3913,
+      "sha256": "6c9919d43f082026aee9a4a57243f3d12b6ac94b38d68fc3653ef718c3362b50",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/favicon.svg",
+      "source": "favicon.svg",
+      "bytes": 370,
+      "sha256": "829b051b8ef0a80fa95d7f1909af52af9e4c32bad4ce82c70618a5c901d0719b",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/assets/learning/book-promo.png",
+      "source": "assets/learning/book-promo.png",
+      "bytes": 1951638,
+      "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd",
+      "sourceBytesMatch": true
+    },
+    {
+      "apkEntry": "assets/www/assets/support/wechat-personal-qr.png",
+      "source": "assets/support/wechat-personal-qr.png",
+      "bytes": 178625,
+      "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f",
+      "sourceBytesMatch": true
+    }
+  ],
+  "compiledNativeMethodMarkersPresent": [
+    "unlimitedVideoSave",
+    "validateMediaBytes",
+    "contentLength",
+    "addBytes",
+    "jobTimedOut",
+    "downloadTimedOut",
+    "hasDownloadSpace"
+  ],
+  "packagedProxyIndependentReadback": {
+    "subscriptionsAbsent": true,
+    "launcherSourceMatches": true,
+    "licenseMatches": true,
+    "pinnedCores": [
+      {
+        "abi": "arm64-v8a",
+        "bytes": 64045272,
+        "sha256": "bb9afbd48717f92d59e07da35fb694b83d40d6edb63eb9033c2ee4174137d195",
+        "pinnedCoreMatches": true
+      },
+      {
+        "abi": "armeabi-v7a",
+        "bytes": 59576612,
+        "sha256": "10e85ebad5380e5cdcb4028b6ba40910593bc9c37ce6b50e9f3a21adfca1408d",
+        "pinnedCoreMatches": true
+      },
+      {
+        "abi": "x86_64",
+        "bytes": 68750864,
+        "sha256": "1c5aa8e8a7006e4093560fe48505fd1587de29210879e806822cb1094b334413",
+        "pinnedCoreMatches": true
+      }
+    ]
+  },
+  "checks": {
+    "androidNodeTestsPassed": 72,
+    "proxyProvisioningNodeTestsPassed": 5,
+    "androidJava": {
+      "tests": 65,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "androidNativePolicyTestsPassed": 18,
+    "androidLintErrors": 0,
+    "androidLintWarnings": 6,
+    "healthyEightGiBByteAccountingVerified": true
+  },
+  "verificationLimits": {
+    "actualAndroidHugeVideoTransferTested": false,
+    "userDeviceInstallationPerformed": false,
+    "inAppInstallerConfirmationTested": false,
+    "emulatorUpgradeMethod": "adb install -r",
+    "scope": "Android emulator gate verifies APK replacement, signatures, launch, preserved user state and related update/VIP UI; 8 GiB coverage verifies byte accounting without allocating media. Actual large-video saving on a physical Android device remains unverified."
+  }
+}

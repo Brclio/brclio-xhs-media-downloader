@@ -1,6 +1,6 @@
 # Brclio 小红书下载器
 
-桌面 v2.0.8 与 Android v1.0.12 发布准备中，修复客户端视频大小限制：Mac / Windows 的普通视频、会员原视频、单独实况 MP4 与主页批量视频持续写入本地文件，不再设置 512 MB / 2 GiB 的固定上限；Android 的单独普通视频与实况 MP4 同步移除 512 MB 上限。健康的持续传输不再受总下载时长限制，无数据连接仍会超时。桌面「制作实况」也移除视频素材的 150 MB 上限，继续仅编码所选短片段。会员授权、媒体来源和文件完整性检查保留；网页、ZIP 归档、图片与 Android 预览仍保留各自的保护限制，Android 会员原视频继续通过浏览器保存。详见[桌面版本说明](docs/releases/v2.0.8.md)与 [Android 版本说明](docs/releases/android-v1.0.12.md)。测试、安装包、公开附件和正式网页待完成核验后记录。
+桌面 v2.0.8 与 Android v1.0.12 已正式发布，修复客户端视频大小限制：Mac / Windows 的普通视频、会员原视频、单独实况 MP4 与主页批量视频持续写入本地文件，不再设置 512 MB / 2 GiB 的固定上限；Android 的单独普通视频与实况 MP4 同步移除 512 MB 上限。健康的持续传输不再受总下载时长限制，无数据连接仍会超时。桌面「制作实况」也移除视频素材的 150 MB 上限，继续仅编码所选短片段。会员授权、媒体来源和文件完整性检查保留；网页、ZIP 归档、图片与 Android 预览仍保留各自的保护限制，Android 会员原视频继续通过浏览器保存。详见[桌面版本说明](docs/releases/v2.0.8.md)与 [Android 版本说明](docs/releases/android-v1.0.12.md)。本机测试、三平台安装升级、安卓签名与模拟器升级验收通过，公开附件及客户端更新入口已核验。
 
 v2.0.7 已发布，[实况制作](docs/live-photo-maker.md)默认导出真正的 HEIC + MOV，可选 JPEG + MOV，提供照片、MOV 两个直接下载入口及完整 ZIP。两文件共用 UUID 名称与内部配对标识；Mac Apple 芯片、Mac Intel、Windows 的 HEIC 原生编码门禁、安装包构建和更新验收全部通过。素材在本机处理，照片来自 8 位 Canvas，不保留源 HDR / 10 位信息。详见[版本说明](docs/releases/v2.0.7.md)、[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37194318192)、[本机原生与下载验收](docs/live-photo-heic-verification.json)和[公开发布核验](docs/releases/v2.0.7-publication-verification.json)。Android 保持 v1.0.11。
 
@@ -74,7 +74,7 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 新增独立 Android 客户端工程，面向 Android 8.0 及以上，聚焦单篇笔记的原图、实况、视频、文案、ZIP、图片复制与系统分享。可粘贴分享文案，也可从其他应用分享文字进入；文件由 Android 系统文件选择器保存。解析沿用在线服务，安装者无需 Python 或 Node.js。检测到平台原视频后，可通过「下载无水印视频 · 会员」在系统浏览器打开网页版，登录软件账号并验证会员后下载；Android 原生层不保存该账号会话。当前不包含主页批量或小红书登录。
 
-前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 下一版本为 `1.0.12`，发布准备中，使用固定签名支持后续覆盖升级。单独普通视频与实况 MP4 持续写入本地，不设固定文件大小上限；图片、预览与 ZIP 保留原有保护，会员原视频继续通过浏览器登录后保存。
+前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 当前正式版为 `1.0.12`，使用固定签名支持覆盖升级。单独普通视频与实况 MP4 持续写入本地，不设固定文件大小上限；图片、预览与 ZIP 保留原有保护，会员原视频继续通过浏览器登录后保存。
 
 开发者配置 JDK 与 Android SDK 后运行 `npm run android:build` 生成 debug APK。构建、正式签名、安装与设备验证说明见 [Android 客户端说明](android/README.md)。Mac / Windows 使用独立的桌面版本与更新通道。
 
@@ -99,9 +99,9 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 使用步骤、保存规则、打包方式和平台验证情况见 [桌面版说明](desktop/README.md)。主页下载受实际登录状态、作者可见范围和平台访问限制影响；间隔只能降低请求频率，不能保证不触发限制。私密、已删除或当前账号不可见的内容无法下载。
 
-已发布的实况制作导出 JPG + MOV ZIP；待发布的源码更新默认改为 HEIC + MOV，可选 JPEG，并支持分别下载照片与 MOV。完整 ZIP 包含 `Brclio-Live-<UUID>.HEIC`（JPEG 选项为 `.JPG`）、同名 `.MOV` 和 `README.txt`。完整实况需要保留这两个配对文件；[Apple「照片」导出说明](https://support.apple.com/zh-cn/guide/photos/pht6e157c5f/mac)也说明，导出未修改的实况原片会得到静态图片和视频两个文件。
+实况制作默认导出 HEIC + MOV，可选 JPEG，并支持分别下载照片与 MOV。完整 ZIP 包含 `Brclio-Live-<UUID>.HEIC`（JPEG 选项为 `.JPG`）、同名 `.MOV` 和 `README.txt`。完整实况需要保留这两个配对文件；[Apple「照片」导出说明](https://support.apple.com/zh-cn/guide/photos/pht6e157c5f/mac)也说明，导出未修改的实况原片会得到静态图片和视频两个文件。
 
-解压或下载后一起导入 Mac「照片」，确认 LIVE 标记，再通过同一账号的 iCloud 照片同步到 iPhone；将 ZIP 下载到手机文件夹不会自动存入相册。网页需要相应的视频编码能力，保留声音还需要音频编码支持；HEIC 编码需要 Worker / WebAssembly，无法编码时会提示，不会自动改为 JPEG。GIF 以静态图片处理，此次仅增加 HEIC 输出，不承诺 HEIC 源图片的读取。既有 JPG + MOV 已验证 Apple 实况识别；新 HEIC 路径仍在联调，手机原生导入、iCloud 同步全流程及 Windows 设备上的相册识别仍需对应设备验证。制作与原有小红书 JPG + MP4 素材下载分别使用各自入口，详见[实况制作说明](docs/live-photo-maker.md)。
+解压或下载后一起导入 Mac「照片」，确认 LIVE 标记，再通过同一账号的 iCloud 照片同步到 iPhone；将 ZIP 下载到手机文件夹不会自动存入相册。网页需要相应的视频编码能力，保留声音还需要音频编码支持；HEIC 编码需要 Worker / WebAssembly，无法编码时会提示，不会自动改为 JPEG。GIF 以静态图片处理，此次仅增加 HEIC 输出，不承诺 HEIC 源图片的读取。既有 JPG + MOV 已验证 Apple 实况识别；手机原生导入、iCloud 同步全流程及 Windows 设备上的相册识别仍需对应设备验证。制作与原有小红书 JPG + MP4 素材下载分别使用各自入口，详见[实况制作说明](docs/live-photo-maker.md)。
 
 **从旧版升级：** v1.5.0 没有内置更新入口，需要从 Releases 手动安装一次。v1.6.1–v1.7.1 可检查并下载安装包，Mac 仍需把 DMG 内应用拖入“应用程序”；安装 v1.8.0 后，后续更新支持原位覆盖。Windows 沿用安装向导；便携版更新为安装版。v1.6.3 首次更名升级可能保留旧名称应用，确认新版正常后可移除旧应用，数据目录继续沿用。Mac 完整包使用 ad hoc 签名，尚无 Apple Developer ID 签名或公证；Windows 尚无发布者代码签名。外部 Mac 的系统安全提示与 Windows 安装向导仍需在对应用户机器验收。
 
@@ -131,7 +131,7 @@ codesign --verify --deep --strict --verbose=2 "/Applications/Brclio 小红书下
 - 视频浏览器分段下载、本地合并并保存为 MP4
 - Node.js / Python 双后台自由切换
 
-## 待发布功能
+## 文案与图片保存
 
 - Node.js 与 Python 两套解析器同步读取当前 `noteId` 对应的 `desc / description`，不从相关推荐兜底。
 - 结果区可复制“标题 + 正文”的完整笔记文案。

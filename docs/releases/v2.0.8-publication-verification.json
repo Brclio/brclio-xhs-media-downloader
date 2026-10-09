@@ -1,0 +1,233 @@
+{
+  "version": "2.0.8",
+  "tag": "v2.0.8",
+  "sourceSha": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.8",
+  "publishedAt": "2026-10-09T05:26:53Z",
+  "verifiedAt": "2026-10-09T05:29:01.336Z",
+  "assetCount": 11,
+  "builds": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "comparedSources": 233,
+      "sourceDirty": false
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "comparedSources": 233,
+      "sourceDirty": false
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "comparedSources": 233,
+      "sourceDirty": false
+    }
+  ],
+  "updates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "2.0.7",
+      "asset": "Brclio-XHS-2.0.8-mac-arm64.dmg",
+      "bytes": 167456977
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "2.0.7",
+      "asset": "Brclio-XHS-2.0.8-mac-x64.dmg",
+      "bytes": 175132273
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "2.0.7",
+      "asset": "Brclio-XHS-2.0.8-windows-x64-setup.exe",
+      "bytes": 146507227
+    }
+  ],
+  "legacyUpdater": {
+    "version": "1.8.13",
+    "tag": "v1.8.13",
+    "sourceSha": "83830d4db9b52e7e81a890a4c02d44b5eb02095c"
+  },
+  "legacyUpdates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-2.0.8-mac-arm64.dmg",
+      "bytes": 167456977,
+      "sha256": "5383842ab36327f34d78f5c06910bf73a3208320cf2a97d81ca76eb19e490932",
+      "manifestChecksumVerified": true
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-2.0.8-mac-x64.dmg",
+      "bytes": 175132273,
+      "sha256": "07256903acce1cfcfbe10fd529c8dd6b24d5236ae9533dcf78377f173b0868fb",
+      "manifestChecksumVerified": true
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-2.0.8-windows-x64-setup.exe",
+      "bytes": 146507227,
+      "sha256": "f26254da9a4a36d279f75a70c273f2d8f7aeac715f0bded00a74d1bd764e68c3",
+      "manifestChecksumVerified": true
+    }
+  ],
+  "compatibilityAliasesVerified": true,
+  "remoteDigestsVerified": true,
+  "publicManifestsVerified": true,
+  "anonymousUpdaterVisible": true,
+  "publicInstallerProbes": [
+    {
+      "name": "Brclio-XHS-2.0.8-mac-arm64.dmg",
+      "bytes": 167456977,
+      "sha256": "5383842ab36327f34d78f5c06910bf73a3208320cf2a97d81ca76eb19e490932",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.8-mac-arm64.zip",
+      "bytes": 168363361,
+      "sha256": "589e44c4ff0e5ef5e8297c8f0cbc92fa8cc91c7ea12b8bba82b34da5000078ce",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.8-mac-x64.dmg",
+      "bytes": 175132273,
+      "sha256": "07256903acce1cfcfbe10fd529c8dd6b24d5236ae9533dcf78377f173b0868fb",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.8-mac-x64.zip",
+      "bytes": 176159054,
+      "sha256": "ef67b83f45c1e68043635d23b7c692fe52aecca1cfb2fb929fb10d590b6caaee",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.8-windows-x64-setup.exe",
+      "bytes": 146507227,
+      "sha256": "f26254da9a4a36d279f75a70c273f2d8f7aeac715f0bded00a74d1bd764e68c3",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.8-windows-x64-portable.exe",
+      "bytes": 146268741,
+      "sha256": "fa0ada854c5ec14c0b8e42b671a46f25b3b754c38c2c08a724b5aad1749f693b",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-2.0.8-mac-arm64.dmg",
+      "bytes": 167456977,
+      "sha256": "5383842ab36327f34d78f5c06910bf73a3208320cf2a97d81ca76eb19e490932",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-2.0.8-mac-x64.dmg",
+      "bytes": 175132273,
+      "sha256": "07256903acce1cfcfbe10fd529c8dd6b24d5236ae9533dcf78377f173b0868fb",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-2.0.8-windows-x64-setup.exe",
+      "bytes": 146507227,
+      "sha256": "f26254da9a4a36d279f75a70c273f2d8f7aeac715f0bded00a74d1bd764e68c3",
+      "method": "HEAD",
+      "status": 200
+    }
+  ],
+  "workflow": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37887052271",
+    "workflowSha": "c7f029c17b6aedc14448617e7a725c543ca53a3c",
+    "event": "workflow_dispatch",
+    "conclusion": "success",
+    "jobs": [
+      "Publish verified installers",
+      "mac-intel",
+      "mac-arm64",
+      "windows-x64"
+    ],
+    "nativeClipboardVerified": true
+  },
+  "publishedBuildVerification": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true,
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true,
+      "macCodeSignatureVerified": true,
+      "macCodeSigning": "adhoc",
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true,
+      "packagedWindowsUpdateVerified": true,
+      "packagedWindowsPortableVerified": true,
+      "previousVersion": "1.8.17",
+      "automaticRelaunchRendererReadyVerified": true,
+      "dpapiCredentialsPreserved": true,
+      "pausedTaskPreserved": true,
+      "rendererStoragePreserved": true,
+      "currentPortableLaunchVerified": true,
+      "standalonePortableMigrationTested": false,
+      "rollbackImplemented": false,
+      "powerLossRecoveryTested": false,
+      "machineWideUacTested": false
+    }
+  ],
+  "ciRecovery": {
+    "releaseTagMoved": false,
+    "sourceSha": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+    "earlierRun": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37884999167",
+    "earlierAttempts": [
+      {
+        "attempt": 1,
+        "windowsFailure": "Unchanged VIP screenshot capture rejected with UnknownVizError; no assertion failed.",
+        "intelFailure": "Native GPU EGL/GL initialization failed, followed by DESKTOP_SMOKE_TIMEOUT; the native Electron process required cancellation."
+      },
+      {
+        "attempt": 2,
+        "windowsFailure": "Unchanged PowerShell process polling test reached its 15000 ms subprocess timeout.",
+        "intelFailure": "Unchanged Swift ImageIO acceptance test reached its 30000 ms subprocess timeout."
+      }
+    ],
+    "workflowRecovery": "Only CI execution changed: serialize all Node test files, use software rendering for bridge and VIP UI acceptance, and bound those UI steps. Assertions, native subprocess budgets, native codec gates and immutable release sources remained unchanged.",
+    "publisherRecovery": "The first publisher attempt uploaded all 11 assets into a draft, then its metadata GET failed with UND_ERR_SOCKET. A publisher-only rerun revalidated artifact digests and the unchanged tag before public publication.",
+    "localPublicAuditRecovery": "The initial read-only audit encountered a fetch transport error; the subsequent full audit passed."
+  }
+}

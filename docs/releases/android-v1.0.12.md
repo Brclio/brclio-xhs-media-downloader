@@ -13,3 +13,9 @@
 验收覆盖超过 2 GiB 的 64 位下载计数、声明长度和溢出、存储空间余量、单独视频与 ZIP/图片隔离及长时间下载的策略测试。构建、正式签名、已安装客户端与真实大文件保存的结果应分别记录；策略测试不代表已完成实体手机大文件保存验收。
 
 正式 APK 继续使用固定签名密钥，请覆盖安装并保留原应用。
+
+## 正式发布与核验
+
+本版本于 2026 年 10 月 9 日 12:48（北京时间）正式公开发布，源码为 `6caec7a097352a2f28189aeeb5efd121c151dbff`。[签名与升级 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37884999444)通过 65 项 Java 测试、Lint、正式 APK 签名检查，以及 Android 15（API 35）模拟器覆盖升级、应用启动和用户设置保留验收。18 项下载策略测试包含大于 2 GiB 的计数、长度溢出、长时间传输和 ZIP / 图片隔离。
+
+[正式 Release](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.12) 的四个公开附件已匿名下载回读并比对长度与 SHA-256，APK 独立验签通过，签名证书与历次正式版一致，版本及内置页面与正式标签源码一致。详见[公开发布核验](https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/android-v1.0.12-publication-verification.json)。模拟器升级与策略测试不代表实体手机已完成大视频下载；实体手机的大文件保存仍需对应设备验证。
