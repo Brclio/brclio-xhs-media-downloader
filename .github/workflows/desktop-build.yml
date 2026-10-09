@@ -60,7 +60,10 @@ jobs:
       # never both extract into node_modules/electron/dist at the same time.
       - name: Initialize Electron before concurrent native tests
         run: node -e "require('electron')"
-      - run: npm run test:node
+      # Large-file disk fixtures and native PowerShell / Swift / Electron
+      # subprocesses share the runner. Serialize files to keep their existing
+      # readiness budgets meaningful; every test and assertion still runs.
+      - run: node --test --test-concurrency=1
       - name: Verify native Mac replacement and rollback in temporary signed apps
         if: runner.os != 'Windows'
         # These files launch real AppKit/Electron windows, sign bundles and mount
@@ -108,7 +111,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Exercise real Electron main process, bridge, and both download engines
-        run: npm run desktop:verify
+        timeout-minutes: 3
+        # The bridge gate does not need a hardware GPU. Native codec acceptance
+        # above continues to run separately with its normal renderer settings.
+        run: npm run desktop:verify -- --disable-gpu
       - name: Verify native image clipboard and multi-file paste
         run: npm run desktop:verify:clipboard
       - name: Verify responsive startup and credential access recovery
@@ -124,7 +130,8 @@ jobs:
       - name: Verify public and packaged learning page assets, navigation and QR saving
         run: npm run build:web && npx electron scripts/verify-learning-ui.cjs
       - name: Verify anonymous VIP community access, responsive layout and original QR saving
-        run: npx electron scripts/verify-vip-ui.cjs
+        timeout-minutes: 3
+        run: npx electron scripts/verify-vip-ui.cjs --disable-gpu
       - name: Verify membership purchase and redemption in the real desktop renderer
         # Isolated fake account bridge; no real emails, payments or account writes.
         run: npm run desktop:verify:membership
