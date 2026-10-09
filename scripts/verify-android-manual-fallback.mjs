@@ -27,17 +27,56 @@ export const FALLBACK_BUILD_DEPENDENCIES = Object.freeze([
 // fetching, node probes, and GitHub metadata. Observe the complete native result.
 export const MANUAL_FALLBACK_RELEASE_LOOKUP_TIMEOUT_MS = 120000;
 
+const safeStatus = value => String(value || '')
+  .replace(/https?:\/\/[^\s<>"']+/gi, '[redacted URL]')
+  .replace(/\b(token|password|secret|authorization)\s*[:=]\s*\S+/gi, '$1=[redacted]')
+  .slice(0, 400);
+
 export function manualFallbackLookupState(observed) {
-  const status = String(observed?.status || '')
-    .replace(/https?:\/\/[^\s<>"']+/gi, '[redacted URL]')
-    .replace(/\b(token|password|secret|authorization)\s*[:=]\s*\S+/gi, '$1=[redacted]')
-    .slice(0, 400);
+  const status = safeStatus(observed?.status);
   return {
     detailsVisible: observed?.detailsVisible === true,
     busy: observed?.busy === true,
     error: observed?.tone === 'error' || /检查失败/.test(status),
     status,
   };
+}
+
+export function manualFallbackAttemptState(observed) {
+  const status = safeStatus(observed?.status);
+  const error = observed?.tone === 'error' && status.length > 0;
+  return { busy: observed?.busy === true, error, status,
+    // Retry only an explicit completed network failure, never an asset/signature,
+    // version, browser-policy or still-running operation failure.
+    retryable: observed?.busy === false && error && /^手动下载链接未打开：(更新(?:操作|连接)超时|更新服务连接失败|更新服务暂不可用（HTTP (?:502|503|504)）|版本服务请求受限|无法连接 GitHub 版本服务|更新订阅暂不可用（)/.test(status) };
+}
+
+export function hasManualBrowserIntent(dump, expectedUrl, browserPackage) {
+  return String(dump).split('\n').some(line => line.includes('Intent {')
+    && line.includes('act=android.intent.action.VIEW ')
+    && line.includes('android.intent.category.BROWSABLE')
+    && line.includes(`dat=${expectedUrl} `) && line.includes(`cmp=${browserPackage}/`));
+}
+
+export async function observeManualBrowserIntent({ readActivity, readState, expectedUrl, browserPackage,
+  timeoutMs = 90000, now = Date.now, wait = delay }) {
+  const deadline = now() + timeoutMs;
+  let state;
+  while (now() < deadline) {
+    const activity = await readActivity();
+    if (hasManualBrowserIntent(activity, expectedUrl, browserPackage)) return { activity, state };
+    state = manualFallbackAttemptState(await readState());
+    if (state.error && !state.busy) {
+      const failure = new Error(`Native manual download failed: ${state.status}`);
+      failure.retryable = state.retryable;
+      failure.state = state;
+      throw failure;
+    }
+    await wait(500);
+  }
+  const failure = new Error(`Timed out waiting for real native ACTION_VIEW intent carrying the latest public APK URL; native state: ${JSON.stringify(state)}`);
+  failure.state = state;
+  throw failure;
 }
 
 export async function copyManualFallbackSources(root, fixtureRoot) {
@@ -194,43 +233,72 @@ export async function verifyManualFallback({ root, output, run, device, shell, s
       await snapshot().then(() => screenshot('manual-fallback-release-lookup-failed')).catch(() => {});
       throw failure;
     }
-    // This failure is an explicitly injected UI fixture, not a claimed real
-    // Package Installer failure. The following click and native network/intent are real.
-    await cdp.evaluate(`window.brclioEvent(${JSON.stringify({ type: 'update', status: 'error', canInstallBuild: true,
-      error: '验收夹具：安装失败', installerClosed: true, installerResult: 'failed', downloadReady: false })})`);
-    const observedButton = await waitFor(async () => {
-      const rendered = await cdp.evaluate(`(() => {
-        const button = document.getElementById('manual-update');
-        button.scrollIntoView({ block: 'center', behavior: 'instant' });
-        const rect = button.getBoundingClientRect();
-        return !button.disabled && rect.width > 0 && rect.height > 0 && rect.top >= 0
-          && rect.bottom <= window.innerHeight && rect.left >= 0 && rect.right <= window.innerWidth;
-      })()`);
-      return rendered ? manualDownloadControl(await snapshot()) : null;
-    }, 'fully visible enabled manual-download Button');
-    assert.ok(observedButton, 'The injected failure must expose the exact clickable native Button');
-    const failureUi = await cdp.evaluate(`({ status: document.getElementById('update-status').textContent,
-      help: document.getElementById('manual-update-help').textContent,
-      visible: !document.getElementById('manual-update-help').hidden })`);
-    assert.equal(failureUi.visible, true); assert.match(failureUi.status, /系统返回安装失败/);
-    assert.match(failureUi.help, /覆盖安装.*不要卸载.*保留应用数据/);
-    await snapshot(); await screenshot('manual-fallback-injected-failure');
-    // Release notes can contain the same phrase. Reacquire the exact enabled
-    // Button after screenshot capture; never tap a substring text node or stale bounds.
-    const button = manualDownloadControl(await snapshot());
-    assert.ok(button, 'The visible manual-download Button must remain available immediately before tapping');
-    await tap(button);
-    const activityDump = await waitFor(async () => {
-      const dump = await shell('dumpsys', 'activity', 'activities');
-      return dump.includes(expected.url) && dump.includes(browser.split('/')[0]) ? dump : null;
-    }, 'real native ACTION_VIEW intent carrying the latest public APK URL', 90000);
+    const manualAttempts = [];
+    let failureUi, activityDump;
+    const observeManualState = () => cdp.evaluate(`(() => {
+      const status = document.getElementById('manual-update-status');
+      return { busy: document.getElementById('manual-update').disabled,
+        tone: status.dataset.tone, status: status.textContent };
+    })()`);
+    // A fresh real network request can fail after the successful initial lookup.
+    // Keep its error evidence and allow one real user retry; no intent means no pass.
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const startedAt = Date.now();
+      try {
+        // This failure is an explicitly injected UI fixture, not a claimed real
+        // Package Installer failure. The following click and native network/intent are real.
+        await cdp.evaluate(`window.brclioEvent(${JSON.stringify({ type: 'update', status: 'error', canInstallBuild: true,
+          error: '验收夹具：安装失败', installerClosed: true, installerResult: 'failed', downloadReady: false })})`);
+        const observedButton = await waitFor(async () => {
+          const rendered = await cdp.evaluate(`(() => {
+            const button = document.getElementById('manual-update');
+            button.scrollIntoView({ block: 'center', behavior: 'instant' });
+            const rect = button.getBoundingClientRect();
+            return !button.disabled && rect.width > 0 && rect.height > 0 && rect.top >= 0
+              && rect.bottom <= window.innerHeight && rect.left >= 0 && rect.right <= window.innerWidth;
+          })()`);
+          return rendered ? manualDownloadControl(await snapshot()) : null;
+        }, 'fully visible enabled manual-download Button');
+        assert.ok(observedButton, 'The injected failure must expose the exact clickable native Button');
+        failureUi = await cdp.evaluate(`({ status: document.getElementById('update-status').textContent,
+          help: document.getElementById('manual-update-help').textContent,
+          visible: !document.getElementById('manual-update-help').hidden })`);
+        assert.equal(failureUi.visible, true); assert.match(failureUi.status, /系统返回安装失败/);
+        assert.match(failureUi.help, /覆盖安装.*不要卸载.*保留应用数据/);
+        await snapshot(); await screenshot('manual-fallback-injected-failure');
+        // Release notes can contain the same phrase. Reacquire the exact enabled
+        // Button after screenshot capture; never tap a substring text node or stale bounds.
+        const button = manualDownloadControl(await snapshot());
+        assert.ok(button, 'The visible manual-download Button must remain available immediately before tapping');
+        assert.equal(hasManualBrowserIntent(await shell('dumpsys', 'activity', 'activities'), expected.url,
+          browser.split('/')[0]), false, 'A browser intent from an earlier operation cannot satisfy this click');
+        await tap(button);
+        const observed = await observeManualBrowserIntent({
+          readActivity: () => shell('dumpsys', 'activity', 'activities'),
+          readState: observeManualState, expectedUrl: expected.url, browserPackage: browser.split('/')[0],
+        });
+        activityDump = observed.activity;
+        manualAttempts.push({ attempt, elapsedMs: Date.now() - startedAt, actualBrowserIntentVerified: true });
+        break;
+      } catch (failure) {
+        const state = await observeManualState().then(manualFallbackAttemptState).catch(() => failure.state);
+        manualAttempts.push({ attempt, elapsedMs: Date.now() - startedAt, actualBrowserIntentVerified: false,
+          state: state || { unavailable: true }, error: safeStatus(failure.message) });
+        await writeFile(path.join(output, 'manual-fallback-attempts.json'), JSON.stringify(manualAttempts, null, 2) + '\n');
+        await snapshot().then(() => screenshot(`manual-fallback-attempt-${attempt}-failed`)).catch(() => {});
+        if (!failure.retryable || attempt === 2) throw failure;
+        await delay(1000);
+      }
+    }
+    assert.ok(activityDump, 'A completed native browser intent is required after every allowed attempt');
+    await writeFile(path.join(output, 'manual-fallback-attempts.json'), JSON.stringify(manualAttempts, null, 2) + '\n');
     await writeFile(path.join(output, 'manual-fallback-browser-activities.txt'), activityDump);
     await snapshot(); await screenshot('manual-fallback-browser');
     const result = {
       verifiedAt: new Date().toISOString(), fixture: { applicationId: fixtureApp, version: '0.0.0-debug',
         sourceCopyOnly: true, productionApkModified: false, injectedInstallationFailure: true,
         injectedCanInstallBuildUiState: true, nativeNetworkMocked: false, nativeUrlOverride: false },
-      failureUi, expectedPublicRelease: expected, browserComponent: browser,
+      failureUi, manualAttempts, expectedPublicRelease: expected, browserComponent: browser,
       actualBrowserIntentVerified: true, sourceJavaAndWebUiUnmodified: true,
       debugApkSha256: createHash('sha256').update(await readFile(debugApk)).digest('hex'),
       limitations: ['The installer failure was a debug-WebView UI fixture. No production installer failure or browser download completion is claimed.',

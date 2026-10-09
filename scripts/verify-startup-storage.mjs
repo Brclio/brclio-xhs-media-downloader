@@ -26,7 +26,19 @@ app.getVersion = () => pkg.version;
 process.env.XHS_ACCOUNT_ENDPOINT = 'https://account-fixture.invalid/api/account';
 let networkAttempts = 0;
 let blockedBrowserRequests = 0;
-globalThis.fetch = async () => {
+let publicReviewRequests = 0;
+globalThis.fetch = async (url, options = {}) => {
+  // Public reviews are deliberately independent of credential storage. Keep
+  // them local while retaining the no-network guard for every private action.
+  const body = JSON.parse(options.body || '{}');
+  if (url === process.env.XHS_ACCOUNT_ENDPOINT && body.action === 'reviews-public') {
+    assert.equal(options.headers?.Authorization, undefined, 'Public reviews must not send an account token');
+    assert.equal(body.proof, undefined, 'Public reviews must not access a signing key');
+    publicReviewRequests++;
+    return new Response(JSON.stringify({ ok: true, reviews: [], total: 0,
+      page: 1, pageSize: 6, totalPages: 0, summary: { count: 0, averageRating: 0 } }),
+    { status: 200, headers: { 'content-type': 'application/json' } });
+  }
   networkAttempts++;
   throw new Error('Unexpected external network request in startup fixture');
 };
@@ -166,7 +178,7 @@ app.on('browser-window-created', (_event, win) => {
       }, 'ready renderer with pending secure storage');
       assert.equal(loading.nodeAvailable, false);
       assert.deepEqual(loading.buttons.map(button => button.id).sort(), [
-        'account-login', 'account-logout', 'account-redeem', 'account-refresh', 'account-send-code',
+        'account-login', 'account-logout', 'account-redeem', 'account-refresh', 'account-send-code', 'orders-refresh',
       ], 'The guard covers every existing account operation');
       assert.ok(loading.buttons.every(button => button.disabled), 'Every account operation is disabled during startup');
       assertSignedOutMembershipGuard(loading);
@@ -214,13 +226,14 @@ app.on('browser-window-created', (_event, win) => {
       assertSignedOutMembershipGuard(recovered);
       await win.webContents.executeJavaScript('window.xhsDesktop.refreshAccount()');
       assert.equal(loadCalls, 2, 'Ordinary refresh must reuse loaded credentials');
+      assert.ok(publicReviewRequests > 0, 'Anonymous reviews remain available while credential storage initializes');
       assert.equal(networkAttempts, 0, 'The test must not contact external services');
       finished = true;
       clearTimeout(watchdog);
       console.log(JSON.stringify({ smoke: 'startup-storage-passed', visibleBeforeStorage: true,
         responsiveWhilePending: true, controlsGuarded: true, deniedStateRecoverable: true,
         signedOutMembershipGuarded: true,
-        explicitRetryDeduplicated: true, singleNoteEngines: ['node', 'python'], loadCalls, networkAttempts, blockedBrowserRequests,
+        explicitRetryDeduplicated: true, singleNoteEngines: ['node', 'python'], loadCalls, networkAttempts, blockedBrowserRequests, publicReviewRequests,
         rendererReadyDelayMs, lateRendererConfirmed: true, reloadRecovered: true, readinessCancelled: true,
         nativeKeychainTested: false }));
       app.quit();

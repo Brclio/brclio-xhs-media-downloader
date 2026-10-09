@@ -100,6 +100,10 @@ window.fixtureState=${JSON.stringify(state())};`;
   const until = script => evaluate(`new Promise((resolve,reject)=>{const start=Date.now();const check=()=>{if(${script})resolve();else if(Date.now()-start>8000)reject(new Error('Timeout: '+${JSON.stringify(script)}));else setTimeout(check,20)};check()})`);
   const click = id => evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
   const capture = async name => { fs.writeFileSync(path.join(directory, `${name}.png`), (await win.webContents.capturePage()).toPNG()); };
+  const showReviews = async () => {
+    await evaluate(`document.getElementById('software-reviews').scrollIntoView({behavior:'instant',block:'start'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+    assert.equal(await evaluate(`(()=>{const rect=document.getElementById('software-reviews').getBoundingClientRect();return rect.top<innerHeight&&rect.bottom>0})()`), true, 'Review evidence must show the review section');
+  };
   await win.loadURL(`${origin}/`);
   await until(`document.querySelectorAll('.review-item').length===6 && document.querySelectorAll('.order-item').length===10 && document.getElementById('review-mine-retry').querySelector('button')`);
   assert.equal(await evaluate(`document.getElementById('review-form').hidden`),true);
@@ -122,11 +126,10 @@ window.fixtureState=${JSON.stringify(state())};`;
   await until(`document.getElementById('review-form').hidden && document.getElementById('review-list').textContent.includes('真实的使用体验')`);
   const submissions = calls.filter(item => item.action === 'review-submit');
   assert.equal(submissions.length, 2); assert.equal(submissions[0].input.requestId, submissions[1].input.requestId); assert.equal(reviews.length, 1);
-  await evaluate(`document.getElementById('software-reviews').scrollIntoView()`); await capture('web-reviews');
+  await showReviews(); await capture('web-reviews');
   for (const width of [900, 375]) {
     win.setSize(width, 960);
-    await evaluate(`document.getElementById('software-reviews').scrollIntoView({behavior:'instant',block:'start'})`);
-    await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+    await showReviews();
     assert.equal(await evaluate(`document.documentElement.scrollWidth > innerWidth + 1`), false, `No page overflow at ${width}px`);
     await capture(`web-reviews-${width}`);
   }
@@ -144,7 +147,7 @@ window.fixtureState=${JSON.stringify(state())};`;
   await win.loadURL(`${origin}/?desktop=1`);
   await until(`document.querySelectorAll('.review-item').length===6 && !document.getElementById('review-form').hidden && document.getElementById('orders-list').textContent.includes('b-order-0')`);
   assert.equal(await evaluate(`document.getElementById('orders-list').textContent.includes('a-order')`), false);
-  await evaluate(`document.getElementById('software-reviews').scrollIntoView()`); await capture('desktop-reviews');
+  await showReviews(); await capture('desktop-reviews');
   delayPayment=true; await click('account-open-membership'); await click('membership-report-paid');
   await new Promise(resolve=>{const timer=setInterval(()=>{if(releasePayment){clearInterval(timer);resolve()}},10)});
   const signedIn=state();

@@ -6,7 +6,8 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { captureUiHierarchy, installSourceToggle, packageState, uiNodes, verifyAndroidUpgrade } from '../scripts/verify-android-upgrade.mjs';
 import { copyManualFallbackSources, FALLBACK_BUILD_DEPENDENCIES, FALLBACK_SHARED_ASSETS,
-  manualDownloadControl, selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
+  hasManualBrowserIntent, manualDownloadControl, manualFallbackAttemptState,
+  observeManualBrowserIntent, selectPublishedAndroid } from '../scripts/verify-android-manual-fallback.mjs';
 
 test('isolated manual fallback fixture includes every shared asset required by the candidate Gradle bundle', async () => {
   const gradle = await readFile(new URL('../android/app/build.gradle', import.meta.url), 'utf8');
@@ -141,4 +142,58 @@ test('manual fallback acceptance selects a real stable Android APK and rejects a
   const invalid = release('1.0.3'); invalid.assets[0].browser_download_url = 'https://attacker.test/app.apk';
   assert.throws(() => selectPublishedAndroid([invalid]));
   assert.throws(() => selectPublishedAndroid([{ ...release('1.0.3'), draft: undefined }]));
+});
+
+test('manual browser acceptance requires ACTION_VIEW, BROWSABLE, exact APK URL and browser component in one intent', () => {
+  const url = 'https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.12/Brclio-XHS-Android-1.0.12-release.apk';
+  const intent = `Intent { act=android.intent.action.VIEW cat=[android.intent.category.BROWSABLE] dat=${url} flg=0x800000 cmp=com.android.chrome/IntentDispatcher }`;
+  assert.equal(hasManualBrowserIntent(intent, url, 'com.android.chrome'), true);
+  for (const invalid of [intent.replace('action.VIEW', 'action.MAIN'),
+    intent.replace('category.BROWSABLE', 'category.DEFAULT'), intent.replace(url, `${url}?other=1`),
+    intent.replace('com.android.chrome/', 'com.android.chrome.attacker/'),
+    intent.replace(' cmp=', '\n cmp=')]) {
+    assert.equal(hasManualBrowserIntent(invalid, url, 'com.android.chrome'), false);
+  }
+});
+
+test('completed native fallback network errors can be retried but running or security failures cannot', () => {
+  const observed = { busy: false, tone: 'error', status: '手动下载链接未打开：更新服务连接失败，请检查网络后重试。' };
+  assert.equal(manualFallbackAttemptState(observed).retryable, true);
+  assert.equal(manualFallbackAttemptState({ ...observed, busy: true }).retryable, false);
+  for (const status of ['公开安装包低于当前版本，已阻止打开旧版下载。', '校验文件无效。',
+    '未找到可用浏览器，请先安装或启用浏览器后重试。', '更新安全连接失败，请检查设备时间和网络。']) {
+    assert.equal(manualFallbackAttemptState({ ...observed, status: `手动下载链接未打开：${status}` }).retryable, false);
+  }
+  const state = manualFallbackAttemptState({ ...observed, status: '错误 https://private.test/?token=example password=example' });
+  assert.doesNotMatch(state.status, /private\.test|example/);
+});
+
+test('native manual browser observer fails promptly with the actual completed callback error', async () => {
+  let time = 0, reads = 0;
+  await assert.rejects(observeManualBrowserIntent({
+    expectedUrl: 'https://github.com/example.apk', browserPackage: 'com.android.chrome',
+    readActivity: async () => '',
+    readState: async () => ({ busy: ++reads === 1, tone: 'error',
+      status: '手动下载链接未打开：更新操作超时，请检查网络后重试。' }),
+    now: () => time, wait: async ms => { time += ms; }, timeoutMs: 5000,
+  }), failure => {
+    assert.match(failure.message, /Native manual download failed.*更新操作超时/);
+    assert.equal(failure.retryable, true); assert.equal(reads, 2);
+    return true;
+  });
+});
+
+test('a successful JavaScript callback alone cannot satisfy the native browser intent gate', async () => {
+  let time = 0;
+  await assert.rejects(observeManualBrowserIntent({
+    expectedUrl: 'https://github.com/example.apk', browserPackage: 'com.android.chrome',
+    readActivity: async () => 'com.android.chrome',
+    readState: async () => ({ busy: false, status: '已打开 Android 1.0.12 最新正式版下载链接。' }),
+    now: () => time, wait: async ms => { time += ms; }, timeoutMs: 1000,
+  }), /Timed out waiting for real native ACTION_VIEW/);
+  const url = 'https://github.com/example.apk';
+  const intent = `Intent { act=android.intent.action.VIEW cat=[android.intent.category.BROWSABLE] dat=${url} cmp=com.android.chrome/IntentDispatcher }`;
+  const observed = await observeManualBrowserIntent({ expectedUrl: url, browserPackage: 'com.android.chrome',
+    readActivity: async () => intent, readState: async () => { throw new Error('No renderer assertion can replace the intent'); } });
+  assert.equal(observed.activity, intent);
 });

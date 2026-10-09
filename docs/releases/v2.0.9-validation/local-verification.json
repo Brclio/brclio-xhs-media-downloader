@@ -1,9 +1,9 @@
 {
-  "verifiedAt": "2026-10-09T14:59:11.276805+08:00",
+  "verifiedAt": "2026-10-09T15:43:20.300183+08:00",
   "scope": "isolated fixtures, no production accounts, email, or payments changed",
   "node": {
-    "tests": 1087,
-    "pass": 1075,
+    "tests": 1091,
+    "pass": 1079,
     "fail": 0,
     "skipped": 12
   },
@@ -37,5 +37,33 @@
   },
   "cloudflareDryRun": true,
   "androidEntryReport": "android-entry.json",
-  "screenshotsAreFixtures": true
+  "screenshotsAreFixtures": true,
+  "startupStorage": {
+    "ok": true,
+    "privateControlsGuarded": true,
+    "unsignedPublicReviewsIndependent": true,
+    "externalNetworkAttempts": 0,
+    "retryDeduplicated": true,
+    "delayedRendererAndReloadVerified": true
+  },
+  "existingRegressionGates": {
+    "startupQuit": true,
+    "genuineStartupFailure": true,
+    "desktopBridge": true,
+    "loginReset": true,
+    "nativeEncryptedAccountStorage": true,
+    "membership": true,
+    "memberVideo": true,
+    "desktopFeedback": true,
+    "browserFeedback": true
+  },
+  "androidManualFallback": {
+    "ok": true,
+    "fixtureVersion": "0.0.0-debug",
+    "productionJavaAndUiUnmodified": true,
+    "physicalUiTap": true,
+    "strictActionViewBrowsableExactApkAndBrowserComponent": true,
+    "nativeNetworkMocked": false,
+    "boundedRetryOnlyForExplicitNetworkErrors": true
+  }
 }

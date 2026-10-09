@@ -940,7 +940,7 @@ body.is-desktop .desktop-learning-link[aria-selected="true"] { background: #f2e8
 body.is-desktop .desktop-learning-link[aria-selected="true"]:hover { background: #f2e8c5; }
 body.is-desktop .desktop-learning-link:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 body.is-desktop .desktop-learning-link small { display: block; margin-top: 5px; color: var(--ink-light); font-size: .63rem; font-weight: 400; }
-body.is-desktop #live-photo-tab small { display: block; margin-top: 5px; color: var(--ink-light); font-size: .63rem; font-weight: 400; }
+body.is-desktop #live-photo-tab small, body.is-desktop #reviews-tab small { display: block; margin-top: 5px; color: var(--ink-light); font-size: .63rem; font-weight: 400; }
 body.is-desktop .desktop-nav-count { margin-left: auto; padding: 2px 5px; border-radius: 4px; background: #e9e1c6; color: #6c5f2d; font-size: .58rem; line-height: 1.55; font-weight: 600; white-space: nowrap; }
 body.is-desktop .desktop-new-badge { background: var(--yellow); color: var(--ink); }
 body.is-desktop .desktop-sidebar-bottom { margin-top: auto; border-top: 1px solid var(--line); padding-top: 17px; }
@@ -1325,3 +1325,4 @@ body.is-desktop .desktop-membership-page { padding: 0; overflow: hidden; scrollb
 body.is-desktop #desktop-membership-frame { display: block; width: 100%; height: 100%; border: 0; background: var(--cream); }
 @media (max-width: 600px) { body.is-desktop .desktop-membership-link small { display: none; } }
 @media (max-width: 600px) { body.is-desktop .desktop-vip-link small { display: none; } }
+@media (max-width: 600px) { body.is-desktop #reviews-tab small { display: none; } }
