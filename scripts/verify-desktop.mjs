@@ -1,15 +1,17 @@
 // Developer smoke: run with node_modules/.bin/electron scripts/verify-desktop.mjs.
 // Uses a disposable application profile and the real main/preload/protocol code.
-import { app, BrowserWindow, Menu, net, session, shell } from 'electron';
+import { app, BrowserWindow, dialog, Menu, net, session, shell } from 'electron';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { createServer } from 'node:http';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
 import { createElectronUpdateFetch, installerName, LATEST_RELEASE_URL } from '../desktop/update-manager.js';
+import { mp4Fixture } from '../test/fixtures/mp4.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -292,6 +294,75 @@ async function verifyManualInstallerBridge(win) {
   }
 }
 
+async function verifyNativeVideoBridge(win) {
+  const url = 'https://sns-video-bd.xhscdn.com/stream/native-smoke.mp4';
+  const bytes = mp4Fixture({ payloadBytes: 512 * 1024 });
+  const directory = mkdtempSync(path.join(temporary, 'native-videos-'));
+  const target = path.join(directory, '原生视频.mp4');
+  const request = net.request, showSaveDialog = dialog.showSaveDialog;
+  const fetched = [], dialogs = [];
+  let canceled = false, stalled = false;
+  dialog.showSaveDialog = async (_win, options) => {
+    dialogs.push(options);
+    return canceled ? { canceled: true } : { canceled: false, filePath: target };
+  };
+  net.request = options => {
+    if (options.url !== url) return request.call(net, options);
+    fetched.push(options);
+    const connection = new EventEmitter();
+    let incoming;
+    connection.abort = () => incoming?.destroy();
+    connection.end = () => queueMicrotask(() => {
+      if (stalled) {
+        let started = false;
+        incoming = new Readable({ read() { if (!started) { started = true; this.push(bytes.subarray(0, 64)); } } });
+      } else incoming = Readable.from([bytes.subarray(0, 128), bytes.subarray(128)]);
+      incoming.statusCode = 200;
+      incoming.headers = { 'content-type': 'video/mp4', 'content-length': String(bytes.length) };
+      connection.emit('response', incoming);
+    });
+    return connection;
+  };
+  const evaluate = code => win.webContents.executeJavaScript(code);
+  try {
+    await evaluate(`(() => {
+      window.__videoSmokeProgress = [];
+      window.__videoSmokeUnsubscribe = window.xhsDesktop.onVideoDownloadProgress(value => window.__videoSmokeProgress.push(value));
+    })()`);
+    const result = await evaluate(`window.xhsDesktop.saveVideo(${JSON.stringify({ requestId: 'native-smoke', title: '原生视频', video: { url } })})`);
+    assert.equal(result.ok, true);
+    assert.equal(result.bytes, bytes.length);
+    assert.equal(result.mediaTracks.hasAudio, true);
+    assert.equal(result.mediaTracks.hasVideo, true);
+    assert.equal(createHash('sha256').update(readFileSync(target)).digest('hex'), createHash('sha256').update(bytes).digest('hex'));
+    await waitFor(() => evaluate("window.__videoSmokeProgress.some(value => value.requestId === 'native-smoke' && value.phase === 'saved')"), 'Native progress did not cross preload');
+    assert.deepEqual(readdirSync(directory), ['原生视频.mp4'], 'Successful native save removes all private staging files');
+    assert.equal(fetched.length, 1);
+    assert.equal(fetched[0].bypassCustomProtocolHandlers, true, 'Native videos bypass the browser proxy');
+    assert.equal(fetched[0].redirect, 'manual');
+    assert.equal(fetched[0].headers.range, undefined, 'Native save downloads a full response instead of browser chunks');
+    const bad = await evaluate(`window.xhsDesktop.saveVideo({ requestId: 'invalid-native', video: { url: 'https://attacker.example/evil.mp4' } })`);
+    assert.equal(bad.error.code, 'VIDEO_INPUT_INVALID');
+    canceled = true;
+    assert.deepEqual(await evaluate(`window.xhsDesktop.saveVideo(${JSON.stringify({ requestId: 'cancel-dialog', video: { url } })})`), { ok: true, cancelled: true });
+    assert.equal(fetched.length, 1, 'A cancelled save dialog starts no CDN request');
+    canceled = false; stalled = true;
+    await evaluate(`window.__videoSmokePending = window.xhsDesktop.saveVideo(${JSON.stringify({ requestId: 'cancel-stream', video: { url } })}); undefined`);
+    await waitFor(() => fetched.length === 2, 'Cancellable native request did not start');
+    assert.deepEqual(await evaluate("window.xhsDesktop.cancelVideoDownload('cancel-stream')"), { ok: true, cancelled: true });
+    assert.deepEqual(await evaluate('window.__videoSmokePending'), { ok: true, cancelled: true });
+    assert.equal(createHash('sha256').update(readFileSync(target)).digest('hex'), createHash('sha256').update(bytes).digest('hex'), 'Cancelling replacement retains the completed original');
+    assert.deepEqual(readdirSync(directory), ['原生视频.mp4'], 'Cancellation removes partial staging files');
+    assert.ok(dialogs.every(value => value.filters[0].extensions[0] === 'mp4'));
+    return { mainPreloadBridge: true, directStream: true, exactBytes: bytes.length, audioVideoTracks: true,
+      invalidSourceRejected: true, dialogCancellation: true, streamCancellation: true, atomicReplacement: true, cleanup: true };
+  } finally {
+    net.request = request;
+    dialog.showSaveDialog = showSaveDialog;
+    await evaluate('window.__videoSmokeUnsubscribe?.(); delete window.__videoSmokeUnsubscribe; delete window.__videoSmokeProgress; delete window.__videoSmokePending');
+  }
+}
+
 app.on('browser-window-created', (_event, win) => {
   win.webContents.on('did-finish-load', async () => {
     if (done || !win.webContents.getURL().startsWith('xhs-app://local/')) return;
@@ -306,6 +377,7 @@ app.on('browser-window-created', (_event, win) => {
       if (process.platform === 'darwin') assert.equal(Menu.getApplicationMenu().items[0].label, 'Brclio 小红书下载器');
       const updateTransportVerified = await verifyUpdateTransport();
       const manualInstallerBridgeVerified = await verifyManualInstallerBridge(win);
+      const nativeVideoBridgeVerified = await verifyNativeVideoBridge(win);
       const result = await win.webContents.executeJavaScript(`(async () => {
         const info = await window.xhsDesktop.getInfo();
         const state = await window.xhsDesktop.getProfileState();
@@ -361,7 +433,7 @@ app.on('browser-window-created', (_event, win) => {
       const embeddedLearningVerified = await verifyEmbeddedLearning(win);
       const screenshot = path.join(temporary, 'desktop.png');
       writeFileSync(screenshot, (await win.webContents.capturePage()).toPNG());
-      console.log(JSON.stringify({ smoke: 'passed', ...result, updateTransportVerified, manualInstallerBridgeVerified, embeddedLearningVerified, screenshot }));
+      console.log(JSON.stringify({ smoke: 'passed', ...result, updateTransportVerified, manualInstallerBridgeVerified, nativeVideoBridgeVerified, embeddedLearningVerified, screenshot }));
       clearTimeout(timer);
       app.quit();
     } catch (error) {

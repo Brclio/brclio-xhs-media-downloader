@@ -1145,6 +1145,49 @@ function videoFilename() {
   return `${sanitizeFilename(state.title || "小红书视频")}.mp4`;
 }
 
+function hasNativeVideoDownload() {
+  return typeof window.xhsDesktop?.saveVideo === "function"
+    && typeof window.xhsDesktop?.onVideoDownloadProgress === "function";
+}
+
+async function saveNativeVideo(video, filename, { progress, requireAudio = true, signal } = {}) {
+  const bridge = window.xhsDesktop;
+  const requestId = globalThis.crypto.randomUUID();
+  const cancel = () => { void bridge.cancelVideoDownload?.(requestId).catch(() => {}); };
+  const unsubscribe = bridge.onVideoDownloadProgress(event => {
+    if (event.requestId !== requestId) return;
+    if (event.phase === "checking") {
+      progress?.checking({ size: event.loadedBytes });
+    } else if (event.phase === "saving") {
+      progress?.phase("saving", "正在保存视频");
+    } else {
+      if (event.phase === "preparing") progress?.phase("preparing", "正在连接视频来源", { reset: true });
+      else progress?.report(event);
+    }
+  });
+  signal?.addEventListener("abort", cancel, { once: true });
+  try {
+    if (signal?.aborted) throw Object.assign(new Error("原视频保存已停止。"), { name: "AbortError" });
+    progress?.phase("preparing", "请选择视频保存位置");
+    const result = await bridge.saveVideo({ requestId, filename, video, requireAudio });
+    if (!result?.ok) {
+      throw Object.assign(new Error(result?.error?.message || "视频下载失败，请稍后重试。"), {
+        code: result?.error?.code, status: result?.error?.status
+      });
+    }
+    if (result.cancelled) {
+      progress?.finish("cancelled", "已取消保存视频");
+      return result;
+    }
+    progress?.report({ loadedBytes: result.bytes, totalBytes: result.bytes });
+    progress?.finish("complete", "视频已保存", result.path || "已完成文件与音轨检查");
+    return result;
+  } finally {
+    unsubscribe();
+    signal?.removeEventListener("abort", cancel);
+  }
+}
+
 function videoApiUrl(action, sourceUrl, extra = {}) {
   if (String(sourceUrl).startsWith("member-video:")) {
     const params = new URLSearchParams({ action, ticket: sourceUrl.slice("member-video:".length), ...extra });
@@ -1510,6 +1553,23 @@ async function downloadLivePhoto(image, trigger) {
 async function downloadLiveVideo(image, trigger) {
   if (state.busy || !image.liveVideo?.url) return;
 
+  if (hasNativeVideoDownload()) {
+    setLiveDownloadBusy(true, trigger);
+    const progress = startVideoProgress("preparing", "正在准备实况 MP4");
+    try {
+      const result = await saveNativeVideo(image.liveVideo, livePhotoVideoFilename(image), { progress, requireAudio: false });
+      if (!result.cancelled) showToast(`第 ${image.index} 张实况 MP4 已保存`, "success");
+    } catch (error) {
+      progress.finish("error", "实况 MP4 下载未完成", error.message);
+      showToast(error.message, "error", 6200);
+    } finally {
+      progress.dispose();
+      setLiveDownloadBusy(false, trigger);
+      trigger?.focus({ preventScroll: true });
+    }
+    return;
+  }
+
   const profile = archiveLimitProfile();
   const limitErrorFactory = () => videoTooLargeError(
     profile.limitBytes,
@@ -1585,6 +1645,11 @@ async function downloadCurrentVideo() {
   let lastError = null;
 
   try {
+    if (hasNativeVideoDownload()) {
+      const result = await saveNativeVideo({ ...video, backupUrls: candidates.filter(url => url !== video.url) }, videoFilename(), { progress });
+      if (!result.cancelled) showToast("视频已保存", "success");
+      return;
+    }
     for (const sourceUrl of candidates) {
       try {
         progress.phase("preparing", "正在读取视频信息", { reset: true });
@@ -1678,6 +1743,7 @@ async function downloadOriginalVideo() {
   const trigger = elements.downloadOriginalVideoButton;
   setLiveDownloadBusy(true, trigger);
   const progress = startVideoProgress("verifying", "正在验证会员权益");
+  const nativeAbort = new AbortController();
   let unsubscribe = () => {};
   try {
     const bridge = getAccountBridge();
@@ -1703,6 +1769,7 @@ async function downloadOriginalVideo() {
       } else if (current.verified && (!current.account?.membership?.active || current.account?.features?.['watermark-free-video']?.allowed === false)) {
         invalidated ||= accountError('会员权益已失效，已停止原视频保存，请重新下载。', 'MEMBERSHIP_EXPIRED', 403);
       }
+      if (invalidated) nativeAbort.abort();
     };
     unsubscribe = bridge.onAccountUpdate?.(observeAccount) || unsubscribe;
     progress.phase("resolving", "正在读取网页原视频");
@@ -1722,6 +1789,15 @@ async function downloadOriginalVideo() {
     if (!videos.length) throw new Error("当前页面未提供可下载的原视频，请保存播放视频或换一篇笔记。");
     const preferred = videos.find(video => video.isDefault) || videos[0];
     const candidates = [preferred, ...videos.filter(video => video !== preferred)];
+    if (hasNativeVideoDownload()) {
+      const sources = [...new Set(candidates.flatMap(video => [video.url, ...(video.backupUrls || [])]).filter(Boolean))];
+      if (sources.some(url => !String(url).startsWith("member-video:"))) throw new Error("原视频授权响应无效，请更新客户端后重试。");
+      const result = await saveNativeVideo({ ...preferred, backupUrls: sources.filter(url => url !== preferred.url) },
+        `${sanitizeFilename(state.title || "小红书视频")}-原视频.mp4`, { progress, signal: nativeAbort.signal });
+      if (invalidated) throw invalidated;
+      if (!result.cancelled) showToast("原视频已保存；作者写入画面的水印可能仍保留。", "success", 6200);
+      return;
+    }
     let lastError;
     for (const video of candidates) {
       for (const sourceUrl of [...new Set([video.url, ...(video.backupUrls || [])].filter(Boolean))]) {

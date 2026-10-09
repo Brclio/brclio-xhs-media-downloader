@@ -7,14 +7,14 @@ import vm from 'node:vm';
 const source = (await readFile(new URL('../app.js', import.meta.url), 'utf8')).replace(/\r\n?/g, '\n');
 const playback = 'https://sns-video-bd.xhscdn.com/stream/progress.mp4';
 
-function page(fetch = async () => { throw new Error('Unexpected network request'); }) {
+function page(fetch = async () => { throw new Error('Unexpected network request'); }, { bridge, account } = {}) {
   const nodes = new Map(), intervals = new Map();
   let now = 1000;
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {
       attributes: {}, dataset: {}, style: {}, hidden: true, disabled: false, textContent: '',
       classList: { add() {}, remove() {}, toggle() {} },
-      addEventListener() {}, querySelectorAll: () => [],
+      addEventListener() {}, focus() {}, querySelectorAll: () => [],
       setAttribute(name, value) { this.attributes[name] = String(value); },
       removeAttribute(name) { delete this.attributes[name]; },
       getAttribute(name) { return this.attributes[name] ?? null; },
@@ -25,7 +25,9 @@ function page(fetch = async () => { throw new Error('Unexpected network request'
   const context = vm.createContext({
     document: { querySelector: selector => selector.startsWith('#') ? node(selector.slice(1)) : null,
       querySelectorAll: () => [] },
-    window: { innerHeight: 900 }, navigator: { userAgent: '' }, localStorage: { getItem: () => null },
+    window: { innerHeight: 900, xhsDesktop: bridge }, navigator: { userAgent: '' }, localStorage: { getItem: () => null },
+    crypto: { randomUUID: () => 'native-request' }, AbortController,
+    getAccountBridge: () => account, openAccountUI: async () => {},
     initializeDesktopUI: async () => {}, Blob, URLSearchParams, Uint8Array, fetch,
     Date: class extends Date { static now() { return now; } },
     setTimeout: () => Symbol(), clearTimeout() {},
@@ -35,7 +37,8 @@ function page(fetch = async () => { throw new Error('Unexpected network request'
   // Exercise the real renderer helpers; only the DOM, clock and network are fixtures.
   vm.runInContext(source.replace(/^import[\s\S]*?;\n/gm, '') + `
     globalThis.helpers = { responseBlobWithLimit, downloadVideoByChunks,
-      tryDirectVideoDownload, fetchVideoBlobWithFallback, startVideoProgress };
+      tryDirectVideoDownload, fetchVideoBlobWithFallback, startVideoProgress,
+      saveNativeVideo, downloadCurrentVideo, downloadOriginalVideo, downloadLiveVideo, state };
   `, context, { filename: 'app.js' });
   return { ...context.helpers, node, intervals, advance(ms) { now += ms; } };
 }
@@ -193,4 +196,93 @@ test('video progress retains terminal status, clears timers, and isolates a new 
   assert.equal(ui.intervals.size, 0);
   assert.equal(panel.dataset.phase, 'complete');
   assert.equal(panel.getAttribute('aria-busy'), 'false');
+});
+
+function nativeBridge(save) {
+  let listener;
+  const calls = [], cancellations = [];
+  return { calls, cancellations, get subscribed() { return Boolean(listener); },
+    onVideoDownloadProgress(callback) { listener = callback; return () => { listener = null; }; },
+    async saveVideo(input) {
+      calls.push(input);
+      return save(input, event => listener?.({ requestId: input.requestId, ...event }));
+    },
+    async cancelVideoDownload(requestId) { cancellations.push(requestId); }
+  };
+}
+
+test('desktop ordinary and live MP4 downloads bypass browser caps and Blob/proxy downloads', async t => {
+  for (const live of [false, true]) await t.test(live ? 'live MP4' : 'ordinary video', async () => {
+    const bytes = 2 * 1024 ** 3 + 1;
+    const bridge = nativeBridge(async (_input, report) => {
+      report({ phase: 'downloading', loadedBytes: bytes - 1, totalBytes: bytes });
+      report({ phase: 'checking', loadedBytes: bytes, totalBytes: bytes });
+      report({ phase: 'saving', loadedBytes: bytes, totalBytes: bytes });
+      return { ok: true, bytes, path: '/Downloads/video.mp4' };
+    });
+    const ui = page(undefined, { bridge });
+    const video = { index: 1, url: playback, size: bytes, backupUrls: [playback + '?backup'], hasAudio: true };
+    ui.state.videos = [video]; ui.state.title = '大视频';
+    if (live) await ui.downloadLiveVideo({ index: 1, liveVideo: video });
+    else await ui.downloadCurrentVideo();
+    assert.equal(bridge.calls.length, 1);
+    assert.equal(bridge.calls[0].video.url, playback);
+    assert.equal(bridge.calls[0].requireAudio, !live);
+    assert.match(bridge.calls[0].filename, /\.mp4$/);
+    assert.equal(ui.node('video-download-progress').dataset.phase, 'complete');
+    assert.equal(ui.state.busy, false);
+    assert.equal(ui.intervals.size, 0);
+    assert.equal(bridge.subscribed, false);
+  });
+});
+
+test('desktop member originals send encrypted tickets to native saving without chunk requests', async () => {
+  const requests = [], bytes = 3 * 1024 ** 3;
+  const bridge = nativeBridge(async input => {
+    assert.equal(input.video.url, 'member-video:opaque');
+    assert.equal(input.requireAudio, true);
+    return { ok: true, bytes, path: '/Downloads/original.mp4' };
+  });
+  const account = { getAccountState: async () => ({ authenticated: true, verified: true,
+    account: { user: { id: 'member' }, membership: { active: true } } }) };
+  const ui = page(async (url, init) => {
+    requests.push(url);
+    assert.equal(url, '/api/member_video'); assert.equal(init.method, 'POST');
+    return Response.json({ success: true, videos: [{ url: 'member-video:opaque', hasAudio: true, size: bytes }] });
+  }, { bridge, account });
+  ui.state.shareText = 'https://www.xiaohongshu.com/explore/fixture';
+  await ui.downloadOriginalVideo();
+  assert.deepEqual(requests, ['/api/member_video']);
+  assert.equal(bridge.calls.length, 1);
+  assert.equal(ui.node('video-download-progress').dataset.phase, 'complete');
+});
+
+test('native cancel and errors preserve status and remove progress listeners', async t => {
+  for (const result of [{ ok: true, cancelled: true }, { ok: false, error: { code: 'DISK_FULL', message: '磁盘空间不足。' } }]) {
+    await t.test(result.cancelled ? 'cancel' : 'disk failure', async () => {
+      const bridge = nativeBridge(async () => result), ui = page(undefined, { bridge });
+      ui.state.videos = [{ index: 1, url: playback }];
+      await ui.downloadCurrentVideo();
+      assert.equal(ui.node('video-download-progress').dataset.phase, result.cancelled ? 'cancelled' : 'error');
+      assert.equal(bridge.subscribed, false); assert.equal(ui.state.busy, false); assert.equal(ui.intervals.size, 0);
+    });
+  }
+});
+
+test('account loss cancels a native original download instead of saving through a browser fallback', async () => {
+  let observe;
+  const account = { getAccountState: async () => ({ authenticated: true, verified: true,
+    account: { user: { id: 'member' }, membership: { active: true } } }),
+    onAccountUpdate(callback) { observe = callback; return () => { observe = null; }; } };
+  const bridge = nativeBridge(async () => {
+    observe({ authenticated: false });
+    return { ok: true, cancelled: true };
+  });
+  const ui = page(async () => Response.json({ success: true, videos: [{ url: 'member-video:opaque' }] }), { bridge, account });
+  ui.state.shareText = 'https://www.xiaohongshu.com/explore/fixture';
+  await ui.downloadOriginalVideo();
+  assert.deepEqual(bridge.cancellations, ['native-request']);
+  assert.equal(ui.node('video-download-progress').dataset.phase, 'error');
+  assert.match(ui.node('video-download-detail').textContent, /退出或切换/);
+  assert.equal(bridge.subscribed, false); assert.equal(observe, null);
 });

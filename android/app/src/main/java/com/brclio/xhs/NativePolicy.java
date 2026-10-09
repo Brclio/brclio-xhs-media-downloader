@@ -11,8 +11,57 @@ final class NativePolicy {
     static final long MAX_TOTAL_BYTES = 1024L * 1024 * 1024;
     static final int MAX_ENTRIES = 101;
     static final int MAX_TEXT_BYTES = 1024 * 1024;
+    static final long DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000L;
+    static final long JOB_TIMEOUT_MS = 30 * 60 * 1000L;
+    static final long SPACE_RESERVE_BYTES = 8L * 1024 * 1024;
 
     private NativePolicy() {}
+
+    /** Only an individual native video save bypasses media/archive safety caps. */
+    static boolean unlimitedVideoSave(boolean archive, int entries, String kind) {
+        return !archive && entries == 1 && "video".equals(kind);
+    }
+
+    static long contentLength(String header) {
+        if (header == null) return -1;
+        try {
+            if (!header.matches("[0-9]+")) throw new NumberFormatException();
+            long bytes = Long.parseLong(header);
+            if (bytes <= 0) throw new NumberFormatException();
+            return bytes;
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("媒体文件大小无效。", error);
+        }
+    }
+
+    static long addBytes(long current, long additional) {
+        if (current < 0 || additional < 0 || current > Long.MAX_VALUE - additional) {
+            throw new IllegalArgumentException("媒体文件大小超出了可安全处理的范围。");
+        }
+        return current + additional;
+    }
+
+    static void validateMediaBytes(String kind, boolean unlimitedVideo, long completed, long bytes) {
+        if (!("image".equals(kind) || "video".equals(kind))) throw new IllegalArgumentException("媒体类型无效。");
+        long total = addBytes(completed, bytes);
+        if (!(unlimitedVideo && "video".equals(kind))
+                && (bytes > MAX_MEDIA_BYTES || total > MAX_TOTAL_BYTES)) {
+            throw new IllegalArgumentException("超过文件大小限制（图片或 ZIP 单文件 512 MB，单次 1 GB）。请将大视频单独保存。");
+        }
+    }
+
+    static boolean hasDownloadSpace(long expected, long usableBytes) {
+        return usableBytes <= 0 || (usableBytes >= SPACE_RESERVE_BYTES
+                && expected <= usableBytes - SPACE_RESERVE_BYTES);
+    }
+
+    static boolean downloadTimedOut(long elapsedMs, boolean unlimitedVideo) {
+        return !unlimitedVideo && elapsedMs > DOWNLOAD_TIMEOUT_MS;
+    }
+
+    static boolean jobTimedOut(long elapsedMs, boolean unlimitedVideo) {
+        return !unlimitedVideo && elapsedMs > JOB_TIMEOUT_MS;
+    }
 
     static URI mediaUri(String value) {
         URI uri = httpsUri(value);

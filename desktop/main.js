@@ -3,7 +3,7 @@ import { access, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { APP_URL, createProtocolHandler, isAppUrl } from './protocol.js';
+import { APP_URL, createProtocolHandler, createDesktopMemberVideoTicketService, isAppUrl } from './protocol.js';
 import { PythonBackend } from './python-backend.js';
 import { XhsBrowser } from './profile-browser.js';
 import { XhsLoginReset } from './xhs-login-reset.js';
@@ -21,6 +21,7 @@ import { confirmMacUpdateStartupWithRetry, hasPendingMacUpdate, waitForDesktopRe
 import { MacUpdateHistory } from './mac-update-history.js';
 import { NativeImageClipboard } from './image-clipboard.js';
 import { writeImageFiles, writeSingleImage } from './native-clipboard.js';
+import { NativeVideoDownload } from './native-video-download.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -46,6 +47,7 @@ let diagnostics;
 let feedbackClient;
 let accountRefreshTimer;
 let imageClipboard;
+let videoDownload;
 let quitting = false;
 let shutdownComplete = false;
 const installConfirmation = new InstallConfirmation();
@@ -150,6 +152,8 @@ function openLocalPreview(url) {
 }
 
 function registerIpc() {
+  handle('desktop:save-video', input => videoDownload.save(input));
+  handle('desktop:cancel-video-download', requestId => videoDownload.cancel(requestId));
   handle('desktop:copy-images', input => imageClipboard.copy(input));
   const accountAction = (callback) => async (...args) => {
     try { return { ok: true, result: await callback(...args), state: accountClient.snapshot() }; }
@@ -355,7 +359,16 @@ async function boot() {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:clipboard-progress', progress);
     }
   });
-  protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend,
+  const memberVideoTicketService = createDesktopMemberVideoTicketService(feature => accountClient.authorize(feature));
+  videoDownload = new NativeVideoDownload({
+    showSaveDialog: options => dialog.showSaveDialog(mainWindow, options),
+    fetchImpl: createElectronUpdateFetch(net), authorize: feature => accountClient.authorize(feature),
+    ticketService: memberVideoTicketService, onDiagnostic: diagnostic,
+    onProgress(progress) {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:video-download-progress', progress);
+    },
+  });
+  protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend, memberVideoTicketService,
     onDiagnostic: diagnostic,
     authorize: feature => accountClient.authorize(feature) }));
   const permissions = new Set(['clipboard-read', 'clipboard-sanitized-write']);
@@ -522,12 +535,16 @@ else {
     if (quitting) return;
     quitting = true;
     startupReadyAbort.abort();
+    videoDownload?.cancelAll();
     installConfirmation.cancel();
     clearTimeout(updateCheckTimer);
     clearInterval(updatePeriodicTimer);
     clearInterval(accountRefreshTimer);
     void (async () => {
-      try { await feedbackClient?.shutdown(); await updateManager?.shutdown(); await manager?.shutdown(); }
+      try {
+        const results = await Promise.allSettled([videoDownload?.shutdown(), feedbackClient?.shutdown(), updateManager?.shutdown(), manager?.shutdown()]);
+        if (results.some(result => result.status === 'rejected')) throw new Error('Shutdown failed');
+      }
       catch { dialog.showErrorBox('保存任务失败', '本次下载进度未能完整保存，请检查磁盘剩余空间和文件夹权限。'); }
       finally {
         // A manual proxy stop can be a separate pending IPC when the window

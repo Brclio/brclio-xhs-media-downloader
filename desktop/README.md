@@ -1,6 +1,10 @@
 # Brclio 小红书下载器 · 桌面版
 
-当前正式版本为 v2.0.5，新增主窗口内的「制作实况」：将本地图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整片段、封面与声音，导出配对 JPG + MOV ZIP。Mac arm64、Mac x64、Windows x64 的原生编码验证与安装包构建通过，生产网页已验证图片、视频、声音及实际 ZIP 导出。安装包见 [v2.0.5 版本说明](../docs/releases/v2.0.5.md)，证据见[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37176396468)、[网页验证](../docs/releases/v2.0.5-web-verification.json)和[公开发布核验](../docs/releases/v2.0.5-publication-verification.json)。Android 保持 v1.0.11。
+v2.0.8 发布准备中，移除普通视频、会员原视频、单独实况 MP4、主页批量视频与「制作实况」视频素材沿用的浏览器大小限制。下载持续写入本地文件，保留字节进度、来源校验、完整性检查与会员原视频授权；网络超时按持续无数据判断，长视频不会仅因总下载时间较长而中断。网页与 ZIP 归档仍保留内存保护，实况仅编码所选 0.5–3 秒片段。测试、三平台安装包、更新与公开发布核验待完成后记录，详见 [v2.0.8 版本说明](../docs/releases/v2.0.8.md)。同期 Android v1.0.12 改进单独普通视频与实况 MP4 保存，详见 [Android 版本说明](../docs/releases/android-v1.0.12.md)。
+
+v2.0.7 已发布，主窗口内的「制作实况」默认导出 HEIC + MOV，可选 JPEG + MOV，并提供照片、MOV 与完整 ZIP 下载。Mac arm64、Mac x64、Windows x64 的原生编码、安装包与更新验收通过，详见 [v2.0.7 版本说明](../docs/releases/v2.0.7.md)和[公开发布核验](../docs/releases/v2.0.7-publication-verification.json)。
+
+v2.0.5 新增主窗口内的「制作实况」：将本地图片、图片组或视频制作成 0.5–3 秒 Live Photo，调整片段、封面与声音，导出配对 JPG + MOV ZIP。Mac arm64、Mac x64、Windows x64 的原生编码验证与安装包构建通过，生产网页已验证图片、视频、声音及实际 ZIP 导出。安装包见 [v2.0.5 版本说明](../docs/releases/v2.0.5.md)，证据见[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37176396468)、[网页验证](../docs/releases/v2.0.5-web-verification.json)和[公开发布核验](../docs/releases/v2.0.5-publication-verification.json)。Android 保持 v1.0.11。
 
 v2.0.4 新增系统代理优先和内置升级代理关闭按钮，并修复 Mac 同版本重装清理及安装窗口关闭。手动关闭后持续停用，下次明确检查或下载时自动恢复，完成后关闭。详见 [v2.0.4 版本说明](../docs/releases/v2.0.4.md)。
 
@@ -41,7 +45,7 @@ v1.8.5 改进 Mac 启动与更新恢复：先显示窗口，再异步读取钥�
 
 切换「制作实况」，从本地选择一段视频，或 1–12 张图片。图片可前移、后移或移除；单图可选择轻微推进或保持静止。视频可调整起点，实况时长可选 0.5–3 秒，封面必须位于所选片段内；原视频的声音默认保留，也可选择静音。制作时可取消，修改素材或设置后旧结果会清空，避免下载与当前设置不一致的文件。
 
-素材不上传服务器，不要求登录或会员。素材总大小上限 150 MB，图片总像素上限 6400 万，输出长边最多 1440 像素且不放大小图；GIF 作为静态图片处理，需要保留其原有动画时请先提供视频。编码能力不足时页面会提示，不能保留声音时需明确选择静音。
+素材不上传服务器，不要求登录或会员。Mac / Windows 桌面版的视频素材不设固定文件大小上限，按所选片段读取和编码；网页视频素材与各端图片素材仍保留 150 MB 上限。图片总像素上限 6400 万，输出长边最多 1440 像素且不放大小图；GIF 作为静态图片处理，需要保留其原有动画时请先提供视频。输出时长、像素与编码能力保护继续保留，不能保留声音时需明确选择静音。
 
 导出 ZIP 内含同名 JPG、MOV 和中文 `README.txt`。解压后在 Mac「照片」同时导入 JPG 与 MOV，检查 LIVE 标记，再通过同一账号的 iCloud 照片同步到 iPhone。下载 ZIP 到手机文件夹不会自动保存成相册实况。本轮验证了实际生成文件的 Apple 实况识别；手机原生导入、iCloud 同步全流程及 Windows 设备上的相册识别需另行验证。详细范围见 [实况制作说明](../docs/live-photo-maker.md)。
 

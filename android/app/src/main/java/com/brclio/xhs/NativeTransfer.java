@@ -34,15 +34,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final class NativeTransfer {
     private static final String USER_AGENT = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
     private static final int BUFFER_SIZE = 64 * 1024;
-    private static final long DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000L;
-    private static final long JOB_TIMEOUT_MS = 30 * 60 * 1000L;
 
     interface Progress { void update(long bytes); }
 
     static final class Cancellation {
         private final AtomicBoolean cancelled = new AtomicBoolean(false);
         private volatile HttpURLConnection connection;
+        final boolean unlimitedVideoSave;
         final long startedAt = System.nanoTime();
+
+        Cancellation() { this(false); }
+
+        Cancellation(boolean unlimitedVideoSave) { this.unlimitedVideoSave = unlimitedVideoSave; }
 
         void cancel() {
             cancelled.set(true);
@@ -54,7 +57,7 @@ final class NativeTransfer {
 
         void check() throws IOException {
             if (isCancelled() || Thread.currentThread().isInterrupted()) throw new IOException("操作已取消。");
-            if ((System.nanoTime() - startedAt) / 1_000_000 > JOB_TIMEOUT_MS) {
+            if (NativePolicy.jobTimedOut((System.nanoTime() - startedAt) / 1_000_000, unlimitedVideoSave)) {
                 throw new IOException("操作超时，请减少文件数量后重试。");
             }
         }
@@ -292,6 +295,7 @@ final class NativeTransfer {
                                      Cancellation cancellation, Progress progress) throws IOException {
         URI current = initial;
         long startedAt = System.nanoTime();
+        boolean unlimitedVideo = cancellation.unlimitedVideoSave && kind.equals("video");
         for (int redirect = 0; redirect <= 5; redirect++) {
             if (kind.equals("video")) NativePolicy.playbackVideoUri(current.toString());
             else NativePolicy.mediaUri(current.toString());
@@ -306,17 +310,15 @@ final class NativeTransfer {
                     continue;
                 }
                 if (status != 200) throw new IOException("媒体下载失败（HTTP " + status + "），请重新解析后重试。");
-                long expected = connection.getContentLengthLong();
-                if (expected == 0 || expected > NativePolicy.MAX_MEDIA_BYTES
-                        || (expected > 0 && completedBytes + expected > NativePolicy.MAX_TOTAL_BYTES)) {
-                    throw new IOException("文件为空或超过大小限制（单文件 512 MB，单次 1 GB）。");
-                }
+                if (connection.getHeaderField("Content-Range") != null) throw new IOException("媒体服务器只返回了部分内容，请重试。");
+                long expected = NativePolicy.contentLength(connection.getHeaderField("Content-Length"));
+                NativePolicy.validateMediaBytes(kind, unlimitedVideo, completedBytes, Math.max(0, expected));
                 String encoding = connection.getContentEncoding();
                 if (encoding != null && !encoding.equalsIgnoreCase("identity")) {
                     throw new IOException("媒体响应编码不受支持。");
                 }
                 long free = file.getParentFile().getUsableSpace();
-                if (expected > 0 && free > 0 && expected + 8L * 1024 * 1024 > free) {
+                if (expected > 0 && !NativePolicy.hasDownloadSpace(expected, free)) {
                     throw new IOException("手机可用空间不足，请清理后重试。");
                 }
                 try (InputStream input = connection.getInputStream(); OutputStream output = new FileOutputStream(file)) {
@@ -330,21 +332,27 @@ final class NativeTransfer {
                     }
                     String mime = NativePolicy.sniffMime(prefix, prefixLength);
                     NativePolicy.validateMime(connection.getContentType(), mime, kind);
-                    if (completedBytes + prefixLength > NativePolicy.MAX_TOTAL_BYTES) {
-                        throw new IOException("本次文件总大小超过 1 GB。");
-                    }
+                    NativePolicy.validateMediaBytes(kind, unlimitedVideo, completedBytes, prefixLength);
+                    if (expected >= 0 && prefixLength > expected) throw new IOException("媒体实际大小超过声明大小，请重试。");
                     output.write(prefix, 0, prefixLength);
                     long count = prefixLength;
                     byte[] buffer = new byte[BUFFER_SIZE];
+                    long nextSpaceCheck = 32L * 1024 * 1024;
                     int length;
                     while ((length = input.read(buffer)) != -1) {
                         cancellation.check();
-                        count += length;
-                        if (count > NativePolicy.MAX_MEDIA_BYTES || completedBytes + count > NativePolicy.MAX_TOTAL_BYTES) {
-                            throw new IOException("超过文件大小限制（单文件 512 MB，单次 1 GB）。");
-                        }
-                        if ((System.nanoTime() - startedAt) / 1_000_000 > DOWNLOAD_TIMEOUT_MS) {
+                        count = NativePolicy.addBytes(count, length);
+                        NativePolicy.validateMediaBytes(kind, unlimitedVideo, completedBytes, count);
+                        if (expected >= 0 && count > expected) throw new IOException("媒体实际大小超过声明大小，请重试。");
+                        if (NativePolicy.downloadTimedOut((System.nanoTime() - startedAt) / 1_000_000, unlimitedVideo)) {
                             throw new IOException("媒体下载超时，请检查网络后重试。");
+                        }
+                        if (count >= nextSpaceCheck) {
+                            if (!NativePolicy.hasDownloadSpace(0, file.getParentFile().getUsableSpace())) {
+                                throw new IOException("手机可用空间不足，请清理后重试。");
+                            }
+                            nextSpaceCheck = count <= Long.MAX_VALUE - 32L * 1024 * 1024
+                                    ? count + 32L * 1024 * 1024 : Long.MAX_VALUE;
                         }
                         output.write(buffer, 0, length);
                         progress.update(count);

@@ -1,12 +1,15 @@
 // Native codec gate for macOS and Windows CI; no ffmpeg, Swift, or extra packages.
 // Run: electron scripts/verify-live-photo-codecs.cjs
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, protocol } = require('electron');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
+protocol.registerSchemesAsPrivileged([{ scheme: 'xhs-app', privileges: {
+  standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true
+} }]);
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'brclio-live-codecs-'));
 app.setPath('userData', path.join(temporary, 'profile'));
 let window, server, finished = false;
@@ -132,6 +135,7 @@ app.whenReady().then(async () => {
     const mov = format.muxLivePhotoMov({ width: 160, height: 96, duration: 2, keyPhotoTime: 1,
       assetIdentifier: crypto.randomUUID(), samples: videoSamples, decoderConfig: videoConfig,
       audio: { samples: audioSamples, decoderConfig: audioConfig, sampleRate: 48000, channels: 2 } });
+    window.largeVideoFixture = Array.from(mov);
     const source = new File([mov], 'native-audio.mov', { type: 'video/quicktime' });
     const metadata = await maker.inspectLivePhotoFiles([source]);
     check(metadata.kind === 'video' && Math.abs(metadata.duration - 2) < 0.03, 'Native input must load.');
@@ -186,5 +190,51 @@ app.whenReady().then(async () => {
     return { support, checks: ['JPEG image playback', 'JPEG slideshow playback', 'HEIC slideshow pair', 'native H264/AAC fixture', 'HEIC trimmed audio-video pair and playback', 'decoded audible PCM', 'image/audio/HEIC cancellation cleanup'], audioRms: rms };
   })()`, true);
   assert.deepEqual(rendererErrors, [], 'Renderer must have no console errors');
+  // A real disk-backed File with a trailing sparse ISO free box proves that
+  // desktop inspection and clip encoding do not read the whole source into RAM.
+  const source = Buffer.from(await window.webContents.executeJavaScript('window.largeVideoFixture'));
+  const filename = path.join(temporary, 'large-native-video.mov');
+  const sourceBytes = 2 * 1024 ** 3 + 1;
+  const free = Buffer.alloc(8);
+  free.writeUInt32BE(sourceBytes - source.length); free.write('free', 4, 4, 'ascii');
+  fs.writeFileSync(filename, Buffer.concat([source, free])); fs.truncateSync(filename, sourceBytes);
+  const { createProtocolHandler } = await import(require('node:url').pathToFileURL(path.join(root, 'desktop/protocol.js')).href);
+  protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: root }));
+  window.webContents.session.webRequest.onBeforeRequest(null);
+  await window.loadURL('xhs-app://local/live.html?source=desktop');
+  await window.webContents.executeJavaScript(`document.addEventListener('change', event => {
+    if (event.target.id === 'file-input') window.largeDiskFile = event.target.files[0];
+  }, { capture: true, once: true });`);
+  window.webContents.debugger.attach('1.3');
+  try {
+    const { root: documentNode } = await window.webContents.debugger.sendCommand('DOM.getDocument');
+    const { nodeId } = await window.webContents.debugger.sendCommand('DOM.querySelector', { nodeId: documentNode.nodeId, selector: '#file-input' });
+    await window.webContents.debugger.sendCommand('DOM.setFileInputFiles', { nodeId, files: [filename] });
+  } finally { window.webContents.debugger.detach(); }
+  const largeVideo = await window.webContents.executeJavaScript(`(async () => {
+    const deadline = Date.now() + 25000;
+    while (document.documentElement.dataset.liveState !== 'ready' && Date.now() < deadline) {
+      if (!document.getElementById('live-error').hidden) throw new Error(document.getElementById('live-error').textContent);
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    if (document.documentElement.dataset.liveState !== 'ready') throw new Error('Large disk File was not inspected.');
+    const file = window.largeDiskFile;
+    if (file.size !== ${sourceBytes}) throw new Error('Large native File size changed.');
+    file.arrayBuffer = () => { throw new Error('Whole input must never become an ArrayBuffer.'); };
+    const maker = await import('/lib/live-photo-maker.js');
+    const metadata = await maker.inspectLivePhotoFiles([file]);
+    const result = await maker.createLivePhoto({ files: [file], start: 0.25, duration: 1, keyPhotoTime: 0.5,
+      includeAudio: true, photoFormat: 'heic' });
+    const { inspectVideoBlob } = await import('/lib/media-tracks.js');
+    const tracks = await inspectVideoBlob(new Blob([result.mov]), { requireAudio: true });
+    if (!tracks.hasAudio || !tracks.hasVideo || result.photoFormat !== 'heic'
+      || !new TextDecoder().decode(result.photo).includes(result.assetIdentifier)
+      || !new TextDecoder().decode(result.mov).includes(result.assetIdentifier)) throw new Error('Large input output or pairing failed.');
+    return { sourceBytes: file.size, sourceDuration: metadata.duration, outputBytes: result.mov.byteLength,
+      photoBytes: result.photo.byteLength, hasAudio: tracks.hasAudio, hasVideo: tracks.hasVideo, format: result.photoFormat };
+  })()`, true);
+  result.checks.push('desktop real disk File >2GiB inspection and HEIC/audio clip encoding');
+  result.largeVideo = largeVideo;
+  assert.deepEqual(rendererErrors, [], 'Large desktop video conversion must have no console errors');
   finish(null, result);
 }).catch(error => finish(error));

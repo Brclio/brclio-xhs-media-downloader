@@ -1,6 +1,14 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
+  saveVideo: (input) => ipcRenderer.invoke('desktop:save-video', input),
+  cancelVideoDownload: (requestId) => ipcRenderer.invoke('desktop:cancel-video-download', requestId),
+  onVideoDownloadProgress: (callback) => {
+    if (typeof callback !== 'function') throw new TypeError('callback must be a function');
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on('desktop:video-download-progress', listener);
+    return () => ipcRenderer.removeListener('desktop:video-download-progress', listener);
+  },
   copyImages: (input) => ipcRenderer.invoke('desktop:copy-images', input),
   onClipboardProgress: (callback) => {
     if (typeof callback !== 'function') throw new TypeError('callback must be a function');

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 4 日，v2.0.7 实况制作默认导出 HEIC + MOV，可分别下载两文件或完整 ZIP，也可选择 JPEG + MOV。Android 保持 v1.0.11。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 9 日，桌面 v2.0.8 与 Android v1.0.12 准备发布：改进客户端大视频直接保存，桌面支持更大的视频素材制作实况，网页与 ZIP 保留原有保护。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -43,9 +43,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="记录整理至 2026 年 10 月 4 日">
+          <div class="header-status" aria-label="记录整理至 2026 年 10 月 9 日">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>更新至 2026.10.04</span>
+            <span>更新至 2026.10.09</span>
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次升级实况导出：默认保存 HEIC + MOV，可分别下载这两个配对文件，也可一次下载完整 ZIP。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次改进 Mac / Windows 与 Android 的大视频保存：视频持续写入本地文件，桌面大视频素材也可直接选择短片段制作实况。
             </p>
 
             <div class="release-hero-actions">
@@ -73,8 +73,8 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.7</strong>
-              <small>2026.10.04 · Mac / Windows</small>
+              <strong>v2.0.8</strong>
+              <small>发布准备中 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
@@ -84,20 +84,20 @@
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>实况两文件下载</span>
+                <span>大视频直接保存</span>
               </div>
               <div class="summary-stat">
-                <strong>1.0.11</strong>
+                <strong>1.0.12</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
-                <strong>10.04</strong>
+                <strong>10.09</strong>
                 <span>最近整理 · 2026</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 默认 HEIC + MOV，也可选择 JPEG；完整实况需要保留同名照片与动态视频两个文件。</p>
-            <a class="release-summary-link" href="#live-photo-heic-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 桌面视频与 Android 单独播放视频直接保存不设固定大小上限；网页、图片、预览与 ZIP 继续保留保护。</p>
+            <a class="release-summary-link" href="#desktop-large-video-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.7、HEIC、Android 1.0.11" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.8、Android 1.0.12、大视频" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,6 +129,8 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#desktop-large-video-update"><span>v2.0.8</span><strong>客户端大视频直接保存</strong></a>
+              <a href="#android-large-video-update"><span>Android 1.0.12</span><strong>安卓独立视频直接保存</strong></a>
               <a href="#live-photo-heic-update"><span>v2.0.7</span><strong>HEIC 实况与两文件下载</strong></a>
               <a href="#update-proxy-retry-update"><span>v2.0.6</span><strong>内置代理更新自动重试</strong></a>
               <a href="#live-photo-maker-update"><span>v2.0.5</span><strong>把图片与视频制作成实况</strong></a>
@@ -191,6 +193,35 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
+            <article id="desktop-large-video-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-09"><span>10.09</span><small>2026 · 大视频</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.8</span><span class="release-badge release-badge-blue">桌面客户端</span><span class="release-status">发布准备中</span></div><h3>客户端大视频，持续保存到本地文件</h3></div></header>
+                <p class="release-lead">Mac / Windows 的普通视频、会员原视频、单独实况 MP4 和主页批量视频不再沿用浏览器的固定文件大小限制。下载时持续写入本地，保留实际字节进度。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>直接保存更大的视频</strong>移除桌面视频路径的 512 MB / 2 GiB 固定上限；持续有数据传输时不会仅因总下载时间较长而超时。可保存大小仍取决于磁盘空间、文件系统与网络。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>授权与完整性检查继续保留</strong>会员原视频验证软件会员授权，普通播放视频仍可免费保存。完成前检查文件，失败或取消后清理未完成内容。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>大视频也能选片段制作实况</strong>桌面实况制作移除视频素材的 150 MB 上限，继续只编码选中的 0.5–3 秒片段，保留封面、声音和 HEIC / JPEG 格式选择。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>各类保存方式明确区分</strong>网页视频、图片素材和 ZIP 归档继续保留原有内存保护；较大的实况动态素材可使用桌面的单独 MP4 下载入口。</p></div>
+                </div>
+                <p class="release-card-note">测试、Mac Apple 芯片 / Intel 与 Windows 安装包、更新验收和公开发布核验完成后补充结果。同期 Android v1.0.12 改进单独普通视频与实况 MP4 保存，详见下方安卓记录。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.8" target="_blank" rel="noopener noreferrer">桌面版 v2.0.8 说明 ↗</a><a href="/download.html">查看客户端下载 ↗</a><span>客户端大视频 · 2026.10.09</span></div>
+              </div>
+            </article>
+            <article id="android-large-video-update" class="release-entry release-entry-featured" data-release-platforms="desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-09"><span>10.09</span><small>2026 · 安卓视频</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">Android v1.0.12</span><span class="release-badge release-badge-blue">安卓客户端</span><span class="release-status">发布准备中</span></div><h3>安卓单独保存视频，移除固定大小限制</h3></div></header>
+                <p class="release-lead">安卓的单独普通视频与实况 MP4 持续写入本地文件，不再设置 512 MB 固定上限。选择保存位置后即可下载，文件保存在系统「文件」应用中。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>持续传输的大视频继续下载</strong>独立视频保存移除总下载时长限制，保留连接与无数据超时、取消、完整性和音轨检查。实际可保存大小仍取决于空间、文件系统、链接有效期与网络。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>预览、图片与 ZIP 保留保护</strong>原有图片、预览与归档保护继续生效；较大视频请使用单独视频保存入口。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>会员原视频沿用浏览器入口</strong>无水印原视频继续在系统浏览器登录软件账号并验证会员后保存，遵守网页限制。普通播放视频仍可免费保存。</p></div>
+                </div>
+                <p class="release-card-note">签名安装包、覆盖升级、模拟器验收与公开附件核验完成后补充结果；安卓与桌面继续分别维护版本和更新通道。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.12" target="_blank" rel="noopener noreferrer">Android v1.0.12 说明 ↗</a><a href="/download.html#android-download">查看安卓下载 ↗</a><span>安卓大视频 · 2026.10.09</span></div>
+              </div>
+            </article>
             <article id="live-photo-heic-update" class="release-entry release-entry-featured" data-release-platforms="web desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-04"><span>10.04</span><small>2026 · HEIC 实况</small></time></div>
               <div class="release-card">

@@ -13,6 +13,71 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 public class NativePolicyTest {
+    @Test public void onlyIndividualVideoSavesBypassMediaAndArchiveCaps() {
+        assertTrue(NativePolicy.unlimitedVideoSave(false, 1, "video"));
+        assertFalse(NativePolicy.unlimitedVideoSave(true, 1, "video"));
+        assertFalse(NativePolicy.unlimitedVideoSave(false, 2, "video"));
+        assertFalse(NativePolicy.unlimitedVideoSave(false, 1, "image"));
+        assertFalse(NativePolicy.unlimitedVideoSave(false, 1, "text"));
+        assertFalse(NativePolicy.unlimitedVideoSave(false, 0, "video"));
+    }
+
+    @Test public void individualVideoByteAccountingCrosses512MiB1GiBAnd2GiBWithoutAllocatingMedia() {
+        long count = 0, target = 8L * 1024 * 1024 * 1024 + 17;
+        while (count < target) {
+            count = NativePolicy.addBytes(count, Math.min(64 * 1024, target - count));
+            NativePolicy.validateMediaBytes("video", true, 0, count);
+        }
+        assertEquals(target, count);
+        NativePolicy.validateMediaBytes("video", true, 0, NativePolicy.contentLength(Long.toString(target)));
+    }
+
+    @Test public void imageArchiveAndPreviewLimitsRemainBounded() {
+        long fileLimit = NativePolicy.MAX_MEDIA_BYTES;
+        NativePolicy.validateMediaBytes("image", false, fileLimit, fileLimit);
+        NativePolicy.validateMediaBytes("video", false, 0, fileLimit);
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.validateMediaBytes("video", false, 0, fileLimit + 1));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.validateMediaBytes("image", false, 0, fileLimit + 1));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.validateMediaBytes("image", true, 0, fileLimit + 1));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.validateMediaBytes("image", false, NativePolicy.MAX_TOTAL_BYTES, 1));
+    }
+
+    @Test public void malformedNegativeZeroAndOverflowingDeclaredLengthsAreRejected() {
+        assertEquals(-1, NativePolicy.contentLength(null));
+        assertEquals(2L * 1024 * 1024 * 1024 + 1, NativePolicy.contentLength("2147483649"));
+        for (String header : new String[] {"", "0", "-1", "1.5", "1e9", "NaN", " 5", "+5", "9223372036854775808"}) {
+            assertThrows(header, IllegalArgumentException.class, () -> NativePolicy.contentLength(header));
+        }
+    }
+
+    @Test public void accountingNeverWrapsLongCountersEvenForUnlimitedVideos() {
+        assertEquals(Long.MAX_VALUE, NativePolicy.addBytes(Long.MAX_VALUE - 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.addBytes(Long.MAX_VALUE, 1));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.addBytes(-1, 1));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.addBytes(0, -1));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.validateMediaBytes("video", true, Long.MAX_VALUE, 1));
+        assertThrows(IllegalArgumentException.class, () -> NativePolicy.validateMediaBytes("metadata", true, 0, 1));
+    }
+
+    @Test public void longHealthyVideoSavesHaveNoTotalTransferOrJobDeadline() {
+        long twoHours = 2 * 60 * 60 * 1000L;
+        assertFalse(NativePolicy.downloadTimedOut(twoHours, true));
+        assertFalse(NativePolicy.jobTimedOut(twoHours, true));
+        assertTrue(NativePolicy.downloadTimedOut(twoHours, false));
+        assertTrue(NativePolicy.jobTimedOut(twoHours, false));
+        assertFalse(NativePolicy.downloadTimedOut(NativePolicy.DOWNLOAD_TIMEOUT_MS, false));
+        assertTrue(NativePolicy.downloadTimedOut(NativePolicy.DOWNLOAD_TIMEOUT_MS + 1, false));
+    }
+
+    @Test public void diskSpaceCheckReservesHeadroomWithoutOverflowingLargeDeclaredSizes() {
+        long reserve = NativePolicy.SPACE_RESERVE_BYTES;
+        assertTrue(NativePolicy.hasDownloadSpace(2147483649L, 2147483649L + reserve));
+        assertFalse(NativePolicy.hasDownloadSpace(2147483649L, 2147483649L + reserve - 1));
+        assertFalse(NativePolicy.hasDownloadSpace(Long.MAX_VALUE, Long.MAX_VALUE));
+        assertTrue(NativePolicy.hasDownloadSpace(Long.MAX_VALUE - reserve, Long.MAX_VALUE));
+        assertFalse(NativePolicy.hasDownloadSpace(0, reserve - 1));
+    }
+
     @Test public void officialMediaHostsKeepSignedQueriesAndDefaultHttpsPorts() {
         String signed = "https://sns-webpic-qc.xhscdn.com/image.jpg?sign=a%2Bb%3D&expires=123";
         assertEquals(signed, NativePolicy.mediaUri(signed).toString());

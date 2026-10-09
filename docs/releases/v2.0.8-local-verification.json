@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "desktopVersion": "2.0.8",
+  "androidVersion": "1.0.12",
+  "verifiedAt": "2026-10-09T04:40:25.434107+00:00",
+  "result": "PASS",
+  "node": {
+    "tests": 1059,
+    "pass": 1047,
+    "fail": 0,
+    "skipped": 12
+  },
+  "python": {
+    "pass": 27
+  },
+  "androidPolicyJUnit": {
+    "pass": 18,
+    "maximumCountBytes": 8589934609,
+    "realMediaAllocation": false
+  },
+  "desktopNativeBridge": {
+    "mainPreloadBridge": true,
+    "directStream": true,
+    "exactBytes": 524504,
+    "audioVideoTracks": true,
+    "invalidSourceRejected": true,
+    "dialogCancellation": true,
+    "streamCancellation": true,
+    "atomicReplacement": true,
+    "cleanup": true
+  },
+  "desktopCodecs": {
+    "result": "PASS",
+    "platform": "darwin",
+    "support": {
+      "supported": true,
+      "audioSupported": true,
+      "heicSupported": true,
+      "message": "本地制作已就绪。"
+    },
+    "checks": [
+      "JPEG image playback",
+      "JPEG slideshow playback",
+      "HEIC slideshow pair",
+      "native H264/AAC fixture",
+      "HEIC trimmed audio-video pair and playback",
+      "decoded audible PCM",
+      "image/audio/HEIC cancellation cleanup",
+      "desktop real disk File >2GiB inspection and HEIC/audio clip encoding"
+    ],
+    "audioRms": 0.20041444734487293,
+    "largeVideo": {
+      "sourceBytes": 2147483649,
+      "sourceDuration": 2,
+      "outputBytes": 8664,
+      "photoBytes": 1185,
+      "hasAudio": true,
+      "hasVideo": true,
+      "format": "heic"
+    }
+  },
+  "browserAndMemberRenderer": {
+    "ok": true,
+    "verifiedAt": "2026-10-09T04:35:44.763Z",
+    "version": "2.0.8",
+    "platform": "darwin",
+    "arch": "arm64",
+    "electronVersion": "44.4.3",
+    "safeExternalEntry": true,
+    "noAutomaticPaidAction": true,
+    "guestLogin": true,
+    "browserAccountLogin": true,
+    "memberDownload": true,
+    "desktopAccountEntryAndDownload": true,
+    "finalAuthorizationBeforeSave": true,
+    "accountChangeDuringFinalResponse": true,
+    "noProtectedFallback": true,
+    "ordinaryPurchase": true,
+    "noOriginal": true,
+    "immediateProgress": true,
+    "delayedAccountResolveMetadataChunks": true,
+    "delayedMp4Inspection": true,
+    "realBytePercentage": true,
+    "progressWithinChunkBody": true,
+    "noSaveBeforeFinalChecks": true,
+    "retainedCompletionAndFailure": true,
+    "invalidMediaNoSave": true,
+    "retryRestoresButtons": true,
+    "retryResetsReceivedBytes": true,
+    "freePlaybackProgress": true,
+    "pendingWindowScrollCancelled": true,
+    "pendingDesktopScrollCancelled": true,
+    "userWheelScrollingRespected": true,
+    "fixtureBytes": 248,
+    "widths": [
+      1440,
+      768,
+      390,
+      320
+    ]
+  },
+  "limitations": [
+    "Local Android policy tests do not establish a physical-phone large media transfer.",
+    "Cross-platform package, signing, installation and public release checks run separately in CI.",
+    "Web, image, preview and ZIP safety limits remain in effect."
+  ]
+}

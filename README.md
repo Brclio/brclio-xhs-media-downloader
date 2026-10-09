@@ -1,5 +1,7 @@
 # Brclio 小红书下载器
 
+桌面 v2.0.8 与 Android v1.0.12 发布准备中，修复客户端视频大小限制：Mac / Windows 的普通视频、会员原视频、单独实况 MP4 与主页批量视频持续写入本地文件，不再设置 512 MB / 2 GiB 的固定上限；Android 的单独普通视频与实况 MP4 同步移除 512 MB 上限。健康的持续传输不再受总下载时长限制，无数据连接仍会超时。桌面「制作实况」也移除视频素材的 150 MB 上限，继续仅编码所选短片段。会员授权、媒体来源和文件完整性检查保留；网页、ZIP 归档、图片与 Android 预览仍保留各自的保护限制，Android 会员原视频继续通过浏览器保存。详见[桌面版本说明](docs/releases/v2.0.8.md)与 [Android 版本说明](docs/releases/android-v1.0.12.md)。测试、安装包、公开附件和正式网页待完成核验后记录。
+
 v2.0.7 已发布，[实况制作](docs/live-photo-maker.md)默认导出真正的 HEIC + MOV，可选 JPEG + MOV，提供照片、MOV 两个直接下载入口及完整 ZIP。两文件共用 UUID 名称与内部配对标识；Mac Apple 芯片、Mac Intel、Windows 的 HEIC 原生编码门禁、安装包构建和更新验收全部通过。素材在本机处理，照片来自 8 位 Canvas，不保留源 HDR / 10 位信息。详见[版本说明](docs/releases/v2.0.7.md)、[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37194318192)、[本机原生与下载验收](docs/live-photo-heic-verification.json)和[公开发布核验](docs/releases/v2.0.7-publication-verification.json)。Android 保持 v1.0.11。
 
 v2.0.6 已发布，为 Mac / Windows 桌面更新增加内置代理自动续传重试：下载中断或超时后自动重新连接，实时显示连续失败次数；连续失败 10 次后暂停自动重试，点击“继续下载”或“重试下载”开始新一轮。暂停、退出和手动关闭代理保留已下载进度。三平台构建、公开附件与官网已核验，正式 Mac arm64 包启动和联网检查通过。详见[版本说明](docs/releases/v2.0.6.md)、[公开发布核验](docs/releases/v2.0.6-publication-verification.json)、[官网验收](docs/releases/v2.0.6-web-verification.json)与[更新网络配置](docs/update-proxy-config.md)。Android 保持 v1.0.11。
@@ -72,7 +74,7 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 新增独立 Android 客户端工程，面向 Android 8.0 及以上，聚焦单篇笔记的原图、实况、视频、文案、ZIP、图片复制与系统分享。可粘贴分享文案，也可从其他应用分享文字进入；文件由 Android 系统文件选择器保存。解析沿用在线服务，安装者无需 Python 或 Node.js。检测到平台原视频后，可通过「下载无水印视频 · 会员」在系统浏览器打开网页版，登录软件账号并验证会员后下载；Android 原生层不保存该账号会话。当前不包含主页批量或小红书登录。
 
-前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 独立编号为 `1.0.11`，使用固定签名支持后续覆盖升级。
+前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 下一版本为 `1.0.12`，发布准备中，使用固定签名支持后续覆盖升级。单独普通视频与实况 MP4 持续写入本地，不设固定文件大小上限；图片、预览与 ZIP 保留原有保护，会员原视频继续通过浏览器登录后保存。
 
 开发者配置 JDK 与 Android SDK 后运行 `npm run android:build` 生成 debug APK。构建、正式签名、安装与设备验证说明见 [Android 客户端说明](android/README.md)。Mac / Windows 使用独立的桌面版本与更新通道。
 
@@ -365,8 +367,8 @@ GET /api/python_video?action=chunk&url=...&start=0&end=3499999
 - 分享链接和视频 CDN 跳转目标都会校验；页面分享链每一跳都必须使用 HTTPS、无凭证且仅使用安全端口。
 - 只解析当前 `noteId` 的媒体对象，不全局扫描推荐内容。
 - 文案只读取当前 `noteId` 已锁定笔记对象的直属字段；降级解析宁可返回空文案，也不会猜测推荐内容。
-- 单个视频限制为 512 MB，避免浏览器本地合并占用过多内存。
-- 实况单项 ZIP、批量 ZIP 和单独 MP4 会先检查已知大小，再对实际响应逐段限流；归档超限时不会生成截断 ZIP。
+- 网页版单个视频限制为 512 MB，避免浏览器本地合并占用过多内存。Mac / Windows 桌面版的普通视频、会员原视频、单独实况 MP4 与主页批量视频，以及 Android 单独普通视频和实况 MP4 持续写入本地文件，不设置固定视频大小上限；实际保存仍取决于可用磁盘空间、文件系统与网络。Android 会员原视频使用浏览器保存，沿用网页限制。
+- 实况单项 ZIP、批量 ZIP 和网页单独 MP4 会先检查已知大小，再对实际响应逐段限流；归档超限时不会生成截断 ZIP。客户端单独 MP4 使用本地文件保存，ZIP 归档、图片与 Android 预览继续保留原有保护。
 - 网页多图复制依赖标准 Async Clipboard API、HTTPS 与目标系统的多项剪贴板能力；不支持时请逐张复制或使用 ZIP。客户端使用系统文件剪贴板，接收应用需要支持多图片或多文件粘贴。
 - 图片与视频不会在服务器持久化。
 - 临时签名的视频链接可能过期，解析后应及时下载。

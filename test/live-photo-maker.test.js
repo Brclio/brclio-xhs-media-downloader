@@ -30,6 +30,21 @@ test('clip bounds and cover position are validated before encoding', () => {
   assert.throws(() => normalizeLivePhotoOptions({ ...options, sourceDuration: 0.3, start: 0 }), /超出/);
 });
 
+test('trusted desktop videos have no browser byte cap while web and image protections remain', t => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'location');
+  t.after(() => { if (previous) Object.defineProperty(globalThis, 'location', previous); else delete globalThis.location; });
+  const large = file('large.mp4', 'video/mp4', 5 * 1024 ** 3);
+  large.arrayBuffer = () => { throw new Error('Full source must not be read into memory'); };
+  for (const origin of ['https://example.test/live.html?source=desktop', 'xhs-app://other/live.html']) {
+    Object.defineProperty(globalThis, 'location', { configurable: true, value: new URL(origin) });
+    assert.throws(() => validateLivePhotoFiles([large]), /150 MB/);
+  }
+  Object.defineProperty(globalThis, 'location', { configurable: true, value: new URL('xhs-app://local/live.html?source=desktop') });
+  assert.equal(validateLivePhotoFiles([large]), 'video');
+  assert.throws(() => validateLivePhotoFiles([file('huge.jpg', 'image/jpeg', LIVE_PHOTO_LIMITS.maxBytes + 1)]), /150 MB/);
+  assert.throws(() => validateLivePhotoFiles([large, file('another.mp4', 'video/mp4')]), /一个视频/);
+});
+
 test('encoding keeps portrait and landscape orientation, bounds dimensions and produces even pixel sizes', () => {
   assert.deepEqual(livePhotoDimensions(3840, 2160), { width: 1440, height: 810 });
   assert.deepEqual(livePhotoDimensions(1080, 1920), { width: 810, height: 1440 });

@@ -2,7 +2,7 @@ import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { PROTECTED_FEATURES } from '../lib/membership-policy.js';
 import { isMemberVideoUrl } from '../lib/video-policy.js';
-import { createMemberVideoHandler } from '../lib/member-video-handler.js';
+import { createMemberVideoHandler, createMemberVideoTicketService } from '../lib/member-video-handler.js';
 import parseHandler from '../api/parse.js';
 import imageHandler from '../api/image.js';
 import { createVideoHandler } from '../api/video.js';
@@ -80,14 +80,16 @@ async function defaultAuthorization(feature) {
   if (PROTECTED_FEATURES.includes(feature)) throw Object.assign(new Error('软件账号授权服务不可用。'), { status: 503 });
 }
 
-export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandlers, authorize = defaultAuthorization, onDiagnostic = () => {} }) {
+export function createDesktopMemberVideoTicketService(authorize) {
+  return createMemberVideoTicketService({ authorize: () => authorize('watermark-free-video') });
+}
+
+export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandlers, authorize = defaultAuthorization,
+  memberVideoTicketService = createDesktopMemberVideoTicketService(authorize), onDiagnostic = () => {} }) {
   const handlers = nodeHandlers ?? {
     ...NODE_HANDLERS,
     '/api/video': createVideoHandler({ authorizeOriginal: () => authorize('watermark-free-video') }),
-    '/api/member_video': createMemberVideoHandler({ authorize: async () => {
-      const principal = await authorize('watermark-free-video');
-      return { userId: principal?.userId || 'desktop' };
-    } })
+    '/api/member_video': createMemberVideoHandler({ ticketService: memberVideoTicketService })
   };
   return async (request) => {
     const started = Date.now();

@@ -113,7 +113,7 @@ public final class MainActivity extends Activity {
         final List<NativeTransfer.Entry> entries;
         final String filename;
         final String mime;
-        final NativeTransfer.Cancellation cancellation = new NativeTransfer.Cancellation();
+        final NativeTransfer.Cancellation cancellation;
         volatile Uri document;
         boolean awaitingPicker;
         Operation(Request request, List<NativeTransfer.Entry> entries, String filename, String mime) {
@@ -121,6 +121,8 @@ public final class MainActivity extends Activity {
             this.entries = entries;
             this.filename = filename;
             this.mime = mime;
+            this.cancellation = new NativeTransfer.Cancellation(NativePolicy.unlimitedVideoSave(
+                    mime.equals("application/zip"), entries.size(), entries.get(0).kind));
         }
     }
 
