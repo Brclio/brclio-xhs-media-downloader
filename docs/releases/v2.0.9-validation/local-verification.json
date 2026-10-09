@@ -1,0 +1,41 @@
+{
+  "verifiedAt": "2026-10-09T14:59:11.276805+08:00",
+  "scope": "isolated fixtures, no production accounts, email, or payments changed",
+  "node": {
+    "tests": 1087,
+    "pass": 1075,
+    "fail": 0,
+    "skipped": 12
+  },
+  "python": {
+    "tests": 27,
+    "passed": 27
+  },
+  "commerceRenderer": {
+    "ok": true,
+    "checks": [
+      "public pagination and rating",
+      "XSS rendered as text",
+      "all personal order pages",
+      "payment report creates pending order",
+      "uncertain evaluation retries same requestId",
+      "single evaluation locks composer",
+      "375px and 900px layout",
+      "late private response after logout discarded",
+      "desktop bridge and account switching",
+      "private evaluation read failure retains retry",
+      "old payment result after re-login cannot overwrite new request"
+    ]
+  },
+  "desktopRenderer": {
+    "ok": true,
+    "evidence": "original desktop UI integration plus ten-tab review navigation, account orders and screenshot checked"
+  },
+  "adminRenderer": {
+    "ok": true,
+    "evidence": "HTTPS real account service, 47 order pagination, revenue ranges, lifecycle link, response loss, no duplicated audit/revenue, 390px layout"
+  },
+  "cloudflareDryRun": true,
+  "androidEntryReport": "android-entry.json",
+  "screenshotsAreFixtures": true
+}

@@ -6,6 +6,8 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   const state = { admin: null, users: [], codes: [], audit: [], feedback: [], selectedFeedback: null, feedbackDetail: null, feedbackHistory: [], feedbackMessages: [], feedbackDrafts: new Map(), feedbackLog: null, selectedId: null, user: null, history: [], pendingDevices: [], generated: [], generatedSaved: false, tab: 'users', serverTime: null, loaded: new Set(), requestIds: new Map(), pendingMutation: null, mutating: false, pages: { users: 0, codes: 0, audit: 0, feedback: 0 }, total: {} };
   const PAGE_SIZE = 20;
   const issue = { recipients: [], code: null, reason: '', searchRequest: 0 };
+  const commerce = { orders: [], page: 1, pageSize: 20, total: 0, totalPages: 0, revenue: null, recipients: [], target: null, listRequest: 0, revenueRequest: 0, searchRequest: 0 };
+  let orderLinkTarget = null;
   let dialogResolve = null;
   let sendTimer = null;
   let userRequest = 0;
@@ -164,6 +166,8 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
           state.loaded.delete('audit');
           if (pending.action === 'admin-save-update-proxy-config') return finishUpdateProxySave(result);
           if (pending.action === 'admin-feedback-reply') return finishFeedbackReply(pending.input, result);
+          if (pending.action === 'admin-record-order') return finishOrderRecord(result);
+          if (pending.action === 'admin-link-order-code') return finishOrderLink(result);
           if (pending.action === 'admin-generate-codes') displayGenerated(result, pending.input);
           else if (pending.action === 'admin-send-activation') displaySent(result);
           else tell('原操作已确认完成，未重复增加权益或重复生成记录。', 'success');
@@ -208,6 +212,12 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     issue.recipients = []; issue.code = null; issue.reason = ''; issue.searchRequest += 1;
     $('issue-query').value = ''; $('issue-reason').value = ''; $('issue-deadline').value = '';
     renderRecipients(); renderIssuePreview();
+    commerce.orders = []; commerce.page = 1; commerce.total = 0; commerce.totalPages = 0; commerce.revenue = null; commerce.listRequest += 1; commerce.revenueRequest += 1; commerce.searchRequest += 1;
+    resetOrderRecord();
+    closeOrderLink();
+    ['orders-list', 'orders-pagination', 'revenue-summary', 'revenue-breakdown'].forEach(id => $(id).replaceChildren());
+    $('orders-count').textContent = '';
+    $('orders-filter-form').reset(); $('revenue-filter-form').reset();
     feedbackSessionEpoch += 1; feedbackRequest += 1;
     state.feedback = []; state.selectedFeedback = null; state.feedbackDetail = null; state.feedbackHistory = []; state.feedbackMessages = []; state.feedbackDrafts.clear(); state.feedbackLog = null; state.mutating = false;
     updateProxyConfig = null; updateProxyRequest += 1; updateProxyDraft = '';
@@ -256,7 +266,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   async function switchTab(name) {
     state.tab = name;
     tabs.forEach((tab) => { const active = tab.dataset.tab === name; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; $(`panel-${tab.dataset.tab}`).hidden = !active; });
-    if (!state.loaded.has(name)) await ({ users: loadUsers, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback, 'update-proxy': loadUpdateProxyConfig })[name]();
+    if (!state.loaded.has(name)) await ({ users: loadUsers, orders: loadCommerce, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback, 'update-proxy': loadUpdateProxyConfig })[name]();
     if (name === 'codes' && !issue.recipients.length) await findRecipients();
   }
   tabs.forEach((tab, index) => {
@@ -728,7 +738,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   }
   $('feedback-filter-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, loadFeedback); });
   $('refresh-feedback').addEventListener('click', () => run($('refresh-feedback'), async () => { await loadFeedback(); if (state.selectedFeedback) await selectFeedback(state.selectedFeedback); }));
-  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态', 'admin-feedback-reply': '回复问题反馈', 'feedback-reply': '用户回复反馈', 'admin-save-update-proxy-config': '更新软件订阅配置' })[action] || action || '操作记录'; }
+  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态', 'admin-feedback-reply': '回复问题反馈', 'feedback-reply': '用户回复反馈', 'admin-save-update-proxy-config': '更新软件订阅配置', 'admin-record-order': '确认订单实际收款', 'admin-link-order-code': '关联订单激活码' })[action] || action || '操作记录'; }
   function renderUpdateProxyConfig(config) {
     updateProxyConfig = config;
     const unconfigured = config.revision === 0;
@@ -769,6 +779,199 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       if (subscriptionUrls.length > 8) { setUpdateProxyVisibility(true); $('update-proxy-url').focus(); throw new Error('最多保存 8 个不同的订阅地址，每行一个。'); }
       const result = await mutate('admin-save-update-proxy-config', { enabled, subscriptionUrls, expectedRevision: updateProxyConfig.revision, reason: $('update-proxy-reason').value.trim() });
       finishUpdateProxySave(result);
+    });
+  });
+  const paymentMethodLabels = { alipay: '支付宝', wechat: '微信支付', other: '其他' };
+  function money(cents) { return Number.isSafeInteger(cents) ? `¥${(cents / 100).toFixed(2)}` : '未确认'; }
+  function beijingTime(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '—';
+  }
+  function commerceDates(prefix) {
+    const startDate = $(`${prefix}-start-date`).value;
+    const endDate = $(`${prefix}-end-date`).value;
+    if (startDate && endDate && startDate > endDate) throw new Error('开始日期不能晚于结束日期。');
+    return { ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}) };
+  }
+  async function loadCommerce() {
+    const epoch = feedbackSessionEpoch;
+    await Promise.all([loadOrders(1), loadRevenue()]);
+    if (epoch === feedbackSessionEpoch && state.admin) state.loaded.add('orders');
+  }
+  async function loadOrders(page = commerce.page) {
+    const input = { query: $('order-query').value.trim(), status: $('order-status').value, ...commerceDates('order'), page, pageSize: commerce.pageSize };
+    const request = ++commerce.listRequest; const epoch = feedbackSessionEpoch;
+    $('orders-list').setAttribute('aria-busy', 'true');
+    try {
+      const data = await api('admin-orders', input);
+      if (request !== commerce.listRequest || epoch !== feedbackSessionEpoch || !state.admin) return;
+      commerce.orders = data.orders || []; commerce.page = data.page || page; commerce.total = data.total || 0; commerce.totalPages = data.totalPages || 0;
+      renderOrders();
+    } finally { if (request === commerce.listRequest) $('orders-list').removeAttribute('aria-busy'); }
+  }
+  function renderOrders() {
+    $('orders-count').textContent = `共 ${commerce.total} 笔`;
+    $('orders-pagination').replaceChildren();
+    const last = Math.max(1, commerce.totalPages);
+    const previous = button('上一页', 'button-secondary button-small', () => loadOrders(commerce.page - 1)); previous.disabled = commerce.page <= 1;
+    const next = button('下一页', 'button-secondary button-small', () => loadOrders(commerce.page + 1)); next.disabled = commerce.page >= last;
+    const pageStatus = el('span', '', `第 ${commerce.page} / ${last} 页 · 每页 ${commerce.pageSize} 笔`);
+    $('orders-pagination').append(previous, pageStatus, next);
+    if (last > 1) {
+      const jump = el('form', 'page-jump'); const label = el('label', '', '跳至'); const input = el('input');
+      input.type = 'number'; input.min = '1'; input.max = String(last); input.step = '1'; input.value = String(commerce.page); input.required = true; input.setAttribute('aria-label', '跳转到订单页码'); label.append(input);
+      const submit = button('前往', 'button-secondary button-small'); submit.type = 'submit';
+      jump.append(label, submit); jump.addEventListener('submit', event => { event.preventDefault(); run(submit, () => { if (jump.reportValidity()) return loadOrders(Number(input.value)); }); });
+      $('orders-pagination').append(jump);
+    }
+    if (!commerce.orders.length) return empty($('orders-list'), '没有匹配的订单。可调整筛选条件或录入已核实的收款。');
+    const statusLabels = { confirmed: '已确认收款', pending: '待确认收款', legacy_unverified: '历史发码 · 未确认收款' };
+    $('orders-list').replaceChildren(table(['订单 / 账号', '套餐 / 金额', '状态 / 日期（北京）', '收款凭证 / 激活码', '操作'], commerce.orders.map(order => {
+      const identity = record(order.id, order.email || order.userId);
+      identity.append(el('span', 'small-text', `创建：${beijingTime(order.createdAt)}`));
+      const amount = record(order.planName || order.planId, `套餐标价 ${money(order.priceCents)}`);
+      amount.append(el('strong', 'order-received', order.status === 'confirmed' ? `实收 ${money(order.amountCents)}` : '实收尚未确认'));
+      const status = el('div'); status.append(badge(statusLabels[order.status] || order.status, order.status === 'confirmed' ? '' : 'badge-muted'), el('span', 'small-text', order.status === 'confirmed' ? `收款：${beijingTime(order.paidAt)}` : '未计入营业额'));
+      if (order.confirmedAt) status.append(el('span', 'small-text', `确认：${beijingTime(order.confirmedAt)}`));
+      const reference = record(order.paymentMethod ? paymentMethodLabels[order.paymentMethod] || order.paymentMethod : '待核对收款渠道', order.transactionReference ? `流水：${order.transactionReference}` : '未录入收款流水');
+      if (order.codeId) reference.append(el('span', 'small-text', `激活码记录：${order.codeId}`));
+      if (order.reason) { const details = el('details'); details.append(el('summary', '', '核对说明'), el('p', 'order-reason', order.reason)); reference.append(details); }
+      const control = el('div', 'order-actions');
+      if (order.status === 'confirmed') {
+        control.append(el('span', 'small-text', '已确认，收款只读'));
+        if (!order.codeId) control.append(button('关联激活码', 'button-secondary button-small', () => openOrderLink(order)));
+        else control.append(el('span', 'small-text', '已关联激活码'));
+      } else control.append(button('确认收款', 'button-secondary button-small', () => selectOrderRecord(order)));
+      return [identity, amount, status, reference, control];
+    }), 'orders-table'));
+  }
+  async function loadRevenue() {
+    const dates = commerceDates('revenue'); const request = ++commerce.revenueRequest; const epoch = feedbackSessionEpoch;
+    $('revenue-summary').setAttribute('aria-busy', 'true');
+    try {
+      const data = await api('admin-revenue', dates);
+      if (request !== commerce.revenueRequest || epoch !== feedbackSessionEpoch || !state.admin) return;
+      commerce.revenue = data.revenue || {};
+      renderRevenue();
+    } finally { if (request === commerce.revenueRequest) $('revenue-summary').removeAttribute('aria-busy'); }
+  }
+  function renderRevenue() {
+    const revenue = commerce.revenue;
+    const total = el('div', 'revenue-total'); total.append(el('span', 'small-text', '已确认实际收款 · 人民币'), el('strong', '', money(revenue.totalCents || 0)));
+    const range = revenue.startDate || revenue.endDate ? `${revenue.startDate || '最早'} 至 ${revenue.endDate || '至今'}` : '全部时间';
+    total.append(el('span', 'small-text', `${range} · 北京时间`));
+    $('revenue-summary').replaceChildren(total, facts([['已确认收款', `${revenue.confirmedCount || 0} 笔`], ['待确认订单', `${revenue.pendingCount || 0} 笔 · 不计收入`], ['历史发码待核实', `${revenue.legacyUnverifiedCount || 0} 笔 · 不计收入`]], 'revenue-facts'));
+    const breakdown = $('revenue-breakdown'); breakdown.replaceChildren();
+    const groups = [ ['按会员套餐', revenue.byPlan || [], entry => entry.planName || entry.planId], ['按收款渠道', revenue.byPaymentMethod || [], entry => paymentMethodLabels[entry.paymentMethod] || entry.paymentMethod] ];
+    for (const [heading, entries, label] of groups) {
+      const section = el('div', 'revenue-group'); section.append(el('h4', '', heading));
+      if (!entries.length) section.append(el('p', 'empty-inline', '此区间暂无已确认收款。'));
+      else section.append(table(['类别', '收款笔数', '实际收款'], entries.map(entry => [label(entry), `${entry.count} 笔`, money(entry.totalCents)])));
+      breakdown.append(section);
+    }
+    if (revenue.byDay?.length) {
+      const days = el('details', 'revenue-days'); days.append(el('summary', '', `查看每日实收（${revenue.byDay.length} 天，北京时间）`), table(['收款日期', '收款笔数', '实际收款'], revenue.byDay.map(entry => [entry.date, `${entry.count} 笔`, money(entry.totalCents)])));
+      breakdown.append(days);
+    }
+  }
+  function resetOrderRecord() {
+    commerce.target = null; commerce.recipients = []; commerce.searchRequest += 1;
+    $('order-record-form').reset(); $('order-user-search-form').reset(); $('order-user-search-form').hidden = false;
+    $('order-user').disabled = false; $('order-plan').disabled = false; $('order-code-id').readOnly = false;
+    $('order-user').replaceChildren(el('option', '', '请先查找并选择客户账号')); $('order-user').firstChild.value = '';
+    $('order-plan').value = 'monthly';
+    const plan = MEMBERSHIP_PLANS.find(item => item.id === 'monthly'); $('order-amount').value = (plan.priceCents / 100).toFixed(2);
+    $('order-record-target').hidden = true; $('order-record-result').textContent = '';
+  }
+  function selectOrderRecord(order) {
+    if (state.pendingMutation || state.mutating) throw new Error('请先等待或重试尚未确认的管理操作，再切换收款记录。');
+    resetOrderRecord(); commerce.target = order;
+    const option = el('option', '', order.email || order.userId); option.value = order.userId; $('order-user').replaceChildren(option); $('order-user').disabled = true;
+    $('order-plan').value = order.planId; $('order-plan').disabled = true;
+    $('order-amount').value = Number.isSafeInteger(order.priceCents) ? (order.priceCents / 100).toFixed(2) : '';
+    if (Object.hasOwn(paymentMethodLabels, order.paymentMethod)) $('order-payment-method').value = order.paymentMethod;
+    $('order-code-id').value = order.codeId || ''; $('order-code-id').readOnly = Boolean(order.codeId);
+    $('order-user-search-form').hidden = true;
+    $('order-record-target').textContent = `正在核对订单 ${order.id}。账号与套餐已锁定；请核对并填写实际收款凭证。`; $('order-record-target').hidden = false;
+    $('order-record-panel').scrollIntoView({ block: 'start' }); $('order-amount').focus();
+  }
+  async function findOrderUsers() {
+    const query = $('order-user-query').value.trim();
+    if (!query) throw new Error('请输入客户邮箱或用户 ID，再查找账号。');
+    const request = ++commerce.searchRequest; const epoch = feedbackSessionEpoch;
+    const data = await api('admin-users', { query });
+    if (request !== commerce.searchRequest || epoch !== feedbackSessionEpoch || !state.admin || commerce.target) return;
+    commerce.recipients = data.users || [];
+    const placeholder = el('option', '', commerce.recipients.length ? '请选择已核对的客户账号' : '没有找到匹配账号'); placeholder.value = '';
+    $('order-user').replaceChildren(placeholder);
+    for (const user of commerce.recipients) { const option = el('option', '', `${user.email} · ${user.id}`); option.value = user.id; $('order-user').append(option); }
+    if (commerce.recipients.length === 1) $('order-user').value = commerce.recipients[0].id;
+  }
+  MEMBERSHIP_PLANS.forEach(plan => { const option = el('option', '', `${plan.name} · 标价 ¥${plan.priceLabel}`); option.value = plan.id; $('order-plan').append(option); });
+  resetOrderRecord();
+  $('order-plan').addEventListener('change', () => { const plan = MEMBERSHIP_PLANS.find(item => item.id === $('order-plan').value); if (plan) $('order-amount').value = (plan.priceCents / 100).toFixed(2); });
+  async function finishOrderRecord(result) {
+    const order = result.order;
+    resetOrderRecord();
+    const message = `收款已确认：${order.id} · 实收 ${money(order.amountCents)}。已计入营业额；会员开通请继续使用激活码功能。`;
+    $('order-record-result').textContent = message; tell(message, 'success'); state.loaded.delete('audit');
+    await Promise.all([loadOrders(commerce.page), loadRevenue()]);
+  }
+  function closeOrderLink() {
+    orderLinkTarget = null;
+    if ($('order-link-dialog').open) $('order-link-dialog').close();
+    $('order-link-form').reset(); $('order-link-summary').textContent = '';
+    $('order-link-code-id').setCustomValidity(''); $('order-link-reason').setCustomValidity('');
+  }
+  function openOrderLink(order) {
+    if (state.pendingMutation || state.mutating) throw new Error('请先等待或重试尚未确认的管理操作，再关联激活码。');
+    closeOrderLink(); orderLinkTarget = order;
+    $('order-link-summary').textContent = `订单：${order.id}\n账号：${order.email || order.userId}\n套餐：${order.planName || order.planId} · 实收 ${money(order.amountCents)}`;
+    $('order-link-dialog').showModal(); $('order-link-code-id').focus();
+  }
+  async function finishOrderLink(result) {
+    state.loaded.delete('audit'); closeOrderLink();
+    tell(`订单 ${result.order.id} 已关联激活码记录 ${result.order.codeId}。已合并对应发码记录，营业额未重复增加。`, 'success');
+    await Promise.all([loadOrders(commerce.page), loadRevenue()]);
+  }
+  $('order-link-cancel').addEventListener('click', closeOrderLink);
+  $('order-link-dialog').addEventListener('cancel', event => { event.preventDefault(); closeOrderLink(); });
+  $('order-link-code-id').addEventListener('input', () => $('order-link-code-id').setCustomValidity(''));
+  $('order-link-reason').addEventListener('input', () => $('order-link-reason').setCustomValidity(''));
+  $('order-link-form').addEventListener('submit', event => {
+    event.preventDefault();
+    if (!$('order-link-form').reportValidity() || !orderLinkTarget) return;
+    const input = { orderId: orderLinkTarget.id, codeId: $('order-link-code-id').value.trim().toLowerCase(), reason: $('order-link-reason').value.trim() };
+    if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(input.codeId)) { $('order-link-code-id').setCustomValidity('请填写有效的激活码记录 ID，勿填写激活码原文。'); $('order-link-code-id').reportValidity(); return; }
+    if (input.reason.length < 2) { $('order-link-reason').setCustomValidity('请填写至少 2 个字的关联原因。'); $('order-link-reason').reportValidity(); return; }
+    run($('order-link-submit'), async () => {
+      closeOrderLink();
+      await finishOrderLink(await mutate('admin-link-order-code', input));
+    });
+  });
+  $('order-record-reset').addEventListener('click', () => run($('order-record-reset'), () => { if (state.pendingMutation || state.mutating) throw new Error('请先等待或重试尚未确认的管理操作，再清空表单。'); resetOrderRecord(); }));
+  $('order-user-search-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter || $('order-user-query'), findOrderUsers); });
+  $('orders-filter-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, () => loadOrders(1)); });
+  $('revenue-filter-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, loadRevenue); });
+  $('refresh-commerce').addEventListener('click', () => run($('refresh-commerce'), () => Promise.all([loadOrders(commerce.page), loadRevenue()])));
+  $('order-record-form').addEventListener('submit', event => {
+    event.preventDefault(); run($('order-record-submit'), async () => {
+      if (!$('order-record-form').reportValidity()) return;
+      const amount = $('order-amount').value.trim();
+      if (!/^\d+(?:\.\d{1,2})?$/.test(amount)) throw new Error('请填写有效的实际收款金额，最多两位小数。');
+      const [yuan, fraction = ''] = amount.split('.'); const amountCents = Number(yuan) * 100 + Number(fraction.padEnd(2, '0'));
+      if (!Number.isSafeInteger(amountCents) || amountCents <= 0) throw new Error('实际收款金额必须大于 0，并在有效范围内。');
+      const paidAt = new Date(`${$('order-paid-at').value}+08:00`);
+      if (!Number.isFinite(paidAt.getTime())) throw new Error('请填写有效的北京时间收款时间。');
+      const input = { userId: $('order-user').value, planId: $('order-plan').value, amountCents, paymentMethod: $('order-payment-method').value, paidAt: paidAt.toISOString(), transactionReference: $('order-transaction-reference').value.trim(), reason: $('order-record-reason').value.trim() };
+      if (!input.userId || !input.planId) throw new Error('请查找并选择有效的客户账号和套餐。');
+      if (input.transactionReference.length < 3 || input.reason.length < 2) throw new Error('请填写真实收款流水和至少 2 个字的核对说明。');
+      if (commerce.target) input.orderId = commerce.target.id;
+      if ($('order-code-id').value.trim()) input.codeId = $('order-code-id').value.trim();
+      const plan = MEMBERSHIP_PLANS.find(item => item.id === input.planId); const email = $('order-user').selectedOptions[0]?.textContent || input.userId;
+      if (!await confirmAction('确认实际收款并入账', `账号：${email}\n套餐：${plan?.name || input.planId}\n实际收款：${money(amountCents)}\n渠道：${paymentMethodLabels[input.paymentMethod]}\n收款时间：${beijingTime(input.paidAt)}（北京时间）\n流水：${input.transactionReference}\n核对说明：${input.reason}\n\n确认后保存只读收款记录并计入营业额。会员权益仍需通过激活码开通。`, { reasonRequired: false, confirm: '确认收款并入账' })) return;
+      await finishOrderRecord(await mutate('admin-record-order', input));
     });
   });
   async function loadAudit() { const data = await api('admin-audit'); state.audit = data.audit || []; state.total.audit = data.total || state.audit.length; state.pages.audit = 0; state.loaded.add('audit'); renderAudit(); }

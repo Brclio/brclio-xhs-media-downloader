@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="/support.css" />
     <link rel="stylesheet" href="/desktop-ui.css" />
     <link rel="stylesheet" href="/account-ui.css" />
+    <link rel="stylesheet" href="/commerce-ui.css" />
     <title>Brclio 小红书下载器</title>
   </head>
   <body>
@@ -40,6 +41,7 @@
             <a class="nav-link" href="/product.html">产品介绍</a>
             <a class="nav-link" href="/download.html">软件下载</a>
             <a class="nav-link" href="/membership.html">会员权益</a>
+            <a class="nav-link" href="/#software-reviews">用户评价</a>
             <a class="nav-link" href="/vip.html">VIP 交流群</a>
             <a class="nav-link" href="/learn.html">编程私教与书籍</a>
             <a class="nav-link" href="/changelog.html">更新记录</a>
@@ -133,6 +135,7 @@
             <button id="live-photo-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-live-photo-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">◉</span><span>制作实况<small>图片 · 视频转实况</small></span></button>
             <button id="profile-tab" class="desktop-tab" type="button" role="tab" aria-controls="profile-panel" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">▦</span><span>主页批量</span><span id="desktop-task-badge" class="desktop-nav-count" hidden>进行中</span></button>
             <button id="account-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-account-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">◎</span><span>账号与会员</span></button>
+            <button id="reviews-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-reviews-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">☆</span><span>用户评价<small>每个账号仅限一次</small></span></button>
             <button id="desktop-membership-link" class="desktop-tab desktop-membership-link" type="button" role="tab" aria-controls="desktop-membership-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">◇</span><span>会员权益<small>当前权限 · 未来福利</small></span></button>
             <button id="feedback-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-feedback-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">✎</span><span>问题反馈</span></button>
             <button id="about-tab" class="desktop-tab" type="button" role="tab" aria-controls="desktop-about-page" aria-selected="false" tabindex="-1"><span class="desktop-nav-icon" aria-hidden="true">ⓘ</span><span>关于软件</span><span id="desktop-update-badge" class="desktop-nav-count desktop-new-badge" hidden>新版本</span></button>
@@ -163,6 +166,7 @@
         </section>
 
         <section id="desktop-account-page" class="desktop-page" role="tabpanel" aria-labelledby="account-tab" tabindex="0" hidden><div id="desktop-account-mount"></div></section>
+        <section id="desktop-reviews-page" class="desktop-page" role="tabpanel" aria-labelledby="reviews-tab" tabindex="0" hidden></section>
 
         <section id="desktop-feedback-page" class="desktop-page" role="tabpanel" aria-labelledby="feedback-tab" tabindex="0" hidden>
           <header class="desktop-page-heading"><div><span class="section-label">FEEDBACK / 一起改进</span><h1>把问题告诉我们。</h1><p>提交问题后，可在「我的反馈」查看管理员的回答并继续回复。</p></div><span class="desktop-pill">无需会员</span></header>
@@ -604,6 +608,7 @@
 
         </div>
 
+        <div id="public-reviews-mount"></div>
         <section id="support" class="creator-hub" aria-labelledby="creator-hub-title">
           <div class="creator-hub-intro">
             <div class="creator-hub-copy">

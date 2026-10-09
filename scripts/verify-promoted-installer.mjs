@@ -37,7 +37,7 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   // Historical v1.5 artifacts predate the update manager.
   try { await stat(path.join(sourceDirectory, 'desktop/update-manager.js')); expectedSources.push('desktop/update-manager.js'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
-  for (const name of ['account-ui.js', 'account-ui.css', 'download.html', 'download.css', 'download.js',
+  for (const name of ['account-ui.js', 'account-ui.css', 'commerce-ui.js', 'commerce-ui.css', 'download.html', 'download.css', 'download.js',
     'changelog.js', 'ios-shortcut.js', 'ios-shortcut.css', 'product.html', 'product.css', 'product.js',
     'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js',
     'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js', 'assets/vendor/heic/heic-encoder.js',

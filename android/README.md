@@ -1,6 +1,6 @@
 # Brclio 小红书下载器 · Android
 
-Android 客户端版本独立编号，当前为 `1.0.12`，`versionCode` 为 `10012`（首版为 `1.0.0 / 10000`），支持 Android 8.0（API 26）及以上。安装 APK 后可粘贴小红书单篇笔记链接或分享文案，也可以在其他应用中通过系统「分享」将文字交给 Brclio。
+Android 客户端版本独立编号，当前为 `1.0.13`，`versionCode` 为 `10013`（首版为 `1.0.0 / 10000`），支持 Android 8.0（API 26）及以上。安装 APK 后可粘贴小红书单篇笔记链接或分享文案，也可以在其他应用中通过系统「分享」将文字交给 Brclio。
 
 本版聚焦单篇笔记：标题与正文、原图、实况静态图与动态片段、视频清晰度选择、勾选图片与 ZIP、图片复制及系统分享。保存文件时使用 Android 系统文件选择器，由用户选择位置；无需「所有文件访问权限」或相册读取权限。不同目标应用对多图剪贴板支持不同，可改用系统分享或 ZIP。
 
@@ -136,7 +136,7 @@ ANDROID_RELEASE_TAG=android-v1.0.10 node scripts/publish-android-release.mjs
 
 本轮构建、Android 15 模拟器实测与待验证项目见 [本地验证记录](VALIDATION.md)。
 
-会员原视频的来源、水印核验与下载权限说明见 [来源说明](../docs/watermark-free-video.md)；本版变化与验收范围见 [Android v1.0.12](../docs/releases/android-v1.0.12.md)。平台原文件可能保留作者自行写入画面的水印。发布后仍需在真实设备上验证系统浏览器接收完整链接、网页登录及会员下载。
+会员原视频的来源、水印核验与下载权限说明见 [来源说明](../docs/watermark-free-video.md)；原视频与大视频保存的变化及验收范围见 [Android v1.0.12](../docs/releases/android-v1.0.12.md)。平台原文件可能保留作者自行写入画面的水印。发布后仍需在真实设备上验证系统浏览器接收完整链接、网页登录及会员下载。
 
 发布前在 Android 8 和较新 Android 设备上分别核对冷启动、旋转屏幕、分享文字进入应用、长短链接解析、图文与普通视频、实况素材配对、文案复制、勾选 ZIP、图片复制/分享、文件选择取消、下载取消及断网错误。含多条媒体的归档应检查文件数量、顺序与字节内容；播放视频时应检查画面和声音。当前工具运行的实际验证结果由该次构建或测试记录说明，不能用本节操作说明代替。
 
@@ -147,3 +147,7 @@ ANDROID_RELEASE_TAG=android-v1.0.10 node scripts/publish-android-release.mjs
 - Wrapper JAR SHA256：`2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046`，与 [Gradle 官方校验值](https://services.gradle.org/distributions/gradle-8.11.1-wrapper.jar.sha256) 一致。
 - Gradle 分发 ZIP 的官方 SHA256 已固定在 `gradle/wrapper/gradle-wrapper.properties`，Wrapper 下载时自动校验。
 - 启动图标复用仓库 `desktop/resources/icon.png`。
+
+## 软件评价与订单
+
+首页「软件评价与订单」可打开系统浏览器，前往正式站的用户评价区或「我的全部订单」。公开评价无需登录即可查看；发表评价及查看订单须在浏览器登录软件账号，每位用户仅可评价一次，订单仅向所属账号展示。Android 仅传递固定页面名，不向网页版传递原生账号密钥，也不在本地 WebView 保存浏览器登录状态或加载私有订单。若系统无可用浏览器，会提示启用后重试；解析或文件保存期间入口暂不可用。

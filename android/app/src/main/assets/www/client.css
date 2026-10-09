@@ -45,6 +45,13 @@ select { display:block; max-width:100%; color:var(--ink); border:1px solid var(-
 .learning-promo h2 { font-size:19px; margin:8px 0; }
 .learning-promo p { font-size:13px; color:var(--muted); margin:8px 0 16px; }
 .learning-promo .button { border-color:var(--blue); color:var(--blue); }
+.software-account { margin-top:24px; padding:clamp(16px,4vw,24px); background:var(--paper); border-radius:12px; }
+.software-account h2 { font-size:19px; margin:8px 0; }
+.software-account p { font-size:13px; color:var(--muted); margin:8px 0 16px; }
+.software-account button { border-color:var(--blue); color:var(--blue); }
+.software-account #software-account-status { margin-bottom:0; }
+.software-account #software-account-status[data-tone=success] { color:#416144; }
+.software-account #software-account-status[data-tone=error] { color:#a92b3c; }
 .vip-promo { margin-top:24px; padding:20px 0; border-top:1px solid var(--border); }
 .vip-promo h2 { font:700 clamp(18px,3vw,19px)/1.4 'Noto Serif SC','Songti SC',serif; margin:8px 0; }
 .vip-promo p { font-size:13px; color:var(--muted); margin:8px 0 16px; }

@@ -159,8 +159,16 @@ export class AccountClient {
   }
   async feedbackRequest(action, input, expectedUserId) {
     if (!['feedback-begin', 'feedback-upload-part', 'feedback-finalize', 'feedback-mine', 'feedback-detail', 'feedback-reply'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效反馈操作。', 400);
+    return this._authenticatedRequest(action, input, expectedUserId);
+  }
+  commerceRequest(action, input = {}) {
+    if (!['reviews-public', 'review-mine', 'review-submit', 'orders-mine', 'order-create'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
+    if (action === 'reviews-public') return this._request(action, input, { token: '', unsigned: true });
+    return this._authenticatedRequest(action, input, input.expectedUserId);
+  }
+  async _authenticatedRequest(action, input, expectedUserId) {
     const token = this.credentials?.token;
-    if (!token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请切回原账号再提交反馈。', 401);
+    if (!token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请切回原账号再重试。', 401);
     let result;
     try { result = await this._request(action, input, { token }); }
     catch (error) {

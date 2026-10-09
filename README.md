@@ -1,5 +1,7 @@
 # Brclio 小红书下载器
 
+v2.0.9 与 Android v1.0.13 新增[软件评价、全部订单与后台营业额](docs/reviews-orders.md)：网页首页和桌面侧栏展示匿名用户评价，每个软件账号跨端仅可发表一次；账号页分页查看全部个人订单，付款后提交核实。管理员记录实际收款并按北京时间、套餐、渠道查看营业额，历史发码和待核实付款不自动计入收入。Android 提供系统浏览器入口。详见[桌面版本说明](docs/releases/v2.0.9.md)与[Android 版本说明](docs/releases/android-v1.0.13.md)。
+
 桌面 v2.0.8 与 Android v1.0.12 已正式发布，修复客户端视频大小限制：Mac / Windows 的普通视频、会员原视频、单独实况 MP4 与主页批量视频持续写入本地文件，不再设置 512 MB / 2 GiB 的固定上限；Android 的单独普通视频与实况 MP4 同步移除 512 MB 上限。健康的持续传输不再受总下载时长限制，无数据连接仍会超时。桌面「制作实况」也移除视频素材的 150 MB 上限，继续仅编码所选短片段。会员授权、媒体来源和文件完整性检查保留；网页、ZIP 归档、图片与 Android 预览仍保留各自的保护限制，Android 会员原视频继续通过浏览器保存。详见[桌面版本说明](docs/releases/v2.0.8.md)与 [Android 版本说明](docs/releases/android-v1.0.12.md)。本机测试、三平台安装升级、安卓签名与模拟器升级验收通过，公开附件及客户端更新入口已核验。
 
 v2.0.7 已发布，[实况制作](docs/live-photo-maker.md)默认导出真正的 HEIC + MOV，可选 JPEG + MOV，提供照片、MOV 两个直接下载入口及完整 ZIP。两文件共用 UUID 名称与内部配对标识；Mac Apple 芯片、Mac Intel、Windows 的 HEIC 原生编码门禁、安装包构建和更新验收全部通过。素材在本机处理，照片来自 8 位 Canvas，不保留源 HDR / 10 位信息。详见[版本说明](docs/releases/v2.0.7.md)、[三平台 CI](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37194318192)、[本机原生与下载验收](docs/live-photo-heic-verification.json)和[公开发布核验](docs/releases/v2.0.7-publication-verification.json)。Android 保持 v1.0.11。

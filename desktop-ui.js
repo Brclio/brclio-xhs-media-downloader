@@ -242,6 +242,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     ["live", element("live-photo-tab"), element("desktop-live-photo-page")],
     ["profile", ui.profileTab, ui.panel],
     ["account", element("account-tab"), element("desktop-account-page")],
+    ["reviews", element("reviews-tab"), element("desktop-reviews-page")],
     ["membership", element("desktop-membership-link"), element("desktop-membership-page")],
     ["feedback", element("feedback-tab"), element("desktop-feedback-page")],
     ["about", element("about-tab"), element("desktop-about-page")],

@@ -1,0 +1,10 @@
+{
+  "platform": "Android API35 emulator",
+  "version": "1.0.13-debug",
+  "versionCode": 10013,
+  "reviewsBrowserIntentVerified": true,
+  "ordersBrowserIntentVerified": true,
+  "returnStatusVerified": true,
+  "nativeCredentialsTransferred": false,
+  "scope": "debug APK and system browser intents, no account login or production business write"
+}

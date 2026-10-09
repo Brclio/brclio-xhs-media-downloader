@@ -379,6 +379,28 @@ $('paste').addEventListener('click', () => action(async () => {
   resetResult(); $('share-text').value = String(result.text).slice(0, 3000); message('链接已填入，点击「开始解析」继续。');
 }));
 $('clear').addEventListener('click', () => { generation++; resetResult(); $('share-text').value = ''; message(''); $('share-text').focus(); });
+for (const [id, page, label] of [
+  ['software-reviews-open', 'reviews', '软件评价'],
+  ['software-orders-open', 'orders', '我的订单'],
+]) {
+  $(id).addEventListener('click', async () => {
+    if (busy || $(id).disabled) return;
+    const status = $('software-account-status');
+    $(id).disabled = true;
+    status.hidden = true;
+    try {
+      await call('openSoftwarePage', { page });
+      status.textContent = `已在系统浏览器打开「${label}」。账号登录与操作请在网页版完成。`;
+      status.dataset.tone = 'success';
+    } catch (error) {
+      status.textContent = `无法打开${label}：${error.message}`;
+      status.dataset.tone = 'error';
+    } finally {
+      status.hidden = false;
+      $(id).disabled = busy;
+    }
+  });
+}
 $('copy-shortcut').addEventListener('click', async () => {
   const button = $('copy-shortcut');
   const status = $('shortcut-status');

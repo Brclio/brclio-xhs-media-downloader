@@ -160,6 +160,7 @@ function registerIpc() {
     catch (error) { return { ok: false, error: { code: error.code || 'SERVICE_UNAVAILABLE', message: error.message }, state: accountClient.snapshot() }; }
   };
   handle('desktop:account-state', () => accountClient.snapshot());
+  handle('desktop:commerce-request', accountAction((action, input = {}) => accountClient.commerceRequest(action, input)));
   handle('desktop:account-refresh', accountAction(async () => {
     // Only an explicit user action retries denied Keychain access. Background
     // entitlement checks must never keep reopening the system password dialog.

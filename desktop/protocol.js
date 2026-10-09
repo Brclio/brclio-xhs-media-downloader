@@ -20,7 +20,7 @@ const STATIC_FILES = new Set([
   'vip.html', 'vip.css', 'vip.js',
   'membership.html', 'membership.css', 'membership.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
-  'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'lib/browser-account.js', 'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js'
+  'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'commerce-ui.js', 'commerce-ui.css', 'lib/browser-account.js', 'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js'
 ]);
 const MIME_TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',

@@ -37,13 +37,30 @@ test('HTTP desktop proof and bearer pass only to service while browser cookies r
 });
 
 test('every admin-prefixed endpoint requires trusted origin before service access', async () => {
-  for (const action of ['admin-users', 'admin-user', 'admin-membership', 'admin-unbind', 'admin-codes', 'admin-generate-codes', 'admin-send-activation', 'admin-void-code', 'admin-audit', 'admin-status', 'admin-feedback', 'admin-feedback-detail', 'admin-feedback-part', 'admin-feedback-status', 'admin-feedback-reply']) {
+  for (const action of ['admin-users', 'admin-user', 'admin-membership', 'admin-unbind', 'admin-codes', 'admin-generate-codes', 'admin-send-activation', 'admin-void-code', 'admin-audit', 'admin-status', 'admin-feedback', 'admin-feedback-detail', 'admin-feedback-part', 'admin-feedback-status', 'admin-feedback-reply', 'admin-orders', 'admin-record-order', 'admin-revenue']) {
     const rejected = await request({ body: { action, input: {} } });
     assert.equal(rejected.code, 403, action);
     assert.equal(rejected.calls.length, 0);
   }
   const cross = await request({ body: { action: 'admin-unbind', input: {} }, headers: { origin, 'sec-fetch-site': 'cross-site' } });
   assert.equal(cross.code, 403);
+});
+
+test('commerce browser cookies select only browser identity and enforce origin while desktop proof remains intact', async () => {
+  const browserToken = 'b'.repeat(43), cookies = `${ADMIN_COOKIE}=${token}; ${BROWSER_COOKIE}=${browserToken}`;
+  for (const action of ['review-mine', 'review-submit', 'order-create', 'orders-mine']) {
+    const result = await request({ body: { action, input: {} }, headers: { origin, cookie: cookies } });
+    assert.equal(result.code, 200); assert.equal(result.calls[0].client, 'browser'); assert.equal(result.calls[0].token, browserToken);
+    const denied = await request({ body: { action, input: {} }, headers: { origin: 'https://evil.test', cookie: `${BROWSER_COOKIE}=${browserToken}` } });
+    assert.equal(denied.code, 403); assert.equal(denied.calls.length, 0);
+    const noFallback = await request({ body: { action, input: { client: 'browser' } }, headers: { origin, cookie: `${ADMIN_COOKIE}=${token}` } });
+    assert.equal(noFallback.calls[0].token, '');
+    const proof = { timestamp: 1, nonce: 'proof-fixture', signature: 'signature-fixture' };
+    const desktop = await request({ body: { action, input: {}, proof }, headers: { authorization: `Bearer ${token}` } });
+    assert.equal(desktop.calls[0].client, 'desktop'); assert.deepEqual(desktop.calls[0].proof, proof);
+  }
+  const publicReviews = await request({ body: { action: 'reviews-public', input: {} } });
+  assert.equal(publicReviews.code, 200); assert.equal(publicReviews.calls[0].token, '');
 });
 
 test('reply HTTP envelopes admit full Chinese and escaped text with authentication headers intact', async () => {

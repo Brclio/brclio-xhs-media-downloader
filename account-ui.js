@@ -1,6 +1,7 @@
 // Account extension. Brand components inherit the existing Brclio app template.
 import { MEMBERSHIP_PLANS, getMembershipPlan } from './lib/membership-plans.js';
 import { getAccountBridge } from './lib/browser-account.js';
+import { initializeCommerceUI } from './commerce-ui.js';
 
 const PAYMENT_METHODS = Object.freeze({
   wechat: { name: '微信支付', image: './assets/membership/wechat-pay.png' },
@@ -79,6 +80,7 @@ export async function initializeAccountUI() {
         <figure class="membership-payment-qr"><img id="membership-payment-image" src="./assets/membership/wechat-pay.png" alt="微信支付收款二维码" width="240" height="240"><figcaption id="membership-payment-caption">微信支付 · 收款码</figcaption></figure>
       </section>
       <details class="membership-contact"><summary>忘记备注邮箱，或需要付款帮助？</summary><div class="membership-contact-content"><p>用微信扫描此码联系客服，提供付款记录和软件账号邮箱，方便核实。<strong>这是客服好友码，不是收款码。</strong></p><img src="./assets/membership/wechat-contact.png" alt="微信客服好友二维码（非收款码）" width="176" height="176"></div></details>
+      <div class="membership-order-report"><button id="membership-report-paid" class="button button-secondary" type="button" hidden>我已付款，提交核实</button><p id="membership-order-status" role="status" aria-live="polite">付款后提交所选套餐和付款方式，订单将显示为待核实。此操作不会自动扣款或开通会员。</p></div>
       <div class="membership-dialog-footer"><p>收到邮件后，把激活码粘贴到「账号与会员」中兑换。</p><button id="membership-go-redeem" class="button button-primary" type="button">我已收到激活码，前往兑换</button></div>
     </dialog>`;
   const isDesktop = Boolean(window.xhsDesktop?.getAccountState);
@@ -89,6 +91,8 @@ export async function initializeAccountUI() {
   else (document.querySelector('main') || document.body).prepend(panel);
   const element = id => document.getElementById(id);
   let busy = false, state = null, cooldownUntil = 0, cooldownTimer = null;
+  const commerce = initializeCommerceUI({ accountPanel: panel, openAccount: () => openAccountUI() });
+  let paymentDraft = null, paymentBusy = false, paymentUserId = null, paymentEpoch = 0;
   const dialog = element('membership-dialog');
   let copiedEmail = '';
   const selectedPlan = () => getMembershipPlan(panel.querySelector('input[name="membership-plan"]:checked')?.value) || MEMBERSHIP_PLANS[1];
@@ -103,6 +107,8 @@ export async function initializeAccountUI() {
     if (copiedEmail !== email) { copiedEmail = ''; element('membership-email-status').textContent = ''; }
     element('membership-copy-email').disabled = !email;
     element('membership-payment').hidden = !ready;
+    element('membership-report-paid').hidden = !ready || !bridge.commerceRequest;
+    element('membership-report-paid').disabled = paymentBusy;
     element('membership-login-guidance').hidden = ready;
     element('membership-login-message').textContent = permanent ? '当前账号已拥有永久会员，无需购买这些套餐。'
       : state?.authenticated
@@ -139,6 +145,13 @@ export async function initializeAccountUI() {
     if (!value) return;
     const previousStatus = state?.status;
     state = value;
+    if (paymentUserId !== (value.authenticated ? value.account?.user?.id : null)) {
+      paymentEpoch++;
+      paymentUserId = value.authenticated ? value.account?.user?.id : null;
+      paymentDraft = null; paymentBusy = false;
+      element('membership-order-status').textContent = '付款后提交所选套餐和付款方式，订单将显示为待核实。此操作不会自动扣款或开通会员。';
+    }
+    commerce?.updateAccount(value);
     window.dispatchEvent(new CustomEvent('brclio-account-update', { detail: value }));
     const account = value.account;
     element('account-login-form').hidden = Boolean(value.authenticated);
@@ -229,6 +242,28 @@ export async function initializeAccountUI() {
       if (state?.account?.user?.email === email && state?.authenticated) element('membership-email-status').textContent = '暂时无法复制，请选中上方邮箱手动复制，并填写在付款备注中。';
     }
   });
+  element('membership-report-paid').addEventListener('click', async () => {
+    if (paymentBusy || !state?.verified || !state?.authenticated || !paymentUserId) return;
+    const planId = selectedPlan().id, paymentMethod = panel.querySelector('input[name="membership-method"]:checked').value;
+    if (paymentDraft && (paymentDraft.planId !== planId || paymentDraft.paymentMethod !== paymentMethod)) {
+      element('membership-order-status').textContent = '上次提交尚未确认，请恢复原套餐和付款方式重试，或刷新订单核实结果。'; return;
+    }
+    paymentDraft ||= { planId, paymentMethod, requestId: crypto.randomUUID(), expectedUserId: paymentUserId };
+    const current = paymentEpoch; paymentBusy = true; renderPurchase();
+    element('membership-order-status').textContent = '正在提交付款核实…';
+    try {
+      const reply = await bridge.commerceRequest('order-create', paymentDraft);
+      if (current !== paymentEpoch) return;
+      if (!reply.ok) { const error = new Error(reply.error?.message || '提交失败，请保留原选择重试。'); error.code = reply.error?.code; throw error; }
+      paymentDraft = null;
+      element('membership-order-status').textContent = `订单 ${reply.result.order.id} 已记录，付款待人工核实。可在「我的全部订单」查看。请保留付款凭证。`;
+      window.dispatchEvent(new CustomEvent('brclio-orders-changed'));
+    } catch (error) {
+      if (current !== paymentEpoch) return;
+      element('membership-order-status').textContent = error.message;
+      if (error.code && !/^(?:STORAGE_|SERVICE_|RATE_LIMIT)/.test(error.code)) paymentDraft = null;
+    } finally { if (current === paymentEpoch) { paymentBusy = false; renderPurchase(); } }
+  });
   const unsubscribe = bridge.onAccountUpdate(render);
   const browserDialog = document.getElementById('browser-account-dialog');
   document.getElementById('browser-account-open')?.addEventListener('click', () => void openAccountUI());
@@ -258,9 +293,12 @@ export async function openAccountUI({ purchase = false } = {}) {
 if (typeof window !== 'undefined') {
   void initializeAccountUI().then(() => {
     const current = new URL(window.location.href);
-    if (!['/', '/index.html'].includes(current.pathname) || current.searchParams.get('membership') !== 'open') return;
-    current.searchParams.delete('membership');
+    if (!['/', '/index.html'].includes(current.pathname)) return;
+    const purchase = current.searchParams.get('membership') === 'open';
+    const showOrders = current.searchParams.get('account') === 'orders';
+    if (!purchase && !showOrders) return;
+    current.searchParams.delete(purchase ? 'membership' : 'account');
     history.replaceState(history.state, '', current.href);
-    void openAccountUI({ purchase: true });
+    void openAccountUI({ purchase }).then(() => { if (showOrders) document.getElementById('software-orders')?.scrollIntoView({ block: 'start' }); });
   });
 }

@@ -142,6 +142,11 @@ jobs:
         run: npm run desktop:verify:feedback
       - name: Verify public feedback, browser login and private owner conversations
         run: npm run web:verify:feedback
+      - name: Verify reviews and personal order history in real web and desktop renderers
+        run: npm run commerce:verify
+      - name: Verify confirmed revenue and order administration in a real browser
+        if: runner.os != 'Windows'
+        run: npm run admin:verify:commerce
       - name: Verify native credential encryption across two app processes
         run: npm run desktop:verify:account
       - uses: actions/upload-artifact@v4

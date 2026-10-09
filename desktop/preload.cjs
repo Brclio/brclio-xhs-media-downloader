@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
   },
   getInfo: () => ipcRenderer.invoke('desktop:get-info'),
   getAccountState: () => ipcRenderer.invoke('desktop:account-state'),
+  commerceRequest: (action, input) => ipcRenderer.invoke('desktop:commerce-request', action, input),
   refreshAccount: () => ipcRenderer.invoke('desktop:account-refresh'),
   sendAccountCode: (email) => ipcRenderer.invoke('desktop:account-send-code', email),
   verifyAccountCode: (email, code) => ipcRenderer.invoke('desktop:account-verify-code', email, code),

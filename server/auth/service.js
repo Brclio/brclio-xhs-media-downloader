@@ -4,6 +4,7 @@ import { digest, equalDigest, normalizeDevice, verifyProof } from './crypto.js';
 import { KNOWN_FEATURES } from '../../lib/membership-policy.js';
 import { getMembershipPlan } from '../../lib/membership-plans.js';
 import { createFeedbackService } from './feedback.js';
+import { createCommerceService } from './commerce.js';
 import { subscriptionUrlsValue, updateProxyConfigView, updateProxyAuditView, updateProxyAuditReason } from './update-proxy.js';
 
 const DAY = 86_400_000;
@@ -523,12 +524,14 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
   }
 
   const feedbackService = createFeedbackService({ store, now, authenticate, hash, operation, audit, isAdmin });
+  const commerceService = createCommerceService({ store, now, authenticate, hash, operation, audit });
   return {
     async execute({ action, input = {}, token = '', proof, ip = '', client }) {
       if (typeof action !== 'string' || action.length > 80 || !input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_REQUEST', '请求格式无效。');
       const request = { action, input, token, proof, ip, client };
       let result;
-      if (action.startsWith('feedback-') || action.startsWith('admin-feedback')) result = await feedbackService.execute(request);
+      if (['reviews-public', 'review-mine', 'review-submit', 'order-create', 'orders-mine', 'admin-orders', 'admin-record-order', 'admin-link-order-code', 'admin-revenue'].includes(action)) result = await commerceService.execute(request);
+      else if (action.startsWith('feedback-') || action.startsWith('admin-feedback')) result = await feedbackService.execute(request);
       else if (action === 'send-code') result = await sendCode(request);
       else if (action === 'admin-send-activation') result = await sendActivation(request);
       else if (action === 'verify-code') result = await verifyCode(request);

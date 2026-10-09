@@ -304,6 +304,43 @@ async function clientFixture(t) {
     update: data => window.brclioEvent({ type: 'update', ...data }) };
 }
 
+test('Android reviews and full order history open fixed browser pages without transferring native credentials', async t => {
+  const ui = await clientFixture(t);
+  for (const [button, page, label] of [
+    ['software-reviews-open', 'reviews', '软件评价'],
+    ['software-orders-open', 'orders', '我的订单'],
+  ]) {
+    ui.click(button);
+    assert.equal(ui.element(button).disabled, true);
+    assert.deepEqual(ui.next('openSoftwarePage').params, { page });
+    await ui.respond(ui.next('openSoftwarePage'), { opened: true });
+    assert.equal(ui.element(button).disabled, false);
+    assert.equal(ui.element('software-account-status').dataset.tone, 'success');
+    assert.match(ui.element('software-account-status').textContent, new RegExp(`系统浏览器.*${label}`));
+    assert.doesNotMatch(ui.element('software-account-status').textContent, /登录成功|评价成功|订单已载入/);
+  }
+  for (const method of ['login', 'submitReview', 'orders', 'copy', 'save']) {
+    assert.equal(ui.next(method), undefined, 'Account operations stay in the browser');
+  }
+});
+
+test('Android account browser launch failures remain visible and can be retried after active downloads finish', async t => {
+  const ui = await clientFixture(t);
+  ui.click('software-orders-open');
+  await ui.respond(ui.next('openSoftwarePage'), {}, '未找到可用的浏览器');
+  assert.match(ui.element('software-account-status').textContent, /无法打开我的订单.*未找到可用的浏览器/);
+  assert.equal(ui.element('software-account-status').dataset.tone, 'error');
+  assert.equal(ui.element('software-orders-open').disabled, false);
+  const request = ui.parse(sourceUrl);
+  assert.equal(ui.element('software-reviews-open').disabled, true);
+  assert.equal(ui.element('software-orders-open').disabled, true);
+  await ui.respond(request, fixture());
+  assert.equal(ui.element('software-orders-open').disabled, false);
+  ui.click('software-orders-open');
+  await ui.respond(ui.next('openSoftwarePage'), { opened: true });
+  assert.equal(ui.element('software-account-status').dataset.tone, 'success');
+});
+
 test('Android startup stays automatic and emergency proxy close lasts until the next explicit update click', async t => {
   const ui = await clientFixture(t);
   assert.deepEqual(ui.next('checkUpdate').params, { manual: false });

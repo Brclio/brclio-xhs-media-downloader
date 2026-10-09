@@ -292,6 +292,7 @@ public final class MainActivity extends Activity {
                 case "save": startSave(request, params); break;
                 case "copyImages": startImages(request, params, false); break;
                 case "shareImages": startImages(request, params, true); break;
+                case "openSoftwarePage": openSoftwarePage(request, params.getString("page")); break;
                 case "checkUpdate": updater.check(params.optBoolean("manual", false), updateCallback(request)); break;
                 case "downloadUpdate": updater.download(updateCallback(request)); break;
                 case "openManualUpdate": updater.openManualDownload(updateCallback(request)); break;
@@ -682,6 +683,20 @@ public final class MainActivity extends Activity {
 
     private static boolean isLocalDocument(Uri uri) {
         return isLocalOrigin(uri) && "/assets/www/index.html".equals(uri.getPath());
+    }
+
+    private void openSoftwarePage(Request request, String page) {
+        Uri uri = Uri.parse(SoftwareAccountPagePolicy.pageUri(page).toString());
+        if (parsing != null || transfer != null) {
+            request.failure("请先完成当前解析或保存任务，再打开网页版。");
+            return;
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE));
+            request.success(object("opened", true));
+        } catch (ActivityNotFoundException error) {
+            request.failure("未找到可用的浏览器，请安装或启用浏览器后重试。");
+        }
     }
 
     private void openExternal(Uri uri) {
