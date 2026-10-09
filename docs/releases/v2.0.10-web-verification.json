@@ -1,0 +1,129 @@
+{
+  "verifiedAt": "2026-10-09T12:16:03.493Z",
+  "base": "https://xhs.download.brclio.com",
+  "ok": true,
+  "readOnly": true,
+  "realAccountsOrOrdersChanged": false,
+  "publicReviewCount": 1,
+  "builtInNicknameCount": 1000,
+  "visibleBuiltInAuthors": 1,
+  "checks": [
+    {
+      "name": "/",
+      "status": 200
+    },
+    {
+      "name": "/commerce-ui.js",
+      "status": 200
+    },
+    {
+      "name": "/commerce-ui.css",
+      "status": 200
+    },
+    {
+      "name": "/account-ui.js",
+      "status": 200
+    },
+    {
+      "name": "/admin/",
+      "status": 200
+    },
+    {
+      "name": "/admin/admin.js",
+      "status": 200
+    },
+    {
+      "name": "/download",
+      "status": 200
+    },
+    {
+      "name": "/changelog",
+      "status": 200
+    },
+    {
+      "name": "published nickname catalog matches reviewed source",
+      "uniqueNicknames": 1000,
+      "status": 200
+    },
+    {
+      "name": "active Worker release and deployment",
+      "status": 200,
+      "version": "2.0.10",
+      "deploymentId": "16218c0c-3163-4407-be5c-25e5a22b88b5"
+    },
+    {
+      "name": "profile-update",
+      "status": 401
+    },
+    {
+      "name": "unknown-version-probe",
+      "status": 401
+    },
+    {
+      "name": "reviews-public",
+      "status": 200
+    },
+    {
+      "name": "orders-mine",
+      "status": 401
+    },
+    {
+      "name": "review-mine",
+      "status": 401
+    },
+    {
+      "name": "review-submit",
+      "status": 401
+    },
+    {
+      "name": "order-create",
+      "status": 401
+    },
+    {
+      "name": "profile-update",
+      "status": 401
+    },
+    {
+      "name": "admin-orders",
+      "status": 401
+    },
+    {
+      "name": "admin-revenue",
+      "status": 401
+    },
+    {
+      "name": "admin-record-order",
+      "status": 401
+    },
+    {
+      "name": "admin-link-order-code",
+      "status": 401
+    },
+    {
+      "name": "reviews-public",
+      "status": 400
+    },
+    {
+      "name": "orders-mine",
+      "status": 403
+    },
+    {
+      "name": "private asset /server/auth/commerce.js",
+      "status": 200,
+      "privateContentExposed": false,
+      "publicHomepageFallback": true
+    },
+    {
+      "name": "private asset /.env",
+      "status": 200,
+      "privateContentExposed": false,
+      "publicHomepageFallback": true
+    },
+    {
+      "name": "private asset /desktop/account-config.json",
+      "status": 200,
+      "privateContentExposed": false,
+      "publicHomepageFallback": true
+    }
+  ]
+}

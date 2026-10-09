@@ -1,0 +1,525 @@
+{
+  "verifiedAt": "2026-10-09T12:17:15.168815+00:00",
+  "ok": true,
+  "base": "https://xhs.download.brclio.com",
+  "deploymentSourceSha": "ce9e24a81fbd89138470ec3cf0d347fdd386fc0c",
+  "releaseSourceSha": "eb345953e20f43e9069026077cad07c22b15984b",
+  "worker": {
+    "versionId": "16218c0c-3163-4407-be5c-25e5a22b88b5",
+    "trafficPercent": 100,
+    "deploymentId": "3e738dc9-c087-472d-8ac8-0f5982756ff6",
+    "createdOn": "2026-10-09T12:06:51.151258Z"
+  },
+  "pages": {
+    "deploymentId": "93a615b6-3d54-4e76-bddb-d60b8f25d4ae",
+    "environment": "Production",
+    "branch": "main",
+    "source": "ce9e24a",
+    "previewUrl": "https://93a615b6.brclio-xhs-pages.pages.dev"
+  },
+  "readOnlyProductionChecks": true,
+  "productionAccountsOrOrdersChanged": false,
+  "existingWebChecks": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-10-09T12:08:26.752Z",
+    "passed": 58,
+    "total": 58,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 657
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 467
+      },
+      {
+        "name": "static/feedback-board",
+        "ok": true,
+        "status": 200,
+        "durationMs": 190
+      },
+      {
+        "name": "static/feedback-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 190
+      },
+      {
+        "name": "static/feedback-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 656
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 704
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 399
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 787
+      },
+      {
+        "name": "static/reviews-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 693
+      },
+      {
+        "name": "static/reviews-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 393
+      },
+      {
+        "name": "static/review-nicknames-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 381
+      },
+      {
+        "name": "static/browser-account-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 293
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 302
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 208
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1429
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1191
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 2187
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 591
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 373
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 313
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 318
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 313
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 399
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 510
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 238
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 400
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 190
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 851
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 194
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 197
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 194
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 195
+      },
+      {
+        "name": "node/video/original-meta-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 472
+      },
+      {
+        "name": "node/video/original-chunk-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 194
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 861
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 321
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 319
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 716
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 324
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 333
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 923
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 206
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 208
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 739
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 211
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 413
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 210
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 199
+      },
+      {
+        "name": "python/video/original-meta-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 198
+      },
+      {
+        "name": "python/video/original-chunk-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 235
+      },
+      {
+        "name": "member-video/guest-resolve",
+        "ok": true,
+        "status": 401,
+        "durationMs": 305
+      },
+      {
+        "name": "member-video/guest-ticket-meta",
+        "ok": true,
+        "status": 401,
+        "durationMs": 502
+      },
+      {
+        "name": "member-video/guest-ticket-chunk",
+        "ok": true,
+        "status": 401,
+        "durationMs": 338
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 316
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 319
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 354
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 314
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 496
+      }
+    ]
+  },
+  "commerceChecks": {
+    "verifiedAt": "2026-10-09T12:16:03.493Z",
+    "base": "https://xhs.download.brclio.com",
+    "ok": true,
+    "readOnly": true,
+    "realAccountsOrOrdersChanged": false,
+    "publicReviewCount": 1,
+    "builtInNicknameCount": 1000,
+    "visibleBuiltInAuthors": 1,
+    "checks": [
+      {
+        "name": "/",
+        "status": 200
+      },
+      {
+        "name": "/commerce-ui.js",
+        "status": 200
+      },
+      {
+        "name": "/commerce-ui.css",
+        "status": 200
+      },
+      {
+        "name": "/account-ui.js",
+        "status": 200
+      },
+      {
+        "name": "/admin/",
+        "status": 200
+      },
+      {
+        "name": "/admin/admin.js",
+        "status": 200
+      },
+      {
+        "name": "/download",
+        "status": 200
+      },
+      {
+        "name": "/changelog",
+        "status": 200
+      },
+      {
+        "name": "published nickname catalog matches reviewed source",
+        "uniqueNicknames": 1000,
+        "status": 200
+      },
+      {
+        "name": "active Worker release and deployment",
+        "status": 200,
+        "version": "2.0.10",
+        "deploymentId": "16218c0c-3163-4407-be5c-25e5a22b88b5"
+      },
+      {
+        "name": "profile-update",
+        "status": 401
+      },
+      {
+        "name": "unknown-version-probe",
+        "status": 401
+      },
+      {
+        "name": "reviews-public",
+        "status": 200
+      },
+      {
+        "name": "orders-mine",
+        "status": 401
+      },
+      {
+        "name": "review-mine",
+        "status": 401
+      },
+      {
+        "name": "review-submit",
+        "status": 401
+      },
+      {
+        "name": "order-create",
+        "status": 401
+      },
+      {
+        "name": "profile-update",
+        "status": 401
+      },
+      {
+        "name": "admin-orders",
+        "status": 401
+      },
+      {
+        "name": "admin-revenue",
+        "status": 401
+      },
+      {
+        "name": "admin-record-order",
+        "status": 401
+      },
+      {
+        "name": "admin-link-order-code",
+        "status": 401
+      },
+      {
+        "name": "reviews-public",
+        "status": 400
+      },
+      {
+        "name": "orders-mine",
+        "status": 403
+      },
+      {
+        "name": "private asset /server/auth/commerce.js",
+        "status": 200,
+        "privateContentExposed": false,
+        "publicHomepageFallback": true
+      },
+      {
+        "name": "private asset /.env",
+        "status": 200,
+        "privateContentExposed": false,
+        "publicHomepageFallback": true
+      },
+      {
+        "name": "private asset /desktop/account-config.json",
+        "status": 200,
+        "privateContentExposed": false,
+        "publicHomepageFallback": true
+      }
+    ]
+  },
+  "totalHttpChecks": 85,
+  "rendererVerification": "v2.0.10-validation/local-verification.json",
+  "releaseVerification": [
+    "v2.0.10-publication-verification.json"
+  ],
+  "unchangedAndroidRelease": "android-v1.0.13",
+  "unchangedAndroidReleaseEvidence": "android-v1.0.13-publication-verification.json",
+  "observations": [
+    "An early post-deployment read showed one legacy-style author label. Final reads show one built-in catalog nickname. Public responses alone cannot establish whether deployment propagation or an intervening profile change caused the difference."
+  ],
+  "limitations": [
+    "Authenticated account and administrator flows used isolated real-service renderer fixtures; production verification did not write reviews, profiles, orders or receipts.",
+    "Cloudflare Pages serves the public homepage for missing static paths; private paths were checked byte-for-byte against that homepage.",
+    "Mac packaged update acceptance uses isolated 2.0.10 to 2.0.11 fixtures; no personal installed Mac app was replaced and Gatekeeper approval was not tested.",
+    "Android APK implementation and version are unchanged; the existing system-browser entry uses the updated official website."
+  ]
+}
