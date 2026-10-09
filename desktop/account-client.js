@@ -24,6 +24,7 @@ export class AccountClient {
     this.status = this.endpoint ? 'initializing' : 'configuration_required';
     this.serverOffset = 0; this._commands = Promise.resolve();
     this.onDiagnostic = onDiagnostic;
+    this._nicknameRevision = 0; this._nicknameRequest = 0; this._nicknameApplied = 0;
   }
   snapshot() {
     return structuredClone({ status: this.status, account: this.account, error: this.error,
@@ -59,6 +60,7 @@ export class AccountClient {
   }
   async _request(action, input = {}, { token = this.credentials?.token || '', unsigned = false, allowClockRetry = true } = {}) {
     const started = this.now();
+    const nicknameRevision = this._nicknameRevision;
     if (!this.endpoint) throw accountError('CONFIGURATION_REQUIRED', '授权服务尚未配置，会员功能暂不可用。');
     const body = { action, input };
     if (!unsigned) {
@@ -85,6 +87,10 @@ export class AccountClient {
         return this._request(action, input, { token, unsigned, allowClockRetry: false });
       }
       throw accountError(result?.error?.code || 'SERVICE_UNAVAILABLE', result?.error?.message || '软件账号服务暂时不可用。', response.status || 503);
+    }
+    if (nicknameRevision !== this._nicknameRevision && this.credentials?.token === token
+      && result.account?.user?.id === this.account?.user?.id && this.account?.user?.nickname) {
+      result.account.user.nickname = this.account.user.nickname;
     }
     return result;
   }
@@ -162,9 +168,20 @@ export class AccountClient {
     return this._authenticatedRequest(action, input, expectedUserId);
   }
   commerceRequest(action, input = {}) {
-    if (!['reviews-public', 'review-mine', 'review-submit', 'orders-mine', 'order-create'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
+    if (!['reviews-public', 'profile-update', 'review-mine', 'review-submit', 'orders-mine', 'order-create'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
     if (action === 'reviews-public') return this._request(action, input, { token: '', unsigned: true });
-    return this._authenticatedRequest(action, input, input.expectedUserId);
+    const token = this.credentials?.token;
+    const serial = ['profile-update', 'review-submit'].includes(action) ? ++this._nicknameRequest : 0;
+    return this._authenticatedRequest(action, input, input.expectedUserId).then(result => {
+      if (serial > this._nicknameApplied && result.profile?.nickname
+        && this.credentials?.token === token && this.account?.user?.id === input.expectedUserId) {
+        this._nicknameApplied = serial;
+        this._nicknameRevision++;
+        this.account = { ...this.account, user: { ...this.account.user, nickname: result.profile.nickname } };
+        this._emit();
+      }
+      return result;
+    });
   }
   async _authenticatedRequest(action, input, expectedUserId) {
     const token = this.credentials?.token;

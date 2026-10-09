@@ -44,7 +44,7 @@ export async function initializeAccountUI() {
       <p class="account-form-note">验证码 5 分钟有效且仅可成功使用一次。${window.xhsDesktop?.getAccountState ? '登录状态保存在本机系统安全存储中，退出应用不会退出账号。' : '登录状态通过安全 Cookie 保存；点击退出软件账号可结束当前登录。'}</p>
     </form>
     <div id="account-details" class="account-details" hidden>
-      <dl class="account-facts"><div><dt>当前软件账号</dt><dd id="account-identity"></dd></div><div><dt>会员权益</dt><dd id="account-membership"></dd><dd id="account-expiry" class="account-secondary"></dd></div><div><dt>当前设备</dt><dd id="account-device"></dd></div></dl>
+      <dl class="account-facts"><div><dt>当前软件账号</dt><dd id="account-identity"></dd></div><div><dt>公开昵称</dt><dd id="account-nickname"></dd><dd class="account-secondary"><a id="account-nickname-settings" href="#software-reviews">设置评论昵称 ↗</a></dd></div><div><dt>会员权益</dt><dd id="account-membership"></dd><dd id="account-expiry" class="account-secondary"></dd></div><div><dt>当前设备</dt><dd id="account-device"></dd></div></dl>
       <form id="account-redeem-form" class="account-redeem-form"><label>会员激活码<input id="account-activation" autocomplete="off" spellcheck="false" maxlength="256" placeholder="输入邮件中收到的激活码" required></label><button id="account-redeem" class="button button-primary" type="submit">兑换会员</button><button id="account-logout" class="button button-secondary" type="button">退出软件账号</button></form>
       <p class="account-form-note">退出账号不会释放设备名额。更换设备请联系管理员；兑换会员不会绕过设备限制。</p>
     </div>
@@ -163,6 +163,7 @@ export async function initializeAccountUI() {
     badge.classList.toggle('is-member', value.verified && Boolean(account?.membership?.active));
     if (account) {
       element('account-identity').textContent = account.user?.email || account.user?.id || '读取中';
+      element('account-nickname').textContent = account.user?.nickname || '前往用户评价设置';
       element('account-membership').textContent = membershipLabel(account);
       element('account-expiry').textContent = account.membership?.type === 'duration'
         ? `生效 ${dateLabel(account.membership.startsAt)} · 到期 ${dateLabel(account.membership.expiresAt)}`
@@ -173,6 +174,7 @@ export async function initializeAccountUI() {
         : '当前浏览器登录；主页批量下载需桌面端设备授权';
     } else if (value.authenticated) {
       element('account-identity').textContent = '已保存登录，等待服务端确认';
+      element('account-nickname').textContent = '昵称待校验';
       element('account-membership').textContent = '会员状态待校验';
       element('account-expiry').textContent = '';
       element('account-device').textContent = isDesktop ? '设备授权待校验' : '浏览器登录状态待校验';
@@ -215,6 +217,13 @@ export async function initializeAccountUI() {
     if (result) element('account-activation').value = '';
   });
   element('account-logout').addEventListener('click', () => run(() => bridge.logoutAccount()));
+  element('account-nickname-settings').addEventListener('click', event => {
+    event.preventDefault();
+    if (isDesktop) document.getElementById('reviews-tab')?.click();
+    else document.getElementById('browser-account-dialog')?.close();
+    document.getElementById('review-profile-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('review-nickname')?.focus({ preventScroll: true });
+  });
   element('account-membership-details').addEventListener('click', event => {
     const tab = document.getElementById('desktop-membership-link');
     if (isDesktop && tab) { event.preventDefault(); tab.click(); }

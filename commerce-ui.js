@@ -1,5 +1,6 @@
 // Brclio app components: public reviews and private purchase history.
 import { getAccountBridge } from './lib/browser-account.js';
+import { defaultReviewNickname, randomReviewNickname, normalizeReviewNickname } from './lib/review-nicknames.js';
 
 const money = cents => cents == null ? '待核实' : `¥${(cents / 100).toFixed(2)}`;
 const date = value => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—';
@@ -18,7 +19,7 @@ export function initializeCommerceUI({ accountPanel, openAccount }) {
   const desktop = Boolean(window.xhsDesktop?.getAccountState);
   let userId = '', epoch = 0, reviewRequest = 0, orderRequest = 0;
   let reviewsPage = 1, ordersPage = 1, mineKnown = false, reviewed = false, submitting = false;
-  let draft = null;
+  let draft = null, profileDraft = null, profileBusy = false, nickname = '', nicknameDirty = false;
 
   const reviews = node('section', 'software-reviews');
   reviews.id = 'software-reviews';
@@ -28,9 +29,10 @@ export function initializeCommerceUI({ accountPanel, openAccount }) {
     <p id="review-notice" class="commerce-notice" role="status" aria-live="polite"></p>
     <p id="review-account-notice" class="commerce-notice" role="status" aria-live="polite"></p><div id="review-mine-retry" class="commerce-pagination"></div>
     <div id="review-login-prompt" class="review-login-prompt"><p>所有用户均可评价，无需会员。每个软件账号仅可发布一次。</p><button id="review-login" class="button button-secondary" type="button">登录后评价</button></div>
+    <form id="review-profile-form" class="review-profile-form" hidden><label for="review-nickname">公开昵称</label><div class="review-nickname-row"><input id="review-nickname" type="text" autocomplete="nickname" minlength="2" maxlength="48" required aria-describedby="review-nickname-help"><button id="review-nickname-random" class="button button-secondary" type="button">随机换一个</button><button id="review-nickname-save" class="button button-secondary" type="submit">保存昵称</button></div><p id="review-nickname-help" class="commerce-help">可自行填写 2–24 个字，也可从内置 1000 个昵称中随机选择。已发表的评价会显示当前昵称，昵称可随时修改。</p><p id="review-profile-notice" class="commerce-notice" role="status" aria-live="polite"></p></form>
     <form id="review-form" class="review-form" hidden><fieldset><legend>你的评分</legend><div class="review-rating">${[5, 4, 3, 2, 1].map(rating => `<label><input type="radio" name="software-rating" value="${rating}" ${rating === 5 ? 'checked' : ''} required><span>${rating} 星</span></label>`).join('')}</div></fieldset>
     <label for="review-content">使用感受</label><textarea id="review-content" rows="3" minlength="5" maxlength="1000" placeholder="哪些地方帮到了你，还有哪些可以改进？（5–1000 字）" required></textarea>
-    <p class="commerce-help">评价将公开展示，使用匿名昵称。请勿填写邮箱、联系方式或订单信息；发布后无法修改，每个账号仅限一次。</p>
+    <p class="commerce-help">评价按原文公开展示，仅对邮箱脱敏。评分和正文发布后无法修改，每个账号仅限一次。</p>
     <button id="review-submit" class="button button-primary" type="submit">发布评价（仅限一次）</button></form>`;
   const publicMount = desktop ? document.getElementById('desktop-reviews-page') : document.getElementById('public-reviews-mount');
   (publicMount || accountPanel).append(reviews);
@@ -114,8 +116,12 @@ export function initializeCommerceUI({ accountPanel, openAccount }) {
   }
   function renderComposer() {
     $('review-login-prompt').hidden = Boolean(userId);
+    $('review-profile-form').hidden = !userId;
     $('review-form').hidden = !userId || !mineKnown || reviewed;
-    $('review-submit').disabled = submitting;
+    $('review-submit').disabled = submitting || profileBusy || Boolean(profileDraft);
+    $('review-nickname').readOnly = submitting || profileBusy || Boolean(profileDraft) || Boolean(draft);
+    $('review-nickname-random').disabled = !userId || $('review-nickname').readOnly;
+    $('review-nickname-save').disabled = !userId || submitting || profileBusy || Boolean(draft);
   }
   async function loadMine() {
     const current = epoch, owner = userId;
@@ -133,8 +139,18 @@ export function initializeCommerceUI({ accountPanel, openAccount }) {
   }
   function updateAccount(state) {
     const next = state?.authenticated && state?.verified ? state.account?.user?.id || '' : '';
-    if (next === userId) return;
+    const nextNickname = next ? state.account?.user?.nickname || defaultReviewNickname(next) : '';
+    if (next === userId) {
+      if (nickname !== nextNickname) {
+        nickname = nextNickname;
+        if (!nicknameDirty && !draft && !profileDraft) $('review-nickname').value = nickname;
+        if (userId) void loadReviews(reviewsPage);
+      }
+      return;
+    }
     epoch++; userId = next; ordersPage = 1; mineKnown = false; reviewed = false; submitting = false; draft = null;
+    profileDraft = null; profileBusy = false; nicknameDirty = false; nickname = nextNickname;
+    $('review-nickname').value = nickname; notice('review-profile-notice', '');
     $('review-content').value = ''; $('orders-list').replaceChildren(); $('orders-pagination').replaceChildren();
     $('review-mine-retry').replaceChildren(); notice('review-account-notice', '');
     $('orders-refresh').disabled = !userId;
@@ -144,18 +160,52 @@ export function initializeCommerceUI({ accountPanel, openAccount }) {
   }
   $('review-login').addEventListener('click', () => void openAccount());
   $('orders-refresh').addEventListener('click', () => void loadOrders(ordersPage));
+  $('review-nickname').addEventListener('input', () => { nicknameDirty = true; $('review-nickname').setCustomValidity(''); });
+  $('review-nickname-random').addEventListener('click', () => {
+    if (!userId || $('review-nickname').readOnly) return;
+    $('review-nickname').value = randomReviewNickname($('review-nickname').value);
+    nicknameDirty = true; $('review-nickname').setCustomValidity('');
+    notice('review-profile-notice', '已随机选择昵称；保存昵称或发布评价后生效。');
+  });
+  function readNickname() {
+    try { const value = normalizeReviewNickname($('review-nickname').value); $('review-nickname').setCustomValidity(''); return value; }
+    catch { $('review-nickname').setCustomValidity('昵称需为 2–24 个字，不能包含换行或不可见字符。'); $('review-nickname').reportValidity(); return null; }
+  }
+  $('review-profile-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!userId || submitting || profileBusy || draft) return;
+    const value = readNickname(); if (!value) return;
+    if (profileDraft && profileDraft.nickname !== value) return;
+    profileDraft ||= { nickname: value, expectedUserId: userId, requestId: crypto.randomUUID() };
+    const current = epoch; profileBusy = true; renderComposer(); notice('review-profile-notice', '正在保存昵称…');
+    try {
+      const result = await request('profile-update', profileDraft);
+      if (epoch !== current) return;
+      nickname = result.profile.nickname; nicknameDirty = false; profileDraft = null;
+      $('review-nickname').value = nickname;
+      notice('review-profile-notice', '昵称已保存，已发表的评价同步显示当前昵称。');
+      await loadReviews(reviewsPage);
+    } catch (error) {
+      if (epoch !== current) return;
+      notice('review-profile-notice', error.message, true);
+      if (error.code && !/^(?:STORAGE_|SERVICE_|RATE_LIMIT)/.test(error.code)) profileDraft = null;
+    } finally { if (epoch === current) { profileBusy = false; renderComposer(); } }
+  });
   $('review-form').addEventListener('submit', async event => {
     event.preventDefault();
-    if (submitting || !userId || !mineKnown || reviewed || !$('review-form').reportValidity()) return;
-    const content = $('review-content').value.trim(), rating = Number(reviews.querySelector('input[name="software-rating"]:checked').value);
-    if (content.length < 5) { notice('review-account-notice', '请填写 5–1000 字的使用感受。', true); return; }
+    if (submitting || profileBusy || profileDraft || !userId || !mineKnown || reviewed || !$('review-form').reportValidity()) return;
+    const value = readNickname(); if (!value) return;
+    const content = $('review-content').value, rating = Number(reviews.querySelector('input[name="software-rating"]:checked').value);
+    if (content.trim().length < 5) { notice('review-account-notice', '请填写 5–1000 字的使用感受。', true); return; }
     // After an uncertain network response retain the exact request and text.
-    if (draft && (draft.content !== content || draft.rating !== rating)) { notice('review-account-notice', '上次提交尚未确认，请保留原内容重试，或刷新核实评价结果。', true); return; }
-    draft ||= { content, rating, requestId: crypto.randomUUID(), expectedUserId: userId };
+    if (draft && (draft.content !== content || draft.rating !== rating || draft.nickname !== value)) { notice('review-account-notice', '上次提交尚未确认，请保留原内容重试，或刷新核实评价结果。', true); return; }
+    draft ||= { content, rating, nickname: value, requestId: crypto.randomUUID(), expectedUserId: userId };
     const current = epoch; submitting = true; renderComposer(); notice('review-account-notice', '正在发布评价…');
     try {
-      await request('review-submit', draft);
+      const result = await request('review-submit', draft);
       if (epoch !== current) return;
+      nickname = result.profile?.nickname || result.review?.authorLabel || value; nicknameDirty = false;
+      $('review-nickname').value = nickname;
       reviewed = true; mineKnown = true; draft = null; $('review-content').value = '';
       await loadReviews(1);
       if (epoch === current) notice('review-account-notice', '评价已发布，感谢分享你的体验。');

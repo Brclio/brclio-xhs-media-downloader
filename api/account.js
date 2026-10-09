@@ -57,7 +57,7 @@ export function createAccountHandler({ service, config, env, clientIp, mailerFac
       const adminCookie = cookieValue(req, ADMIN_COOKIE), browserCookie = cookieValue(req, BROWSER_COOKIE);
       const bearer = header(req, 'authorization').match(/^Bearer ([A-Za-z0-9_-]{32,200})$/)?.[1] || '';
       const adminAction = body.action?.startsWith?.('admin-') || body.input?.client === 'admin';
-      const browserFlow = !adminAction && (body.input?.client === 'browser' || ['feedback-owner-detail', 'feedback-owner-reply'].includes(body.action) || (['feedback-public-comment', 'review-mine', 'review-submit', 'order-create', 'orders-mine'].includes(body.action) && Boolean(browserCookie)));
+      const browserFlow = !adminAction && (body.input?.client === 'browser' || ['feedback-owner-detail', 'feedback-owner-reply'].includes(body.action) || (['feedback-public-comment', 'profile-update', 'review-mine', 'review-submit', 'order-create', 'orders-mine'].includes(body.action) && Boolean(browserCookie)));
       const cookie = browserFlow ? browserCookie : adminCookie;
       const adminFlow = adminAction || (!browserFlow && Boolean(adminCookie));
       if (adminFlow || browserFlow || cookie) requireOrigin(req, effectiveConfig.siteOrigin);

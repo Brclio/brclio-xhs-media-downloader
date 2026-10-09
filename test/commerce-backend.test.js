@@ -8,6 +8,7 @@ import { GithubStateStore, emptyState, validateState } from '../server/auth/stor
 import { createAccountService } from '../server/auth/service.js';
 import { digest } from '../server/auth/crypto.js';
 import { readConfig } from '../server/auth/config.js';
+import { REVIEW_NICKNAMES, defaultReviewNickname } from '../lib/review-nicknames.js';
 
 const clock = Date.parse('2026-10-09T12:00:00Z');
 function fixture() {
@@ -38,13 +39,15 @@ function fixture() {
   return { sessions, users, store, instance, call, userInput, record, config, set uncertain(value) { commitThenThrow = value; }, set beforeNextPut(value) { beforeNextPut = value; }, get state() { return state; }, get conflicts() { return conflicts; } };
 }
 
-test('software review requires a user session, persists once across browser and desktop, and anonymous views disclose no identity', async () => {
-  const f = fixture(), input = f.userInput({ rating: 5, content: '下载很方便 owner@example.test 电话：13812345678 激活码：Brclio-1234567890ABCDEF1234567890ABCDEF12345678AB' });
+test('software reviews persist once across clients, display stable default nicknames and redact only authored emails', async () => {
+  const f = fixture(), input = f.userInput({ rating: 5, content: '  下载很方便 owner@example.test 电话：13812345678 激活码：Brclio-1234567890ABCDEF1234567890ABCDEF12345678AB\n订单ABC-123 https://example.test/path?token=preserved Cookie: authored-value  ' });
   await assert.rejects(f.call('review-submit', input, null), { code: 'ACCOUNT_REQUIRED' });
   await assert.rejects(f.call('review-submit', input, f.sessions[2]), { code: 'USER_SESSION_REQUIRED' });
   await assert.rejects(f.call('review-submit', { ...input, expectedUserId: f.users[1].id }), { code: 'ACCOUNT_CHANGED' });
   const created = await f.call('review-submit', input);
-  assert.equal(created.review.rating, 5); assert.match(created.review.authorLabel, /^用户 [A-F0-9]{6}$/);
+  assert.equal(created.review.rating, 5); assert.equal(created.review.authorLabel, defaultReviewNickname(f.users[0].id));
+  assert.ok(REVIEW_NICKNAMES.includes(created.review.authorLabel));
+  assert.equal(created.review.content, input.content.replace('owner@example.test', '[EMAIL]'));
   assert.equal((await f.call('review-submit', input)).replayed, true);
   await assert.rejects(f.call('review-submit', { ...input, requestId: randomUUID() }), { code: 'REVIEW_ALREADY_EXISTS' });
   await assert.rejects(f.call('review-submit', { ...input, content: '变更原评价内容' }), { code: 'REQUEST_ID_REUSED' });
@@ -53,8 +56,9 @@ test('software review requires a user session, persists once across browser and 
   const publicResult = await f.call('reviews-public', {}, null);
   assert.deepEqual(publicResult.summary, { count: 1, averageRating: 5 });
   const serialized = JSON.stringify(publicResult);
-  for (const secret of ['owner@example.test', f.users[0].id, '13812345678', 'Brclio-1234', 'email', 'userId']) assert.ok(!serialized.includes(secret), secret);
-  assert.ok(!JSON.stringify(f.state.reviews).includes('owner@example.test'), 'only redacted text is persisted');
+  for (const secret of ['owner@example.test', f.users[0].id, 'email', 'userId']) assert.ok(!serialized.includes(secret), secret);
+  for (const authored of ['13812345678', 'Brclio-1234', '订单ABC-123', 'https://example.test/path?token=preserved', 'Cookie: authored-value']) assert.ok(serialized.includes(authored), authored);
+  assert.ok(!JSON.stringify(f.state.reviews).includes('owner@example.test'), 'authored emails are removed before persistence');
   const { publicKey, privateKey } = generateKeyPairSync('ed25519');
   const token = 'd'.repeat(43);
   f.state.sessions[digest(f.config.pepper, 'session', token)] = { userId: f.users[0].id, client: 'desktop', publicKey: publicKey.export({ format: 'pem', type: 'spki' }) };
@@ -62,6 +66,114 @@ test('software review requires a user session, persists once across browser and 
   const proof = { timestamp: clock, nonce, signature: sign(null, Buffer.from(`review-submit\n${clock}\n${nonce}\n${JSON.stringify(desktopInput)}\n${token}`), privateKey).toString('base64') };
   await assert.rejects(f.instance().execute({ action: 'review-submit', input: desktopInput, token, client: 'desktop' }), { code: 'INVALID_DEVICE_PROOF' });
   await assert.rejects(f.instance().execute({ action: 'review-submit', input: desktopInput, token, client: 'desktop', proof }), { code: 'REVIEW_ALREADY_EXISTS' });
+});
+
+test('software account nicknames are authenticated, normalized and editable without changing published review text', async () => {
+  const f = fixture(), originalUser = structuredClone(f.state.users[f.users[0].id]);
+  assert.equal((await f.call('me')).account.user.nickname, defaultReviewNickname(f.users[0].id));
+  assert.equal(f.state.users[f.users[0].id].nickname, undefined, 'reading an old account does not persist a migration');
+  const profileInput = f.userInput({ nickname: '  夏日小猫  ' });
+  await assert.rejects(f.call('profile-update', profileInput, null), { code: 'ACCOUNT_REQUIRED' });
+  await assert.rejects(f.call('profile-update', profileInput, f.sessions[2]), { code: 'USER_SESSION_REQUIRED' });
+  await assert.rejects(f.call('profile-update', { ...profileInput, expectedUserId: f.users[1].id }), { code: 'ACCOUNT_CHANGED' });
+  assert.equal((await f.call('profile-update', profileInput)).profile.nickname, '夏日小猫');
+  assert.equal((await f.call('profile-update', profileInput)).replayed, true);
+  await assert.rejects(f.call('profile-update', { ...profileInput, nickname: '不同昵称' }), { code: 'REQUEST_ID_REUSED' });
+  assert.deepEqual(Object.fromEntries(Object.entries(f.state.users[f.users[0].id]).filter(([key]) => key !== 'nickname')), originalUser);
+  const reviewInput = f.userInput({ nickname: '周末摸鱼', rating: 4, content: '  原样保留内容和手机13812345678\nhttps://example.test/?order=123&token=456  ' });
+  const published = await f.call('review-submit', reviewInput);
+  assert.deepEqual(published.profile, { nickname: '周末摸鱼' });
+  assert.equal(published.review.authorLabel, '周末摸鱼'); assert.equal(published.review.content, reviewInput.content);
+  assert.equal(f.state.users[f.users[0].id].nickname, '周末摸鱼'); assert.equal(f.state.reviews[f.users[0].id].nickname, '周末摸鱼');
+  const savedReview = structuredClone(f.state.reviews[f.users[0].id]);
+  const next = f.userInput({ nickname: '今天晒太阳' }); await f.call('profile-update', next);
+  assert.equal((await f.call('reviews-public', {}, null)).reviews[0].authorLabel, '今天晒太阳');
+  assert.equal((await f.call('review-mine')).review.authorLabel, '今天晒太阳');
+  assert.deepEqual(f.state.reviews[f.users[0].id], savedReview, 'changing a nickname does not mutate published content, score or timestamps');
+  const oldProfileReplay = await f.call('profile-update', profileInput);
+  assert.equal(oldProfileReplay.profile.nickname, '今天晒太阳'); assert.equal(oldProfileReplay.replayed, true);
+  const oldReviewReplay = await f.call('review-submit', reviewInput);
+  assert.deepEqual(oldReviewReplay.profile, { nickname: '今天晒太阳' });
+  assert.equal(oldReviewReplay.review.authorLabel, '今天晒太阳'); assert.equal(oldReviewReplay.replayed, true);
+  await assert.rejects(f.call('review-submit', { ...reviewInput, nickname: '不应更新昵称', requestId: randomUUID() }), { code: 'REVIEW_ALREADY_EXISTS' });
+  assert.equal(f.state.users[f.users[0].id].nickname, '今天晒太阳');
+});
+
+test('nickname updates reject unsafe formatting, redact emails only and preserve the current name for older review clients', async () => {
+  const f = fixture();
+  for (const nickname of ['', '短', '中'.repeat(25), 123, null, '有\n换行', '带\u0000控制符', '零宽\u200b昵称']) {
+    await assert.rejects(f.call('profile-update', f.userInput({ nickname })), { code: 'INVALID_NICKNAME' });
+    await assert.rejects(f.call('review-submit', f.userInput({ nickname, rating: 5, content: '昵称无效时评价不能保存' })), { code: 'INVALID_NICKNAME' });
+  }
+  assert.equal(Object.keys(f.state.reviews).length, 0); assert.equal(f.state.users[f.users[0].id].nickname, undefined);
+  const email = await f.call('profile-update', f.userInput({ nickname: 'me@example.test' }));
+  assert.equal(email.profile.nickname, '[EMAIL]'); assert.equal(f.state.users[f.users[0].id].nickname, '[EMAIL]');
+  await f.call('profile-update', f.userInput({ nickname: '<img src=x>' }));
+  const submitted = await f.call('review-submit', f.userInput({ rating: 5, content: '旧客户端不传昵称仍采用当前昵称' }));
+  assert.equal(submitted.review.authorLabel, '<img src=x>', 'labels remain authored plain text for safe textContent rendering');
+  const g = fixture(), expanding = 'a@b.c '.repeat(166);
+  const expanded = await g.call('review-submit', g.userInput({ rating: 3, content: expanding }));
+  assert.equal(expanded.review.content, '[EMAIL] '.repeat(166), 'email redaction never truncates the remaining authored text');
+  const h = fixture(), url = 'https://example.test/?email=me+tag@example.test&order=123&phone=13812345678';
+  const linked = await h.call('review-submit', h.userInput({ rating: 5, content: url }));
+  assert.equal(linked.review.content, 'https://example.test/?email=[EMAIL]&order=123&phone=13812345678', 'only the address is removed from an authored URL');
+});
+
+test('email-only redaction covers quoted and rich local parts and IP domains without swallowing adjacent authored text', async () => {
+  const addresses = ['"hello world"@example.com', '"escaped\\\"name"@example.com', "o'hara@example.com", 'name+tag@example.com', "!#$%&'*+/=?^_`{|}~-.local@example.com", 'owner@[127.0.0.1]', 'owner@[IPv6:2001:db8::1]'];
+  const f = fixture();
+  const content = `电话13812345678，网址https://example.test/path?order=123&token=456；邮箱：${addresses.join('，')}。订单ABC-123 <b>仍是纯文本</b>`;
+  const expected = `电话13812345678，网址https://example.test/path?order=123&token=456；邮箱：${addresses.map(() => '[EMAIL]').join('，')}。订单ABC-123 <b>仍是纯文本</b>`;
+  const input = f.userInput({ rating: 5, content });
+  assert.equal((await f.call('review-submit', input)).review.content, expected);
+  assert.equal(f.state.reviews[f.users[0].id].content, expected);
+  assert.equal((await f.call('reviews-public', {}, null)).reviews[0].content, expected);
+  assert.equal((await f.call('review-submit', input)).review.content, expected);
+  for (const address of addresses) assert.ok(!JSON.stringify(f.state.operations).includes(address), address);
+  for (const nickname of ['"a b"@ex.co', "o'hara@ex.co", '!x/y?=+{}|~@ex.co', 'a@[127.0.0.1]', 'a@[IPv6:::1]']) {
+    assert.equal((await f.call('profile-update', f.userInput({ nickname }))).profile.nickname, '[EMAIL]');
+    assert.equal((await f.call('reviews-public', {}, null)).reviews[0].authorLabel, '[EMAIL]');
+  }
+  const g = fixture(), url = 'https://example.test/path?email=me+tag@example.test&phone=13812345678 https://example.test/contact/o\'hara@example.test?order=123 www.example.test/?email=owner@[127.0.0.1]&token=456';
+  const expectedUrls = 'https://example.test/path?email=[EMAIL]&phone=13812345678 https://example.test/contact/[EMAIL]?order=123 www.example.test/?email=[EMAIL]&token=456';
+  assert.equal((await g.call('review-submit', g.userInput({ nickname: '"a b"@ex.co', rating: 5, content: url }))).review.content, expectedUrls);
+  assert.equal(g.state.users[g.users[0].id].nickname, '[EMAIL]');
+});
+
+test('profile and review mutations remain atomic under nickname races, uncertain writes and session revocation', async () => {
+  const f = fixture();
+  const results = await Promise.allSettled([
+    f.call('review-submit', f.userInput({ nickname: '第一位名字', rating: 5, content: '并发评论应只保存获胜昵称' })),
+    f.call('review-submit', f.userInput({ nickname: '第二位名字', rating: 4, content: '并发评论不允许覆盖获胜内容' })),
+  ]);
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+  assert.equal(f.state.users[f.users[0].id].nickname, f.state.reviews[f.users[0].id].nickname);
+  const g = fixture();
+  await Promise.all([
+    g.call('profile-update', g.userInput({ nickname: '新的账号昵称' })),
+    g.call('review-submit', g.userInput({ nickname: '发表时的昵称', rating: 5, content: '改名和发布均按事务顺序保存' })),
+  ]);
+  assert.equal((await g.call('reviews-public', {}, null)).reviews[0].authorLabel, g.state.users[g.users[0].id].nickname);
+  const h = fixture(), input = h.userInput({ nickname: '重试只改一次' }); h.uncertain = true;
+  await assert.rejects(h.call('profile-update', input), { code: 'STORAGE_WRITE_UNCERTAIN' });
+  assert.equal((await h.call('profile-update', input)).replayed, true);
+  assert.equal(h.state.users[h.users[0].id].nickname, input.nickname);
+  const j = fixture();
+  j.beforeNextPut = state => { state.sessions[digest(j.config.pepper, 'session', j.sessions[0].token)].revokedAt = new Date(clock).toISOString(); };
+  await assert.rejects(j.call('profile-update', j.userInput({ nickname: '会话撤销不可改名' })), { code: 'SESSION_REVOKED' });
+  assert.equal(j.state.users[j.users[0].id].nickname, undefined);
+});
+
+test('old reviews fall back to snapshot or stable catalog names without recovering previously redacted text', async () => {
+  const f = fixture(), userId = f.users[0].id;
+  f.state.reviews[userId] = { id: randomUUID(), userId, rating: 4, content: '以前已脱敏 [PHONE] [REDACTED]', createdAt: new Date(clock).toISOString() };
+  assert.equal((await f.call('reviews-public', {}, null)).reviews[0].authorLabel, defaultReviewNickname(userId));
+  assert.equal(f.state.users[userId].nickname, undefined); assert.equal(f.state.reviews[userId].nickname, undefined);
+  f.state.reviews[userId].nickname = '历史昵称快照';
+  assert.equal((await f.call('reviews-public', {}, null)).reviews[0].authorLabel, '历史昵称快照');
+  await f.call('profile-update', f.userInput({ nickname: '现在的新昵称' }));
+  const review = (await f.call('reviews-public', {}, null)).reviews[0];
+  assert.equal(review.authorLabel, '现在的新昵称'); assert.equal(review.content, '以前已脱敏 [PHONE] [REDACTED]');
 });
 
 test('review uniqueness survives CAS races, and a lost write receipt recovers with the same request', async () => {
@@ -298,6 +410,13 @@ test('schema v1 migrates commerce fields additively and rejects invalid or dupli
   assert.deepEqual(validateState(state).reviews, {}); assert.deepEqual(state.orders, {}); assert.equal(state.schemaVersion, 1);
   for (const key of ['reviews', 'orders']) assert.throws(() => validateState({ ...emptyState(), [key]: [] }), { code: 'STORAGE_INVALID' });
   const id = randomUUID();
+  const userId = randomUUID();
+  const review = { id: randomUUID(), userId, rating: 5, content: '既有评论无需昵称即可迁移', createdAt: new Date(clock).toISOString() };
+  assert.doesNotThrow(() => validateState({ ...emptyState(), reviews: { [userId]: review } }));
+  for (const nickname of ['', '单', '有\n换行', '隐形\u200b字符', '未规范化 ']) {
+    assert.throws(() => validateState({ ...emptyState(), users: { [userId]: { id: userId, nickname } } }), { code: 'STORAGE_INVALID' });
+    assert.throws(() => validateState({ ...emptyState(), reviews: { [userId]: { ...review, nickname } } }), { code: 'STORAGE_INVALID' });
+  }
   const order = { id, userId: randomUUID(), planId: 'monthly', priceCents: 1990, status: 'pending', paymentMethod: 'wechat', createdAt: new Date(clock).toISOString(), amountCents: 1990, paidAt: null, confirmedAt: null };
   assert.throws(() => validateState({ ...emptyState(), orders: { [id]: order } }), { code: 'STORAGE_INVALID' });
 });
@@ -311,9 +430,12 @@ test('SQLite preserves commerce records after restart and races independent conn
     const old = structuredClone(f.state); delete old.orders; delete old.reviews;
     await first.importSnapshot({ state: old, parts: [] });
     second = new SqliteStateStore({ path });
-    const a = f.instance(first), b = f.instance(second), input = f.userInput({ rating: 5, content: 'SQLite 并发只保存一条评价' });
-    const results = await Promise.allSettled([f.call('review-submit', input, f.sessions[0], a), f.call('review-submit', { ...input, requestId: randomUUID() }, f.sessions[0], b)]);
+    const a = f.instance(first), b = f.instance(second), input = f.userInput({ nickname: '数据库里的小猫', rating: 5, content: 'SQLite 并发只保存一条评价' });
+    const otherInput = { ...input, requestId: randomUUID() };
+    const results = await Promise.allSettled([f.call('review-submit', input, f.sessions[0], a), f.call('review-submit', otherInput, f.sessions[0], b)]);
     assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+    const profile = f.userInput({ nickname: '重启后还能认出我' });
+    await f.call('profile-update', profile, f.sessions[0], b);
     const record = f.record(), order = (await f.call('admin-record-order', record, f.sessions[2], a)).order;
     const { codes: [code] } = await f.call('admin-generate-codes', { userId: f.users[0].id, planId: 'monthly', count: 1, reason: 'SQLite 收款后发码再关联', requestId: randomUUID() }, f.sessions[2], a);
     const link = { orderId: order.id, codeId: code.id, reason: 'SQLite 保留原订单收款证据关联激活码', requestId: randomUUID() };
@@ -321,6 +443,11 @@ test('SQLite preserves commerce records after restart and races independent conn
     first.close(); first = new SqliteStateStore({ path });
     const restarted = f.instance(first);
     assert.equal((await f.call('review-mine', {}, f.sessions[0], restarted)).review.rating, 5);
+    assert.equal((await f.call('review-mine', {}, f.sessions[0], restarted)).review.authorLabel, profile.nickname);
+    assert.equal((await f.call('me', {}, f.sessions[0], restarted)).account.user.nickname, profile.nickname);
+    assert.equal((await f.call('profile-update', profile, f.sessions[0], restarted)).replayed, true);
+    const reviewReplay = await f.call('review-submit', results[0].status === 'fulfilled' ? input : otherInput, f.sessions[0], restarted);
+    assert.equal(reviewReplay.replayed, true); assert.equal(reviewReplay.profile.nickname, profile.nickname);
     assert.equal((await f.call('admin-revenue', {}, f.sessions[2], restarted)).revenue.totalCents, 1990);
     assert.equal((await f.call('admin-record-order', record, f.sessions[2], restarted)).replayed, true);
     assert.equal((await f.call('admin-link-order-code', link, f.sessions[2], restarted)).replayed, true);

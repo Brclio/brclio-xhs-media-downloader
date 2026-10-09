@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { fail } from './errors.js';
 import { getMembershipPlan } from '../../lib/membership-plans.js';
-import { sanitizeDiagnosticText } from '../../lib/diagnostic-sanitize.js';
+import { defaultReviewNickname, normalizeReviewNickname } from '../../lib/review-nicknames.js';
 
 const own = (object, key) => Object.hasOwn(object, key) ? object[key] : undefined;
 const iso = time => new Date(time).toISOString();
@@ -9,6 +9,16 @@ const methods = ['alipay', 'wechat', 'other'];
 const maxAmount = 1_000_000_000;
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const validTime = value => typeof value === 'string' && Number.isFinite(Date.parse(value));
+// Keep URL paths and query keys when an address appears inside a link. Quoted
+// local parts, dot-atoms and IP literals share the same email-only redaction.
+const emailPattern = /((?:https?:\/\/|www\.)[^\s<>"@]*[/?&#=])?(?:"(?:[^"\\\r\n]|\\[^\r\n])*"|[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*)@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+|\[(?:IPv6:[a-f0-9:.]+|(?:\d{1,3}\.){3}\d{1,3})\])/gi;
+const emailOnlyText = value => value.replace(emailPattern, (_address, urlPrefix = '') => `${urlPrefix}[EMAIL]`);
+function nicknameValue(value) {
+  try { return normalizeReviewNickname(emailOnlyText(normalizeReviewNickname(value))); }
+  catch { fail('INVALID_NICKNAME', '请填写 2 至 24 个字的昵称，不要包含换行或不可见字符。'); }
+}
+const validNickname = value => { try { return nicknameValue(value) === value; } catch { return false; } };
+export const accountNickname = user => user.nickname || defaultReviewNickname(user.id);
 
 /** Additive fields keep both GitHub snapshots and SQLite v1 databases readable. */
 export function validateCommerceState(state) {
@@ -17,8 +27,9 @@ export function validateCommerceState(state) {
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '评价或订单数据格式异常。', 503);
   }
   for (const [userId, review] of Object.entries(state.reviews)) {
-    if (!review || review.userId !== userId || !uuidPattern.test(review.id || '') || !Number.isSafeInteger(review.rating) || review.rating < 1 || review.rating > 5 || typeof review.content !== 'string' || review.content.length > 1000 || !validTime(review.createdAt)) fail('STORAGE_INVALID', '软件评价数据格式异常。', 503);
+    if (!review || review.userId !== userId || !uuidPattern.test(review.id || '') || !Number.isSafeInteger(review.rating) || review.rating < 1 || review.rating > 5 || typeof review.content !== 'string' || review.content.length > 2000 || !validTime(review.createdAt) || (review.nickname !== undefined && !validNickname(review.nickname))) fail('STORAGE_INVALID', '软件评价数据格式异常。', 503);
   }
+  for (const user of Object.values(state.users)) if (user?.nickname !== undefined && !validNickname(user.nickname)) fail('STORAGE_INVALID', '软件账号昵称格式异常。', 503);
   const payments = new Set(), codes = new Set();
   for (const [id, order] of Object.entries(state.orders)) {
     if (!order || order.id !== id || !uuidPattern.test(id) || typeof order.userId !== 'string' || !getMembershipPlan(order.planId) || !Number.isSafeInteger(order.priceCents) || order.priceCents < 0 || !['pending', 'confirmed'].includes(order.status) || !methods.includes(order.paymentMethod) || !validTime(order.createdAt)) fail('STORAGE_INVALID', '订单数据格式异常。', 503);
@@ -43,14 +54,6 @@ function paginate(items, input, key, defaultSize) {
   const { page, pageSize } = pageValue(input, defaultSize);
   return { [key]: items.slice((page - 1) * pageSize, page * pageSize), total: items.length, page, pageSize, totalPages: Math.ceil(items.length / pageSize) };
 }
-function publicText(value) {
-  return sanitizeDiagnosticText(value)
-    .replace(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@(?:[a-z0-9-]+\.)+[a-z0-9-]+/gi, '[EMAIL]')
-    .replace(/\b(?:Brclio|XHS)-[a-f0-9]{40}\b/gi, '[REDACTED]')
-    .replace(/(?:密码|验证码|激活码|会话令牌|访问令牌)\s*[:：=]\s*[^\s，。；,;]+/g, '[REDACTED]')
-    .replace(/(?:手机号|手机号码|电话|联系方式|微信(?:号)?|QQ(?:号)?)\s*[:：=][^\r\n，。；,;]+/gi, '[CONTACT]')
-    .replace(/(?<!\d)(?:\+?86[ -]?)?1[3-9]\d[ -]?\d{4}[ -]?\d{4}(?!\d)/g, '[PHONE]');
-}
 function dateValue(value) {
   if (value === undefined || value === '') return null;
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) fail('INVALID_DATE_RANGE', '日期请使用 YYYY-MM-DD 格式。');
@@ -67,7 +70,7 @@ const shanghaiDate = value => iso(Date.parse(value) + 8 * 3_600_000).slice(0, 10
 const inRange = (value, range) => (!range.startDate || shanghaiDate(value) >= range.startDate) && (!range.endDate || shanghaiDate(value) <= range.endDate);
 
 export function createCommerceService({ store, now, authenticate, hash, operation, audit }) {
-  const reviewView = review => review ? { id: review.id, authorLabel: `用户 ${hash('review-author', review.userId).slice(0, 6).toUpperCase()}`, rating: review.rating, content: publicText(review.content), createdAt: review.createdAt } : null;
+  const reviewView = (state, review) => review ? { id: review.id, authorLabel: own(state.users, review.userId)?.nickname || review.nickname || defaultReviewNickname(review.userId), rating: review.rating, content: emailOnlyText(review.content), createdAt: review.createdAt } : null;
   function userIdentity(state, request, time) {
     const identity = authenticate(state, request, time);
     if (!['browser', 'desktop'].includes(identity.session.client)) fail('USER_SESSION_REQUIRED', '请使用网页或客户端的软件账号操作。', 403);
@@ -97,14 +100,14 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
     const { state } = await store.read();
     if (request.action === 'reviews-public') {
       const reviews = Object.values(state.reviews || {}).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
-      return { ...paginate(reviews.map(reviewView), request.input, 'reviews', 6), summary: { count: reviews.length, averageRating: reviews.length ? Number((reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)) : 0 } };
+      return { ...paginate(reviews.map(review => reviewView(state, review)), request.input, 'reviews', 6), summary: { count: reviews.length, averageRating: reviews.length ? Number((reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)) : 0 } };
     }
     const admin = request.action.startsWith('admin-');
     const { user } = admin ? authenticate(state, request, now(), true) : userIdentity(state, request, now());
     // A different tab may replace the browser cookie between rendering a draft
     // and this request. Reads must not silently return the replacement account.
     if (!admin && request.input.expectedUserId !== undefined) expectedUser(request.input, user);
-    if (request.action === 'review-mine') return { review: reviewView(own(state.reviews || {}, user.id)) };
+    if (request.action === 'review-mine') return { review: reviewView(state, own(state.reviews || {}, user.id)) };
     const orders = ledger(state);
     if (request.action === 'orders-mine') return paginate(orders.filter(order => order.userId === user.id).map(order => orderView(order, state)), request.input, 'orders');
     const range = rangeValue(request.input);
@@ -136,14 +139,20 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
       const time = now(), admin = request.action.startsWith('admin-');
       const { user } = admin ? authenticate(state, request, time, true) : userIdentity(state, request, time);
       if (!admin) expectedUser(request.input, user);
-      return operation(state, user, request, () => {
+      const result = operation(state, user, request, () => {
         const input = request.input;
+        if (request.action === 'profile-update') {
+          user.nickname = nicknameValue(input.nickname);
+          return { profile: { nickname: user.nickname }, replayed: false };
+        }
         if (request.action === 'review-submit') {
           if (own(state.reviews, user.id)) fail('REVIEW_ALREADY_EXISTS', '每位用户仅可评价一次，您已经提交过评价。', 409);
           if (!Number.isSafeInteger(input.rating) || input.rating < 1 || input.rating > 5 || typeof input.content !== 'string' || input.content.trim().length < 5 || input.content.length > 1000 || /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(input.content)) fail('INVALID_REVIEW', '请选择 1 至 5 星，并填写 5 至 1000 字的评价。');
-          const review = { id, userId: user.id, rating: input.rating, content: publicText(input.content.trim()).slice(0, 1000), createdAt: iso(time) };
+          const nickname = input.nickname === undefined ? accountNickname(user) : nicknameValue(input.nickname);
+          const review = { id, userId: user.id, nickname, rating: input.rating, content: emailOnlyText(input.content), createdAt: iso(time) };
+          user.nickname = nickname;
           state.reviews[user.id] = review;
-          return { review: reviewView(review), replayed: false };
+          return { review: reviewView(state, review), replayed: false };
         }
         if (request.action === 'order-create') {
           const plan = getMembershipPlan(input.planId);
@@ -200,7 +209,12 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
         audit(state, user, request.action, order.id, order.reason, prior ? orderView(prior, state, true) : null, orderView(order, state, true), time);
         return { order: orderView(order, state, true), replayed: false };
       });
+      // A replay never overwrites a later nickname change and must display the
+      // current profile instead of an old author label saved with the operation.
+      if (['profile-update', 'review-submit'].includes(request.action)) result.value.profile = { nickname: accountNickname(user) };
+      if (request.action === 'review-submit') result.value.review = reviewView(state, own(state.reviews, user.id));
+      return result;
     });
   }
-  return { execute: request => ['review-submit', 'order-create', 'admin-record-order', 'admin-link-order-code'].includes(request.action) ? mutate(request) : read(request) };
+  return { execute: request => ['profile-update', 'review-submit', 'order-create', 'admin-record-order', 'admin-link-order-code'].includes(request.action) ? mutate(request) : read(request) };
 }

@@ -48,7 +48,7 @@ test('every admin-prefixed endpoint requires trusted origin before service acces
 
 test('commerce browser cookies select only browser identity and enforce origin while desktop proof remains intact', async () => {
   const browserToken = 'b'.repeat(43), cookies = `${ADMIN_COOKIE}=${token}; ${BROWSER_COOKIE}=${browserToken}`;
-  for (const action of ['review-mine', 'review-submit', 'order-create', 'orders-mine']) {
+  for (const action of ['profile-update', 'review-mine', 'review-submit', 'order-create', 'orders-mine']) {
     const result = await request({ body: { action, input: {} }, headers: { origin, cookie: cookies } });
     assert.equal(result.code, 200); assert.equal(result.calls[0].client, 'browser'); assert.equal(result.calls[0].token, browserToken);
     const denied = await request({ body: { action, input: {} }, headers: { origin: 'https://evil.test', cookie: `${BROWSER_COOKIE}=${browserToken}` } });

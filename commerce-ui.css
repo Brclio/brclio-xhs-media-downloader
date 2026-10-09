@@ -8,7 +8,7 @@
 .review-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
 .review-item { min-width: 0; padding: 20px 0; border-bottom: 1px solid var(--line); }
 .review-item-heading, .order-heading { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.review-item-heading strong { font-size: .84rem; }
+.review-item-heading strong { font-size: .84rem; overflow-wrap: anywhere; min-width: 0; max-width: 100%; }
 .review-stars { color: var(--blue-deep); letter-spacing: 2px; }
 .review-content { margin: 12px 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
 .review-item time { font-size: .73rem; color: var(--ink-faint); }
@@ -19,6 +19,12 @@
 .commerce-notice.is-error { color: var(--red-deep); }
 .review-login-prompt { margin-top: 22px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-size: .86rem; }
 .review-form { border-top: 1px dashed var(--line-strong); margin-top: 24px; padding-top: 24px; display: grid; gap: 12px; }
+.review-profile-form { border-top: 1px dashed var(--line-strong); margin-top: 24px; padding-top: 24px; display: grid; gap: 10px; scroll-margin-top: 110px; }
+.review-profile-form > label { font-size: .85rem; font-weight: 700; }
+.review-nickname-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.review-nickname-row input { flex: 1 1 240px; min-width: 0; width: 100%; padding: 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--cream); color: var(--ink); font: inherit; }
+.review-nickname-row input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.review-nickname-row input[readonly] { color: var(--ink-light); }
 .review-form fieldset { border: 0; padding: 0; margin: 0 0 8px; min-width: 0; }
 .review-form legend, .review-form > label { font-size: .85rem; font-weight: 700; margin-bottom: 8px; }
 .review-rating { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -42,5 +48,5 @@
 body.is-desktop #public-reviews-mount { display: none; }
 body.is-desktop #desktop-reviews-page .software-reviews { margin: 0; }
 .software-reviews [hidden], .software-orders [hidden] { display: none !important; }
-@media (max-width: 900px) { .review-list { grid-template-columns: minmax(0, 1fr); } .software-reviews { scroll-margin-top: 170px; } }
-@media (max-width: 600px) { .software-reviews { padding: 20px 16px; scroll-margin-top: 210px; } .review-score { align-items: flex-start; } .order-facts { grid-template-columns: minmax(0, 1fr); } .review-rating label { padding: 6px 10px; } }
+@media (max-width: 900px) { .review-list { grid-template-columns: minmax(0, 1fr); } .software-reviews, .review-profile-form { scroll-margin-top: 170px; } }
+@media (max-width: 600px) { .software-reviews { padding: 20px 16px; scroll-margin-top: 210px; } .review-profile-form { scroll-margin-top: 210px; } .review-score { align-items: flex-start; } .order-facts { grid-template-columns: minmax(0, 1fr); } .review-rating label { padding: 6px 10px; } }

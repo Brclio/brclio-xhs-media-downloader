@@ -1,0 +1,36 @@
+{
+  "verifiedAt": "2026-10-09T11:38:09.551226+00:00",
+  "ok": true,
+  "isolatedFixtures": true,
+  "productionWrites": false,
+  "nodeTests": {
+    "total": 1116,
+    "passed": 1104,
+    "skipped": 12,
+    "failed": 0
+  },
+  "pythonTestsPassed": 27,
+  "commerceRendererChecksPassed": 17,
+  "assetTestsPassed": 32,
+  "desktopRendererChecksPassed": 55,
+  "membershipChecksPassed": 13,
+  "publicFeedbackChecksPassed": 26,
+  "cloudflareDryRunPassed": true,
+  "checks": [
+    "1000 unique built-in nicknames and custom nickname",
+    "profile save idempotency and account-switch race protection",
+    "one review per account across clients",
+    "only email masking; original phone URL order and whitespace retained",
+    "375px and 900px real renderer layouts",
+    "all personal order pages and uncertain writes",
+    "existing membership, member video, public feedback and startup gates",
+    "actual web and desktop account nickname entry opens and focuses the form",
+    "quoted and rich local-part email and IP-literal addresses are fully masked without changing nearby text"
+  ],
+  "screenshots": [
+    "web-reviews.png",
+    "web-nickname-settings.png",
+    "web-nickname-settings-375.png",
+    "desktop-reviews.png"
+  ]
+}

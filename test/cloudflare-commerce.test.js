@@ -76,11 +76,11 @@ test('production Worker and AccountRuntime isolate public reviews, personal orde
     assert.equal(anonymous.response.status, 200); assert.deepEqual(anonymous.body.reviews, []);
     assert.deepEqual(anonymous.body.summary, { count: 0, averageRating: 0 });
     assert.equal(writes, 0); assert.equal(state.reviews, undefined); assert.equal(state.orders, undefined);
-    for (const action of ['review-mine', 'orders-mine']) {
+    for (const action of ['profile-update', 'review-mine', 'orders-mine']) {
       const denied = await call(action); assert.equal(denied.response.status, 401); assert.equal(denied.body.error.code, 'ACCOUNT_REQUIRED');
     }
     const before = external.length;
-    for (const action of ['review-submit', 'order-create', 'admin-orders', 'admin-revenue', 'admin-record-order']) {
+    for (const action of ['profile-update', 'review-submit', 'order-create', 'admin-orders', 'admin-revenue', 'admin-record-order']) {
       const denied = await call(action, {}, bothCookies, { Origin: 'https://untrusted.example.test' });
       assert.equal(denied.response.status, 403); assert.equal(denied.body.error.code, 'ORIGIN_FORBIDDEN');
     }
@@ -88,13 +88,17 @@ test('production Worker and AccountRuntime isolate public reviews, personal orde
   });
 
   await t.test('one software identity can submit only once across browser and signed desktop requests', async () => {
-    const input = { rating: 5, content: '很实用 owner@example.test 手机号：13812345678\nCookie: PRIVATE_COOKIE\n<img src=x onerror=alert(1)>', expectedUserId: ownerId, requestId: randomUUID() };
+    const input = { nickname: '会写昵称的猫', rating: 5, content: '很实用 owner@example.test 手机号：13812345678\nCookie: AUTHORED_VALUE\nhttps://example.test/path?order=123&token=456 <img src=x onerror=alert(1)>', expectedUserId: ownerId, requestId: randomUUID() };
     const changed = await call('review-submit', input, otherCookie);
     assert.equal(changed.response.status, 409); assert.equal(changed.body.error.code, 'ACCOUNT_CHANGED');
     const before = writes;
     const submitted = await call('review-submit', input, bothCookies);
     assert.equal(submitted.response.status, 200, JSON.stringify(submitted.body));
+    assert.equal(submitted.body.review.authorLabel, input.nickname);
+    assert.deepEqual(submitted.body.profile, { nickname: input.nickname });
+    assert.equal(submitted.body.review.content, input.content.replace('owner@example.test', '[EMAIL]'));
     const replay = await call('review-submit', input, ownerCookie);
+    assert.deepEqual(replay.body.profile, { nickname: input.nickname });
     assert.equal(replay.body.replayed, true); assert.equal(writes, before + 1);
     const desktopDuplicate = await desktopCall('review-submit', { ...input, requestId: randomUUID() });
     assert.equal(desktopDuplicate.response.status, 409); assert.equal(desktopDuplicate.body.error.code, 'REVIEW_ALREADY_EXISTS');
@@ -107,9 +111,29 @@ test('production Worker and AccountRuntime isolate public reviews, personal orde
     assert.deepEqual(Object.keys(publicResult.body.reviews[0]).sort(), ['id', 'authorLabel', 'rating', 'content', 'createdAt'].sort());
     assert.deepEqual(publicResult.body.summary, { count: 1, averageRating: 5 });
     const serialized = JSON.stringify(publicResult.body);
-    for (const secret of [ownerId, adminId, 'owner@example.test', 'admin@example.test', '13812345678', 'PRIVATE_COOKIE', 'PRIVATE_ACTIVATION_DIGEST', 'PRIVATE_GIFT_DIGEST', 'PRIVATE_AUDIT_REASON', ownerToken, adminToken]) assert.ok(!serialized.includes(secret), secret);
+    for (const secret of [ownerId, adminId, 'owner@example.test', 'admin@example.test', 'PRIVATE_ACTIVATION_DIGEST', 'PRIVATE_GIFT_DIGEST', 'PRIVATE_AUDIT_REASON', ownerToken, adminToken]) assert.ok(!serialized.includes(secret), secret);
+    for (const authored of ['13812345678', 'Cookie: AUTHORED_VALUE', 'https://example.test/path?order=123&token=456']) assert.ok(serialized.includes(authored), authored);
     assert.ok(!JSON.stringify(state.reviews).includes('owner@example.test'), 'authored emails are removed before persistence');
     const page = await call('reviews-public', { pageSize: 51 }); assert.equal(page.response.status, 400); assert.equal(page.body.error.code, 'INVALID_PAGINATION');
+  });
+
+  await t.test('authenticated profile changes refresh published author labels without changing immutable reviews', async () => {
+    const input = { nickname: '换个新名字', expectedUserId: ownerId, requestId: randomUUID() };
+    const before = structuredClone(state.reviews[ownerId]);
+    const changed = await call('profile-update', input, otherCookie);
+    assert.equal(changed.response.status, 409); assert.equal(changed.body.error.code, 'ACCOUNT_CHANGED');
+    const profile = await call('profile-update', input, bothCookies);
+    assert.equal(profile.response.status, 200, JSON.stringify(profile.body)); assert.equal(profile.body.profile.nickname, input.nickname);
+    const replay = await call('profile-update', input, ownerCookie); assert.equal(replay.body.replayed, true);
+    const publicResult = await call('reviews-public'); assert.equal(publicResult.body.reviews[0].authorLabel, input.nickname);
+    const me = await call('me', { client: 'browser' }, bothCookies); assert.equal(me.body.account.user.nickname, input.nickname);
+    assert.deepEqual(state.reviews[ownerId], before);
+    const desktop = await desktopCall('profile-update', { nickname: '桌面也能改昵称', expectedUserId: ownerId, requestId: randomUUID() });
+    assert.equal(desktop.response.status, 200); assert.equal(desktop.body.profile.nickname, '桌面也能改昵称');
+    const staleReplay = await call('profile-update', input, ownerCookie);
+    assert.equal(staleReplay.body.profile.nickname, '桌面也能改昵称'); assert.equal(state.users[ownerId].nickname, '桌面也能改昵称');
+    const forged = await call('profile-update', { ...input, requestId: randomUUID() }, '', { Authorization: `Bearer ${desktopToken}` });
+    assert.equal(forged.response.status, 401); assert.equal(forged.body.error.code, 'INVALID_DEVICE_PROOF');
   });
 
   await t.test('cookie selection and draft assertions isolate orders while grants and quoted prices remain unverified', async () => {
