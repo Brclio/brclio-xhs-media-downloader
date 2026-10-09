@@ -14,3 +14,9 @@
 ## 安装
 
 从官方 GitHub Releases 下载正式签名 APK，覆盖安装旧正式版即可。不要先卸载，以保留设置；Android 安装与打开仍需遵循系统确认流程。发布门禁包含 Java/Node 策略、真实页面与浏览器跳转、lint、签名校验及模拟器升级验证。
+
+## 正式发布验证
+
+2026 年 10 月 9 日已发布，源码为 `cd157e0c1ad55d66b00549c44e03d245ccdb60b8`。[签名构建、模拟器升级与发布](https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37900857052) 全部通过，公开四个附件；[公开附件与稳定证书核验](android-v1.0.13-publication-verification.json)已通过，桌面 Latest 仍为 v2.0.9。
+
+API 35 完成已签名 v1.0.2 → v1.0.13 覆盖升级，新旧版本启动、UID、首次安装时间、用户设置及更新界面验证通过。独立且未修改生产 Java/UI 的低版本调试夹具，经真实按钮点击发出官方 APK 的 ACTION_VIEW/BROWSABLE 浏览器 Intent；本轮首次请求成功，没有使用网络重试。该夹具注入的安装失败不代表真实生产安装失败，ADB 覆盖也不代表用户系统安装器确认；未宣称浏览器下载完成。

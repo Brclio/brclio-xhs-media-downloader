@@ -1,0 +1,38 @@
+{
+  "verifiedAt": "2026-10-09T08:03:57.831Z",
+  "ok": true,
+  "tag": "android-v1.0.13",
+  "sourceCommit": "cd157e0c1ad55d66b00549c44e03d245ccdb60b8",
+  "runId": "37900857052",
+  "runUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/37900857052",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.13",
+  "versionCode": 10013,
+  "stableCertificatePreserved": true,
+  "anonymousAssetsVerified": true,
+  "apk": {
+    "name": "Brclio-XHS-Android-1.0.13-release.apk",
+    "bytes": 73150862,
+    "sha256": "54f04cd2f8c0d35cf0e16c1c097346ddc8a60d4364b1f7e8b0c73508a216c615"
+  },
+  "emulatorUpgrade": {
+    "verifiedAt": "2026-10-09T07:53:13.359Z",
+    "method": "adb install -r",
+    "apiLevel": 35,
+    "sourceCommit": "cd157e0c1ad55d66b00549c44e03d245ccdb60b8",
+    "apkSha256": "54f04cd2f8c0d35cf0e16c1c097346ddc8a60d4364b1f7e8b0c73508a216c615",
+    "targetVersion": "1.0.13",
+    "targetVersionCode": 10013,
+    "baselineVersion": "1.0.2",
+    "baselineVersionCode": 10002,
+    "signaturesVerified": true,
+    "oldAndNewLaunchVerified": true,
+    "uidPreserved": true,
+    "firstInstallTimePreserved": true,
+    "userSettingPreserved": true,
+    "updateCheckUiVerified": true,
+    "inAppInstallerConfirmationTested": false,
+    "manualFallbackFixtureVerified": true,
+    "vipCommunityVerified": true
+  },
+  "desktopLatest": "v2.0.9"
+}
