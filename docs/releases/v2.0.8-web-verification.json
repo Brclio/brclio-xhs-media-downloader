@@ -1,0 +1,774 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.8",
+  "androidVersion": "1.0.12",
+  "result": "passed",
+  "checkedAt": "2026-10-09T05:35:57.257115+00:00",
+  "origin": "https://xhs.download.brclio.com",
+  "deployment": {
+    "id": "3caf717e-f2b7-4dc9-8499-9c739718aaac",
+    "url": "https://3caf717e.brclio-xhs-pages.pages.dev",
+    "environment": "Production",
+    "branch": "main",
+    "sourceSha": "6ecbd04daf2a9384bd85d82379b624b2174cc128",
+    "worker": {
+      "name": "brclio-xhs-downloader",
+      "versionId": "d379089a-8a21-498b-bfd5-58aecf80a31f",
+      "sourceSha": "6ecbd04daf2a9384bd85d82379b624b2174cc128"
+    },
+    "provenance": "Successful Worker and production Pages deployments independently confirmed by the publishing agent with Wrangler."
+  },
+  "scope": "Cloudflare Worker and Pages production readback; desktop v2.0.8 and Android v1.0.12 public links and sizes; anonymous API and authorization boundaries; browser limits; real production Live Photo exports. No deployment or public content was modified by these checks.",
+  "sources": [
+    {
+      "file": "index.html",
+      "status": 200,
+      "sourceSha256": "6de5a8060abf57151674c147a3f9751be76e7e225a935a5bda6687a64da44bd3",
+      "buildSha256": "8e85d227c6c934c4ed61d165e9d1e0abccbf96dc1aa85b52ecf2402a0f16ae54",
+      "productionSha256": "8e85d227c6c934c4ed61d165e9d1e0abccbf96dc1aa85b52ecf2402a0f16ae54",
+      "bytes": 58870
+    },
+    {
+      "file": "app.js",
+      "status": 200,
+      "sourceSha256": "b35f0975cd0889a8806a20ef5c46d79a59ab19f1f7e2cd69513718e53f53e5d7",
+      "buildSha256": "b35f0975cd0889a8806a20ef5c46d79a59ab19f1f7e2cd69513718e53f53e5d7",
+      "productionSha256": "b35f0975cd0889a8806a20ef5c46d79a59ab19f1f7e2cd69513718e53f53e5d7",
+      "bytes": 86924
+    },
+    {
+      "file": "lib/live-photo-maker.js",
+      "status": 200,
+      "sourceSha256": "5739c53bc133299e173c077a6f288cc9147cca2af2f17d9e09a0f1028c2bad30",
+      "buildSha256": "5739c53bc133299e173c077a6f288cc9147cca2af2f17d9e09a0f1028c2bad30",
+      "productionSha256": "5739c53bc133299e173c077a6f288cc9147cca2af2f17d9e09a0f1028c2bad30",
+      "bytes": 20364
+    },
+    {
+      "file": "live.html",
+      "status": 200,
+      "sourceSha256": "e31775625d5e2e8fe26baeb54d589ac79336b39272cff4c987972d786e685b7a",
+      "buildSha256": "e31775625d5e2e8fe26baeb54d589ac79336b39272cff4c987972d786e685b7a",
+      "productionSha256": "e31775625d5e2e8fe26baeb54d589ac79336b39272cff4c987972d786e685b7a",
+      "bytes": 11244
+    },
+    {
+      "file": "live.js",
+      "status": 200,
+      "sourceSha256": "8e9469c055832307d850a53ffa3d864aa80c7804623aae60442a7f6e34a0bbf5",
+      "buildSha256": "8e9469c055832307d850a53ffa3d864aa80c7804623aae60442a7f6e34a0bbf5",
+      "productionSha256": "8e9469c055832307d850a53ffa3d864aa80c7804623aae60442a7f6e34a0bbf5",
+      "bytes": 27534
+    },
+    {
+      "file": "download.html",
+      "status": 200,
+      "sourceSha256": "fab4033c53078f0729e3f6054b99f12975464f17eabe5af71d62da0cebb3c2da",
+      "buildSha256": "dc48b9bfe96e0cc152fa9c8c73c259880edb15eed070d6c18a053ddd00f4c452",
+      "productionSha256": "dc48b9bfe96e0cc152fa9c8c73c259880edb15eed070d6c18a053ddd00f4c452",
+      "bytes": 27451
+    },
+    {
+      "file": "download.js",
+      "status": 200,
+      "sourceSha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+      "buildSha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+      "productionSha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+      "bytes": 9796
+    },
+    {
+      "file": "changelog.html",
+      "status": 200,
+      "sourceSha256": "9d60287c7c2403dd6cc3968a15cee211fa9bc27c01bc068f27f957a36134dbbe",
+      "buildSha256": "9d60287c7c2403dd6cc3968a15cee211fa9bc27c01bc068f27f957a36134dbbe",
+      "productionSha256": "9d60287c7c2403dd6cc3968a15cee211fa9bc27c01bc068f27f957a36134dbbe",
+      "bytes": 156582
+    },
+    {
+      "file": "changelog.js",
+      "status": 200,
+      "sourceSha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+      "buildSha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+      "productionSha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e",
+      "bytes": 4344
+    },
+    {
+      "file": "lib/archive.js",
+      "status": 200,
+      "sourceSha256": "afde62f237a971f6554354d64d8b8f146a529f530fbc761ffc29174522ab904b",
+      "buildSha256": "afde62f237a971f6554354d64d8b8f146a529f530fbc761ffc29174522ab904b",
+      "productionSha256": "afde62f237a971f6554354d64d8b8f146a529f530fbc761ffc29174522ab904b",
+      "bytes": 6890
+    },
+    {
+      "file": "lib/media-tracks.js",
+      "status": 200,
+      "sourceSha256": "66b623832d0a6376293ff2e8dd5c2760c9b53e591cd92e09ae352a8b0a4c24dd",
+      "buildSha256": "66b623832d0a6376293ff2e8dd5c2760c9b53e591cd92e09ae352a8b0a4c24dd",
+      "productionSha256": "66b623832d0a6376293ff2e8dd5c2760c9b53e591cd92e09ae352a8b0a4c24dd",
+      "bytes": 4528
+    },
+    {
+      "file": "lib/live-photo-format.js",
+      "status": 200,
+      "sourceSha256": "e4b2039d7a93170329e8cfbdb8e839aa6642013289f6d228181a27fcc5b57989",
+      "buildSha256": "e4b2039d7a93170329e8cfbdb8e839aa6642013289f6d228181a27fcc5b57989",
+      "productionSha256": "e4b2039d7a93170329e8cfbdb8e839aa6642013289f6d228181a27fcc5b57989",
+      "bytes": 16824
+    },
+    {
+      "file": "lib/live-photo-heic.js",
+      "status": 200,
+      "sourceSha256": "633d21486079a16cddd5bca32b3d1d809a40fdaed53703fdf8ca933674318c4d",
+      "buildSha256": "633d21486079a16cddd5bca32b3d1d809a40fdaed53703fdf8ca933674318c4d",
+      "productionSha256": "633d21486079a16cddd5bca32b3d1d809a40fdaed53703fdf8ca933674318c4d",
+      "bytes": 19407
+    },
+    {
+      "file": "lib/live-photo-heic-encoder.js",
+      "status": 200,
+      "sourceSha256": "87957c8d170d6c1ed132d30ed7f5ea7012ba8c7eba886b6237e1e381cef59650",
+      "buildSha256": "87957c8d170d6c1ed132d30ed7f5ea7012ba8c7eba886b6237e1e381cef59650",
+      "productionSha256": "87957c8d170d6c1ed132d30ed7f5ea7012ba8c7eba886b6237e1e381cef59650",
+      "bytes": 2981
+    },
+    {
+      "file": "lib/live-photo-heic-worker.js",
+      "status": 200,
+      "sourceSha256": "e510265d91f51a4b687fe0a6030365303d488c02674c9ccce19bce7eedccfe34",
+      "buildSha256": "e510265d91f51a4b687fe0a6030365303d488c02674c9ccce19bce7eedccfe34",
+      "productionSha256": "e510265d91f51a4b687fe0a6030365303d488c02674c9ccce19bce7eedccfe34",
+      "bytes": 2169
+    },
+    {
+      "file": "assets/vendor/heic/heic-encoder.js",
+      "status": 200,
+      "sourceSha256": "6ab24a00f26b6b877df48444fb344b916571bba5135188beba1134b1cc4b5b80",
+      "buildSha256": "6ab24a00f26b6b877df48444fb344b916571bba5135188beba1134b1cc4b5b80",
+      "productionSha256": "6ab24a00f26b6b877df48444fb344b916571bba5135188beba1134b1cc4b5b80",
+      "bytes": 20916
+    },
+    {
+      "file": "assets/vendor/heic/heic-encoder.wasm",
+      "status": 200,
+      "sourceSha256": "3b3281af4c463fca86f8a2bd956951df16f91256c9ac3514196b947793af02c0",
+      "buildSha256": "3b3281af4c463fca86f8a2bd956951df16f91256c9ac3514196b947793af02c0",
+      "productionSha256": "3b3281af4c463fca86f8a2bd956951df16f91256c9ac3514196b947793af02c0",
+      "bytes": 1244949
+    },
+    {
+      "file": "lib/browser-account.js",
+      "status": 200,
+      "sourceSha256": "03b38c680b3100dca56a6099de7ed5644927c2f63cb6b86a460d81495ff2d1cb",
+      "buildSha256": "03b38c680b3100dca56a6099de7ed5644927c2f63cb6b86a460d81495ff2d1cb",
+      "productionSha256": "03b38c680b3100dca56a6099de7ed5644927c2f63cb6b86a460d81495ff2d1cb",
+      "bytes": 5265
+    }
+  ],
+  "releaseMetadata": {
+    "desktop": {
+      "id": 407542718,
+      "tag": "v2.0.8",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.8",
+      "publishedAt": "2026-10-09T05:26:53Z",
+      "sourceSha": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+      "proof": "docs/releases/v2.0.8-publication-verification.json"
+    },
+    "android": {
+      "id": 407518558,
+      "tag": "android-v1.0.12",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.12",
+      "publishedAt": "2026-10-09T04:48:55Z",
+      "sourceSha": "6caec7a097352a2f28189aeeb5efd121c151dbff",
+      "proof": "docs/releases/android-v1.0.12-publication-verification.json"
+    }
+  },
+  "downloadAssets": {
+    "mac-arm64": {
+      "name": "Brclio-XHS-2.0.8-mac-arm64.dmg",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-mac-arm64.dmg",
+      "bytes": 167456977,
+      "displaySize": "167.5 MB",
+      "digest": "sha256:5383842ab36327f34d78f5c06910bf73a3208320cf2a97d81ca76eb19e490932"
+    },
+    "mac-x64": {
+      "name": "Brclio-XHS-2.0.8-mac-x64.dmg",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-mac-x64.dmg",
+      "bytes": 175132273,
+      "displaySize": "175.1 MB",
+      "digest": "sha256:07256903acce1cfcfbe10fd529c8dd6b24d5236ae9533dcf78377f173b0868fb"
+    },
+    "windows-setup": {
+      "name": "Brclio-XHS-2.0.8-windows-x64-setup.exe",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-windows-x64-setup.exe",
+      "bytes": 146507227,
+      "displaySize": "146.5 MB",
+      "digest": "sha256:f26254da9a4a36d279f75a70c273f2d8f7aeac715f0bded00a74d1bd764e68c3"
+    },
+    "windows-portable": {
+      "name": "Brclio-XHS-2.0.8-windows-x64-portable.exe",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-windows-x64-portable.exe",
+      "bytes": 146268741,
+      "displaySize": "146.3 MB",
+      "digest": "sha256:fa0ada854c5ec14c0b8e42b671a46f25b3b754c38c2c08a724b5aad1749f693b"
+    },
+    "android": {
+      "name": "Brclio-XHS-Android-1.0.12-release.apk",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.12/Brclio-XHS-Android-1.0.12-release.apk",
+      "bytes": 73149498,
+      "displaySize": "73.1 MB",
+      "digest": "sha256:ff038309a32d0fd67d07308cdc4ae37890b13cb581058f9077bf785153b88276"
+    }
+  },
+  "desktopLinks": [
+    "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-mac-arm64.dmg",
+    "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-mac-x64.dmg",
+    "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-windows-x64-setup.exe",
+    "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-windows-x64-portable.exe"
+  ],
+  "staticFallback": {
+    "method": "Read actual production download.html and compare literal links, version labels and all displayed sizes against fresh official GitHub release metadata.",
+    "desktopVersion": "v2.0.8",
+    "androidVersion": "v1.0.12",
+    "allFiveAssetSizesMatched": true,
+    "androidChecksumLinkMatched": true,
+    "javascriptRequiredForLinks": false
+  },
+  "cloudflare": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-10-09T05:33:25.935Z",
+    "passed": 55,
+    "total": 55,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1998
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1040
+      },
+      {
+        "name": "static/feedback-board",
+        "ok": true,
+        "status": 200,
+        "durationMs": 527
+      },
+      {
+        "name": "static/feedback-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 195
+      },
+      {
+        "name": "static/feedback-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 542
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 671
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 262
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 257
+      },
+      {
+        "name": "static/browser-account-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 693
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 215
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 894
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 546
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 789
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 2373
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 450
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 507
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 329
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 329
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 383
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 529
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 328
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 252
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 197
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 272
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 191
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 330
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 522
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 194
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 992
+      },
+      {
+        "name": "node/video/original-meta-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 199
+      },
+      {
+        "name": "node/video/original-chunk-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 203
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 799
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 546
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 364
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 940
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 1060
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 473
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 859
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 875
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 363
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 222
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 303
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 855
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 204
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 193
+      },
+      {
+        "name": "python/video/original-meta-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 321
+      },
+      {
+        "name": "python/video/original-chunk-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 189
+      },
+      {
+        "name": "member-video/guest-resolve",
+        "ok": true,
+        "status": 401,
+        "durationMs": 530
+      },
+      {
+        "name": "member-video/guest-ticket-meta",
+        "ok": true,
+        "status": 401,
+        "durationMs": 329
+      },
+      {
+        "name": "member-video/guest-ticket-chunk",
+        "ok": true,
+        "status": 401,
+        "durationMs": 305
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 315
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 429
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 305
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 309
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 433
+      }
+    ]
+  },
+  "ui": {
+    "result": "PASS",
+    "origin": "https://xhs.download.brclio.com",
+    "verifiedAt": "2026-10-09T05:35:23.654Z",
+    "home": {
+      "href": "https://xhs.download.brclio.com/",
+      "bridge": "undefined",
+      "require": "undefined",
+      "secureContext": true,
+      "desktopNavigationVisible": false
+    },
+    "browserCap": {
+      "limitBytes": 536870912,
+      "fixtureBytes": 536870913,
+      "stage": "视频下载未完成",
+      "detail": "视频超过当前 512 MB 的安全读取上限。 · 等待视频信息 · 已耗时 0 秒",
+      "calls": [
+        {
+          "path": "/api/parse",
+          "action": null
+        }
+      ],
+      "opens": [
+        [
+          "https://sns-video-bd.xhscdn.com/stream/browser-cap-fixture.mp4",
+          "_blank",
+          "noopener,noreferrer"
+        ]
+      ],
+      "bridge": "undefined"
+    },
+    "liveCap": {
+      "protocol": "https:",
+      "bridge": "undefined",
+      "limitBytes": 157286400,
+      "fixtureBytes": 157286401,
+      "error": "素材总大小不能超过 150 MB，请先缩小文件。"
+    },
+    "downloads": {
+      "desktopVersion": "v2.0.8",
+      "androidVersion": "v1.0.12",
+      "desktopStatus": "已核对最新正式版 v2.0.8，安装包由 GitHub Releases 提供。查看最新发布 ↗",
+      "androidStatus": "已核对安卓正式版 v1.0.12，APK 与 SHA-256 校验文件均已上传。",
+      "desktopAssets": [
+        {
+          "key": "mac-arm64",
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-mac-arm64.dmg",
+          "displaySize": "167.5 MB"
+        },
+        {
+          "key": "mac-x64",
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-mac-x64.dmg",
+          "displaySize": "175.1 MB"
+        },
+        {
+          "key": "windows-setup",
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-windows-x64-setup.exe",
+          "displaySize": "146.5 MB"
+        },
+        {
+          "key": "windows-portable",
+          "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.8/Brclio-XHS-2.0.8-windows-x64-portable.exe",
+          "displaySize": "146.3 MB"
+        }
+      ],
+      "androidApk": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.12/Brclio-XHS-Android-1.0.12-release.apk",
+      "androidSize": "73.1 MB",
+      "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.12/Brclio-XHS-Android-1.0.12-release.apk.sha256"
+    },
+    "viewportChecks": [
+      {
+        "page": "download.html",
+        "width": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false
+      },
+      {
+        "page": "download.html",
+        "width": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false
+      },
+      {
+        "page": "download.html",
+        "width": 320,
+        "documentWidth": 320,
+        "horizontalOverflow": false
+      },
+      {
+        "page": "changelog.html",
+        "width": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false
+      },
+      {
+        "page": "changelog.html",
+        "width": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false
+      },
+      {
+        "page": "changelog.html",
+        "width": 320,
+        "documentWidth": 320,
+        "horizontalOverflow": false
+      }
+    ],
+    "blockedWrites": [
+      {
+        "method": "POST",
+        "url": "https://xhs.download.brclio.com/api/account"
+      },
+      {
+        "method": "POST",
+        "url": "https://counter.bornforthis.cn/hit"
+      },
+      {
+        "method": "POST",
+        "url": "https://counter.bornforthis.cn/hit"
+      }
+    ],
+    "expectedBlockedMedia": [
+      "https://sns-video-bd.xhscdn.com/stream/browser-cap-fixture.mp4"
+    ],
+    "rendererErrors": []
+  },
+  "productionExports": {
+    "result": "PASS",
+    "command": "npm run desktop:verify:live-photo -- --built --ui-only --web-only --web-origin=https://xhs.download.brclio.com",
+    "verifiedAt": "2026-10-09T05:33:14.717Z",
+    "support": {
+      "supported": true,
+      "audioSupported": true,
+      "heicSupported": true,
+      "message": "本地制作已就绪。"
+    },
+    "checks": [
+      {
+        "name": "production-web: actual ZIP download and native recognition",
+        "surface": "production-web",
+        "entries": [
+          "Brclio-Live-3c7b870f-7da8-49e0-97f7-47f99e777257.HEIC",
+          "Brclio-Live-3c7b870f-7da8-49e0-97f7-47f99e777257.MOV",
+          "README.txt"
+        ],
+        "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.heic\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+      },
+      {
+        "name": "production-web: explicit JPEG choice and format-change cleanup",
+        "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+      },
+      {
+        "name": "production-web: actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390",
+        "verified": true
+      }
+    ],
+    "heicMovPair": [
+      {
+        "name": "Brclio-Live-3c7b870f-7da8-49e0-97f7-47f99e777257.HEIC",
+        "bytes": 36294,
+        "sha256": "cfcc98147d0f84bd8f739eeb594f4de06bd4a8444ceb43c7e0f1e0af786f1e28",
+        "individualDownloadMatchesZip": true
+      },
+      {
+        "name": "Brclio-Live-3c7b870f-7da8-49e0-97f7-47f99e777257.MOV",
+        "bytes": 634742,
+        "sha256": "333f720b7cbf6150bbca8901d3a6c5fee8554043980ddd8d0bd099b4be684b6b",
+        "individualDownloadMatchesZip": true
+      }
+    ],
+    "zip": {
+      "bytes": 672392,
+      "sha256": "8e0dd52a67e37f810d8c67d23eadbc914dbb723596dc9305a314ba04c54543d8",
+      "entries": 3
+    },
+    "optionalJpegMovPair": [
+      {
+        "name": "production-web-optional.jpg",
+        "bytes": 26759,
+        "sha256": "1331c23aa00d08d5c20c1dd658aff438e3dc004872f06460a4ca60de0ce32479"
+      },
+      {
+        "name": "production-web-optional.mov",
+        "bytes": 204007,
+        "sha256": "6664dc635d7d16ad03950c7e5c58eef7023ec8a64c664f3fe61fc05350e4c09c"
+      }
+    ],
+    "rendererErrors": [],
+    "localReport": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-nC2XTy/verification.json",
+    "deviceImportPerformed": false
+  },
+  "limitations": [
+    "Anonymous API checks use deterministic invalid inputs and a direct-image parse fixture; they do not prove downloading a real upstream note or authenticated account/SMTP operations.",
+    "The browser 512 MiB and Live Photo 150 MiB limits were exercised with oversized declared metadata in the actual production page without allocating the entire source file. The existing ordinary-playback original-URL manual-save fallback remains available.",
+    "Real production UI HEIC/MOV and JPEG/MOV outputs passed local macOS PHLivePhoto recognition. Import on an iPhone, iCloud synchronization and a physical Android large-video save were not performed in this web verification.",
+    "Installer availability, signatures, upgrade and device results belong to the separate desktop and Android publication proof files."
+  ]
+}
