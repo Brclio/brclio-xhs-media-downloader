@@ -41,6 +41,10 @@ final class UpdateProxyControl {
         return Route.INTERNAL;
     }
 
+    synchronized void beginDirect() {
+        if (owner == null) mode = "off";
+    }
+
     synchronized void ready(Owner candidate, boolean internal) {
         if (owner != candidate) return;
         mode = internal ? "internal" : "off";

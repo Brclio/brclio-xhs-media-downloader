@@ -161,7 +161,7 @@ final class UpdateProxySession implements AutoCloseable {
         return client;
     }
 
-    private static OkHttpClient directClient() {
+    static OkHttpClient directClient() {
         return new OkHttpClient.Builder().proxy(Proxy.NO_PROXY)
                 .followRedirects(false).followSslRedirects(false)
                 .connectTimeout(15, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)

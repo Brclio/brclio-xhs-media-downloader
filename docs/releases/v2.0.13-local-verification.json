@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.13",
+  "androidVersion": "1.0.14",
+  "checkedAt": "2026-10-10T15:08:37.889010+00:00",
+  "stage": "local pre-release acceptance",
+  "tests": {
+    "node": {
+      "total": 1174,
+      "passed": 1162,
+      "skipped": 12,
+      "failed": 0
+    },
+    "python": {
+      "passed": 27,
+      "failed": 0
+    },
+    "androidDebugJUnit": {
+      "passed": 74,
+      "failed": 0
+    },
+    "androidDebugLint": "passed"
+  },
+  "buildWeb": "passed",
+  "buildCloudflarePages": "passed",
+  "desktopSmokeVersion": "2.0.13",
+  "desktopSmoke": "passed",
+  "realManagerIpcOriginalPreloadRetryUi": "passed",
+  "actualDirectCheck": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "checkedAt": "2026-10-10T15:05:53.061Z",
+    "events": [
+      {
+        "event": "update.proxy_manually_enabled",
+        "details": {}
+      },
+      {
+        "event": "update.check_direct",
+        "details": {}
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      }
+    ],
+    "verificationPurpose": "Actual direct-first check without injected transport failures or proxy detection overrides.",
+    "defaultSessionUnchanged": true,
+    "status": "up-to-date",
+    "latestVersion": "2.0.12",
+    "error": null,
+    "activeScopesAfterCheck": 0,
+    "proxySelected": false,
+    "systemProxySelected": false,
+    "networkRoute": "direct",
+    "proxyStopped": true
+  },
+  "internalFallbackFixture": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "checkedAt": "2026-10-10T15:04:50.895Z",
+    "events": [
+      {
+        "event": "update.proxy_manually_enabled",
+        "details": {}
+      },
+      {
+        "event": "update.check_direct",
+        "details": {}
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      },
+      {
+        "event": "update.proxy_subscriptions_refreshed",
+        "details": {
+          "sources": 1,
+          "available": 1,
+          "nodes": 16
+        }
+      },
+      {
+        "event": "update.proxy_selected",
+        "details": {
+          "node": "node-008",
+          "latencyMs": 186,
+          "nodes": 16,
+          "revision": 1
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      }
+    ],
+    "systemProxyDetectionFixture": true,
+    "fixtureScope": "Only the verifier-owned Electron session skips system proxy detection; OS and defaultSession unchanged.",
+    "defaultSessionUnchanged": true,
+    "directCheckProbe": {
+      "forcedFailure": true,
+      "code": "ECONNRESET",
+      "purpose": "Exercise the configured update proxy fallback."
+    },
+    "status": "up-to-date",
+    "latestVersion": "2.0.12",
+    "error": null,
+    "activeScopesAfterCheck": 0,
+    "proxySelected": true,
+    "systemProxySelected": false,
+    "networkRoute": "internal",
+    "proxyStopped": true
+  },
+  "securityProbe": {
+    "electronVersion": "44.4.3",
+    "host": "isolated localhost HTTPS fixture",
+    "errorMessage": "net::ERR_CERT_AUTHORITY_INVALID",
+    "errorCode": null,
+    "securityErrorDoesNotStartProxy": true,
+    "temporaryServerProfileAndKeysCleaned": true
+  },
+  "installedBaseline": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "version": "2.0.7",
+    "verification": "running app UI and Info.plist"
+  },
+  "limits": [
+    "Release CI, publication and installed-client update are verified separately.",
+    "Internal fallback test deliberately fails the direct callback and skips system-proxy detection only in its disposable Electron session.",
+    "Actual existing system-proxy egress returned GitHub rate limiting; direct and internal fixture routes succeeded.",
+    "No production subscription values or personal account details are included in this report."
+  ]
+}

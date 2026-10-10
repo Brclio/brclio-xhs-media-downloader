@@ -100,7 +100,8 @@ console.log(JSON.stringify({ status: 'passed', activeScopes: network.active.size
   assert.deepEqual(JSON.parse(result.stdout), { status: 'passed', activeScopes: 0 });
   const requests = fs.readFileSync(events, 'utf8').trim().split('\n').map(line => JSON.parse(line))
     .filter(event => event.type === 'update-request');
-  assert.equal(requests.filter(event => event.url === endpoint).length, 2);
+  assert.equal(requests.filter(event => event.url === endpoint).length, 1,
+    'successful direct version checks skip configuration; only the download reads it');
   assert.ok(requests.filter(event => event.url === endpoint).every(event => event.method === 'POST'));
   assert.equal(requests.filter(event => event.url === releaseUrl).length, 1);
   assert.equal(requests.filter(event => event.url === assetUrl).length, 1);

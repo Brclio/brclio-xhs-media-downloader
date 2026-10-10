@@ -7,7 +7,7 @@ import { createServer } from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { UpdateProxyNetwork, subscriptionUrls } from '../desktop/update-proxy.js';
-import { UpdateManager } from '../desktop/update-manager.js';
+import { LATEST_RELEASE_URL, UpdateManager } from '../desktop/update-manager.js';
 
 const root = process.cwd();
 const temporary = mkdtempSync(path.join(os.tmpdir(), 'brclio-update-proxy-live-'));
@@ -44,9 +44,15 @@ try {
   const network = new UpdateProxyNetwork({ net, session, endpoint, runtimeDirectory,
     cacheDirectory: path.join(temporary, 'updates'), onDiagnostic: (event, details) => report.events.push({ event, details }) });
   const scopedRun = network.run.bind(network);
-  network.run = async (...arguments_) => {
-    try { return await scopedRun(...arguments_); }
-    catch (error) { report.networkFailure = { code: error.code || null, type: error.constructor.name }; throw error; }
+  const directCheckFailure = Object.assign(new Error('Opt-in proxy verifier deliberately interrupts the direct metadata request.'), { code: 'ECONNRESET' });
+  let directCheckSignal, directCheckFailureInjected = false;
+  network.run = async (controller, work, options = {}) => {
+    if (options.directOnly) directCheckSignal = controller.signal;
+    try { return await scopedRun(controller, work, options); }
+    catch (error) {
+      if (error !== directCheckFailure) report.networkFailure = { code: error.code || null, type: error.constructor.name };
+      throw error;
+    } finally { if (directCheckSignal === controller.signal) directCheckSignal = null; }
   };
   const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
   const proxyBefore = await session.defaultSession.resolveProxy('https://api.github.com/zen');
@@ -55,6 +61,13 @@ try {
   const manager = new UpdateManager({ currentVersion: download ? '0.0.0' : pkg.version, directory: path.join(temporary, 'updates'),
     fetchImpl: async (url, options) => {
       report.defaultSessionUnchanged &&= await session.defaultSession.resolveProxy('https://api.github.com/zen') === proxyBefore;
+      // This explicit proxy verifier must exercise fallback even when normal
+      // version checks can reach GitHub directly. All fallback traffic is real.
+      if (!directCheckFailureInjected && url === LATEST_RELEASE_URL && options.signal === directCheckSignal) {
+        directCheckFailureInjected = true;
+        report.directCheckProbe = { forcedFailure: true, code: directCheckFailure.code, purpose: 'Exercise the configured update proxy fallback.' };
+        throw directCheckFailure;
+      }
       return network.fetch(url, options);
     }, networkScope: network, onUpdate(state) {
       if (state.status === 'downloading') {

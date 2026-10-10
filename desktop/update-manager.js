@@ -13,8 +13,12 @@ const MAX_RELEASE_BYTES = 1024 * 1024;
 const DOWNLOAD_FAILURE_LIMIT = 10;
 const RETRYABLE_DOWNLOAD_ERRORS = new Set(['NETWORK_ERROR', 'TIMEOUT', 'HTTP_ERROR', 'RATE_LIMITED', 'ACCESS_DENIED',
   'DOWNLOAD_INCOMPLETE', 'EMPTY_RESPONSE', 'PROXY_CONFIG_UNAVAILABLE', 'PROXY_START_FAILED', 'PROXY_FETCH_FAILED', 'PROXY_NODES_UNAVAILABLE', 'PROXY_CORE_UNAVAILABLE']);
+const RETRYABLE_CHECK_ERRORS = new Set(['NETWORK_ERROR', 'TIMEOUT', 'HTTP_ERROR', 'RATE_LIMITED', 'ACCESS_DENIED', 'EMPTY_RESPONSE']);
 const NETWORK_ERROR_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ECONNABORTED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN',
   'EHOSTUNREACH', 'ENETUNREACH', 'EPIPE']);
+const CERTIFICATE_ERROR_CODES = new Set(['DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN',
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'UNABLE_TO_GET_ISSUER_CERT', 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+  'UNABLE_TO_DECRYPT_CERT_SIGNATURE', 'INVALID_CA', 'HOSTNAME_MISMATCH']);
 
 // Electron net.fetch rejects manual redirects instead of exposing their response.
 // Adapt net.request so the manager can validate every Location before following it.
@@ -125,6 +129,21 @@ function retryableDownloadError(error, failure) {
     return NETWORK_ERROR_CODES.has(error.code);
   }
   return RETRYABLE_DOWNLOAD_ERRORS.has(failure.code);
+}
+
+function retryableCheckError(error) {
+  // Electron net.request reports certificate failures in a net:: message;
+  // Node fetch can wrap the TLS error in cause. Neither should start a proxy.
+  const seen = new Set();
+  for (let current = error; current && typeof current === 'object' && !seen.has(current); current = current.cause) {
+    seen.add(current);
+    if (/^(?:CERT_|CRL_|ERR_(?:CERT|SSL|TLS)_)/.test(current.code || '')
+      || CERTIFICATE_ERROR_CODES.has(current.code)
+      || /\bnet::ERR_(?:CERT|SSL)_[A-Z0-9_]+\b/.test(current.message || '')) return false;
+  }
+  const failure = updateFailure(error, 'check');
+  return RETRYABLE_CHECK_ERRORS.has(failure.code) && retryableDownloadError(error, failure)
+    && (failure.code !== 'HTTP_ERROR' || error.status >= 500);
 }
 
 function versionParts(value) {
@@ -243,7 +262,7 @@ function partialName(candidate) { return `${candidate.name}.${candidate.sha256}.
 
 export class UpdateManager {
   constructor({ currentVersion, platform = process.platform, arch = process.arch, portable = false,
-    directory, fetchImpl = globalThis.fetch, onUpdate = () => {}, networkTimeoutMs = 30000, downloadRetryDelayMs = 1000,
+    directory, fetchImpl = globalThis.fetch, onUpdate = () => {}, networkTimeoutMs = 30000, directCheckTimeoutMs = 8000, downloadRetryDelayMs = 1000,
     confirmInstall = async () => false, pauseDownloads = async () => {},
     openInstaller = async () => fail('INSTALL_UNAVAILABLE', '当前环境无法打开安装程序。'),
     openExternal = async () => fail('BROWSER_OPEN_FAILED', '无法打开浏览器，请检查默认浏览器设置后重试。'), onInstalled = () => {}, networkScope = null }) {
@@ -254,6 +273,7 @@ export class UpdateManager {
     this.networkScope = networkScope;
     this.onUpdate = onUpdate;
     this.networkTimeoutMs = networkTimeoutMs;
+    this.directCheckTimeoutMs = directCheckTimeoutMs;
     this.downloadRetryDelayMs = downloadRetryDelayMs;
     this.confirmInstall = confirmInstall;
     this.pauseDownloads = pauseDownloads;
@@ -295,7 +315,7 @@ export class UpdateManager {
             controller.signal.throwIfAborted();
           }
           if (phase === 'download') await this.runDownloadAttempts(controller, work);
-          else await this.networkScope.run(controller, () => work(controller));
+          else await this.runCheckAttempts(controller, work);
         }
         else await work(controller);
       }
@@ -321,6 +341,34 @@ export class UpdateManager {
     })();
     try { return await this.operation; }
     finally { this.operation = null; this.controller = null; this.phase = null; }
+  }
+
+  async runCheckAttempts(controller, work) {
+    controller.signal.throwIfAborted();
+    // A slow direct request may time out without canceling the proxy fallback.
+    // User cancellation still owns both attempts and their cleanup.
+    const attempt = new AbortController();
+    const abort = () => attempt.abort(controller.signal.reason);
+    controller.signal.addEventListener('abort', abort, { once: true });
+    const timer = setTimeout(() => attempt.abort(new UpdateError('TIMEOUT', '更新服务器响应超时，请重试。')), this.directCheckTimeoutMs);
+    try {
+      await this.networkScope.run(attempt, () => work(attempt), { directOnly: true });
+      controller.signal.throwIfAborted();
+      return;
+    } catch (error) {
+      controller.signal.throwIfAborted();
+      const reason = attempt.signal.aborted ? attempt.signal.reason : error;
+      if (reason?.code === 'CANCELED') {
+        controller.abort(reason);
+        throw reason;
+      }
+      if (!retryableCheckError(reason)) throw reason;
+    } finally {
+      clearTimeout(timer);
+      controller.signal.removeEventListener('abort', abort);
+    }
+    controller.signal.throwIfAborted();
+    await this.networkScope.run(controller, () => work(controller));
   }
 
   async runDownloadAttempts(controller, work) {
@@ -413,7 +461,7 @@ export class UpdateManager {
         if (response.status === 403) fail('ACCESS_DENIED', asset
           ? 'GitHub 拒绝了文件下载请求（403），请稍后重试下载。' : 'GitHub 拒绝了版本查询请求（403），请稍后再检查更新。');
         if (response.status === 404) fail('RELEASE_NOT_FOUND', '正式版本或安装包暂不可用，请稍后重试。');
-        fail('HTTP_ERROR', `更新服务器返回错误（${response.status}），请稍后重试。`);
+        throw Object.assign(new UpdateError('HTTP_ERROR', `更新服务器返回错误（${response.status}），请稍后重试。`), { status: response.status });
       }
       return response;
     }
@@ -456,7 +504,8 @@ export class UpdateManager {
 
   async readLatestRelease(controller) {
     const response = await this.request(LATEST_RELEASE_URL, controller);
-    try { return JSON.parse(await this.text(response, MAX_RELEASE_BYTES, controller)); }
+    const contents = await this.text(response, MAX_RELEASE_BYTES, controller);
+    try { return JSON.parse(contents); }
     catch (error) { if (error instanceof UpdateError) throw error; fail('INVALID_RELEASE', '无法读取更新信息，请稍后重试。'); }
   }
 
@@ -501,6 +550,7 @@ export class UpdateManager {
       // current trusted manifest before deciding which saved bytes are usable.
       if (candidate && !candidate.sha256 && await this.hasCachedPartial(candidate)) await this.ensureChecksum(candidate, controller);
       const received = candidate?.sha256 ? await this.partialSize(candidate) : 0;
+      controller.signal.throwIfAborted();
       // Commit the new candidate only after all of its trust/progress checks
       // succeed, so a failed refresh cannot mix old notes with a new asset.
       this.candidate = candidate;

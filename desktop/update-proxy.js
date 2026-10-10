@@ -348,7 +348,7 @@ export class UpdateProxyNetwork {
     throw proxyError('PROXY_CONFIG_UNAVAILABLE', '无法获取软件更新网络配置，请检查网络连接后重试。');
   }
 
-  async run(controller, work, { onInternalProxy = () => {} } = {}) {
+  async run(controller, work, { onInternalProxy = () => {}, directOnly = false } = {}) {
     const signal = controller.signal;
     signal.throwIfAborted();
     let finish;
@@ -359,12 +359,15 @@ export class UpdateProxyNetwork {
     this.lastProxyError = false;
     try {
       await abortable(this.loadPreference(), signal);
-      const external = await abortable(this.detectExternalProxy(scope.session, UPDATE_HOSTS.map(host => `https://${host}/`),
+      const external = directOnly ? { enabled: false } : await abortable(this.detectExternalProxy(scope.session, UPDATE_HOSTS.map(host => `https://${host}/`),
         { platform: this.platform, env: this.env, configured: this.configuredProxyDetector, signal }), signal);
       signal.throwIfAborted();
       scope.external = external.enabled;
       if (scope.external) this.diagnostic('update.proxy_system_selected', { source: external.source });
-      if (!scope.external && !this.manuallyDisabled) {
+      if (directOnly) {
+        await abortable(scope.session.setProxy({ mode: 'direct' }), signal);
+        this.diagnostic('update.check_direct');
+      } else if (!scope.external && !this.manuallyDisabled) {
         scope.internal = true;
         this.publishState();
         await scope.session.setProxy({ mode: 'direct' });

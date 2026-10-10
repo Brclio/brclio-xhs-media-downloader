@@ -96,7 +96,7 @@ async function coldConfigurationDownload(t, options = {}) {
   const manager = new UpdateManager({ currentVersion: '2.0.10', platform: 'darwin', arch: 'arm64',
     directory: f.cacheDirectory, networkScope: f.network, fetchImpl: f.network.fetch, downloadRetryDelayMs: 0,
     onUpdate: state => { states.push(state); options.onUpdate?.(state); } });
-  // A successful system-routed version check leaves no saved internal config.
+  // A successful direct version check leaves no saved internal config.
   assert.equal((await manager.checkForUpdates()).status, 'available');
   assert.equal(f.directRequests.length, 0);
   systemRoute = false;
@@ -627,7 +627,7 @@ test('manual internal stop preserves updater partial bytes and waits for operati
   const requests = f.requests.length;
   const repeated = manager.downloadUpdate();
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(f.requests.length, requests); assert.equal(f.children.length, 2);
+  assert.equal(f.requests.length, requests); assert.equal(f.children.length, 1);
   releaseCleanup(); await stop; const state = await download; await repeated;
   assert.equal(state.status, 'available'); assert.equal(state.error, null);
   assert.equal(state.download.receivedBytes, 5); assert.equal(state.download.canResume, true);
@@ -669,7 +669,7 @@ test('updater resumes an interrupted internal proxy download in a fresh scope an
         }
         if (state.retry?.active && !retryStates.length) {
           retryStates.push(state);
-          retryCleanup.push({ active: f.network.active.size, cleared: f.sessions[1].cleared, exitCode: f.children[1].exitCode });
+          retryCleanup.push({ active: f.network.active.size, cleared: f.sessions[1].cleared, exitCode: f.children[0].exitCode });
           if (action === 'stop') stopping = f.network.stopInternalProxy();
         }
       } });

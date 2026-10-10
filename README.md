@@ -1,5 +1,7 @@
 # Brclio 小红书下载器
 
+[v2.0.13](docs/releases/v2.0.13.md) 与 [Android v1.0.14](docs/releases/android-v1.0.14.md) 将版本检测改为优先直连，首轮最多等待 8 秒；成功时不读取代理配置、不抓取订阅或启动内置代理。仅连接故障、超时、限流或服务器临时故障才按现有代理规则回退。安装包下载、断点续传与安装流程保持原有规则。
+
 [v2.0.12 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.12)，改进实况整包导出：网页与 Mac / Windows「制作实况」默认导出含完整 `.pvt` 实况包的 ZIP。在 Mac 解压后，通过 Finder 隔空投送整个 `.pvt` 到 iPhone；本次用户实机确认 HEIC 2 秒、JPEG 3 秒两种样本均可在「照片」作为实况接收并长按播放。支持 0.5–8 秒成片、视频 1 / 1.5 / 2 / 3 倍速，以及与成片一致的片段和封面预览；1 倍速可保留声音或静音，其他倍速成片统一静音。8 秒是本工具的成片范围，本轮优先保留已验证的手机交接方式。Android 沿用 v1.0.13。三平台构建与升级门禁、公开附件、正式 Mac 包生成和[线上网站核验](docs/releases/v2.0.12-web-verification.json)通过，详见[本次版本说明](docs/releases/v2.0.12.md)与[实况包和实机验证记录](docs/live-photo-pvt-verification.json)。
 
 v2.0.11 桌面安装包已正式发布，补全 Mac / Windows 内置代理更新的自动重试：首次获取代理配置失败且无有效缓存时会重试；可恢复的下载故障等待 1 秒续传，实时显示连续失败次数，连续失败 10 次后改为手动继续，点击后重新计数。缓存权限和无效配置错误会明确提示，暂停、退出和关闭内置代理会停止重试。系统代理 / PAC 优先，Android 沿用 v1.0.13。三平台完整构建、重试界面与安装升级门禁通过；11 个公开附件、校验值、匿名更新入口及旧更新器兼容已核验。详见[版本说明](docs/releases/v2.0.11.md)、[三平台 CI 摘要](docs/releases/v2.0.11-ci-verification.json)、[公开发布核验](docs/releases/v2.0.11-publication-verification.json)与[分阶段核验记录](docs/update-retry-validation-2026-10-09.md)。
@@ -84,7 +86,7 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。�
 
 新增独立 Android 客户端工程，面向 Android 8.0 及以上，聚焦单篇笔记的原图、实况、视频、文案、ZIP、图片复制与系统分享。可粘贴分享文案，也可从其他应用分享文字进入；文件由 Android 系统文件选择器保存。解析沿用在线服务，安装者无需 Python 或 Node.js。检测到平台原视频后，可通过「下载无水印视频 · 会员」在系统浏览器打开网页版，登录软件账号并验证会员后下载；Android 原生层不保存该账号会话。当前不包含主页批量或小红书登录。
 
-前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 当前正式版为 `1.0.13`，使用固定签名支持覆盖升级。单独普通视频与实况 MP4 持续写入本地，不设固定文件大小上限；图片、预览与 ZIP 保留原有保护，会员原视频继续通过浏览器登录后保存。
+前往 [软件下载页](https://xhs.download.brclio.com/download.html#android-download) 下载正式 APK；客户端启动时自动检查新版，也可在「软件更新」中手动检查，由用户确认下载和安装。Android 当前正式版为 `1.0.14`，使用固定签名支持覆盖升级。单独普通视频与实况 MP4 持续写入本地，不设固定文件大小上限；图片、预览与 ZIP 保留原有保护，会员原视频继续通过浏览器登录后保存。
 
 开发者配置 JDK 与 Android SDK 后运行 `npm run android:build` 生成 debug APK。构建、正式签名、安装与设备验证说明见 [Android 客户端说明](android/README.md)。Mac / Windows 使用独立的桌面版本与更新通道。
 

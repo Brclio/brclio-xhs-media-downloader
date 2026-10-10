@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
@@ -266,8 +267,7 @@ final class UpdateManager {
         if (job == null) return;
         worker.execute(() -> {
             try {
-                prepareNetwork(job);
-                JSONObject latest = latestRelease(job);
+                JSONObject latest = checkLatestRelease(job);
                 String latestVersion = latest == null ? null : UpdatePolicy.versionFromTag(latest.optString("tag_name"));
                 String current = BuildConfig.VERSION_NAME.replaceFirst("-debug$", "");
                 Release update = latest != null && UpdatePolicy.compareVersions(latestVersion, current) > 0 ? new Release(latest) : null;
@@ -289,7 +289,22 @@ final class UpdateManager {
         });
     }
 
-    private JSONObject latestRelease(Job job) throws IOException, JSONException {
+    private JSONObject checkLatestRelease(Job job) throws IOException {
+        job.check();
+        // A small metadata request should not start the bundled proxy when direct networking works.
+        job.client = UpdateProxySession.directClient().newBuilder().callTimeout(8, TimeUnit.SECONDS).build();
+        proxyControl.beginDirect();
+        emitProxy();
+        return UpdateCheckNetwork.run(() -> latestRelease(job), () -> {
+            job.stopNetwork();
+            job.call = null;
+            job.client = null;
+            prepareNetwork(job);
+            return latestRelease(job);
+        }, job::check, () -> UpdateSystemProxy.enabled(activity) || !proxyControl.state(false).manuallyDisabled);
+    }
+
+    private JSONObject latestRelease(Job job) throws IOException {
         byte[] response = fetchBytes(URI.create(UpdatePolicy.RELEASES_API), MAX_METADATA_BYTES, -1, false, job);
         JSONArray releases;
         try { releases = new JSONArray(new String(response, StandardCharsets.UTF_8)); }
@@ -727,6 +742,10 @@ final class UpdateManager {
             catch (IOException unavailable) {
                 job.check();
                 if (job.proxySession != null && job.proxySession.selectNext()) { redirect--; continue; }
+                if (!asset) {
+                    if (unavailable instanceof javax.net.ssl.SSLException) throw unavailable;
+                    throw new UpdateCheckNetwork.Failure("更新服务连接失败，请检查网络后重试。", unavailable);
+                }
                 throw new IOException("更新服务连接失败，请检查网络后重试。");
             }
             boolean streaming = false;
@@ -743,8 +762,15 @@ final class UpdateManager {
                     current = UpdatePolicy.redirectUri(current.resolve(location).toString());
                     continue;
                 }
-                if (status == 403 || status == 429) throw new IOException("版本服务请求受限，请稍后重新检查。");
+                if (status == 403 || status == 429) {
+                    String message = "版本服务请求受限，请稍后重新检查。";
+                    if (!asset) throw new UpdateCheckNetwork.Failure(message);
+                    throw new IOException(message);
+                }
                 if (status == 404) throw new IOException("更新文件尚未发布或已被移除，请重新检查版本。");
+                if (!asset && status >= 500 && status <= 599) {
+                    throw new UpdateCheckNetwork.Failure("更新服务暂不可用（HTTP " + status + "），请稍后重试。");
+                }
                 if (status != 200) throw new IOException("更新服务暂不可用（HTTP " + status + "），请稍后重试。");
                 String encoding = response.header("Content-Encoding");
                 if (encoding != null && !encoding.equalsIgnoreCase("identity")) throw new IOException("更新响应编码无效。");
@@ -766,13 +792,25 @@ final class UpdateManager {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             byte[] buffer = new byte[16 * 1024];
             int length;
-            while ((length = response.input.read(buffer)) != -1) {
+            while (true) {
+                try { length = response.input.read(buffer); }
+                catch (IOException unavailable) {
+                    job.check();
+                    if (!asset && !(unavailable instanceof javax.net.ssl.SSLException)) {
+                        throw new UpdateCheckNetwork.Failure("版本信息读取中断，请重试。", unavailable);
+                    }
+                    throw unavailable;
+                }
+                if (length == -1) break;
                 job.check();
                 if (output.size() + length > maximum) throw new IOException("版本信息超过大小限制。");
                 output.write(buffer, 0, length);
             }
             if ((expected >= 0 && output.size() != expected)
-                    || (response.length >= 0 && output.size() != response.length)) throw new IOException("版本信息读取不完整，请重试。");
+                    || (response.length >= 0 && output.size() != response.length)) {
+                if (!asset) throw new UpdateCheckNetwork.Failure("版本信息读取不完整，请重试。");
+                throw new IOException("版本信息读取不完整，请重试。");
+            }
             return output.toByteArray();
         }
     }

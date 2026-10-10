@@ -182,10 +182,11 @@ export async function verifyPackagedUpdateNetwork(appPath, { live = false } = {}
     assert.equal(state.error, null);
     await cdp.evaluate('window.xhsDesktop.getDiagnosticsInfo()');
     const events = await diagnosticEvents(profile);
-    const proxyEvents = events.filter(event => ['update.proxy_selected', 'update.proxy_system_selected', 'update.proxy_stopped'].includes(event.event));
+    const proxyEvents = events.filter(event => ['update.check_direct', 'update.proxy_selected', 'update.proxy_system_selected', 'update.proxy_stopped'].includes(event.event));
+    const directChecks = proxyEvents.filter(event => event.event === 'update.check_direct');
     const selected = proxyEvents.filter(event => event.event === 'update.proxy_selected');
     const systemSelected = proxyEvents.filter(event => event.event === 'update.proxy_system_selected');
-    assert.ok(selected.length || systemSelected.length, 'Packaged update check did not select an internal or system network route.');
+    assert.ok(directChecks.length, 'Packaged update check did not attempt the direct network route first.');
     if (systemSelected.length) assert.equal(selected.length, 0, 'System proxy precedence must skip internal proxy startup.');
     assert.ok(proxyEvents.some(event => event.event === 'update.proxy_stopped'), 'Packaged update check did not close its proxy scope.');
     for (const event of selected) {
@@ -205,8 +206,8 @@ export async function verifyPackagedUpdateNetwork(appPath, { live = false } = {}
     report = { result: 'PASS', packagedUpdateNetworkVerified: true, checkedAt: new Date().toISOString(),
       version: info.version, latestVersion: state.latestVersion, status: state.status, signedPackageVerified: true,
       sourceMatchesCurrentWorkspace: true, preloadAndIPCVerified: true, profile: 'temporary', keychain: 'mock',
-      proxySelected: selected.length > 0, systemProxySelected: systemSelected.length > 0,
-      networkRoute: systemSelected.length ? 'system' : 'internal', proxyStopped: true, diagnosticsRedacted: true,
+      directCheckAttempted: true, proxySelected: selected.length > 0, systemProxySelected: systemSelected.length > 0,
+      networkRoute: systemSelected.length ? 'system' : selected.length ? 'internal' : 'direct', proxyStopped: true, diagnosticsRedacted: true,
       selectedNodes: selected.map(event => ({ node: event.details.node, latencyMs: event.details.latencyMs, nodes: event.details.nodes })),
       activeProxyProcessesAfterCheck: 0, installed: false, installerDownloaded: false, published: false };
   } catch (error) { failure = error; }

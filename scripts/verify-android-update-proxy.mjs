@@ -16,7 +16,8 @@ const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
 const adb = sdk ? path.join(sdk, 'platform-tools/adb') : 'adb';
 const apk = process.env.ANDROID_UPDATE_PROXY_TEST_APK || path.join(root, 'android/app/build/outputs/apk/debug/app-debug.apk');
 const app = 'com.brclio.xhs.debug';
-const expectedMode = process.env.ANDROID_UPDATE_PROXY_EXPECT_MODE || 'proxy';
+const expectedMode = process.env.ANDROID_UPDATE_PROXY_EXPECT_MODE || 'direct';
+const sourceOrBinaryFixture = process.env.ANDROID_UPDATE_PROXY_SOURCE_FIXTURE === 'true';
 assert.ok(['proxy', 'direct'].includes(expectedMode), 'Expected mode must be proxy or direct.');
 const exec = promisify(execFile);
 const device = async (...args) => (await exec(adb, ['-s', serial, ...args], { maxBuffer: 2 * 1024 * 1024 })).stdout.trim();
@@ -99,11 +100,12 @@ let inspector;
 let phase = 'installation';
 const forwards = [];
 let backend;
+let stopMonitoring = false, sawDirectCore = false, directMonitor, directMonitorFailed = false;
 async function report(check, details) {
-  const output = path.join(root, 'dist-android/update-proxy-emulator-verification.json');
+  const output = path.join(root, `dist-android/update-${expectedMode === 'direct' ? 'direct' : 'proxy'}-emulator-verification.json`);
   await mkdir(path.dirname(output), { recursive: true });
   const result = { verifiedAt: new Date().toISOString(), serial, api: await shell('getprop', 'ro.build.version.sdk'),
-    bootstrapTransportFixture: false, backendOnlySubscriptions: true, backendRevision: backend.revision,
+    bootstrapTransportFixture: false, sourceOrBinaryFixture, backendOnlySubscriptions: true, backendRevision: backend.revision,
     configuredSubscriptionCount: backend.subscriptionUrls.length, expectedMode,
     abi: await shell('getprop', 'ro.product.cpu.abi'), apkSha256: createHash('sha256').update(await readFile(apk)).digest('hex'),
     checkedVersion: check.result.update?.versionName || check.result.currentVersion, status: check.result.status,
@@ -123,39 +125,62 @@ try {
   assert.ok(backend && Number.isSafeInteger(backend.revision) && backend.revision >= 0, 'Live proxy config is invalid.');
   backend.subscriptionUrls = backend.subscriptionUrls || (backend.subscriptionUrl ? [backend.subscriptionUrl] : []);
   assert.ok(Array.isArray(backend.subscriptionUrls) && backend.subscriptionUrls.length <= 8);
-  assert.equal(Boolean(backend.enabled && backend.revision > 0), expectedMode === 'proxy', 'Live backend mode differs from the requested acceptance.');
+  if (expectedMode === 'proxy') assert.ok(backend.enabled && backend.revision > 0, 'Live fallback acceptance requires an enabled backend.');
   const embedded = JSON.parse((await exec('unzip', ['-p', apk, 'assets/update-proxy/subscription.json'])).stdout);
   assert.equal((embedded.subscriptionUrls || []).length, 0, 'The APK must not contain preset subscriptions.');
   assert.equal(Boolean(embedded.subscriptionUrl), false, 'The APK must not contain a preset subscription.');
   const beforeProxy = await shell('settings', 'get', 'global', 'http_proxy');
   const beforeLinks = (await shell('ip', 'link')).split('\n').filter(line => /: (tun|vpn)/.test(line));
+  if (expectedMode === 'direct') {
+    assert.ok(['null', ':0', ''].includes(beforeProxy), 'Direct acceptance requires a disposable emulator without a system HTTP proxy.');
+    assert.equal(beforeLinks.length, 0, 'Direct acceptance requires a disposable emulator without a VPN interface.');
+  }
   await device('install', '-r', apk);
   // A fresh disposable debug app proves the live backend rather than a previous offline cache.
   assert.equal(await shell('pm', 'clear', app), 'Success');
+  if (expectedMode === 'direct') directMonitor = (async () => {
+    while (!stopMonitoring) {
+      if (await corePid()) sawDirectCore = true;
+      await pause(120);
+    }
+  })().catch(() => { directMonitorFailed = true; });
   await shell('am', 'start', '-n', `${app}/com.brclio.xhs.MainActivity`);
   phase = 'startup check';
   inspector = await openInspector();
   await until(() => inspector.evaluate(`!document.getElementById('check-update').disabled`), 'startup check completion', 120000);
-  const cached = JSON.parse(await shell('run-as', app, 'cat', 'no_backup/update-proxy-config.json'));
-  assert.equal(cached.revision, backend.revision, 'Native startup must fetch the current live backend revision.');
-  assert.equal(JSON.stringify(cached.subscriptionUrls) === JSON.stringify(backend.revision > 0 ? backend.subscriptionUrls : []), true,
-    'Native startup must use the live administrator sources.');
+  if (expectedMode === 'proxy') {
+    const cached = JSON.parse(await shell('run-as', app, 'cat', 'no_backup/update-proxy-config.json'));
+    assert.equal(cached.revision, backend.revision, 'Fallback startup must fetch the current live backend revision.');
+    assert.equal(JSON.stringify(cached.subscriptionUrls) === JSON.stringify(backend.revision > 0 ? backend.subscriptionUrls : []), true,
+      'Fallback startup must use the live administrator sources.');
+  }
   const operation = inspector.evaluate(`proxyAcceptanceCall('checkUpdate')`);
   if (expectedMode === 'direct') {
     phase = 'direct native metadata check';
     let finished = false;
     operation.finally(() => { finished = true; });
     while (!finished) {
-      assert.equal(await corePid(), null, 'An unconfigured/disabled backend must never start the proxy.');
+      assert.equal(await corePid(), null, 'Successful direct checks must never start the proxy.');
       await pause(120);
     }
     const check = await operation;
     assert.equal(check.ok, true, `Native direct check failed: ${check.error || 'unknown'}`);
     assert.ok(['latest', 'available', 'downloaded', 'unpublished'].includes(check.result.status));
     assert.equal(await corePid(), null);
+    stopMonitoring = true;
+    await directMonitor;
+    assert.equal(directMonitorFailed, false, 'Core monitoring must complete without an ADB failure.');
+    assert.equal(sawDirectCore, false, 'Startup and manual direct checks must never start the proxy.');
+    let cached = false;
+    try { await shell('run-as', app, 'test', '-e', 'no_backup/update-proxy-config.json'); cached = true; }
+    catch { /* A successful direct request does not fetch administrator proxy configuration. */ }
+    assert.equal(cached, false, 'Successful direct checks must not fetch or cache update proxy configuration.');
     assert.equal(await shell('settings', 'get', 'global', 'http_proxy'), beforeProxy);
     assert.deepEqual((await shell('ip', 'link')).split('\n').filter(line => /: (tun|vpn)/.test(line)), beforeLinks);
-    await report(check, { nodesProbed: 0, availableNodes: 0, normalCleanup: true, proxyNeverStarted: true,
+    await inspector.evaluate(`document.getElementById('check-update').scrollIntoView({block: 'center'})`);
+    const capture = await exec(adb, ['-s', serial, 'exec-out', 'screencap', '-p'], { encoding: 'buffer' });
+    await writeFile(path.join(root, 'dist-android/update-direct-emulator-verification.png'), capture.stdout);
+    await report(check, { nodesProbed: 0, availableNodes: 0, normalCleanup: true, proxyNeverStarted: true, proxyConfigurationNotFetched: true,
       systemProxyUnchanged: true, noVpnInterfaceAdded: true });
     process.exitCode = 0;
   } else {
@@ -232,6 +257,8 @@ try {
   console.error(error instanceof Error && !error.message.includes('Command failed:') ? error.message : `Android proxy acceptance failed during ${phase}.`);
   process.exitCode = 1;
 } finally {
+  stopMonitoring = true;
+  await directMonitor?.catch(() => {});
   if (inspector) inspector.close();
   for (const port of forwards) await device('forward', '--remove', `tcp:${port}`).catch(() => {});
   await shell('am', 'force-stop', app).catch(() => {});

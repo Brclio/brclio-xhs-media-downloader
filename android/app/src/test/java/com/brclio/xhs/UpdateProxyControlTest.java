@@ -9,6 +9,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 public class UpdateProxyControlTest {
+    @Test public void directCheckClearsOldProxyErrorWithoutClaimingProxyCancellationOwnership() {
+        UpdateProxyControl control = new UpdateProxyControl();
+        UpdateProxyControl.Owner previous = () -> fail("Finished proxy must not be stopped again");
+        control.begin(previous, false);
+        control.finished(previous, true);
+        assertEquals("error", control.state(false).mode);
+        control.beginDirect();
+        assertEquals("off", control.state(false).mode);
+        assertFalse(control.stop());
+        control.beginDirect();
+        assertTrue(control.state(false).manuallyDisabled);
+    }
+
     @Test public void systemProxyWinsAndManualStopNeverCancelsThatOperation() {
         UpdateProxyControl control = new UpdateProxyControl();
         AtomicInteger stopped = new AtomicInteger();
