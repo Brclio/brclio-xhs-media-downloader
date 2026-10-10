@@ -1,0 +1,57 @@
+{
+  "artifacts": [],
+  "checks": [
+    {
+      "name": "production-web: speed-aware cover and playback preview, audio choice restoration and source-aware presets",
+      "speedSettings": {
+        "checked": true,
+        "disabled": true,
+        "muted": true,
+        "presets": [
+          true,
+          true,
+          true
+        ]
+      },
+      "playback": {
+        "rate": 2,
+        "muted": true,
+        "time": 0.215776
+      }
+    },
+    {
+      "name": "production-web: actual ZIP download and native recognition",
+      "surface": "production-web",
+      "exported": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-NzY3dN/production-web-ui.zip",
+      "entries": [
+        "Brclio-Live-a1a52b6b-53d0-4a6c-a495-0f2b6ba7a804.pvt/Brclio-Live-a1a52b6b-53d0-4a6c-a495-0f2b6ba7a804.HEIC",
+        "Brclio-Live-a1a52b6b-53d0-4a6c-a495-0f2b6ba7a804.pvt/Brclio-Live-a1a52b6b-53d0-4a6c-a495-0f2b6ba7a804.MOV",
+        "Brclio-Live-a1a52b6b-53d0-4a6c-a495-0f2b6ba7a804.pvt/metadata.plist",
+        "README.txt"
+      ],
+      "pairExported": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-NzY3dN/production-web-pair.zip",
+      "pairEntries": [
+        "Brclio-Live-a1a52b6b-53d0-4a6c-a495-0f2b6ba7a804.HEIC",
+        "Brclio-Live-a1a52b6b-53d0-4a6c-a495-0f2b6ba7a804.MOV",
+        "README.txt"
+      ],
+      "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.heic\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    },
+    {
+      "name": "production-web: explicit JPEG choice and format-change cleanup",
+      "nativeRecognition": "stillDecoded=true width=640 height=360 pairing=true type=public.jpeg\ncallback degraded=true photo=true info=[AnyHashable(\"PHLivePhotoInfoIsDegradedKey\"): 1]\ncallback degraded=false photo=true info=[AnyHashable(\"PHLivePhotoInfoCancelledKey\"): 0]\nrecognized=true\n"
+    },
+    "production-web: actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390"
+  ],
+  "screenshots": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-NzY3dN/screenshots",
+  "temporary": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-NzY3dN",
+  "publicOrigin": "https://xhs.download.brclio.com",
+  "rendererErrors": [],
+  "support": {
+    "supported": true,
+    "audioSupported": true,
+    "heicSupported": true,
+    "message": "本地制作已就绪。"
+  },
+  "finishedAt": "2026-10-10T14:05:17.371Z"
+}

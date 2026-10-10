@@ -47,3 +47,5 @@ v2.0.12 改进：默认下载改为含完整 `.pvt` 实况包的 ZIP，以解决
 `npm run desktop:verify:live-photo` 在隔离的 Electron 渲染环境中执行本地图片、图片组和视频转换，核验播放、音轨、裁剪、取消及响应式界面。macOS 下还使用 `PHLivePhoto.request` 验证生成的资源可被原生框架识别，不导入或更改用户照片图库。该验证需要开发机器上的 ffmpeg、ffprobe；macOS 原生校验需要 Swift。最终安装包不依赖这些工具。
 
 网站和 Cloudflare Pages 的公开资源清单、桌面协议清单及 Electron 打包清单包含实况页面与编码、PVT 打包模块。历史 JPG + MOV 发布记录见[版本说明](releases/v2.0.5.md)，HEIC 发布记录见[版本说明](releases/v2.0.7.md)。本次 PVT 与倍速改进仍是工作区代码。Android 原生客户端的实况制作入口不在本次实现范围内。iPhone 的整包隔空投送已获用户确认；iCloud 同步全流程、壁纸及 Windows 相册识别和各品牌 Android 动态照片格式需另行验证。
+
+发布验收：v2.0.12 的[三平台构建](releases/v2.0.12-ci-verification.json)、[公开附件与更新入口](releases/v2.0.12-publication-verification.json)、[正式 Mac 包实况生成](releases/v2.0.12-packaged-mac-arm64-verification.json)和[生产网站导出](releases/v2.0.12-web-verification.json)均通过。未替换用户已安装客户端。

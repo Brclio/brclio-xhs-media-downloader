@@ -1,6 +1,6 @@
 # Brclio 小红书下载器
 
-v2.0.12 改进实况整包导出：网页与 Mac / Windows「制作实况」默认导出含完整 `.pvt` 实况包的 ZIP。在 Mac 解压后，通过 Finder 隔空投送整个 `.pvt` 到 iPhone；本次用户实机确认 HEIC 2 秒、JPEG 3 秒两种样本均可在「照片」作为实况接收并长按播放。支持 0.5–8 秒成片、视频 1 / 1.5 / 2 / 3 倍速，以及与成片一致的片段和封面预览；1 倍速可保留声音或静音，其他倍速成片统一静音。8 秒是本工具的成片范围，本轮优先保留已验证的手机交接方式。Android 沿用 v1.0.13。构建、公开附件与线上网站的核验记录随发布流程归档，详见[本次版本说明](docs/releases/v2.0.12.md)与[实况包和实机验证记录](docs/live-photo-pvt-verification.json)。
+[v2.0.12 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.12)，改进实况整包导出：网页与 Mac / Windows「制作实况」默认导出含完整 `.pvt` 实况包的 ZIP。在 Mac 解压后，通过 Finder 隔空投送整个 `.pvt` 到 iPhone；本次用户实机确认 HEIC 2 秒、JPEG 3 秒两种样本均可在「照片」作为实况接收并长按播放。支持 0.5–8 秒成片、视频 1 / 1.5 / 2 / 3 倍速，以及与成片一致的片段和封面预览；1 倍速可保留声音或静音，其他倍速成片统一静音。8 秒是本工具的成片范围，本轮优先保留已验证的手机交接方式。Android 沿用 v1.0.13。三平台构建与升级门禁、公开附件、正式 Mac 包生成和[线上网站核验](docs/releases/v2.0.12-web-verification.json)通过，详见[本次版本说明](docs/releases/v2.0.12.md)与[实况包和实机验证记录](docs/live-photo-pvt-verification.json)。
 
 v2.0.11 桌面安装包已正式发布，补全 Mac / Windows 内置代理更新的自动重试：首次获取代理配置失败且无有效缓存时会重试；可恢复的下载故障等待 1 秒续传，实时显示连续失败次数，连续失败 10 次后改为手动继续，点击后重新计数。缓存权限和无效配置错误会明确提示，暂停、退出和关闭内置代理会停止重试。系统代理 / PAC 优先，Android 沿用 v1.0.13。三平台完整构建、重试界面与安装升级门禁通过；11 个公开附件、校验值、匿名更新入口及旧更新器兼容已核验。详见[版本说明](docs/releases/v2.0.11.md)、[三平台 CI 摘要](docs/releases/v2.0.11-ci-verification.json)、[公开发布核验](docs/releases/v2.0.11-publication-verification.json)与[分阶段核验记录](docs/update-retry-validation-2026-10-09.md)。
 

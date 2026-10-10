@@ -2,7 +2,7 @@
   "date": "2026-10-10",
   "timezone": "Asia/Shanghai",
   "status": "local_implementation_and_user_device_transfer_verified",
-  "releaseStatus": "implementation_and_device_confirmation; publication tracked separately",
+  "releaseStatus": "published_v2.0.12_and_production_website_verified",
   "sourceBaseCommit": "49b24ef39e1b0afe31ce62f45abe255ea8877253",
   "reference": {
     "url": "https://github.com/fxyadela/write-then-publish",
@@ -96,7 +96,7 @@
     "transferArchive": "/Users/bornforthis/.codex/visualizations/2026/10/10/01a125d9-7766-74e0-b60c-ff11e7b97ff3/live-photo-transfer/iPhone-实况测试.zip"
   },
   "limitations": [
-    "This record covers implementation and prepared-sample device transfer. Release assets, production deployment and installed-client updates require separate verification.",
+    "Release assets and production website are verified in the linked reports. The user installed client was not replaced; a public Mac arm64 package was launched in an isolated directory.",
     "User confirmation covers these two samples on the user iPhone; other devices, iOS versions and third-party publishing apps were not tested."
   ],
   "targetVersion": "2.0.12",
@@ -118,5 +118,13 @@
     "buildCloudflarePages": "passed",
     "independentReview": "no release-blocking defect found",
     "durationDecision": "user requested keeping 0.5–8 seconds, default 3 seconds; prioritize verified PVT phone transfer fix"
+  },
+  "publication": {
+    "sourceSha": "b255f9abf3a5c3703fc2a477edd05582f364e317",
+    "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.12",
+    "ciReport": "releases/v2.0.12-ci-verification.json",
+    "publicReleaseReport": "releases/v2.0.12-publication-verification.json",
+    "productionWebReport": "releases/v2.0.12-web-verification.json",
+    "publicMacArm64Report": "releases/v2.0.12-packaged-mac-arm64-verification.json"
   }
 }

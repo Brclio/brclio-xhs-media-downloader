@@ -1,0 +1,58 @@
+{
+  "version": "2.0.12",
+  "verifiedAt": "2026-10-10T14:06:50.736352+00:00",
+  "base": "https://xhs.download.brclio.com",
+  "ok": true,
+  "realAccountsChanged": false,
+  "deployment": {
+    "provider": "Cloudflare Pages",
+    "project": "brclio-xhs-pages",
+    "id": "eff7e917-e3d6-4a53-8404-4e3c4d58da54",
+    "url": "https://eff7e917.brclio-xhs-pages.pages.dev",
+    "environment": "Production",
+    "sourceCommit": "b255f9abf3a5c3703fc2a477edd05582f364e317",
+    "workingTreeChangesIncluded": [
+      "download.html: confirmed published installer sizes and publication date"
+    ],
+    "workerBusinessCodeRedeployed": false
+  },
+  "publicAssets": {
+    "passed": 20,
+    "total": 20,
+    "exactDecompressedBytesMatched": true,
+    "report": "v2.0.12-validation/public-web-assets.json"
+  },
+  "httpChecks": {
+    "passed": 58,
+    "total": 58,
+    "realMediaChecks": false,
+    "report": "v2.0.12-validation/cloudflare-http-verification.json"
+  },
+  "livePhotoUI": {
+    "result": "PASS",
+    "rendererErrors": [],
+    "report": "v2.0.12-validation/production-web-ui-verification.json",
+    "checks": [
+      "Production HEIC/JPEG PVT ZIP generation and download",
+      "Native PHLivePhoto recognition of downloaded resources",
+      "Backup ZIP and direct media byte equality",
+      "Speed preview, cover, mute and audio restoration",
+      "3/5/8 second presets, cancellation, retry and five object URL cleanup",
+      "Responsive 390/768/1440 widths"
+    ]
+  },
+  "preservedProductionBaseline": {
+    "resources": [
+      "admin/index.html",
+      "admin/admin.js",
+      "commerce-ui.js",
+      "lib/membership-plans.js"
+    ],
+    "exactBuiltBytesMatched": true
+  },
+  "limits": [
+    "Browser verification used the isolated Electron Chromium renderer; Safari and every browser were not tested.",
+    "iPhone device confirmation applies to the previously prepared HEIC 2-second and JPEG 3-second samples; no new phone test is asserted.",
+    "User installed application was not replaced; published Mac arm64 package was launched and exercised in a temporary directory."
+  ]
+}
