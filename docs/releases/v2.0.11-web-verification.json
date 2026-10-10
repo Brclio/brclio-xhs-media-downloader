@@ -1,0 +1,802 @@
+{
+  "version": "2.0.11",
+  "verifiedAt": "2026-10-10T01:57:26.282Z",
+  "base": "https://xhs.download.brclio.com",
+  "ok": true,
+  "readOnly": true,
+  "realAccountsChanged": false,
+  "deployment": {
+    "provider": "Cloudflare Pages",
+    "project": "brclio-xhs-pages",
+    "id": "16164041-7a49-40e3-a5a2-af7a0aed5bb2",
+    "environment": "Production",
+    "sourceCommit": "82b6b8d55ef7ac5f4847c8e0c3a3ad2dccf79ff4",
+    "url": "https://16164041.brclio-xhs-pages.pages.dev",
+    "workerBusinessCodeRedeployed": false
+  },
+  "publicFiles": [
+    {
+      "file": "download.html",
+      "sourceSha256": "d27f243bd03c0fe47d4811c41755b2ba5efe5ba56448e996bf3e02678cde2a65",
+      "buildSha256": "6862b0f32ef9bb76496309a46e666c0c10c86663e4c8b9b25bba68e4c20c19cd",
+      "publicSha256": "6862b0f32ef9bb76496309a46e666c0c10c86663e4c8b9b25bba68e4c20c19cd",
+      "publicMatchesBuiltBytes": true
+    },
+    {
+      "file": "changelog.html",
+      "sourceSha256": "25d4c75828ce5173e1fbc475664ed32c183556a1f8476c710b6cdd53c2b6904e",
+      "buildSha256": "25d4c75828ce5173e1fbc475664ed32c183556a1f8476c710b6cdd53c2b6904e",
+      "publicSha256": "25d4c75828ce5173e1fbc475664ed32c183556a1f8476c710b6cdd53c2b6904e",
+      "publicMatchesBuiltBytes": true
+    }
+  ],
+  "buildTransformation": "The public build removes marked desktop-only sections from download.html. Public bytes match the built files, not the untransformed desktop HTML.",
+  "httpChecks": {
+    "passed": 58,
+    "total": 58,
+    "report": "v2.0.11-validation/cloudflare-http-verification.json",
+    "realMediaChecks": false
+  },
+  "browser": {
+    "status": "passed",
+    "widths": [
+      1440,
+      390,
+      320
+    ],
+    "javascriptModes": [
+      true,
+      false
+    ],
+    "checkCount": 12,
+    "expected": {
+      "sizes": {
+        "mac-arm64": "167.5 MB",
+        "mac-x64": "175.2 MB",
+        "windows-setup": "146.5 MB",
+        "windows-portable": "146.3 MB"
+      },
+      "androidSize": "73.2 MB",
+      "sourceHashes": {
+        "download.html": "d27f243bd03c0fe47d4811c41755b2ba5efe5ba56448e996bf3e02678cde2a65",
+        "changelog.html": "25d4c75828ce5173e1fbc475664ed32c183556a1f8476c710b6cdd53c2b6904e"
+      }
+    },
+    "checks": [
+      {
+        "page": "download",
+        "javascript": true,
+        "width": 1440,
+        "data": {
+          "version": "v2.0.11",
+          "androidVersion": "v1.0.13",
+          "links": [
+            {
+              "key": "mac-arm64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg"
+            },
+            {
+              "key": "mac-x64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg"
+            },
+            {
+              "key": "windows-setup",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe"
+            },
+            {
+              "key": "windows-portable",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe"
+            }
+          ],
+          "sizes": {
+            "mac-arm64": "167.5 MB",
+            "mac-x64": "175.2 MB",
+            "windows-setup": "146.5 MB",
+            "windows-portable": "146.3 MB"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11"
+          ],
+          "androidHref": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk.sha256",
+          "androidSize": "73.2 MB",
+          "status": "已核对最新正式版 v2.0.11，安装包由 GitHub Releases 提供。查看最新发布 ↗"
+        },
+        "responsive": {
+          "width": 1440,
+          "documentWidth": 1440,
+          "bodyWidth": 1440
+        },
+        "controls": [
+          {
+            "selector": "[data-asset=\"mac-arm64\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"mac-x64\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"windows-setup\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"windows-portable\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-android-asset]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      },
+      {
+        "page": "changelog",
+        "javascript": true,
+        "width": 1440,
+        "query": "v2.0.11",
+        "desktopIncludesNew": true,
+        "webExcludesNew": true,
+        "webKeepsHistorical": true,
+        "webLayout": {
+          "width": 1440,
+          "documentWidth": 1440,
+          "bodyWidth": 1440
+        },
+        "desktopLayout": {
+          "width": 1440,
+          "documentWidth": 1440,
+          "bodyWidth": 1440
+        },
+        "filteredLayout": {
+          "width": 1440,
+          "documentWidth": 1440,
+          "bodyWidth": 1440
+        },
+        "controls": [
+          {
+            "selector": "[data-release-filter=\"desktop\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-release-filter=\"web\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-query",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-reset",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:first-child",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:nth-child(2)",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      },
+      {
+        "page": "download",
+        "javascript": true,
+        "width": 390,
+        "data": {
+          "version": "v2.0.11",
+          "androidVersion": "v1.0.13",
+          "links": [
+            {
+              "key": "mac-arm64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg"
+            },
+            {
+              "key": "mac-x64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg"
+            },
+            {
+              "key": "windows-setup",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe"
+            },
+            {
+              "key": "windows-portable",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe"
+            }
+          ],
+          "sizes": {
+            "mac-arm64": "167.5 MB",
+            "mac-x64": "175.2 MB",
+            "windows-setup": "146.5 MB",
+            "windows-portable": "146.3 MB"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11"
+          ],
+          "androidHref": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk.sha256",
+          "androidSize": "73.2 MB",
+          "status": "已核对最新正式版 v2.0.11，安装包由 GitHub Releases 提供。查看最新发布 ↗"
+        },
+        "responsive": {
+          "width": 390,
+          "documentWidth": 390,
+          "bodyWidth": 390
+        },
+        "controls": [
+          {
+            "selector": "[data-asset=\"mac-arm64\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"mac-x64\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"windows-setup\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"windows-portable\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-android-asset]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      },
+      {
+        "page": "changelog",
+        "javascript": true,
+        "width": 390,
+        "query": "v2.0.11",
+        "desktopIncludesNew": true,
+        "webExcludesNew": true,
+        "webKeepsHistorical": true,
+        "webLayout": {
+          "width": 390,
+          "documentWidth": 390,
+          "bodyWidth": 390
+        },
+        "desktopLayout": {
+          "width": 390,
+          "documentWidth": 390,
+          "bodyWidth": 390
+        },
+        "filteredLayout": {
+          "width": 390,
+          "documentWidth": 390,
+          "bodyWidth": 390
+        },
+        "controls": [
+          {
+            "selector": "[data-release-filter=\"desktop\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-release-filter=\"web\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-query",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-reset",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:first-child",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:nth-child(2)",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      },
+      {
+        "page": "download",
+        "javascript": true,
+        "width": 320,
+        "data": {
+          "version": "v2.0.11",
+          "androidVersion": "v1.0.13",
+          "links": [
+            {
+              "key": "mac-arm64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg"
+            },
+            {
+              "key": "mac-x64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg"
+            },
+            {
+              "key": "windows-setup",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe"
+            },
+            {
+              "key": "windows-portable",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe"
+            }
+          ],
+          "sizes": {
+            "mac-arm64": "167.5 MB",
+            "mac-x64": "175.2 MB",
+            "windows-setup": "146.5 MB",
+            "windows-portable": "146.3 MB"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11"
+          ],
+          "androidHref": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk.sha256",
+          "androidSize": "73.2 MB",
+          "status": "已核对最新正式版 v2.0.11，安装包由 GitHub Releases 提供。查看最新发布 ↗"
+        },
+        "responsive": {
+          "width": 320,
+          "documentWidth": 320,
+          "bodyWidth": 320
+        },
+        "controls": [
+          {
+            "selector": "[data-asset=\"mac-arm64\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"mac-x64\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"windows-setup\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-asset=\"windows-portable\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-android-asset]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      },
+      {
+        "page": "changelog",
+        "javascript": true,
+        "width": 320,
+        "query": "v2.0.11",
+        "desktopIncludesNew": true,
+        "webExcludesNew": true,
+        "webKeepsHistorical": true,
+        "webLayout": {
+          "width": 320,
+          "documentWidth": 320,
+          "bodyWidth": 320
+        },
+        "desktopLayout": {
+          "width": 320,
+          "documentWidth": 320,
+          "bodyWidth": 320
+        },
+        "filteredLayout": {
+          "width": 320,
+          "documentWidth": 320,
+          "bodyWidth": 320
+        },
+        "controls": [
+          {
+            "selector": "[data-release-filter=\"desktop\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-release-filter=\"web\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-query",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-reset",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:first-child",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:nth-child(2)",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      },
+      {
+        "page": "download",
+        "javascript": false,
+        "width": 1440,
+        "data": {
+          "version": "v2.0.11",
+          "androidVersion": "v1.0.13",
+          "links": [
+            {
+              "key": "mac-arm64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg"
+            },
+            {
+              "key": "mac-x64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg"
+            },
+            {
+              "key": "windows-setup",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe"
+            },
+            {
+              "key": "windows-portable",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe"
+            }
+          ],
+          "sizes": {
+            "mac-arm64": "167.5 MB",
+            "mac-x64": "175.2 MB",
+            "windows-setup": "146.5 MB",
+            "windows-portable": "146.3 MB"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11"
+          ],
+          "androidHref": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk.sha256",
+          "androidSize": "73.2 MB"
+        },
+        "responsive": {
+          "width": 1440,
+          "documentWidth": 1440
+        },
+        "links": [
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg",
+            "width": 337,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg",
+            "width": 336,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe",
+            "width": 336,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe",
+            "width": 157,
+            "height": 32
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+            "width": 410,
+            "height": 49
+          }
+        ]
+      },
+      {
+        "page": "changelog",
+        "javascript": false,
+        "width": 1440,
+        "data": {
+          "newCardVisible": true,
+          "historicalCardPresent": true,
+          "nativeAnchorPresent": true,
+          "inactiveControlsHidden": true
+        },
+        "responsive": {
+          "width": 1440,
+          "documentWidth": 1440
+        },
+        "links": [
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v2.0.11.md",
+            "width": 126,
+            "height": 20
+          },
+          {
+            "href": "/download.html",
+            "width": 100,
+            "height": 20
+          }
+        ]
+      },
+      {
+        "page": "download",
+        "javascript": false,
+        "width": 390,
+        "data": {
+          "version": "v2.0.11",
+          "androidVersion": "v1.0.13",
+          "links": [
+            {
+              "key": "mac-arm64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg"
+            },
+            {
+              "key": "mac-x64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg"
+            },
+            {
+              "key": "windows-setup",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe"
+            },
+            {
+              "key": "windows-portable",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe"
+            }
+          ],
+          "sizes": {
+            "mac-arm64": "167.5 MB",
+            "mac-x64": "175.2 MB",
+            "windows-setup": "146.5 MB",
+            "windows-portable": "146.3 MB"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11"
+          ],
+          "androidHref": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk.sha256",
+          "androidSize": "73.2 MB"
+        },
+        "responsive": {
+          "width": 390,
+          "documentWidth": 390
+        },
+        "links": [
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg",
+            "width": 294,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg",
+            "width": 294,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe",
+            "width": 294,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe",
+            "width": 157,
+            "height": 32
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+            "width": 294,
+            "height": 49
+          }
+        ]
+      },
+      {
+        "page": "changelog",
+        "javascript": false,
+        "width": 390,
+        "data": {
+          "newCardVisible": true,
+          "historicalCardPresent": true,
+          "nativeAnchorPresent": true,
+          "inactiveControlsHidden": true
+        },
+        "responsive": {
+          "width": 390,
+          "documentWidth": 390
+        },
+        "links": [
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v2.0.11.md",
+            "width": 126,
+            "height": 20
+          },
+          {
+            "href": "/download.html",
+            "width": 100,
+            "height": 20
+          }
+        ]
+      },
+      {
+        "page": "download",
+        "javascript": false,
+        "width": 320,
+        "data": {
+          "version": "v2.0.11",
+          "androidVersion": "v1.0.13",
+          "links": [
+            {
+              "key": "mac-arm64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg"
+            },
+            {
+              "key": "mac-x64",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg"
+            },
+            {
+              "key": "windows-setup",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe"
+            },
+            {
+              "key": "windows-portable",
+              "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe"
+            }
+          ],
+          "sizes": {
+            "mac-arm64": "167.5 MB",
+            "mac-x64": "175.2 MB",
+            "windows-setup": "146.5 MB",
+            "windows-portable": "146.3 MB"
+          },
+          "releaseLinks": [
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11",
+            "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11"
+          ],
+          "androidHref": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+          "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk.sha256",
+          "androidSize": "73.2 MB"
+        },
+        "responsive": {
+          "width": 320,
+          "documentWidth": 320
+        },
+        "links": [
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-arm64.dmg",
+            "width": 224,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-mac-x64.dmg",
+            "width": 224,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-setup.exe",
+            "width": 224,
+            "height": 49
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/Brclio-XHS-2.0.11-windows-x64-portable.exe",
+            "width": 157,
+            "height": 32
+          },
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+            "width": 224,
+            "height": 49
+          }
+        ]
+      },
+      {
+        "page": "changelog",
+        "javascript": false,
+        "width": 320,
+        "data": {
+          "newCardVisible": true,
+          "historicalCardPresent": true,
+          "nativeAnchorPresent": true,
+          "inactiveControlsHidden": true
+        },
+        "responsive": {
+          "width": 320,
+          "documentWidth": 320
+        },
+        "links": [
+          {
+            "href": "https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v2.0.11.md",
+            "width": 126,
+            "height": 20
+          },
+          {
+            "href": "/download.html",
+            "width": 100,
+            "height": 20
+          }
+        ]
+      }
+    ],
+    "screenshots": {
+      "download-320": "v2.0.11-validation/public-download-320.png",
+      "changelog-390": "v2.0.11-validation/public-changelog-390.png"
+    },
+    "cleanup": {
+      "status": "complete",
+      "errors": [],
+      "child": {
+        "code": 0,
+        "signal": null
+      }
+    },
+    "temporaryProfileRemoved": true,
+    "writesBlocked": true,
+    "visitorCounterBlocked": true
+  },
+  "scopeAndLimits": [
+    "Website checks verify public download metadata, release history filtering/search, responsive controls and static fallbacks. They do not download/install an app or prove another computer has upgraded.",
+    "Android remains v1.0.13; no Android package or backend Worker was deployed.",
+    "Only selected stable screenshots are retained; browser assertions and source-to-deployment byte comparison establish the full viewport matrix."
+  ]
+}
