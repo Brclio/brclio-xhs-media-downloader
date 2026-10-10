@@ -13,7 +13,7 @@ const STATIC_FILES = new Set([
   'download.html', 'download.css', 'download.js',
   'ios-shortcut.css', 'ios-shortcut.js',
   'product.html', 'product.css', 'product.js',
-  'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js',
+  'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js', 'lib/live-photo-package.js',
   'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js',
   'assets/vendor/heic/heic-encoder.js', 'assets/vendor/heic/heic-encoder.wasm',
   'learn.html', 'learn.css', 'learn.js',

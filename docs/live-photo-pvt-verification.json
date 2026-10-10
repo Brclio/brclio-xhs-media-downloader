@@ -1,0 +1,122 @@
+{
+  "date": "2026-10-10",
+  "timezone": "Asia/Shanghai",
+  "status": "local_implementation_and_user_device_transfer_verified",
+  "releaseStatus": "implementation_and_device_confirmation; publication tracked separately",
+  "sourceBaseCommit": "49b24ef39e1b0afe31ce62f45abe255ea8877253",
+  "reference": {
+    "url": "https://github.com/fxyadela/write-then-publish",
+    "commit": "6ff00b06ae0f04aa119449a037a4a1c83e03c8ae",
+    "adopted": "PVT directory package with photo, MOV and metadata.plist; independently implemented; existing HEIC encoder and timed metadata retained"
+  },
+  "scope": [
+    "built web page over local HTTP",
+    "desktop local xhs-app protocol",
+    "actual desktop sidebar iframe with isolated fixture bridge"
+  ],
+  "tests": {
+    "node": {
+      "total": 1140,
+      "passed": 1128,
+      "skipped": 12,
+      "failed": 0
+    },
+    "python": {
+      "passed": 27,
+      "failed": 0
+    },
+    "buildWeb": "passed",
+    "buildCloudflarePages": "passed",
+    "gitDiffCheck": "passed"
+  },
+  "native": {
+    "packageUTI": "com.apple.private.live-photo-bundle",
+    "isPackage": true,
+    "formats": [
+      "heic",
+      "jpeg"
+    ],
+    "photoPairing": "matching Apple MakerNote 17 and QuickTime content.identifier",
+    "timedMetadata": "real mebx still-image-time track",
+    "recognition": "PHLivePhoto.request final non-degraded response recognized all generated pairs"
+  },
+  "engine": {
+    "cases": 8,
+    "checks": [
+      "eight-second duration",
+      "double-speed source-frame mapping by independent FFmpeg decode",
+      "muted double-speed output even if includeAudio=true",
+      "fractional final-frame cover at 0.5 seconds in a 0.51 second movie",
+      "AAC audio trim and actual PCM",
+      "portrait orientation"
+    ],
+    "rendererErrors": []
+  },
+  "ui": {
+    "checks": [
+      "PVT ZIP with photo, MOV, metadata.plist and adjacent README",
+      "loose ZIP backup and direct media bytes equal to PVT resources",
+      "source-aware 3/5/8 second presets",
+      "preview playback rate and source-frame cover match selected speed",
+      "audio choice restored on return to normal speed",
+      "format and speed changes clear all five output URLs",
+      "cancel and retry",
+      "responsive 390/768/1440 widths",
+      "desktop sidebar navigation preserves generated result"
+    ],
+    "rendererErrors": []
+  },
+  "device": {
+    "evidenceType": "direct user confirmation in this chat after AirDrop testing prepared samples",
+    "userResponse": "两种格式都能作为实况接收并播放",
+    "transport": "Mac Finder AirDrop of entire PVT bundle to user iPhone",
+    "receivedInPhotosAsLivePhoto": true,
+    "longPressPlayback": true,
+    "deviceModel": "not collected",
+    "iOSVersion": "not collected",
+    "samples": [
+      {
+        "name": "01-HEIC-2秒.pvt",
+        "photoFormat": "heic",
+        "duration": 2,
+        "assetIdentifier": "66ee4862-ef57-4170-83ef-67ed5623603b"
+      },
+      {
+        "name": "02-JPEG-3秒.pvt",
+        "photoFormat": "jpeg",
+        "duration": 3,
+        "assetIdentifier": "939c828d-5eed-4e67-a7b3-d4cdecea986e"
+      }
+    ]
+  },
+  "artifacts": {
+    "directory": "/Users/bornforthis/.codex/visualizations/2026/10/10/01a125d9-7766-74e0-b60c-ff11e7b97ff3/live-photo-transfer",
+    "engineReport": "/Users/bornforthis/.codex/visualizations/2026/10/10/01a125d9-7766-74e0-b60c-ff11e7b97ff3/live-photo-transfer/engine-verification.json",
+    "uiReport": "/Users/bornforthis/.codex/visualizations/2026/10/10/01a125d9-7766-74e0-b60c-ff11e7b97ff3/live-photo-transfer/ui-verification.json",
+    "transferArchive": "/Users/bornforthis/.codex/visualizations/2026/10/10/01a125d9-7766-74e0-b60c-ff11e7b97ff3/live-photo-transfer/iPhone-实况测试.zip"
+  },
+  "limitations": [
+    "This record covers implementation and prepared-sample device transfer. Release assets, production deployment and installed-client updates require separate verification.",
+    "User confirmation covers these two samples on the user iPhone; other devices, iOS versions and third-party publishing apps were not tested."
+  ],
+  "targetVersion": "2.0.12",
+  "releaseSnapshotValidation": {
+    "node": {
+      "total": 1140,
+      "passed": 1128,
+      "skipped": 12,
+      "failed": 0
+    },
+    "python": {
+      "passed": 27,
+      "failed": 0
+    },
+    "engineReport": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-b3I4iy/verification.json",
+    "uiReport": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-live-photo-fegyf3/verification.json",
+    "rendererErrors": [],
+    "buildWeb": "passed",
+    "buildCloudflarePages": "passed",
+    "independentReview": "no release-blocking defect found",
+    "durationDecision": "user requested keeping 0.5–8 seconds, default 3 seconds; prioritize verified PVT phone transfer fix"
+  }
+}

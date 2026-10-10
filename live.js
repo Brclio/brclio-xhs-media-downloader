@@ -1,5 +1,6 @@
-import { inspectLivePhotoFiles, checkLivePhotoSupport, createLivePhoto, LIVE_PHOTO_LIMITS } from './lib/live-photo-maker.js';
+import { inspectLivePhotoFiles, checkLivePhotoSupport, createLivePhoto, livePhotoCoverTime, LIVE_PHOTO_LIMITS } from './lib/live-photo-maker.js';
 import { makeZipBlob } from './lib/archive.js';
+import { makeLivePhotoPackage } from './lib/live-photo-package.js';
 
 const byId = id => document.getElementById(id);
 const ui = Object.fromEntries([
@@ -11,13 +12,14 @@ const ui = Object.fromEntries([
   'preview-empty', 'source-video', 'source-canvas', 'result-video', 'live-pill', 'preview-caption',
   'create-live', 'cancel-live', 'progress-panel', 'progress-label', 'progress-percent',
   'live-progress', 'live-status', 'live-error', 'result-panel', 'result-summary', 'download-live',
-  'result-format', 'result-pair-hint', 'download-photo', 'download-mov'
+  'result-format', 'result-pair-hint', 'download-photo', 'download-mov', 'download-pair',
+  'speed', 'speed-settings', 'duration-hint'
 ].map(id => [id, byId(id)]));
 
 const state = {
   files: [], metadata: null, support: null, busy: null, controller: null, revision: 0,
   urls: new Map(), images: new Map(), resultUrls: [], playing: false, animation: 0, previewRevision: 0,
-  duration: 3, start: 0, keyPhotoTime: 1.5
+  duration: 3, start: 0, keyPhotoTime: 1.5, speed: 1
 };
 
 if (new URLSearchParams(location.search).get('source') === 'desktop') {
@@ -57,7 +59,7 @@ function syncPhotoFormatLabels() {
     if (ui['support-note'].textContent !== supportMessage) ui['support-note'].textContent = supportMessage;
     ui['support-note'].dataset.supported = String(state.support.supported && !heicUnavailable);
   }
-  ui['import-pair-hint'].textContent = `下载并解压 ZIP，或分别下载同名 .${extension} 与 .MOV。完整实况需要这两个文件，不要只保留照片或视频。`;
+  ui['import-pair-hint'].textContent = `下载并在 Mac 上解压实况包 ZIP，得到一个 .pvt 包。包内已包含 ${extension} 照片、MOV 和配套信息，保持完整即可。`;
 }
 function releaseSources() {
   stopPreview();
@@ -75,7 +77,7 @@ function resetResult() {
   state.resultUrls = [];
   ui['result-panel'].hidden = true;
   ui['result-video'].hidden = true;
-  for (const id of ['download-live', 'download-photo', 'download-mov']) {
+  for (const id of ['download-live', 'download-pair', 'download-photo', 'download-mov']) {
     ui[id].removeAttribute('href');
     ui[id].removeAttribute('download');
   }
@@ -83,7 +85,7 @@ function resetResult() {
   delete document.documentElement.dataset.livePhotoFormat;
 }
 function audioRequired() {
-  return state.metadata?.kind === 'video' && state.metadata.hasAudio !== false && ui['include-audio'].checked;
+  return state.metadata?.kind === 'video' && state.speed === 1 && state.metadata.hasAudio !== false && ui['include-audio'].checked;
 }
 function updateControls() {
   const busy = Boolean(state.busy);
@@ -124,6 +126,7 @@ function resetSelection() {
   ui['source-details'].hidden = true;
   ui['source-list'].replaceChildren();
   ui['video-settings'].hidden = true;
+  ui['speed-settings'].hidden = true;
   ui['motion-settings'].hidden = true;
   ui['audio-settings'].hidden = true;
   ui['source-video'].hidden = true;
@@ -184,15 +187,15 @@ function renderFileList() {
 }
 
 function syncSettings() {
+  const video = state.metadata?.kind === 'video';
   const maximum = state.metadata?.kind === 'video'
-    ? Math.min(3, hundredths(state.metadata.duration)) : 3;
+    ? Math.min(LIVE_PHOTO_LIMITS.maxDuration, hundredths(state.metadata.duration / state.speed)) : LIVE_PHOTO_LIMITS.maxDuration;
   state.duration = clamp(state.duration, 0.5, maximum);
   const maxStart = state.metadata?.kind === 'video'
-    ? Math.max(0, hundredths(state.metadata.duration - state.duration)) : 0;
+    ? Math.max(0, hundredths(state.metadata.duration - state.duration * state.speed)) : 0;
   state.start = clamp(state.start, 0, maxStart);
-  // The cover must fall before the final frame, inside the selected interval.
-  const maxCover = Math.max(0, hundredths(state.duration - 1 / 30));
-  state.keyPhotoTime = clamp(state.keyPhotoTime, 0, maxCover);
+  const maxCover = livePhotoCoverTime(state.duration, state.duration - 0.000001);
+  state.keyPhotoTime = livePhotoCoverTime(state.duration, clamp(state.keyPhotoTime, 0, maxCover));
   for (const id of ['duration', 'duration-number']) {
     ui[id].max = maximum;
     ui[id].value = state.duration;
@@ -204,13 +207,28 @@ function syncSettings() {
   ui['key-photo'].max = maxCover;
   ui['key-photo'].value = state.keyPhotoTime;
   ui['key-photo-label'].textContent = `片段内 ${seconds(state.keyPhotoTime)} 秒`;
-  ui['clip-range'].textContent = `选中的片段：${seconds(state.start)}–${seconds(state.start + state.duration)} 秒`;
+  ui['clip-range'].textContent = `原视频 ${seconds(state.start)}–${seconds(state.start + state.duration * state.speed)} 秒 → 成片 ${seconds(state.duration)} 秒 · ${state.speed}×`;
+  ui['duration-hint'].textContent = video
+    ? `成片可选 0.5–${seconds(maximum)} 秒；当前倍速将取用 ${seconds(state.duration * state.speed)} 秒原视频。推荐先用 3 秒测试手机接收。`
+    : '可选 0.5–8 秒。推荐先用 3 秒测试手机接收；多张图片均分成片时长。';
+  document.querySelectorAll('[data-duration]').forEach(button => {
+    const value = Number(button.dataset.duration);
+    button.disabled = value > maximum;
+    button.setAttribute('aria-pressed', String(state.duration === value));
+    button.title = value > maximum ? `当前倍速需要至少 ${seconds(value * state.speed)} 秒原视频` : `${value} 秒成片`;
+  });
+  ui['speed-settings'].hidden = !video;
+  ui['speed'].value = state.speed;
+  for (const option of ui['speed'].options) {
+    option.disabled = video && state.duration * Number(option.value) > state.metadata.duration + 0.001;
+  }
   ui['video-settings'].hidden = state.metadata?.kind !== 'video';
   ui['motion-settings'].hidden = state.metadata?.kind !== 'images';
   ui['motion'].disabled = state.metadata?.kind === 'images' && state.files.length > 1;
   ui['audio-settings'].hidden = state.metadata?.kind !== 'video';
-  ui['include-audio'].disabled = state.metadata?.hasAudio === false;
-  ui['audio-hint'].textContent = state.metadata?.hasAudio === false ? '此视频未检测到音轨，将制作静音实况。'
+  ui['include-audio'].disabled = state.metadata?.hasAudio === false || state.speed !== 1;
+  ui['audio-hint'].textContent = state.speed !== 1 ? '倍速成片为静音；切回原速可恢复保留声音。'
+    : state.metadata?.hasAudio === false ? '此视频未检测到音轨，将制作静音实况。'
     : !state.support?.audioSupported ? '当前浏览器只能制作静音实况，请关闭此选项；需要声音可使用桌面客户端。'
       : state.metadata?.hasAudio === null ? '关闭后制作静音实况；若原视频无声音，输出也会保持静音。'
         : '关闭后制作静音实况。';
@@ -265,6 +283,7 @@ async function selectFiles(files) {
     state.metadata = metadata;
     state.duration = metadata.kind === 'video' ? Math.min(3, hundredths(metadata.duration)) : 3;
     state.start = 0;
+    state.speed = 1;
     state.keyPhotoTime = state.duration / 2;
     ui['motion'].value = 'zoom';
     ui['include-audio'].checked = metadata.hasAudio !== false;
@@ -328,9 +347,9 @@ function showCover() {
   ui['preview-caption'].textContent = `封面预览 · 片段内 ${seconds(state.keyPhotoTime)} 秒`;
   if (state.metadata.kind === 'images') drawImages(state.keyPhotoTime);
   else {
-    ui['source-video'].muted = !ui['include-audio'].checked;
+    ui['source-video'].muted = state.speed !== 1 || !ui['include-audio'].checked;
     if (ui['source-video'].readyState >= 1) {
-      ui['source-video'].currentTime = state.start + state.keyPhotoTime;
+      ui['source-video'].currentTime = state.start + state.keyPhotoTime * state.speed;
     }
   }
 }
@@ -344,11 +363,12 @@ async function playPreview() {
   const sourceFile = state.files[0];
   state.playing = true;
   ui['preview-button'].textContent = '停止预览 □';
-  ui['preview-caption'].textContent = `片段预览 · ${seconds(state.duration)} 秒`;
+  ui['preview-caption'].textContent = `片段预览 · 成片 ${seconds(state.duration)} 秒 · ${state.speed}×`;
   if (state.metadata.kind === 'video') {
     try {
       ui['source-video'].currentTime = state.start;
-      ui['source-video'].muted = !ui['include-audio'].checked;
+      ui['source-video'].muted = state.speed !== 1 || !ui['include-audio'].checked;
+      ui['source-video'].playbackRate = state.speed;
       await ui['source-video'].play();
       if (previewRevision !== state.previewRevision && !state.playing) ui['source-video'].pause();
     } catch (error) {
@@ -399,7 +419,7 @@ async function generate() {
   updateControls();
   try {
     const result = await createLivePhoto({
-      files: [...state.files], start: state.start, duration: state.duration,
+      files: [...state.files], start: state.start, duration: state.duration, speed: state.speed,
       keyPhotoTime: state.keyPhotoTime, motion: ui['motion'].value,
       photoFormat: requestedPhotoFormat,
       includeAudio: ui['include-audio'].checked, signal: controller.signal,
@@ -417,12 +437,15 @@ async function generate() {
       throw new Error('无法确认实况配对标识，请重新制作。');
     }
     const stem = `Brclio-Live-${assetIdentifier}`;
+    const livePackage = makeLivePhotoPackage(result);
     const readme = new TextEncoder().encode('\uFEFF' + [
-      'Brclio 实况照片 · 导入说明', '',
+      'Brclio 实况照片 · 散件备份', '',
       `实况时长：${seconds(result.duration)} 秒`, `尺寸：${result.width} × ${result.height}`,
       `封面：片段内 ${seconds(result.keyPhotoTime)} 秒`, '',
       `照片格式：${extension}`, `配对标识：${assetIdentifier}`, '',
-      `1. 解压 ZIP，或分别下载并保留同名的 ${stem}.${extension} 与 ${stem}.MOV。`,
+      '此 ZIP 是散件备份；要隔空投送到 iPhone，请使用页面的「下载实况包 ZIP」。',
+      '将照片和 MOV 分开发送，接收端可能只得到一张照片和一段视频。', '',
+      `1. 解压 ZIP，保留同名的 ${stem}.${extension} 与 ${stem}.MOV。`,
       '2. 在 Mac「照片」选择「文件 → 导入」，同时选中这一对文件。',
       '3. 检查导入结果是否显示 LIVE，并长按或播放确认动态内容。',
       '4. 需要同步到 iPhone 时，在两台设备上开启同一账号的 iCloud 照片，并等待同步。', '',
@@ -430,12 +453,14 @@ async function generate() {
       `完整实况需要 ${extension} 照片与 MOV 动态文件，不能只保留其中一个。`,
       '导入与识别结果取决于系统和相册版本；请保留原始配对文件。', ''
     ].join('\n'));
-    const zip = makeZipBlob([
+    const pairZip = makeZipBlob([
       { name: `${stem}.${extension}`, data: result.photo }, { name: `${stem}.MOV`, data: result.mov },
       { name: 'README.txt', data: readme }
     ]);
-    const zipUrl = URL.createObjectURL(zip);
+    const zipUrl = URL.createObjectURL(livePackage.zip);
     state.resultUrls.push(zipUrl);
+    const pairZipUrl = URL.createObjectURL(pairZip);
+    state.resultUrls.push(pairZipUrl);
     const photoUrl = URL.createObjectURL(new Blob([result.photo], { type: result.photoMimeType }));
     state.resultUrls.push(photoUrl);
     const movUrl = URL.createObjectURL(new Blob([result.mov], { type: 'video/quicktime' }));
@@ -443,14 +468,16 @@ async function generate() {
     const previewUrl = URL.createObjectURL(result.previewBlob);
     state.resultUrls.push(previewUrl);
     ui['download-live'].href = zipUrl;
-    ui['download-live'].download = `${stem}.zip`;
+    ui['download-live'].download = `${stem}-实况包.zip`;
+    ui['download-pair'].href = pairZipUrl;
+    ui['download-pair'].download = `${stem}-散件备份.zip`;
     ui['download-photo'].href = photoUrl;
     ui['download-photo'].download = `${stem}.${extension}`;
     ui['download-photo'].textContent = `下载 ${extension} 照片 ↓`;
     ui['download-mov'].href = movUrl;
     ui['download-mov'].download = `${stem}.MOV`;
-    ui['result-format'].textContent = `${extension} + MOV`;
-    ui['result-pair-hint'].textContent = `完整实况需要同名 ${extension} 与 MOV 两个文件；ZIP 同时包含配对文件与导入说明。`;
+    ui['result-format'].textContent = `.pvt · ${extension} + MOV`;
+    ui['result-pair-hint'].textContent = '在 Mac 解压后，隔空投送整个 .pvt 包到 iPhone；不要打开包后分别发送照片和视频。';
     ui['result-video'].src = previewUrl;
     ui['result-video'].load();
     ui['result-video'].hidden = false;
@@ -458,11 +485,11 @@ async function generate() {
     ui['source-canvas'].hidden = true;
     ui['preview-empty'].hidden = true;
     ui['result-panel'].hidden = false;
-    ui['preview-caption'].textContent = '制作完成 · 播放预览，或下载配对文件';
-    ui['result-summary'].textContent = `${extension} + MOV · ${seconds(result.duration)} 秒 · ${result.width} × ${result.height} · ZIP ${bytesLabel(zip.size)}`;
+    ui['preview-caption'].textContent = '制作完成 · 播放预览，或下载完整实况包';
+    ui['result-summary'].textContent = `1 张实况 · ${seconds(result.duration)} 秒 · ${result.speed}× · ${result.width} × ${result.height} · ZIP ${bytesLabel(livePackage.zip.size)}`;
     document.documentElement.dataset.liveResult = 'ready';
     document.documentElement.dataset.livePhotoFormat = result.photoFormat;
-    setStatus(`已生成 ${extension} 与 MOV 配对文件。可下载完整 ZIP，或分别保存这两个同名文件后一起导入相册。`);
+    setStatus('实况包已生成。下载 ZIP → 在 Mac 解压 → 隔空投送整个 .pvt → 在 iPhone「照片」长按确认。');
   } catch (error) {
     if (revision === state.revision && error?.name !== 'AbortError') { resetResult(); showError(error); showCover(); }
   } finally {
@@ -498,6 +525,10 @@ ui['source-list'].addEventListener('click', event => {
   setStatus(`已将素材移到第 ${next + 1} 位。`);
 });
 for (const id of ['duration', 'duration-number']) ui[id].addEventListener(id === 'duration' ? 'input' : 'change', event => settingChanged('duration', event.target.value));
+document.querySelectorAll('[data-duration]').forEach(button => button.addEventListener('click', () => {
+  if (!button.disabled) settingChanged('duration', button.dataset.duration);
+}));
+ui['speed'].addEventListener('change', event => settingChanged('speed', event.target.value));
 for (const id of ['start', 'start-number']) ui[id].addEventListener(id === 'start' ? 'input' : 'change', event => settingChanged('start', event.target.value));
 ui['key-photo'].addEventListener('input', event => settingChanged('keyPhotoTime', event.target.value));
 ui['motion'].addEventListener('change', () => settingChanged());
@@ -512,7 +543,7 @@ ui['preview-button'].addEventListener('click', playPreview);
 ui['source-video'].addEventListener('loadedmetadata', updateControls);
 ui['source-video'].addEventListener('loadeddata', () => { if (!state.playing) showCover(); });
 ui['source-video'].addEventListener('timeupdate', () => {
-  if (state.playing && ui['source-video'].currentTime >= state.start + state.duration - 0.015) {
+  if (state.playing && ui['source-video'].currentTime >= state.start + state.duration * state.speed - 0.015) {
     stopPreview(); showCover();
   }
 });

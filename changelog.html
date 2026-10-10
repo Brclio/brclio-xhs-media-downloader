@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 10 日，本次桌面 v2.0.11 补全内置代理更新自动重试：配置故障与下载断流恢复、连续失败 10 次后手动继续；Android 沿用 v1.0.13。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.12 改进实况整包导出：制作实况默认导出完整 PVT 包，支持整包隔空投送到 iPhone、0.5–8 秒成片、视频倍速和一致的封面预览；Android 沿用 v1.0.13。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -43,9 +43,9 @@
             <a class="nav-link" href="/#support">支持</a>
           </nav>
 
-          <div class="header-status" aria-label="记录整理至 2026 年 10 月 9 日">
+          <div class="header-status" aria-label="记录整理至 2026 年 10 月 10 日">
             <span class="status-dot status-dot-blue" aria-hidden="true"></span>
-            <span>更新至 2026.10.09</span>
+            <span>更新至 2026.10.10</span>
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次补全桌面内置代理更新的自动重试，配置获取失败与下载断流可自动恢复，连续失败 10 次后由你点击继续。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次改进实况制作的手机交接：下载实况包，在 Mac 解压，再把整个 PVT 包隔空投送到 iPhone。
             </p>
 
             <div class="release-hero-actions">
@@ -73,18 +73,18 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.11</strong>
-              <small>正式版 · Mac / Windows</small>
+              <strong>v2.0.12</strong>
+              <small>实况整包导出 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
                 <strong>Web</strong>
-                <span>随机与自定义昵称</span>
+                <span>完整 PVT 实况包</span>
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>内置代理自动重试</span>
+                <span>视频倍速与封面预览</span>
               </div>
               <div class="summary-stat">
                 <strong>1.0.13</strong>
@@ -96,8 +96,8 @@
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 连续失败 10 次后停止自动重试，手动继续会重新计数。修复从运行 v2.0.11 后生效，Android 保持 v1.0.13。</p>
-            <a class="release-summary-link" href="#update-proxy-retry-fix">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> HEIC 与 JPEG 样本已获 iPhone 实机接收和播放确认。请在 Mac 解压 ZIP 后发送整个 PVT 包；Android 保持 v1.0.13。</p>
+            <a class="release-summary-link" href="#live-photo-pvt-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.11、代理、自动重试、昵称" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.12、实况、隔空投送、倍速" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,6 +129,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#live-photo-pvt-update"><span>v2.0.12</span><strong>整包隔空投送实况到 iPhone</strong></a>
               <a href="#update-proxy-retry-fix"><span>v2.0.11</span><strong>补全内置代理更新自动重试</strong></a>
               <a href="#review-nickname-update"><span>v2.0.10</span><strong>昵称与评价正文规则</strong></a>
               <a href="#reviews-orders-update"><span>10.09</span><strong>评价 · 订单 · 营业额</strong></a><a href="#desktop-large-video-update"><span>v2.0.8</span><strong>客户端大视频直接保存</strong></a>
@@ -195,6 +196,21 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
+            <article id="live-photo-pvt-update" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-10"><span>10.10</span><small>2026 · 实况手机交接</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.12</span><span class="release-badge release-badge-blue">网页 · Mac / Windows</span><span class="release-status">实况制作改进</span></div><h3>把完整实况，隔空投送到 iPhone</h3></div></header>
+                <p class="release-lead">「制作实况」默认下载含完整 PVT 实况包的 ZIP。在 Mac 解压后选中整个包隔空投送，避免手机把照片和视频作为两个散件接收。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>默认保存完整实况包</strong>PVT 包内包含配对 HEIC（可选 JPEG）、MOV 和配套信息。HEIC 2 秒与 JPEG 3 秒样本已由用户在 iPhone 实机确认实况接收及长按播放；散件下载保留在备用入口。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>0.5–8 秒，按素材选择倍速</strong>提供 3 / 5 / 8 秒快捷选择。视频支持 1 / 1.5 / 2 / 3 倍速；1 倍速可保留声音或静音，其他倍速统一静音，切回原速恢复声音选项。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>预览与最终封面对齐</strong>片段播放与封面按同一倍速和实际输出帧取样；修改素材、格式或设置后清除旧结果，可以取消并重新制作。</p></div>
+                </div>
+                <p class="release-card-note">请在 Mac 解压 ZIP 后发送整个 .pvt，不要进入包内分别发送文件。8 秒是本工具的成片范围；手机实测对应上述两个样本，其他时长与设备请检查实际接收结果。构建与公开发布的核验记录见版本说明，Android 保持 v1.0.13。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v2.0.12.md" target="_blank" rel="noopener noreferrer">v2.0.12 说明与验证范围 ↗</a><a href="/live.html">打开实况制作 ↗</a><span>PVT 整包交接 · 2026.10.10</span></div>
+              </div>
+            </article>
+
             <article id="update-proxy-retry-fix" class="release-entry release-entry-featured" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-10"><span>10.10</span><small>2026 · 更新重试</small></time></div>
               <div class="release-card">
@@ -1748,7 +1764,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.10 · 桌面 v2.0.11 · Android v1.0.13。</p>
+        <p>网页版与客户端记录整理至 2026.10.10 · 桌面 v2.0.12 · Android v1.0.13。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

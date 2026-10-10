@@ -80,7 +80,7 @@ test("JPEG pairs through the Apple maker note while preserving image scan bytes 
 });
 
 test("strict validation rejects mislabeled Annex B, missing codec config, reordered timestamps, and excessive duration", () => {
-  assert.throws(() => validateLivePhotoOptions({ ...options(), duration: 3.1 }), /duration/);
+  assert.throws(() => validateLivePhotoOptions({ ...options(), duration: 8.1 }), /duration/);
   assert.throws(() => validateLivePhotoOptions({ ...options(), keyPhotoTime: 0.5 }), /keyPhotoTime/);
   assert.throws(() => validateLivePhotoOptions({ ...options(), assetIdentifier: "bad" }), /UUID/);
   assert.throws(() => validateLivePhotoOptions({ ...options(), decoderConfig: new Uint8Array([1]) }), /configuration/);
@@ -89,6 +89,41 @@ test("strict validation rejects mislabeled Annex B, missing codec config, reorde
   assert.throws(() => validateLivePhotoOptions({ ...options(), samples: [{ ...options().samples[0], data: new Uint8Array([0, 0, 0, 1, 0x65, 0]) }] }), /AVC/);
   assert.throws(() => validateLivePhotoOptions({ ...options(), audio: { sampleRate: 44100, channels: 2, decoderConfig: new Uint8Array([0x11, 0x90]), samples: [{ data: new Uint8Array([1]), timestamp: 0, duration: 500000 }] } }), /sample rate/);
   assert.throws(() => pairLivePhotoJpeg(new Uint8Array([255, 216, 255, 217]), id), /scan/);
+});
+
+test("eight-second video and AAC retain final packets and key-photo timed metadata", () => {
+  const input = options();
+  const durationUs = 8_000_000;
+  input.duration = 8;
+  input.keyPhotoTime = 239 / 30;
+  input.samples = Array.from({ length: 240 }, (_, index) => {
+    const timestamp = Math.round(index / 30 * 1e6);
+    return { ...options().samples[0], timestamp,
+      duration: Math.round((index + 1) / 30 * 1e6) - timestamp, keyFrame: index % 30 === 0 };
+  });
+  input.audio = { sampleRate: 48000, channels: 2, decoderConfig: new Uint8Array([0x11, 0x90]),
+    samples: Array.from({ length: 375 }, (_, index) => {
+      const timestamp = Math.round(index * 1024 / 48000 * 1e6);
+      return { data: new Uint8Array([1]), timestamp,
+        duration: Math.round((index + 1) * 1024 / 48000 * 1e6) - timestamp };
+    }) };
+  const normalized = validateLivePhotoOptions(input);
+  assert.equal(normalized.samples.at(-1).timestamp + normalized.samples.at(-1).duration, durationUs);
+  assert.equal(normalized.audio.samples.at(-1).timestamp + normalized.audio.samples.at(-1).duration, durationUs);
+  const data = muxLivePhotoMov(input), moov = atoms(data).find(box => box.type === 'moov');
+  const tracks = atoms(data, moov.data, moov.end).filter(box => box.type === 'trak');
+  assert.equal(tracks.length, 3);
+  for (const track of tracks.slice(0, 2)) {
+    const header = child(data, child(data, track, 'mdia'), 'mdhd');
+    assert.equal(uint(data, header.data + 16), durationUs);
+  }
+  const edit = child(data, child(data, tracks[2], 'edts'), 'elst');
+  assert.equal(uint(data, edit.data + 8), Math.round(input.keyPhotoTime * 1e6));
+  const metadata = child(data, child(data, tracks[2], 'mdia'), 'mdhd');
+  assert.equal(uint(data, metadata.data + 16), 33333);
+  const lastFrame = input.samples.at(-1);
+  assert.throws(() => validateLivePhotoOptions({ ...input,
+    samples: [...input.samples.slice(0, -1), { ...lastFrame, timestamp: durationUs }] }), /timestamp/);
 });
 
 test("AAC padding is capped by an edit while the media sample remains complete", () => {

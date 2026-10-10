@@ -13,6 +13,6 @@
 
 ## 制作器输出
 
-默认生成真正使用 HEVC 编码的 `.HEIC` 和 H.264 / 可选 AAC 的 `.MOV`。照片 Apple MakerNote 17 与视频 `com.apple.quicktime.content.identifier` 写入相同 UUID，MOV 同时包含 `com.apple.quicktime.still-image-time` 定时标记。文件名共用 UUID，可以分别直接下载，也可以下载完整 ZIP。
+默认生成真正使用 HEVC 编码的 `.HEIC` 和 H.264 / 可选 AAC 的 `.MOV`。照片 Apple MakerNote 17 与视频 `com.apple.quicktime.content.identifier` 写入相同 UUID，MOV 同时包含 `com.apple.quicktime.still-image-time` 定时标记。文件名共用 UUID。v2.0.12 将默认 ZIP 改为含照片、MOV、`metadata.plist` 的完整 `.pvt` 包；在 Mac 解压后隔空投送整个包，避免两个散件在手机分开。散件 ZIP 和分别下载仍保留为备用；HEIC 和 JPEG 两种 PVT 已由用户在其 iPhone 实测确认实况接收及播放，见[PVT 验证记录](live-photo-pvt-verification.json)。0.5–8 秒为本工具的成片范围，默认 3 秒。
 
 输出封面来自 8 位 Canvas，最长边最多 1440 像素；这次兼容 HEIC 文件格式，不保留样本的 10 位或源 HDR 信息。完整流程和验证范围见[实况制作说明](live-photo-maker.md)。

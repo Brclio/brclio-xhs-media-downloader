@@ -152,6 +152,7 @@ app.whenReady().then(async () => {
   const origin = `http://127.0.0.1:${server.address().port}`;
   win = new BrowserWindow({ show: false, width: 1440, height: 1000,
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false } });
+  win.webContents.setAudioMuted(true);
   win.webContents.session.webRequest.onBeforeRequest((details, callback) => callback({
     cancel: ![origin + '/', 'xhs-app://local/', 'data:', 'blob:', ...(publicOrigin ? [publicOrigin + '/'] : [])].some(prefix => details.url.startsWith(prefix)),
   }));
@@ -163,6 +164,8 @@ app.whenReady().then(async () => {
   const evaluate = script => win.webContents.executeJavaScript(script, true);
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
   const download = async (selector, filename, label) => {
+    await evaluate(`(() => { const details = document.querySelector(${JSON.stringify(selector)}).closest('details');
+      if (details) details.open = true; })()`);
     let downloaded;
     win.webContents.session.once('will-download', (_event, item) => {
       item.setSavePath(filename);
@@ -204,7 +207,8 @@ app.whenReady().then(async () => {
       video.removeAttribute('src'); video.load(); URL.revokeObjectURL(url);
       return { jpeg: await window.liveVerifyBase64(result.jpeg), mov: await window.liveVerifyBase64(result.mov),
         preview: await window.liveVerifyBase64(result.previewBlob), assetIdentifier: result.assetIdentifier,
-        width: result.width, height: result.height, duration: result.duration, keyPhotoTime: result.keyPhotoTime, progress, decoded };
+        width: result.width, height: result.height, duration: result.duration, keyPhotoTime: result.keyPhotoTime,
+        speed: result.speed, sourceSpan: result.sourceSpan, hasAudio: result.hasAudio, progress, decoded };
     })()`);
     const jpg = path.join(temporary, name + '.jpg');
     const mov = path.join(temporary, name + '.mov');
@@ -214,6 +218,7 @@ app.whenReady().then(async () => {
     const probe = JSON.parse(run('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', mov]));
     const artifact = { name, jpg, mov, options, width: output.width, height: output.height,
       duration: output.duration, keyPhotoTime: output.keyPhotoTime, assetIdentifier: output.assetIdentifier,
+      speed: output.speed, sourceSpan: output.sourceSpan, hasAudio: output.hasAudio,
       decoded: output.decoded, progress: output.progress, probe };
     evidence.artifacts.push(artifact);
     const video = probe.streams.find(stream => stream.codec_type === 'video');
@@ -222,6 +227,9 @@ app.whenReady().then(async () => {
     assert.ok(output.decoded.currentTime > 0, name + ': actual decoder advances');
     assert.ok(Math.abs(output.decoded.duration - options.duration) < 0.15, name + ': renderer duration');
     assert.equal(probe.streams.some(stream => stream.codec_type === 'audio'), expectations.audio, name + ': audio track');
+    assert.equal(output.hasAudio, expectations.audio, name + ': result reports actual audio');
+    assert.equal(output.speed, options.speed ?? 1, name + ': result speed');
+    assert.equal(output.sourceSpan, output.duration * output.speed, name + ': result source span');
     const timed = probe.streams.find(stream => stream.codec_type === 'data' && stream.codec_tag_string === 'mebx');
     assert.ok(timed, name + ': still-image-time metadata track');
     const packets = JSON.parse(run('ffprobe', ['-v', 'error', '-select_streams', 'd', '-show_packets', '-of', 'json', mov])).packets;
@@ -233,6 +241,32 @@ app.whenReady().then(async () => {
       name + ': QuickTime content identifier is parser-readable');
     assert.ok(output.progress.length > 2, name + ': progress callbacks');
     if (expectations.portrait) assert.ok(output.height > output.width, name + ': portrait stays portrait');
+    const decodeFrame = (filename, time) => run('ffmpeg', ['-v', 'error', '-i', filename, '-ss', String(time),
+      '-frames:v', '1', '-vf', 'scale=96:54', '-pix_fmt', 'gray', '-f', 'rawvideo', '-'], { encoding: null });
+    const frameDifference = (left, right) => {
+      assert.equal(left.length, 96 * 54, 'decoded comparison frame has complete pixels');
+      assert.equal(left.length, right.length, 'comparison frames have the same dimensions');
+      let difference = 0;
+      for (let index = 0; index < left.length; index++) difference += Math.abs(left[index] - right[index]);
+      return difference / left.length;
+    };
+    if (expectations.speedMapping) {
+      const source = path.join(temporary, fixtures[files[0]].name);
+      artifact.speedMapping = [0.2, 0.6, 1.3].map(time => {
+        const actual = decodeFrame(mov, time), sourceTime = options.start + time * options.speed;
+        const expectedError = frameDifference(actual, decodeFrame(source, sourceTime));
+        const originalSpeedError = frameDifference(actual, decodeFrame(source, options.start + time));
+        assert.ok(expectedError < 5, name + ': output frame matches its sped-up source time');
+        assert.ok(expectedError < originalSpeedError * 0.6, name + ': frame differs from original-speed mapping');
+        return { outputTime: time, sourceTime, expectedError, originalSpeedError };
+      });
+    }
+    if (expectations.lastFrameCover) {
+      assert.equal(output.keyPhotoTime, 0.5, name + ': fractional final frame is the selected cover');
+      const cover = decodeFrame(jpg, 0), finalFrame = decodeFrame(mov, 0.5);
+      artifact.coverDifference = frameDifference(cover, finalFrame);
+      assert.ok(artifact.coverDifference < 5, name + ': still cover matches decoded final frame');
+    }
     if (expectations.audio) {
       const pcm = run('ffmpeg', ['-v', 'error', '-i', mov, '-map', '0:a:0', '-ac', '1', '-ar', '48000', '-f', 'f32le', '-'], { encoding: null });
       const samples = new Float32Array(pcm.buffer, pcm.byteOffset, Math.floor(pcm.length / 4));
@@ -264,10 +298,18 @@ app.whenReady().then(async () => {
   await create('trimmed-audio-video', ['audio'], { start: 1, duration: 2, keyPhotoTime: 0.7, motion: 'still', includeAudio: true }, { audio: true });
   await create('portrait-video', ['portrait'], { start: 0.2, duration: 1.2, keyPhotoTime: 0.4, motion: 'still', includeAudio: false }, { audio: false, portrait: true });
   await create('silent-video', ['silent'], { start: 0.1, duration: 1.4, keyPhotoTime: 0.8, motion: 'still', includeAudio: false }, { audio: false });
+  await create('eight-second-images', ['red', 'green', 'blue'], { duration: 8, keyPhotoTime: 7.999,
+    motion: 'still', includeAudio: false }, { audio: false });
+  await create('double-speed-video', ['audio'], { start: 0.2, duration: 2, keyPhotoTime: 0.7,
+    speed: 2, includeAudio: true }, { audio: false, speedMapping: true });
+  await create('fractional-final-cover', ['red', 'blue'], { duration: 0.51, keyPhotoTime: 0.509,
+    motion: 'still', includeAudio: false }, { audio: false, lastFrameCover: true });
 
   for (const [name, files, options] of [
-    ['duration-over-limit', ['red'], { duration: 3.2, start: 0 }],
+    ['duration-over-limit', ['red'], { duration: 8.2, start: 0 }],
     ['trim-past-end', ['portrait'], { duration: 1, start: 1.8 }],
+    ['speed-trim-past-end', ['audio'], { duration: 2, speed: 3, start: 0 }],
+    ['image-speed', ['red'], { duration: 1, speed: 2 }],
     ['mixed-image-and-video', ['red', 'portrait'], { duration: 1, start: 0 }],
   ]) {
     const rejected = await evaluate(`(async () => { try {
@@ -312,6 +354,11 @@ app.whenReady().then(async () => {
     }
     await evaluate("window.liveVerifyUpload(['red', 'green', 'blue'])");
     await until(() => evaluate("document.querySelectorAll('#source-list li').length === 3"), surface + ': image upload');
+    assert.equal(await evaluate("document.querySelector('[data-duration=\"8\"]').disabled"), false,
+      surface + ': images allow the eight-second preset');
+    await click('[data-duration="8"]');
+    assert.equal(await evaluate("Number(document.querySelector('#duration-number').value)"), 8,
+      surface + ': eight-second preset selects actual duration');
     const names = "Array.from(document.querySelectorAll('#source-list .file-name')).map(element => element.textContent.replace(/^\\d+\\. /, ''))";
     const before = await evaluate(names);
     await click('#source-list button[data-index="1"][data-action="up"]');
@@ -322,6 +369,39 @@ app.whenReady().then(async () => {
     await until(() => evaluate("document.querySelectorAll('#source-list li').length === 0"), surface + ': reset files');
     await evaluate("window.liveVerifyUpload(['audio'])");
     await until(() => evaluate("!document.querySelector('#create-live').disabled"), surface + ': inspected video');
+    assert.equal(await evaluate("document.querySelector('[data-duration=\"8\"]').disabled"), true,
+      surface + ': preset exceeding video length is disabled');
+    await evaluate(`for (const [id, value] of [['duration-number', '2'], ['start-number', '0.2'], ['key-photo', '0.7'], ['speed', '2']]) {
+      const input = document.getElementById(id); input.value = value;
+      input.dispatchEvent(new Event(id === 'key-photo' ? 'input' : 'change', { bubbles: true })); }`);
+    await until(() => evaluate("!document.querySelector('#source-video').seeking && Math.abs(document.querySelector('#source-video').currentTime - 1.6) < 0.02"),
+      surface + ': speed-aware cover preview seeks to selected source frame');
+    const speedSettings = await evaluate(`({ checked: document.querySelector('#include-audio').checked,
+      disabled: document.querySelector('#include-audio').disabled, muted: document.querySelector('#source-video').muted,
+      presets: [...document.querySelectorAll('[data-duration]')].map(button => button.disabled) })`);
+    assert.deepEqual(speedSettings, { checked: true, disabled: true, muted: true, presets: [true, true, true] },
+      surface + ': accelerated clip stays muted and disables presets longer than the available source');
+    await click('#preview-button');
+    await until(() => evaluate("!document.querySelector('#source-video').paused && document.querySelector('#source-video').currentTime > 0.2"),
+      surface + ': double-speed preview plays');
+    const playback = await evaluate(`({ rate: document.querySelector('#source-video').playbackRate,
+      muted: document.querySelector('#source-video').muted, time: document.querySelector('#source-video').currentTime })`);
+    assert.equal(playback.rate, 2, surface + ': preview uses the selected playback rate');
+    assert.equal(playback.muted, true, surface + ': double-speed preview is muted');
+    await click('#preview-button');
+    await evaluate("document.querySelector('#speed').value = '1'; document.querySelector('#speed').dispatchEvent(new Event('change', { bubbles: true }));");
+    assert.equal(await evaluate("document.querySelector('#include-audio').disabled"), false,
+      surface + ': original speed restores audio control');
+    assert.equal(await evaluate("document.querySelector('#include-audio').checked"), true,
+      surface + ': returning to original speed preserves the audio choice');
+    await click('#preview-button');
+    await until(() => evaluate("!document.querySelector('#source-video').paused"), surface + ': original-speed preview plays');
+    assert.deepEqual(await evaluate(`({ rate: document.querySelector('#source-video').playbackRate,
+      muted: document.querySelector('#source-video').muted })`), { rate: 1, muted: false },
+      surface + ': original-speed preview restores playback rate and audio');
+    await click('#preview-button');
+    evidence.checks.push({ name: surface + ': speed-aware cover and playback preview, audio choice restoration and source-aware presets',
+      speedSettings, playback });
     await click('#create-live');
     await until(() => evaluate("!document.querySelector('#cancel-live').hidden && document.querySelector('#live-progress').value >= 0.06"), surface + ': conversion active');
     await click('#cancel-live');
@@ -334,33 +414,55 @@ app.whenReady().then(async () => {
     const exported = path.join(temporary, surface + '-ui.zip');
     await download('#download-live', exported, surface + ': ZIP');
     const entries = run('unzip', ['-Z1', exported]).trim().split('\n');
-    assert.equal(entries.length, 3, surface + ': export contains pair and instructions');
+    assert.equal(entries.length, 4, surface + ': export contains packaged pair, metadata and instructions');
     const photoName = entries.find(name => /\.HEIC$/.test(name));
     const movName = entries.find(name => /\.MOV$/.test(name));
     assert.ok(photoName && movName && photoName.replace(/\.HEIC$/, '') === movName.replace(/\.MOV$/, ''), surface + ': same-name HEIC/MOV pair');
-    assert.ok(entries.some(name => /README.*\.txt$/.test(name)), surface + ': import instructions');
+    const bundleName = path.dirname(photoName);
+    assert.ok(bundleName.endsWith('.pvt') && path.dirname(movName) === bundleName,
+      surface + ': paired resources stay inside one PVT package');
+    assert.deepEqual(entries.slice().sort(), [photoName, movName, `${bundleName}/metadata.plist`, 'README.txt'].sort(),
+      surface + ': PVT structure has no extra files');
     const extracted = path.join(temporary, surface + '-ui-export');
     fs.mkdirSync(extracted);
     run('unzip', ['-q', exported, '-d', extracted]);
+    const plistPath = path.join(extracted, bundleName, 'metadata.plist');
+    if (process.platform === 'darwin') {
+      run('/usr/bin/plutil', ['-lint', plistPath]);
+      assert.deepEqual(JSON.parse(run('/usr/bin/plutil', ['-convert', 'json', '-o', '-', plistPath])),
+        { PFVideoComplementMetadataVersionKey: '1' }, surface + ': actual package metadata is a valid Apple plist');
+    }
     for (const [id, filename] of [['download-photo', photoName], ['download-mov', movName]]) {
       const actualName = await evaluate(`document.querySelector('#${id}').download`);
-      assert.equal(actualName, filename, surface + ': direct download uses the paired filename');
-      const directPath = path.join(temporary, surface + '-direct-' + filename);
+      assert.equal(actualName, path.basename(filename), surface + ': direct download uses the paired filename');
+      const directPath = path.join(temporary, surface + '-direct-' + path.basename(filename));
       await download('#' + id, directPath, surface + ': ' + id);
       assert.deepEqual(fs.readFileSync(directPath), fs.readFileSync(path.join(extracted, filename)), surface + ': direct download and ZIP bytes match');
     }
-    const zipEvidence = { surface, exported, entries };
+    const pairExported = path.join(temporary, surface + '-pair.zip');
+    await download('#download-pair', pairExported, surface + ': loose pair ZIP');
+    const pairEntries = run('unzip', ['-Z1', pairExported]).trim().split('\n');
+    assert.deepEqual(pairEntries.slice().sort(), [path.basename(photoName), path.basename(movName), 'README.txt'].sort(),
+      surface + ': loose backup ZIP keeps both resources at the root');
+    const pairExtracted = path.join(temporary, surface + '-pair-export');
+    run('unzip', ['-q', pairExported, '-d', pairExtracted]);
+    for (const filename of [photoName, movName]) assert.deepEqual(fs.readFileSync(path.join(pairExtracted, path.basename(filename))),
+      fs.readFileSync(path.join(extracted, filename)), surface + ': loose backup and PVT contain identical media');
+    const zipEvidence = { surface, exported, entries, pairExported, pairEntries };
     if (native) zipEvidence.nativeRecognition = run(native, [path.join(extracted, photoName), path.join(extracted, movName)], {
-      env: { ...process.env, LIVE_PHOTO_UUID: photoName.slice('Brclio-Live-'.length, -'.HEIC'.length) }
+      env: { ...process.env, LIVE_PHOTO_UUID: path.basename(photoName).slice('Brclio-Live-'.length, -'.HEIC'.length) }
     });
     evidence.checks.push({ name: surface + ': actual ZIP download and native recognition', ...zipEvidence });
-    const previousURLs = await evaluate("['download-live', 'download-photo', 'download-mov'].map(id => document.querySelector('#' + id).href).concat(document.querySelector('#result-video').src)");
+    const previousURLs = await evaluate("['download-live', 'download-pair', 'download-photo', 'download-mov'].map(id => document.querySelector('#' + id).href).concat(document.querySelector('#result-video').src)");
     await evaluate("document.querySelector('#photo-format').value = 'jpeg'; document.querySelector('#photo-format').dispatchEvent(new Event('change', { bubbles: true }));");
     assert.equal(await evaluate("document.querySelector('#result-panel').hidden"), true, surface + ': format change removes the old result');
-    assert.equal(await evaluate("['download-live', 'download-photo', 'download-mov'].every(id => !document.querySelector('#' + id).hasAttribute('href'))"), true, surface + ': format change clears all downloads');
+    assert.equal(await evaluate("['download-live', 'download-pair', 'download-photo', 'download-mov'].every(id => !document.querySelector('#' + id).hasAttribute('href'))"), true, surface + ': format change clears all downloads');
     const revoked = await evaluate('window.liveVerifyRevoked');
-    assert.ok(previousURLs.every(url => revoked.includes(url)), surface + ': all four prior output URLs revoked');
-    await evaluate("document.querySelector('#include-audio').checked = false; document.querySelector('#include-audio').dispatchEvent(new Event('change')); document.querySelector('#duration-number').value = '1'; document.querySelector('#duration-number').dispatchEvent(new Event('change'));");
+    assert.equal(previousURLs.length, 5);
+    assert.ok(previousURLs.every(url => revoked.includes(url)), surface + ': all five prior output URLs revoked');
+    await evaluate(`for (const [id, value] of [['duration-number', '1'], ['speed', '2']]) {
+      const input = document.getElementById(id); input.value = value;
+      input.dispatchEvent(new Event('change', { bubbles: true })); }`);
     await click('#create-live');
     await until(() => evaluate("!document.querySelector('#result-panel').hidden && !document.querySelector('#create-live').disabled"), surface + ': optional JPEG output');
     const fallback = await evaluate(`({ format: document.documentElement.dataset.livePhotoFormat,
@@ -372,10 +474,25 @@ app.whenReady().then(async () => {
     await download('#download-photo', fallbackPhoto, surface + ': optional JPG');
     await download('#download-mov', fallbackMov, surface + ': optional MOV');
     assert.deepEqual(Array.from(fs.readFileSync(fallbackPhoto).subarray(0, 2)), [255, 216], surface + ': JPEG choice encodes real JPEG');
+    const fallbackProbe = JSON.parse(run('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', fallbackMov]));
+    assert.equal(fallbackProbe.streams.some(stream => stream.codec_type === 'audio'), false,
+      surface + ': accelerated UI output is silent while the retained audio choice remains checked');
+    assert.ok(Math.abs(Number(fallbackProbe.format.duration) - 1) < 0.03, surface + ': accelerated UI output duration');
     const fallbackRecognition = native ? run(native, [fallbackPhoto, fallbackMov], {
       env: { ...process.env, LIVE_PHOTO_UUID: fallback.photoName.slice('Brclio-Live-'.length, -4) }
     }) : undefined;
     evidence.checks.push({ name: surface + ': explicit JPEG choice and format-change cleanup', nativeRecognition: fallbackRecognition });
+    const acceleratedURLs = await evaluate("['download-live', 'download-pair', 'download-photo', 'download-mov'].map(id => document.querySelector('#' + id).href).concat(document.querySelector('#result-video').src)");
+    await evaluate("document.querySelector('#speed').value = '1'; document.querySelector('#speed').dispatchEvent(new Event('change', { bubbles: true }));");
+    assert.equal(await evaluate("document.querySelector('#result-panel').hidden"), true,
+      surface + ': changed speed removes stale output');
+    assert.equal(await evaluate("['download-live', 'download-pair', 'download-photo', 'download-mov'].every(id => !document.querySelector('#' + id).hasAttribute('href'))"), true,
+      surface + ': changed speed clears every download');
+    const allRevoked = await evaluate('window.liveVerifyRevoked');
+    assert.ok(acceleratedURLs.every(url => allRevoked.includes(url)), surface + ': changing speed revokes all five output URLs');
+    assert.deepEqual(await evaluate(`({ checked: document.querySelector('#include-audio').checked,
+      disabled: document.querySelector('#include-audio').disabled })`), { checked: true, disabled: false },
+      surface + ': original speed restores the retained audio choice after an accelerated export');
     await click('#clear-files');
     assert.equal(await evaluate("document.querySelector('#result-panel').hidden"), true, surface + ': reset removes prior output');
     evidence.checks.push(surface + ': actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390');

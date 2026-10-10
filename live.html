@@ -49,9 +49,15 @@
           <fieldset id="settings-fields" disabled>
             <legend class="visually-hidden">实况制作参数</legend>
             <div class="control-group">
-              <div class="control-heading"><label for="duration">实况时长</label><div class="number-unit"><input class="number-input" id="duration-number" type="number" min="0.5" max="3" step="0.01" value="3" aria-label="实况时长，秒"><span>秒</span></div></div>
-              <input id="duration" type="range" min="0.5" max="3" step="0.01" value="3" aria-describedby="duration-hint">
-              <p class="field-hint" id="duration-hint">可选 0.5–3 秒。3 秒是常见实况时长，较短视频会自动缩短。</p>
+              <div class="control-heading"><label for="duration">成片时长</label><div class="number-unit"><input class="number-input" id="duration-number" type="number" min="0.5" max="8" step="0.01" value="3" aria-label="实况成片时长，秒"><span>秒</span></div></div>
+              <div class="duration-presets" role="group" aria-label="常用成片时长"><button type="button" data-duration="3" aria-pressed="true">3 秒 · 推荐</button><button type="button" data-duration="5" aria-pressed="false">5 秒</button><button type="button" data-duration="8" aria-pressed="false">8 秒</button></div>
+              <input id="duration" type="range" min="0.5" max="8" step="0.01" value="3" aria-describedby="duration-hint">
+              <p class="field-hint" id="duration-hint">可选 0.5–8 秒。推荐先用 3 秒测试手机接收；较短视频会自动缩短。</p>
+            </div>
+            <div class="control-group" id="speed-settings" hidden>
+              <label class="select-label" for="speed">视频倍速</label>
+              <select id="speed" aria-describedby="speed-hint"><option value="1">1× · 原速</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select>
+              <p class="field-hint" id="speed-hint">成片时长不变，倍速越高取用的原视频越长。倍速成片为静音。</p>
             </div>
             <div class="control-group" id="video-settings" hidden>
               <div class="control-heading"><label for="start">视频起点</label><div class="number-unit"><input class="number-input" id="start-number" type="number" min="0" max="0" step="0.01" value="0" aria-label="视频起点，秒"><span>秒</span></div></div>
@@ -60,7 +66,7 @@
             </div>
             <div class="control-group">
               <div class="control-heading"><label for="key-photo">封面时刻</label><output id="key-photo-label" for="key-photo">片段内 1.50 秒</output></div>
-              <input id="key-photo" type="range" min="0" max="2.9667" step="0.01" value="1.5" aria-describedby="key-photo-hint">
+              <input id="key-photo" type="range" min="0" max="2.966666666666667" step="0.03333333333333333" value="1.5" aria-describedby="key-photo-hint">
               <p class="field-hint" id="key-photo-hint">这一帧会成为实况照片的静态封面。</p>
             </div>
             <div class="control-group" id="motion-settings" hidden>
@@ -92,14 +98,24 @@
         <div class="progress-panel" id="progress-panel" hidden><div class="progress-heading"><span id="progress-label">准备素材…</span><output id="progress-percent">0%</output></div><progress id="live-progress" max="1" value="0" aria-labelledby="progress-label"></progress></div>
         <p class="status-message" id="live-status" role="status" aria-live="polite"></p>
         <div class="notice notice-error" id="live-error" role="alert" hidden></div>
-        <div class="result-panel" id="result-panel" hidden><div class="result-heading"><span class="success-label">实况文件已制作</span><span class="result-format" id="result-format">HEIC + MOV</span></div><p id="result-summary"></p><a class="button button-yellow" id="download-live" download="Brclio-Live-Photo.zip">下载完整实况 ZIP <span aria-hidden="true">↓</span></a><div class="direct-downloads" aria-label="分别下载配对文件"><a class="button button-quiet" id="download-photo" download="Brclio-Live-Photo.HEIC">下载 HEIC 照片 <span aria-hidden="true">↓</span></a><a class="button button-quiet" id="download-mov" download="Brclio-Live-Photo.MOV">下载 MOV 视频 <span aria-hidden="true">↓</span></a></div><p class="field-hint"><span id="result-pair-hint">完整实况需要同名 HEIC 与 MOV 两个文件；ZIP 同时包含配对文件与导入说明。</span> <a href="#import-help">查看如何存入相册</a></p></div>
-        <p class="export-note">导出后请按说明导入「照片」；将 ZIP 下载到手机文件夹，不会自动变成相册里的实况。</p>
+        <div class="result-panel" id="result-panel" hidden>
+          <div class="result-heading"><span class="success-label">实况包已制作</span><span class="result-format" id="result-format">.pvt · HEIC + MOV</span></div>
+          <p id="result-summary"></p>
+          <a class="button button-yellow" id="download-live" download="Brclio-Live-Photo.zip">下载实况包 ZIP <span aria-hidden="true">↓</span></a>
+          <p class="field-hint"><span id="result-pair-hint">在 Mac 解压后，隔空投送整个 .pvt 包到 iPhone；不要打开包后分别发送照片和视频。</span> <a href="#import-help">查看手机接收步骤</a></p>
+          <details class="backup-downloads"><summary>散件备份与其他导入方式</summary>
+            <a class="text-button" id="download-pair" download="Brclio-Live-Photo-pair.zip">下载散件备份 ZIP ↓</a>
+            <div class="direct-downloads" aria-label="分别下载配对文件"><a class="button button-quiet" id="download-photo" download="Brclio-Live-Photo.HEIC">下载 HEIC 照片 <span aria-hidden="true">↓</span></a><a class="button button-quiet" id="download-mov" download="Brclio-Live-Photo.MOV">下载 MOV 视频 <span aria-hidden="true">↓</span></a></div>
+            <p class="field-hint">散件供备份或在 Mac「照片」中同时导入；分开发送到手机可能变成独立的照片与视频。</p>
+          </details>
+        </div>
+        <p class="export-note">手机交接请选择完整 .pvt 包。直接发送 ZIP，或分别发送照片与 MOV，不会自动存成相册里的实况。</p>
       </section>
     </section>
 
     <section class="import-section" id="import-help" aria-labelledby="import-title">
-      <div class="import-heading"><p class="eyebrow">FROM FILES TO PHOTOS</p><h2 id="import-title">让实况，回到相册。</h2><p>实况由一张照片和一段视频配对组成。请保留同名文件，一起导入。</p></div>
-      <ol class="import-steps"><li><span class="step-number">1</span><div><h3>保存完整配对文件</h3><p id="import-pair-hint">下载并解压 ZIP，或分别下载同名 .HEIC 与 .MOV。完整实况需要这两个文件，不要只保留照片或视频。</p></div></li><li><span class="step-number">2</span><div><h3>一起导入 Mac「照片」</h3><p>在「照片」中选择「文件 → 导入」，同时选中这一对文件，再检查是否显示 LIVE 标记。</p></div></li><li><span class="step-number">3</span><div><h3>通过 iCloud 同步到 iPhone</h3><p>Mac 与 iPhone 开启同一账号的 iCloud 照片后，等待同步，并在手机相册长按确认。导入结果取决于系统与相册版本。</p></div></li></ol>
+      <div class="import-heading"><p class="eyebrow">FROM FILES TO PHOTOS</p><h2 id="import-title">整个包，送到手机。</h2><p>.pvt 将照片、动态视频和配套信息放在一起。隔空投送时请选择整个包。</p></div>
+      <ol class="import-steps"><li><span class="step-number">1</span><div><h3>在 Mac 解压实况包 ZIP</h3><p id="import-pair-hint">下载并解压，得到一个 .pvt 包。保持包完整，不要把内部照片和视频拆开。</p></div></li><li><span class="step-number">2</span><div><h3>隔空投送整个 .pvt</h3><p>在 Finder 选中 .pvt → 共享 → 隔空投送 → 选择你的 iPhone。发送的是 .pvt，不能是 ZIP 或包内两个散件。</p></div></li><li><span class="step-number">3</span><div><h3>在 iPhone「照片」确认实况</h3><p>接收后检查 LIVE / 实况标记，并长按播放。如果收到的仍是两个独立文件，请确认发送的是整个 .pvt 包。也可在 Mac「照片」同时导入配对文件后通过 iCloud 同步。</p></div></li></ol>
     </section>
   </main>
   <footer class="page-footer container"><a href="./index.html">Brclio <span aria-hidden="true">.</span></a><p>写代码，教编程，做产品。</p><span>© 2026 Brclio</span></footer>
