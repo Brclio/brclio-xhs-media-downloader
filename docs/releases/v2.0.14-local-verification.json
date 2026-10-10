@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.14",
+  "androidVersion": "1.0.15",
+  "checkedAt": "2026-10-10T15:43:37.089172+00:00",
+  "stage": "local pre-release acceptance",
+  "tests": {
+    "node": {
+      "total": 1180,
+      "passed": 1168,
+      "skipped": 12,
+      "failed": 0
+    },
+    "python": {
+      "passed": 27,
+      "failed": 0
+    },
+    "androidDebugJUnit": {
+      "passed": 81,
+      "failed": 0
+    },
+    "androidDebugLint": "passed",
+    "desktopFocusedRoutingReadiness": {
+      "passed": 83,
+      "failed": 0
+    },
+    "webMetadataAndGateway": {
+      "passed": 78,
+      "failed": 0
+    }
+  },
+  "buildWeb": "passed",
+  "buildCloudflarePages": "passed",
+  "mainWorkerDryRun": "passed",
+  "desktopSmokeVersion": "2.0.14",
+  "desktopSmoke": "passed",
+  "actualDirectCheck": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "checkedAt": "2026-10-10T15:37:24.480Z",
+    "events": [
+      {
+        "event": "update.proxy_manually_enabled",
+        "details": {}
+      },
+      {
+        "event": "update.check_direct",
+        "details": {}
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      }
+    ],
+    "verificationPurpose": "Actual direct-first check without injected transport failures or proxy detection overrides.",
+    "defaultSessionUnchanged": true,
+    "status": "up-to-date",
+    "latestVersion": "2.0.12",
+    "error": null,
+    "activeScopesAfterCheck": 0,
+    "proxySelected": false,
+    "systemProxySelected": false,
+    "networkRoute": "direct",
+    "proxyStopped": true,
+    "sourceVersion": "2.0.14"
+  },
+  "internalFallbackFixture": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "checkedAt": "2026-10-10T15:37:31.334Z",
+    "events": [
+      {
+        "event": "update.proxy_manually_enabled",
+        "details": {}
+      },
+      {
+        "event": "update.check_direct",
+        "details": {}
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      },
+      {
+        "event": "update.proxy_subscriptions_refreshed",
+        "details": {
+          "sources": 1,
+          "available": 1,
+          "nodes": 16
+        }
+      },
+      {
+        "event": "update.proxy_selected",
+        "details": {
+          "node": "node-005",
+          "latencyMs": 181,
+          "nodes": 16,
+          "revision": 1
+        }
+      },
+      {
+        "event": "update.proxy_stopped",
+        "details": {}
+      }
+    ],
+    "systemProxyDetectionFixture": true,
+    "fixtureScope": "Only the verifier-owned Electron session skips system proxy detection; OS and defaultSession unchanged.",
+    "defaultSessionUnchanged": true,
+    "directCheckProbe": {
+      "forcedFailure": true,
+      "code": "ECONNRESET",
+      "purpose": "Exercise the configured update proxy fallback."
+    },
+    "status": "up-to-date",
+    "latestVersion": "2.0.12",
+    "error": null,
+    "activeScopesAfterCheck": 0,
+    "proxySelected": true,
+    "systemProxySelected": false,
+    "networkRoute": "internal",
+    "proxyStopped": true,
+    "sourceVersion": "2.0.14"
+  },
+  "retryUi": {
+    "status": "passed",
+    "live": false,
+    "note": "Deterministic network eligibility/stream fixture; actual UpdateManager, IPC, preload, renderer. This mode does not prove a real proxy tunnel.",
+    "sourceVersion": "2.0.14",
+    "retryCounts": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "exhausted": {
+      "status": "error",
+      "latestVersion": "1.7.0",
+      "download": {
+        "receivedBytes": 10240,
+        "totalBytes": 131072,
+        "percent": 7,
+        "canResume": true
+      },
+      "retry": {
+        "active": false,
+        "consecutiveFailures": 10,
+        "limit": 10,
+        "lastError": {
+          "code": "NETWORK_ERROR",
+          "message": "更新请求失败，请检查网络连接后重试。"
+        }
+      },
+      "error": {
+        "code": "NETWORK_ERROR",
+        "message": "更新请求失败，请检查网络连接后重试。",
+        "phase": "download"
+      },
+      "canRetry": true
+    },
+    "completed": {
+      "status": "downloaded",
+      "latestVersion": "1.7.0",
+      "download": {
+        "receivedBytes": 131072,
+        "totalBytes": 131072,
+        "percent": 100,
+        "canResume": false
+      },
+      "retry": null,
+      "error": null,
+      "canRetry": false
+    },
+    "networkAfter": {
+      "mode": "off",
+      "manuallyDisabled": false,
+      "activeScopes": 0
+    },
+    "deterministicAttempts": 11
+  },
+  "retryUiCleanup": {
+    "status": "complete",
+    "privateDataRemoved": [
+      "profile",
+      "updates"
+    ],
+    "errors": [],
+    "electronExit": {
+      "code": 0,
+      "signal": null
+    }
+  },
+  "androidInternalFallbackFixture": {
+    "verifiedAt": "2026-10-10T15:42:48.030Z",
+    "serial": "emulator-5558",
+    "api": "35",
+    "bootstrapTransportFixture": false,
+    "sourceOrBinaryFixture": true,
+    "backendOnlySubscriptions": true,
+    "backendRevision": 1,
+    "configuredSubscriptionCount": 1,
+    "expectedMode": "proxy",
+    "abi": "arm64-v8a",
+    "apkSha256": "8932c33058079cf29b375cfb089d81b1344ed830e3b17978385f958f2bf98b27",
+    "checkedVersion": "1.0.15-debug",
+    "status": "latest",
+    "nodesProbed": 16,
+    "availableNodes": 15,
+    "normalCleanup": true,
+    "cancellationCleanup": true,
+    "ownerDeathCleanup": true,
+    "systemProxyUnchanged": true,
+    "noVpnInterfaceAdded": true,
+    "limitations": [
+      "Debug API35 emulator acceptance; no claim of signed production installation or physical device verification."
+    ],
+    "emulatorSystemProxyTemporarilyDisabled": true,
+    "emulatorSystemProxyRestored": true
+  },
+  "androidDebugApkSha256": "af8dd558b90eb2ee6c4a59ea4043fd759d5047c7788580d8625cfa1c17c75def",
+  "androidStrictDirectSuccessVerified": false,
+  "readinessRaceEvidence": "v2.0.14-readiness-race-verification.json",
+  "limitations": [
+    "Local source/debug evidence does not claim public installation. CI publication and official installed-client evidence must be collected separately.",
+    "Android forced direct failure is explicitly an isolated binary fixture; local live GitHub direct-success is not claimed.",
+    "Windows native runtime is verified by its dedicated CI runner, not by this macOS host."
+  ]
+}

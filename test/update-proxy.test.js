@@ -16,6 +16,10 @@ const nodes = [1, 2, 3].map(index => ({ name: `private label ${index}`, type: 'v
 const yaml = JSON.stringify({ proxies: nodes, tun: { enable: true }, 'allow-lan': true, 'mixed-port': 80,
   dns: { listen: '0.0.0.0:53' }, 'external-controller': '0.0.0.0:90', rules: ['MATCH,DIRECT'], 'proxy-providers': { dangerous: { path: '/private/file' } } });
 
+function proxySelector(names) {
+  return { name: 'BRCLIO_UPDATE', type: 'Selector', all: names };
+}
+
 async function fixture(t, options = {}) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'update-proxy-test-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
@@ -52,6 +56,11 @@ async function fixture(t, options = {}) {
     assert.equal(parsed.hostname, '127.0.0.1');
     assert.match(init.headers.Authorization, /^Bearer [a-f\d]{64}$/);
     if (parsed.pathname === '/version') return Response.json({ version: 'fixture' });
+    if (parsed.pathname === '/proxies/BRCLIO_UPDATE' && init.method !== 'PUT') {
+      const configuration = await configs.at(-1);
+      const names = configuration.proxies.map(node => node.name);
+      return options.inventory ? options.inventory(names, init) : Response.json(proxySelector(names));
+    }
     if (parsed.pathname.endsWith('/delay')) {
       if (options.probe) return options.probe(parsed.pathname, init);
       const latency = { 'node-001': 45, 'node-002': 12, 'node-003': 30 }[parsed.pathname.split('/')[2]];
@@ -70,6 +79,7 @@ async function fixture(t, options = {}) {
   };
   const networkOptions = { net, session, endpoint, runtimeDirectory, cacheDirectory, fetchDirect: direct,
     launchCore, env: {}, platform: options.platform,
+    ...(options.coreStartupTimeoutMs === undefined ? {} : { coreStartupTimeoutMs: options.coreStartupTimeoutMs }),
     configuredProxyDetector: async () => options.configuredProxy || false,
     onStateChange: state => states.push(state), onDiagnostic: (event, data) => events.push({ event, data }) };
   const network = new UpdateProxyNetwork(networkOptions);
@@ -171,6 +181,73 @@ test('each update gets fresh config and subscription, the fastest proxy and comp
   assert.equal(f.events.filter(value => value.selected === 'node-002').length, 2);
   assert.equal((await readdir(f.cacheDirectory)).filter(name => name.startsWith('proxy-')).length, 1, 'only proxy-config.json remains');
   assert.ok(!JSON.stringify(f.events).includes('test-private-value'));
+});
+
+for (const initialStatus of [404, 503]) test(`controller HTTP ${initialStatus} and partial selectors cannot race configured-node installation`, async t => {
+  let inventories = 0, probes = 0;
+  const f = await fixture(t, { inventory: names => {
+    inventories++;
+    if (inventories === 1) return new Response(null, { status: initialStatus });
+    if (inventories === 2) return new Response('{incomplete JSON');
+    const selector = proxySelector(names);
+    if (inventories === 3) selector.name = 'GLOBAL';
+    if (inventories === 4) selector.type = 'URLTest';
+    if (inventories === 5) selector.all = names.slice(0, -1);
+    if (inventories === 6) selector.all = names.map(() => names[0]);
+    return Response.json(selector);
+  }, probe: () => {
+    probes++;
+    assert.equal(inventories, 7, 'latency probes wait for every configured alias and exact selector membership');
+    return Response.json({ delay: 1 });
+  } });
+  await f.network.run(new AbortController(), () => assert.equal(f.network.snapshot().mode, 'internal'));
+  assert.equal(inventories, 7);
+  assert.equal(probes, nodes.length);
+  assert.equal(f.directRequests.some(url => new URL(url).pathname === '/version'), false,
+    'a ready version endpoint does not establish loaded proxy configuration');
+  assert.equal(f.children[0].exitCode, 0);
+  assert.equal(f.network.active.size, 0);
+});
+
+for (const stalled of ['responding', 'request', 'body']) {
+  test(`incomplete ${stalled} controller inventory reaches the bounded startup deadline and cleans up`, { timeout: 2000 }, async t => {
+    let requests = 0;
+    const f = await fixture(t, { coreStartupTimeoutMs: 30, inventory: () => {
+      requests++;
+      if (stalled === 'request') return new Promise(() => {});
+      if (stalled === 'body') return new Response(new ReadableStream({ start() {} }));
+      return Response.json(proxySelector([]));
+    }, probe: () => assert.fail('uninstalled nodes cannot be probed') });
+    const started = Date.now();
+    const controller = new AbortController();
+    await assert.rejects(f.network.run(controller, () => assert.fail('unready core cannot run update work')),
+      { code: 'PROXY_CORE_UNAVAILABLE' });
+    assert.ok(Date.now() - started < 1000, 'the 30 ms startup budget does not wait for the normal seven-second controller timeout');
+    assert.ok(requests > 0);
+    assert.equal(controller.signal.aborted, false, 'core startup expiry is scoped to readiness requests');
+    assert.equal(f.children[0].exitCode, 0);
+    assert.equal(f.network.active.size, 0);
+    assert.equal(f.sessions[0].cleared, true);
+    assert.deepEqual((await readdir(f.cacheDirectory)).filter(name => name !== 'proxy-config.json'), []);
+  });
+}
+
+test('manual stop aborts a stalled controller inventory before latency probes and removes the starting core', async t => {
+  let entered;
+  const ready = new Promise(resolve => { entered = resolve; });
+  const f = await fixture(t, { inventory: () => { entered(); return new Promise(() => {}); },
+    probe: () => assert.fail('canceled core cannot probe nodes') });
+  const controller = new AbortController();
+  const operation = f.network.run(controller, () => assert.fail('canceled core cannot run update work'));
+  const rejected = assert.rejects(operation, { code: 'CANCELED' });
+  await ready;
+  await f.network.stopInternalProxy();
+  await rejected;
+  assert.equal(controller.signal.reason.code, 'CANCELED');
+  assert.equal(f.children[0].exitCode, 0);
+  assert.equal(f.network.active.size, 0);
+  assert.equal(f.sessions[0].cleared, true);
+  assert.deepEqual((await readdir(f.cacheDirectory)).filter(name => !['proxy-config.json', 'proxy-preference.json'].includes(name)), []);
 });
 
 test('internal selection is reported before preparation failures and only for an enabled internal route', async t => {

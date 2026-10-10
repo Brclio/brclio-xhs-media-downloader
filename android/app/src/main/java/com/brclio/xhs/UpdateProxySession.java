@@ -35,6 +35,9 @@ import java.util.concurrent.TimeUnit;
 
 import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 /** One update operation owns one private process; application/WebView/media networking is untouched. */
 final class UpdateProxySession implements AutoCloseable {
@@ -133,18 +136,9 @@ final class UpdateProxySession implements AutoCloseable {
         }, "brclio-update-proxy-output");
         discard.setDaemon(true);
         discard.start();
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(12);
-        boolean ready = false;
-        while (System.nanoTime() < deadline) {
-            check();
-            if (!started.isAlive()) throw new IOException("更新网络组件未能启动，请稍后重试。");
-            try { controller("GET", "/version", null, 500); ready = true; break; }
-            catch (IOException failure) {
-                try { Thread.sleep(80); }
-                catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); check(); }
-            }
-        }
-        if (!ready) throw new IOException("更新网络组件启动超时，请重试。");
+        List<String> names = new ArrayList<>();
+        for (Map<String, Object> node : nodes) names.add((String) node.get("name"));
+        UpdateProxyReadiness.await(names, this::readinessGroup, this::check);
         selectFastest(nodes);
         check();
         String authorization = Credentials.basic(username, password);
@@ -284,6 +278,23 @@ final class UpdateProxySession implements AutoCloseable {
 
     private byte[] controller(String method, String path, byte[] body, int timeout) throws IOException {
         return request(URI.create("http://127.0.0.1:" + controllerPort + path), method, body, 65536, timeout);
+    }
+
+    private JSONObject readinessGroup(long timeoutNanos) throws IOException {
+        check();
+        // Query one fixed selector: even all 2048 generated names fit the controller response bound.
+        // A total call timeout includes connect, headers and body, keeping the startup deadline bounded.
+        OkHttpClient readiness = client.newBuilder().callTimeout(timeoutNanos, TimeUnit.NANOSECONDS).build();
+        Request request = new Request.Builder().url("http://127.0.0.1:" + controllerPort
+                + "/proxies/" + UpdateProxyPolicy.GROUP).header("Authorization", "Bearer " + secret).build();
+        try (Response response = readiness.newCall(request).execute()) {
+            check();
+            if (response.code() != 200) throw UpdateSubscriptionRetry.Failure.http(response.code(), null);
+            ResponseBody body = response.body();
+            if (body == null) throw new IOException("更新网络组件尚未准备就绪。");
+            try { return new JSONObject(new String(readChecked(body.byteStream(), 65536), StandardCharsets.UTF_8)); }
+            catch (org.json.JSONException pending) { throw new IOException("更新网络组件尚未准备就绪。", pending); }
+        }
     }
 
     private byte[] request(URI uri, String method, byte[] body, int maximum, int timeout) throws IOException {

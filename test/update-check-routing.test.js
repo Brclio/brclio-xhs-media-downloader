@@ -64,6 +64,9 @@ async function fixture(t, { response = () => ({}), systemProxy = false, ...manag
       const parsed = new URL(url);
       assert.equal(parsed.hostname, '127.0.0.1');
       if (parsed.pathname === '/version') return Response.json({ version: 'fixture' });
+      if (parsed.pathname === '/proxies/BRCLIO_UPDATE' && init.method !== 'PUT') return Response.json({
+        name: 'BRCLIO_UPDATE', type: 'Selector', all: ['node-001']
+      });
       if (parsed.pathname.endsWith('/delay')) return Response.json({ delay: 1 });
       assert.equal(parsed.pathname, '/proxies/BRCLIO_UPDATE');
       assert.equal(init.method, 'PUT');

@@ -133,7 +133,11 @@ try {
   const beforeLinks = (await shell('ip', 'link')).split('\n').filter(line => /: (tun|vpn)/.test(line));
   if (expectedMode === 'direct') {
     assert.ok(['null', ':0', ''].includes(beforeProxy), 'Direct acceptance requires a disposable emulator without a system HTTP proxy.');
-    assert.equal(beforeLinks.length, 0, 'Direct acceptance requires a disposable emulator without a VPN interface.');
+    assert.ok(['null', ''].includes(await shell('settings', 'get', 'global', 'global_http_proxy_host')),
+      'The effective Android global proxy must also be cleared for direct acceptance.');
+    assert.ok(['null', ''].includes(await shell('settings', 'get', 'global', 'global_proxy_pac_url')),
+      'Direct acceptance requires a disposable emulator without a global PAC proxy.');
+    assert.equal(beforeLinks.filter(line => /<[^>]*\bUP\b/.test(line)).length, 0, 'Direct acceptance requires a disposable emulator without an active VPN interface.');
   }
   await device('install', '-r', apk);
   // A fresh disposable debug app proves the live backend rather than a previous offline cache.

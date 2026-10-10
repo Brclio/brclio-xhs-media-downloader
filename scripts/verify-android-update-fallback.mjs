@@ -49,8 +49,10 @@ export async function verifyAndroidUpdateFallback(serial = 'emulator-5558') {
     await cp(path.join(temporary, 'android/app/build/outputs/apk/debug/app-debug.apk'), artifact);
     // Isolate the internal fallback from a saved emulator proxy; restore it even after a failed check.
     originalProxy = await device('shell', 'settings', 'get', 'global', 'http_proxy');
-    await device('shell', 'settings', 'delete', 'global', 'http_proxy');
+    await device('shell', 'settings', 'put', 'global', 'http_proxy', ':0');
     proxyAdjusted = true;
+    assert.ok(['null', ''].includes(await device('shell', 'settings', 'get', 'global', 'global_http_proxy_host')),
+      'The effective emulator HTTP proxy must be cleared for internal fallback acceptance.');
     await run(process.execPath, [path.join(root, 'scripts/verify-android-update-proxy.mjs'), serial], {
       cwd: root, env: { ...process.env, ANDROID_UPDATE_PROXY_TEST_APK: artifact,
         ANDROID_UPDATE_PROXY_EXPECT_MODE: 'proxy', ANDROID_UPDATE_PROXY_SOURCE_FIXTURE: 'true' },

@@ -159,12 +159,13 @@ async function boundedText(response, maximum, signal) {
 export class UpdateProxyNetwork {
   constructor({ net, session, endpoint, runtimeDirectory, cacheDirectory, fetchDirect = null, launchCore = null,
     onDiagnostic = () => {}, onStateChange = () => {}, detectExternalProxy = detectSystemProxy,
-    platform = process.platform, env = process.env, configuredProxyDetector } = {}) {
+    platform = process.platform, env = process.env, configuredProxyDetector, coreStartupTimeoutMs = 10000 } = {}) {
     this.net = net; this.sessions = session; this.endpoint = endpoint;
     this.runtimeDirectory = runtimeDirectory; this.cacheDirectory = cacheDirectory;
     this.fetchDirect = fetchDirect; this.launchCore = launchCore; this.onDiagnostic = onDiagnostic;
     this.onStateChange = onStateChange; this.detectExternalProxy = detectExternalProxy;
     this.platform = platform; this.env = env; this.configuredProxyDetector = configuredProxyDetector;
+    this.coreStartupTimeoutMs = coreStartupTimeoutMs;
     this.active = new Map();
     this.manuallyDisabled = false;
     this.lastProxyError = false;
@@ -498,21 +499,33 @@ export class UpdateProxyNetwork {
     scope.child = launch(executable, scope.directory, file);
     let launchFailed = false;
     scope.child.on('error', () => { launchFailed = true; });
-    const api = async (pathname, options = {}) => {
-      const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(7000)]);
+    const api = async (pathname, options = {}, timeoutMs = 7000) => {
+      const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]);
       const response = await abortable(direct(`http://127.0.0.1:${controllerPort}${pathname}`, { redirect: 'error', signal: requestSignal,
         ...options, headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' } }), requestSignal);
       if (!response.ok) { await response.body?.cancel(); throw new Error('Controller failed'); }
       if (response.status === 204) return null;
       return JSON.parse(await boundedText(response, MAX_SUBSCRIPTION, requestSignal));
     };
-    const deadline = Date.now() + 10000;
+    const deadline = Date.now() + this.coreStartupTimeoutMs;
     while (true) {
       signal.throwIfAborted();
       if (launchFailed || scope.child.exitCode !== null || scope.child.signalCode !== null) throw proxyError('PROXY_CORE_UNAVAILABLE', '内置更新代理无法启动，请重新安装完整客户端。');
-      try { await api('/version'); break; } catch { signal.throwIfAborted(); }
-      if (Date.now() > deadline) throw proxyError('PROXY_CORE_UNAVAILABLE', '内置更新代理启动超时，请重试。');
-      await delay(100, undefined, { signal });
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw proxyError('PROXY_CORE_UNAVAILABLE', '内置更新代理启动超时，请重试。');
+      try {
+        // Mihomo opens its controller before installing the configuration.
+        // Its fixed selector must expose every configured alias before probes.
+        const selector = await api(`/proxies/${GROUP}`, {}, Math.min(7000, remaining));
+        const members = selector?.all;
+        signal.throwIfAborted();
+        if (Date.now() < deadline && selector?.name === GROUP && selector.type === 'Selector'
+          && Array.isArray(members) && members.length === nodes.length
+          && nodes.every(node => members.includes(node.name))) break;
+      } catch { signal.throwIfAborted(); }
+      const waiting = deadline - Date.now();
+      if (waiting <= 0) throw proxyError('PROXY_CORE_UNAVAILABLE', '内置更新代理启动超时，请重试。');
+      await delay(Math.min(100, waiting), undefined, { signal });
     }
     const ranking = await lowestLatency(nodes.map(node => node.name), async name => {
       const result = await api(`/proxies/${encodeURIComponent(name)}/delay?url=${encodeURIComponent(PROBE_URL)}&timeout=5000&expected=200`);

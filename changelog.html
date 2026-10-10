@@ -73,7 +73,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.13</strong>
+              <strong>v2.0.14</strong>
               <small>版本检测优先直连 · Mac / Windows</small>
             </div>
 
@@ -87,7 +87,7 @@
                 <span>版本检查减少代理启动</span>
               </div>
               <div class="summary-stat">
-                <strong>1.0.14</strong>
+                <strong>1.0.15</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
@@ -96,7 +96,7 @@
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 检查最新版先直连，成功时不启动内置代理。下载与安装更新继续沿用原有流程；Android 同步更新至 v1.0.14。</p>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 检查最新版先直连，成功时不启动内置代理。下载与安装更新继续沿用原有流程；Android 同步更新至 v1.0.15。</p>
             <a class="release-summary-link" href="#update-check-direct-first">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.13、直连、实况、倍速" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.14、直连、实况、倍速" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,7 +129,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
-              <a href="#update-check-direct-first"><span>v2.0.13 / Android 1.0.14</span><strong>版本检测优先直连</strong></a>
+              <a href="#update-check-direct-first"><span>v2.0.14 / Android 1.0.15</span><strong>版本检测优先直连</strong></a>
               <a href="#live-photo-pvt-update"><span>v2.0.12</span><strong>整包隔空投送实况到 iPhone</strong></a>
               <a href="#update-proxy-retry-fix"><span>v2.0.11</span><strong>补全内置代理更新自动重试</strong></a>
               <a href="#review-nickname-update"><span>v2.0.10</span><strong>昵称与评价正文规则</strong></a>
@@ -200,12 +200,13 @@
             <article id="update-check-direct-first" class="release-entry release-entry-featured" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-10"><span>10.10</span><small>2026 · 更新网络</small></time></div>
               <div class="release-card">
-                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.13</span><span class="release-badge release-badge-blue">Mac / Windows / Android 1.0.14</span><span class="release-status">减少代理启动</span></div><h3>检查最新版，先试直连</h3></div></header>
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.14</span><span class="release-badge release-badge-blue">Mac / Windows / Android 1.0.15</span><span class="release-status">减少代理启动</span></div><h3>检查最新版，先试直连</h3></div></header>
                 <p class="release-lead">自动与手动版本检测优先直连。直连成功时无需获取代理配置、拉取订阅、测速或启动内置代理。</p>
                 <div class="change-list">
                   <div class="change-item"><span aria-hidden="true">01</span><p><strong>优先使用直连</strong>首轮版本请求最多等待 8 秒；成功后直接显示检查结果，降低日常自动检测的代理使用频率。</p></div>
                   <div class="change-item"><span aria-hidden="true">02</span><p><strong>需要时再回退代理</strong>仅连接失败、超时、限流或临时服务器故障才按既有规则使用系统代理或内置代理，保留手动关闭状态和取消行为。</p></div>
-                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>下载与安装沿用原有流程</strong>安装包继续校验来源、大小和 SHA-256，保留断点续传与安装确认。旧客户端安装新版后才采用新的版本检测策略。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>代理就绪后再测速</strong>需要内置代理时，先等待配置中的节点与更新分组加载完成，再探测延迟，避免启动瞬间误报节点不可用。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>下载与安装沿用原有流程</strong>安装包继续校验来源、大小和 SHA-256，保留断点续传与安装确认。旧客户端安装新版后才采用新的版本检测策略。</p></div>
                 </div>
               </div>
             </article>
@@ -1777,7 +1778,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.10 · 桌面 v2.0.12 · Android v1.0.13。</p>
+        <p>网页版与客户端记录整理至 2026.10.10 · 桌面 v2.0.14 · Android v1.0.15。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

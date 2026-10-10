@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "desktopVersion": "2.0.14",
+  "androidVersion": "1.0.15",
+  "checkedAt": "2026-10-10T15:41:32.525672+00:00",
+  "priorCandidates": {
+    "desktop": "v2.0.13",
+    "android": "android-v1.0.14",
+    "published": false,
+    "tagsRetained": true,
+    "workflowsCancelledBeforePublication": true
+  },
+  "firstFailure": {
+    "runUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38062618904",
+    "stage": "isolated Android manual-browser fixture after signed upgrade acceptance",
+    "error": "Native manual download failed: 订阅中的代理节点均不可用（HTTP_404 x16）",
+    "classification": "HTTP_404 x16 was returned by the local Mihomo controller for missing configured proxy names, not by the GitHub /zen probe endpoint. An earlier hypothesis of regional upstream 404 was incorrect."
+  },
+  "runtime": {
+    "version": "v1.19.32",
+    "repository": "https://github.com/MetaCubeX/mihomo",
+    "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36"
+  },
+  "sourceEvidence": [
+    {
+      "file": "hub/hub.go",
+      "line": 55,
+      "finding": "applyRoute starts the controller before executor.ApplyConfig installs proxy configuration."
+    },
+    {
+      "file": "hub/executor/executor.go",
+      "line": 100,
+      "finding": "updateProxies installs the proxy map after controller startup."
+    },
+    {
+      "file": "hub/route/proxies.go",
+      "line": 49,
+      "finding": "A missing configured proxy returns controller HTTP404; upstream probe failures return503/504."
+    },
+    {
+      "file": "tunnel/tunnel.go",
+      "line": 230,
+      "finding": "Configured proxies are installed together under the configuration lock."
+    }
+  ],
+  "fix": {
+    "controllerPath": "/proxies/BRCLIO_UPDATE",
+    "authentication": "isolated loopback bearer token",
+    "readyWhen": "Selector name and type match and exact unique configured node membership is loaded",
+    "desktopDeadlineMs": 10000,
+    "androidDeadlineMs": 12000,
+    "cancelAndCleanupRetained": true
+  },
+  "regressionCoverage": [
+    "early HTTP404/503",
+    "partial or malformed selector",
+    "wrong type or duplicate membership",
+    "bounded request and response body timeout",
+    "cancellation before latency probes",
+    "Android submillisecond expiry"
+  ]
+}
