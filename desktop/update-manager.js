@@ -12,7 +12,7 @@ const MAX_MANIFEST_BYTES = 128 * 1024;
 const MAX_RELEASE_BYTES = 1024 * 1024;
 const DOWNLOAD_FAILURE_LIMIT = 10;
 const RETRYABLE_DOWNLOAD_ERRORS = new Set(['NETWORK_ERROR', 'TIMEOUT', 'HTTP_ERROR', 'RATE_LIMITED', 'ACCESS_DENIED',
-  'DOWNLOAD_INCOMPLETE', 'EMPTY_RESPONSE', 'PROXY_START_FAILED', 'PROXY_FETCH_FAILED', 'PROXY_NODES_UNAVAILABLE', 'PROXY_CORE_UNAVAILABLE']);
+  'DOWNLOAD_INCOMPLETE', 'EMPTY_RESPONSE', 'PROXY_CONFIG_UNAVAILABLE', 'PROXY_START_FAILED', 'PROXY_FETCH_FAILED', 'PROXY_NODES_UNAVAILABLE', 'PROXY_CORE_UNAVAILABLE']);
 const NETWORK_ERROR_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ECONNABORTED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN',
   'EHOSTUNREACH', 'ENETUNREACH', 'EPIPE']);
 
@@ -109,6 +109,9 @@ class UpdateError extends Error {
 function fail(code, message) { throw new UpdateError(code, message); }
 
 function updateFailure(error, phase) {
+  const cachePermission = ['check', 'download'].includes(phase) && ['EACCES', 'EPERM'].includes(error?.code)
+    && /^(?:open|read|write|mkdir|mkdtemp|lstat|stat|fstat|realpath|scandir|close|fsync|fdatasync|unlink|rename)$/.test(error?.syscall || '');
+  if (cachePermission) return new UpdateError('CACHE_PERMISSION', '无法访问更新缓存，请检查文件夹和文件权限后重试。');
   return error instanceof UpdateError ? error : /^(?:MAC_UPDATE_|PROXY_)[A-Z_]+$/.test(error?.code || '')
     ? new UpdateError(error.code, error.message) : new UpdateError(
       error?.code === 'ENOSPC' ? 'DISK_FULL' : phase === 'install' ? 'INSTALL_FAILED' : 'NETWORK_ERROR',

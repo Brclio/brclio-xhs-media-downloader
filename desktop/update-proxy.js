@@ -283,7 +283,9 @@ export class UpdateProxyNetwork {
   }
 
   validateConfiguration(config) {
-    if (!Number.isSafeInteger(config?.revision) || config.revision < 0 || typeof config.enabled !== 'boolean') throw new Error('Invalid configuration');
+    if (!Number.isSafeInteger(config?.revision) || config.revision < 0 || typeof config.enabled !== 'boolean') {
+      throw proxyError('PROXY_CONFIG_INVALID', '更新网络配置格式无效，请在管理后台检查。');
+    }
     const urls = subscriptionUrls(config);
     if (config.enabled && !urls.length) throw proxyError('PROXY_CONFIG_INVALID', '更新代理缺少订阅地址。');
     return { ...config, subscriptionUrls: urls, subscriptionUrl: urls[0] || '' };
@@ -325,7 +327,7 @@ export class UpdateProxyNetwork {
   }
 
   async getConfiguration(direct, signal) {
-    let config;
+    let config, configurationError;
     try {
       const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(12000)]);
       const response = await abortable(direct(this.endpoint, { method: 'POST', redirect: 'error', cache: 'no-store', signal: requestSignal,
@@ -339,10 +341,11 @@ export class UpdateProxyNetwork {
       // An available, unconfigured administrator service is authoritative.
       // Software never substitutes a bundled subscription for that choice.
       return config;
-    } catch { signal.throwIfAborted(); this.diagnostic('update.proxy_config_fallback'); }
+    } catch (error) { signal.throwIfAborted(); configurationError = error; this.diagnostic('update.proxy_config_fallback'); }
     const cached = await this.cachedConfiguration();
     if (cached?.revision > 0) return cached;
-    return { enabled: false, revision: 0, subscriptionUrls: [], subscriptionUrl: '' };
+    if (configurationError?.code === 'PROXY_CONFIG_INVALID') throw configurationError;
+    throw proxyError('PROXY_CONFIG_UNAVAILABLE', '无法获取软件更新网络配置，请检查网络连接后重试。');
   }
 
   async run(controller, work, { onInternalProxy = () => {} } = {}) {
@@ -367,7 +370,14 @@ export class UpdateProxyNetwork {
         await scope.session.setProxy({ mode: 'direct' });
         signal.throwIfAborted();
         const direct = this.fetchDirect || createElectronUpdateFetch(this.net, { session: scope.session });
-        const config = await this.getConfiguration(direct, signal);
+        let config;
+        try { config = await this.getConfiguration(direct, signal); }
+        catch (error) {
+          // A first configuration outage must remain eligible for download
+          // retries, without treating an explicit administrator disable as one.
+          if (error?.code === 'PROXY_CONFIG_UNAVAILABLE') onInternalProxy();
+          throw error;
+        }
         signal.throwIfAborted();
         if (config.enabled) {
           onInternalProxy();
@@ -407,6 +417,8 @@ export class UpdateProxyNetwork {
       signal.throwIfAborted();
       if (scope.internal) this.lastProxyError = true;
       if (typeof error?.code === 'string' && error.code.startsWith('PROXY_')) throw error;
+      if (['EACCES', 'EPERM'].includes(error?.code)
+        && /^(?:open|read|write|mkdir|mkdtemp|lstat|stat|fstat|realpath|scandir|close|fsync|fdatasync|unlink|rename)$/.test(error?.syscall || '')) throw error;
       throw proxyError('PROXY_START_FAILED', '更新代理启动失败，请稍后重试或在管理后台检查订阅。');
     } finally {
       await scope.session.setProxy({ mode: 'direct' }).catch(() => {});

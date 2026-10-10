@@ -66,7 +66,7 @@ async function cdp(url) {
   return { evaluate, close: () => socket.close() };
 }
 
-function bootstrap(configPath) {
+export function createPackagedMacBootstrap(configPath) {
   // Electron waits for the ESM entry's top-level await before app readiness.
   // A fire-and-forget CJS import could register the real custom scheme too late.
   return `import { createRequire } from 'node:module';
@@ -79,6 +79,7 @@ const { Readable } = require('node:stream');
 const { EventEmitter } = require('node:events');
 const { pathToFileURL } = require('node:url');
 const config = JSON.parse(fs.readFileSync(${JSON.stringify(configPath)}, 'utf8'));
+const registryEndpoint = new URL(JSON.parse(fs.readFileSync(path.join(__dirname, 'desktop/account-config.json'), 'utf8')).endpoint).href;
 app.setPath('userData', config.profile); app.setPath('sessionData', config.profile);
 app.commandLine.appendSwitch('use-mock-keychain');
 app.commandLine.appendSwitch('remote-debugging-address', '127.0.0.1');
@@ -94,19 +95,28 @@ app.whenReady().then(() => blockNetwork(session.defaultSession));
 net.request = options => {
   const request = new EventEmitter(); let incoming, aborted = false;
   request.abort = () => { aborted = true; incoming?.destroy(); };
-  request.end = () => queueMicrotask(() => {
+  request.end = body => queueMicrotask(() => {
     if (aborted) return;
     try {
-      if (options.method !== 'GET') throw new Error('Fixture only permits GET');
       const fixture = JSON.parse(fs.readFileSync(config.responses, 'utf8'));
-      if (options.url === fixture.releaseUrl) {
+      if (options.method === 'POST' && options.url === registryEndpoint) {
+        const payload = JSON.parse(body || '{}');
+        if (payload.action !== 'update-proxy-config' || JSON.stringify(payload.input) !== '{}'
+          || Object.keys(payload).length !== 2) throw new Error('Fixture refuses a non-update configuration action');
+        // Keep the real main's configuration branch explicit and offline. An
+        // unavailable service no longer silently authorizes direct downloads.
+        const bytes = Buffer.from(JSON.stringify({ ok: true,
+          proxyConfig: { enabled: false, revision: 1, subscriptionUrls: [], subscriptionUrl: '' } }));
+        incoming = Readable.from([bytes]); incoming.headers = { 'content-type': 'application/json', 'content-length': String(bytes.length) };
+      } else if (options.method !== 'GET') throw new Error('Fixture only permits trusted updater requests');
+      else if (options.url === fixture.releaseUrl) {
         const body = Buffer.from(JSON.stringify(fixture.release));
         incoming = Readable.from([body]); incoming.headers = { 'content-type': 'application/json', 'content-length': String(body.length) };
       } else if (options.url === fixture.assetUrl) {
         incoming = fs.createReadStream(fixture.dmg); incoming.headers = { 'content-type': 'application/octet-stream', 'content-length': String(fixture.size) };
       } else throw new Error('Fixture refuses a non-fixture URL');
       incoming.statusCode = 200;
-      record({ type: 'update-request', url: options.url }); request.emit('response', incoming);
+      record({ type: 'update-request', method: options.method, url: options.url }); request.emit('response', incoming);
     } catch (error) { request.emit('error', error); }
   });
   return request;
@@ -151,7 +161,7 @@ export async function verifyPackagedMacUpdate(input) {
   const configPath = path.join(root, 'fixture.json');
   await writeFile(configPath, JSON.stringify({ profile, events, responses, originalMain: packaged.main }));
   let child, connection, stderr = '';
-  const fixtureSource = bootstrap(configPath);
+  const fixtureSource = createPackagedMacBootstrap(configPath);
   const readEvents = async () => (await readFile(events, 'utf8').catch(() => '')).trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
   const inputInfo = JSON.parse((await command('/usr/bin/plutil', ['-convert', 'json', '-o', '-', path.join(appPath, 'Contents/Info.plist')])).stdout);
   const executableName = inputInfo.CFBundleExecutable;

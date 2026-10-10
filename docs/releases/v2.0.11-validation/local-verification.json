@@ -1,0 +1,311 @@
+{
+  "version": "2.0.11",
+  "checkedAt": "2026-10-10T01:24:44.677697+00:00",
+  "platform": "darwin-arm64",
+  "sourceHashes": {
+    "desktop/update-manager.js": "f501e42d54248aa2e252b254efacb68e97170ca8126bb4996384ec458c823aca",
+    "desktop/update-proxy.js": "f4c91b16c0d5d37402b8783003a7b482fa521ae3e5e26b6c79dc73f66f462a5a",
+    "desktop/main.js": "1c0d5cf13134dd8a8774c31bbed4ed3d6a023c480ead7e385ff077a8360711f5",
+    "desktop/preload.cjs": "4882ce11d641b9e291792588726739d1f7b229b714a5bcc322f585ac1a712413",
+    "desktop-ui.js": "d45adadc977a37daa91899461469616cbb539e7e6fb486ed28dd44b6923ac4e0",
+    "scripts/verify-packaged-mac-update.mjs": "6aad68fbfec9e48653accb75618cb2cef66ad8a98388f984378318d1c7b5a8f0",
+    "scripts/verify-update-retry.mjs": "e3cf51f63035707de6452e4dea7ae1601c369b0e54381705a72c82863c56291c",
+    "scripts/verify-update-retry-ui.cjs": "cda4c8404a859d2a8f2062c96800a833b58117e769947e3098669109c40eaf76",
+    "scripts/verify-update-retry-live.mjs": "7e0becf24cb696c803ddf6d3e12d38face314628d67613edc22e7c89dbf8af3a",
+    "changelog.html": "e96919f822a47de2d95391d93cd3099619c3135e161eace1b740db1186f7ce2d"
+  },
+  "node": {
+    "tests": 1130,
+    "pass": 1118,
+    "fail": 0,
+    "skipped": 12
+  },
+  "python": {
+    "tests": 27,
+    "passed": 27
+  },
+  "nativeMac": {
+    "tests": 87,
+    "pass": 87,
+    "fail": 0,
+    "skipped": 0
+  },
+  "packagedMac": {
+    "packagedMacUpdateVerified": true,
+    "currentVersion": "2.0.11",
+    "targetVersion": "2.0.12",
+    "originalApplicationFilesCompared": 277,
+    "sourceUnchanged": true,
+    "realPackagedMainAndPreload": true,
+    "packagedUpdateHistoryVerified": true,
+    "historyAcknowledgementPersisted": true,
+    "historyRecoveryFilesPreserved": true,
+    "realConfirmation": true,
+    "generatedHelperMatchesPackage": true,
+    "automaticGuiRelaunch": true,
+    "backupRemoved": true,
+    "profile": "temporary",
+    "keychain": "mock",
+    "updateNetwork": "fixture-only",
+    "fixtureResigned": true,
+    "gatekeeperApprovalTested": false
+  },
+  "packagedSourceEquality": {
+    "version": "2.0.11",
+    "result": "passed",
+    "files": [
+      {
+        "file": "desktop/update-manager.js",
+        "sha256": "f501e42d54248aa2e252b254efacb68e97170ca8126bb4996384ec458c823aca"
+      },
+      {
+        "file": "desktop/update-proxy.js",
+        "sha256": "f4c91b16c0d5d37402b8783003a7b482fa521ae3e5e26b6c79dc73f66f462a5a"
+      },
+      {
+        "file": "desktop/main.js",
+        "sha256": "1c0d5cf13134dd8a8774c31bbed4ed3d6a023c480ead7e385ff077a8360711f5"
+      },
+      {
+        "file": "desktop/preload.cjs",
+        "sha256": "4882ce11d641b9e291792588726739d1f7b229b714a5bcc322f585ac1a712413"
+      },
+      {
+        "file": "desktop-ui.js",
+        "sha256": "d45adadc977a37daa91899461469616cbb539e7e6fb486ed28dd44b6923ac4e0"
+      },
+      {
+        "file": "changelog.html",
+        "sha256": "e96919f822a47de2d95391d93cd3099619c3135e161eace1b740db1186f7ce2d"
+      },
+      {
+        "file": "download.html",
+        "sha256": "7d2e6de6fcb5f2c28b5140bd05551e7d025b3b8e983d227e814dc809cd9b8887"
+      }
+    ]
+  },
+  "retryUi": {
+    "status": "passed",
+    "live": false,
+    "retryCounts": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "attempts": 11,
+    "manualCompletionStatus": "downloaded",
+    "percent": 100,
+    "activeScopes": 0,
+    "cleanup": "complete",
+    "screenshots": [
+      "retry-10-manual.png",
+      "retry-manual-success.png"
+    ]
+  },
+  "previousRealProxyAcceptance": {
+    "checkedAt": "2026-10-09T13:26:24.001Z",
+    "codeHashesStillMatch": true,
+    "initialTenInterruptionTrial": "intermediate patch, then final-source completion; see docs/update-retry-validation-2026-10-09.md",
+    "installerVersion": "2.0.10",
+    "bytes": 167480393,
+    "sha256": "e26b7b3529691f8061e904de8b7343c1244d2b8c4668408fa381a993d343c85d",
+    "result": "passed",
+    "installed": false
+  },
+  "changelog": {
+    "status": "passed",
+    "sourceHash": "e96919f822a47de2d95391d93cd3099619c3135e161eace1b740db1186f7ce2d",
+    "checks": [
+      {
+        "width": 1440,
+        "urlQuery": "v2.0.11",
+        "queryMatched": [
+          "update-proxy-retry-fix"
+        ],
+        "desktopIncludesNew": true,
+        "webExcludesNew": true,
+        "webKeepsHistorical": true,
+        "noOverflow": true,
+        "responsive": {
+          "width": 1440,
+          "documentWidth": 1440,
+          "bodyWidth": 1440
+        },
+        "desktopLayout": {
+          "width": 1440,
+          "documentWidth": 1440,
+          "bodyWidth": 1440
+        },
+        "reachableControls": [
+          {
+            "selector": "[data-release-filter=\"desktop\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-release-filter=\"web\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-query",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-reset",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:first-child",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:nth-child(2)",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      },
+      {
+        "width": 390,
+        "urlQuery": "v2.0.11",
+        "queryMatched": [
+          "update-proxy-retry-fix"
+        ],
+        "desktopIncludesNew": true,
+        "webExcludesNew": true,
+        "webKeepsHistorical": true,
+        "noOverflow": true,
+        "responsive": {
+          "width": 390,
+          "documentWidth": 390,
+          "bodyWidth": 390
+        },
+        "desktopLayout": {
+          "width": 390,
+          "documentWidth": 390,
+          "bodyWidth": 390
+        },
+        "reachableControls": [
+          {
+            "selector": "[data-release-filter=\"desktop\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-release-filter=\"web\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-query",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-reset",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:first-child",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:nth-child(2)",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      },
+      {
+        "width": 320,
+        "urlQuery": "v2.0.11",
+        "queryMatched": [
+          "update-proxy-retry-fix"
+        ],
+        "desktopIncludesNew": true,
+        "webExcludesNew": true,
+        "webKeepsHistorical": true,
+        "noOverflow": true,
+        "responsive": {
+          "width": 320,
+          "documentWidth": 320,
+          "bodyWidth": 320
+        },
+        "desktopLayout": {
+          "width": 320,
+          "documentWidth": 320,
+          "bodyWidth": 320
+        },
+        "reachableControls": [
+          {
+            "selector": "[data-release-filter=\"desktop\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "[data-release-filter=\"web\"]",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-query",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#release-reset",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:first-child",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          },
+          {
+            "selector": "#update-proxy-retry-fix .release-card-footer a:nth-child(2)",
+            "inside": true,
+            "visible": true,
+            "reachable": true
+          }
+        ]
+      }
+    ],
+    "errors": []
+  },
+  "limits": [
+    "Local host is Apple Silicon; Windows and Intel native results require the release CI.",
+    "Packaged Mac acceptance uses isolated re-signed clones, fixture-only network and a synthetic next version.",
+    "Real proxy evidence downloads v2.0.10 with the same final updater source; it does not prove this release installed on the other computer."
+  ]
+}

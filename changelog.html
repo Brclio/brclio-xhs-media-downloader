@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 9 日，本次网页与桌面 v2.0.10 更新：1000 个内置昵称、自定义昵称与评价正文仅邮箱脱敏；Android 沿用 v1.0.13。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。记录整理至 2026 年 10 月 10 日，本次桌面 v2.0.11 补全内置代理更新自动重试：配置故障与下载断流恢复、连续失败 10 次后手动继续；Android 沿用 v1.0.13。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -58,7 +58,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次为软件账号增加随机与自定义昵称，已发表的评价也可更新昵称；评价正文仅对邮箱脱敏，其余按原文展示。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次补全桌面内置代理更新的自动重试，配置获取失败与下载断流可自动恢复，连续失败 10 次后由你点击继续。
             </p>
 
             <div class="release-hero-actions">
@@ -73,8 +73,8 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.10</strong>
-              <small>正式版 · Mac / Windows</small>
+              <strong>v2.0.11</strong>
+              <small>桌面更新 · Mac / Windows</small>
             </div>
 
             <div class="summary-grid">
@@ -84,20 +84,20 @@
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>每个账号评价一次</span>
+                <span>内置代理自动重试</span>
               </div>
               <div class="summary-stat">
                 <strong>1.0.13</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
-                <strong>10.09</strong>
+                <strong>10.10</strong>
                 <span>最近整理 · 2026</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 1000 个内置昵称可随机选择；评价发布后仍可改昵称，评分与正文不可编辑。Android 沿用现有网页入口。</p>
-            <a class="release-summary-link" href="#review-nickname-update">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 连续失败 10 次后停止自动重试，手动继续会重新计数。修复从运行 v2.0.11 后生效，Android 保持 v1.0.13。</p>
+            <a class="release-summary-link" href="#update-proxy-retry-fix">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -115,7 +115,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.10、昵称、邮箱脱敏、订单" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.11、代理、自动重试、昵称" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -129,6 +129,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#update-proxy-retry-fix"><span>v2.0.11</span><strong>补全内置代理更新自动重试</strong></a>
               <a href="#review-nickname-update"><span>v2.0.10</span><strong>昵称与评价正文规则</strong></a>
               <a href="#reviews-orders-update"><span>10.09</span><strong>评价 · 订单 · 营业额</strong></a><a href="#desktop-large-video-update"><span>v2.0.8</span><strong>客户端大视频直接保存</strong></a>
               <a href="#android-large-video-update"><span>Android 1.0.12</span><strong>安卓独立视频直接保存</strong></a>
@@ -194,6 +195,21 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
+            <article id="update-proxy-retry-fix" class="release-entry release-entry-featured" data-release-platforms="desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-10"><span>10.10</span><small>2026 · 更新重试</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.11</span><span class="release-badge release-badge-blue">Mac / Windows 桌面客户端</span><span class="release-status">更新</span></div><h3>补全内置代理更新的自动重试</h3></div></header>
+                <p class="release-lead">修复首次获取代理配置失败后下载不自动重试的问题。可恢复的更新下载故障会自动续传，连续失败 10 次后保留进度，等待你点击继续。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>首次配置故障也会重试</strong>获取后台更新代理配置失败且没有有效缓存时，明确显示配置获取失败并重新请求，避免静默转为直连后失去自动重试。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>实时计数，保留下载进度</strong>内置代理下载遇到可恢复的网络故障后，等待 1 秒重新连接并续传。连续失败 10 次（含首次失败）后停止自动重试，点击「继续下载」或「重试下载」开始新一轮。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>需要处理的错误明确提示</strong>缓存文件或目录权限不足、没有有效缓存且后台配置不合法时，分别显示权限或配置错误。暂停、退出和关闭内置代理会停止重试；系统代理与 PAC 继续优先。</p></div>
+                </div>
+                <p class="release-card-note">修复从运行 v2.0.11 后生效。旧版下载本次更新时仍使用旧更新器，未自动重试可手动继续或用完整安装包原位覆盖。Android 保持 v1.0.13。</p>
+                <div class="release-card-footer"><a href="https://github.com/Brclio/brclio-xhs-media-downloader/blob/main/docs/releases/v2.0.11.md" target="_blank" rel="noopener noreferrer">桌面版 v2.0.11 说明 ↗</a><a href="/download.html">查看客户端下载 ↗</a><span>更新重试修复 · 2026.10.10</span></div>
+              </div>
+            </article>
+
             <article id="review-nickname-update" class="release-entry release-entry-featured" data-release-platforms="web desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-09"><span>10.09</span><small>2026 · 昵称与评价</small></time></div>
               <div class="release-card">
@@ -1732,7 +1748,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.09 · 桌面 v2.0.10 · Android v1.0.13。</p>
+        <p>网页版与客户端记录整理至 2026.10.10 · 桌面 v2.0.11 · Android v1.0.13。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

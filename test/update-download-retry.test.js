@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, readdir, realpath, rm, symlink } from 'node:fs/promises';
+import { chmod, mkdtemp, open, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { UpdateManager, LATEST_RELEASE_URL, installerName } from '../desktop/update-manager.js';
@@ -263,7 +263,7 @@ for (const [label, code, response] of [
   ['invalid content range', 'INVALID_RANGE', () => new Response(content, { status: 200,
     headers: { 'content-range': `bytes 1-${content.length}/${content.length}` } })],
   ['disk full', 'DISK_FULL', () => { throw Object.assign(new Error('out of space'), { code: 'ENOSPC' }); }],
-  ['filesystem access error', 'NETWORK_ERROR', () => { throw Object.assign(new Error('permission denied'), { code: 'EACCES' }); }],
+  ['non-filesystem access error', 'NETWORK_ERROR', () => { throw Object.assign(new Error('permission denied'), { code: 'EACCES' }); }],
   ['invalid proxy configuration', 'PROXY_CONFIG_INVALID', () => { throw Object.assign(new Error('invalid configuration'), { code: 'PROXY_CONFIG_INVALID' }); }]
 ]) {
   test(`internal proxy ${label} does not retry automatically`, async t => {
@@ -276,6 +276,31 @@ for (const [label, code, response] of [
     assert.deepEqual(failures(f.states), []);
   });
 }
+
+test('an actual unreadable partial file reports cache permissions and retains bytes without retrying', async t => {
+  const networkScope = proxyScope();
+  const f = await fixture(t, { networkScope });
+  const saved = content.subarray(0, 5);
+  await writeFile(f.partial, saved);
+  await chmod(f.partial, 0);
+  try {
+    let probe;
+    try { probe = await open(f.partial, 'r+'); }
+    catch (error) { assert.ok(['EACCES', 'EPERM'].includes(error.code)); }
+    if (probe) {
+      await probe.close();
+      t.skip('this filesystem or user does not enforce the fixture file permissions');
+      return;
+    }
+    const result = await f.manager.downloadUpdate();
+    assert.equal(result.status, 'error'); assert.equal(result.error.code, 'CACHE_PERMISSION');
+    assert.match(result.error.message, /缓存.*权限/); assert.equal(result.retry, null); assert.equal(result.canRetry, true);
+    assert.equal(result.download.receivedBytes, saved.length); assert.equal(result.download.canResume, true);
+    assert.equal(f.requests.filter(request => request.url === assetUrl).length, 0);
+    assert.deepEqual(failures(f.states), []); assert.equal(networkScope.opens, networkScope.closes);
+  } finally { await chmod(f.partial, 0o600); }
+  assert.deepEqual(await readFile(f.partial), saved);
+});
 
 test('an invalid cache file stops before installer fetch instead of opening a retry loop', async t => {
   const networkScope = proxyScope();

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { UpdateProxyNetwork, coreConfig, isUpdateUrl, lowestLatency, subscriptionNodes, subscriptionUrl, subscriptionUrls, UPDATE_HOSTS } from '../desktop/update-proxy.js';
@@ -75,6 +75,32 @@ async function fixture(t, options = {}) {
   const network = new UpdateProxyNetwork(networkOptions);
   return { network, reloadNetwork: () => new UpdateProxyNetwork(networkOptions), cacheDirectory, runtimeDirectory,
     sessions, requests, events, configs, children, directRequests, states };
+}
+
+async function coldConfigurationDownload(t, options = {}) {
+  const installer = Buffer.from('installer fixture for the first internal proxy configuration');
+  const digest = createHash('sha256').update(installer).digest('hex');
+  const name = 'Brclio-XHS-2.0.11-mac-arm64.dmg';
+  const assetUrl = `https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.11/${name}`;
+  const release = { tag_name: 'v2.0.11', draft: false, prerelease: false,
+    html_url: 'https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.11', body: '', published_at: '2026-10-09T00:00:00Z',
+    assets: [{ name, size: installer.length, browser_download_url: assetUrl, digest: `sha256:${digest}` }] };
+  let systemRoute = true;
+  const states = [];
+  const f = await fixture(t, { ...options, resolvedProxy: () => systemRoute ? 'PROXY localhost:7890' : 'DIRECT',
+    updateResponse: request => {
+      if (request.url === LATEST_RELEASE_URL) return Readable.from([Buffer.from(JSON.stringify(release))]);
+      assert.equal(request.url, assetUrl);
+      return options.updateResponse ? options.updateResponse(request) : Readable.from([installer]);
+    } });
+  const manager = new UpdateManager({ currentVersion: '2.0.10', platform: 'darwin', arch: 'arm64',
+    directory: f.cacheDirectory, networkScope: f.network, fetchImpl: f.network.fetch, downloadRetryDelayMs: 0,
+    onUpdate: state => { states.push(state); options.onUpdate?.(state); } });
+  // A successful system-routed version check leaves no saved internal config.
+  assert.equal((await manager.checkForUpdates()).status, 'available');
+  assert.equal(f.directRequests.length, 0);
+  systemRoute = false;
+  return { ...f, manager, updateStates: states, installer, name, assetUrl };
 }
 
 test('subscriptions yield only standalone nodes with TLS verification and no local file or chained dialer', () => {
@@ -347,10 +373,133 @@ test('plural embedded URLs are ignored, and the saved administrator replacement 
 
 test('a fresh installation with an unavailable backend never activates an old bundled subscription', async t => {
   const f = await fixture(t, { registry: () => { throw new Error('backend unavailable'); } });
-  await f.network.run(new AbortController(), async () => {});
+  let notified = 0;
+  await assert.rejects(f.network.run(new AbortController(), () => assert.fail('unknown config cannot silently download directly'),
+    { onInternalProxy: () => { notified++; } }), { code: 'PROXY_CONFIG_UNAVAILABLE' });
+  assert.equal(notified, 1); assert.equal(f.network.snapshot().mode, 'error');
   assert.equal(f.children.length, 0); assert.equal(f.directRequests.includes(url), false);
   assert.ok(f.sessions[0].proxies.every(configuration => ['direct', 'system'].includes(configuration.mode)));
 });
+
+test('a first configuration outage retries until the real network and updater classes can download', async t => {
+  let configurations = 0;
+  const f = await coldConfigurationDownload(t, { registry: () => {
+    if (++configurations <= 2) throw new Error('temporary first configuration outage');
+    return Response.json({ ok: true, proxyConfig: { enabled: true, revision: 1, subscriptionUrl: url } });
+  } });
+  const state = await f.manager.downloadUpdate();
+  assert.equal(state.status, 'downloaded'); assert.equal(state.retry, null);
+  assert.equal(configurations, 3);
+  const retries = f.updateStates.filter(value => value.retry?.active);
+  assert.deepEqual([...new Set(retries.map(value => value.retry.consecutiveFailures))], [1, 2]);
+  assert.ok(retries.every(value => value.retry.lastError.code === 'PROXY_CONFIG_UNAVAILABLE'));
+  assert.equal(f.requests.filter(request => request.url === f.assetUrl).length, 1);
+  assert.deepEqual(await readFile(path.join(f.cacheDirectory, f.name)), f.installer);
+  assert.equal(f.network.active.size, 0); assert.ok(f.sessions.every(value => value.cleared));
+  assert.ok(f.children.every(value => value.exitCode === 0));
+  assert.equal(f.events.filter(value => value.event === 'update.proxy_manually_enabled').length, 2);
+});
+
+test('ten first-configuration failures wait for manual retry and the next round resets its counter', async t => {
+  let offline = true, configurations = 0, failuresAfterManual = 0;
+  const f = await coldConfigurationDownload(t, { registry: () => {
+    configurations++;
+    if (offline || failuresAfterManual-- > 0) throw new Error('configuration unavailable');
+    return Response.json({ ok: true, proxyConfig: { enabled: true, revision: 1, subscriptionUrl: url } });
+  } });
+  const failed = await f.manager.downloadUpdate();
+  assert.equal(configurations, 10); assert.equal(failed.status, 'error'); assert.equal(failed.canRetry, true);
+  assert.equal(failed.error.code, 'PROXY_CONFIG_UNAVAILABLE'); assert.match(failed.error.message, /更新网络配置/);
+  assert.equal(failed.retry.active, false); assert.equal(failed.retry.consecutiveFailures, 10);
+  assert.equal(f.requests.filter(request => request.url === f.assetUrl).length, 0); assert.equal(f.children.length, 0);
+  assert.equal(f.network.active.size, 0);
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(configurations, 10, 'configuration bootstrap must stay stopped until a user retry');
+  offline = false; failuresAfterManual = 1; f.updateStates.length = 0;
+  const resumed = await f.manager.downloadUpdate();
+  assert.equal(resumed.status, 'downloaded'); assert.equal(resumed.retry, null); assert.equal(configurations, 12);
+  assert.deepEqual([...new Set(f.updateStates.filter(value => value.retry?.active).map(value => value.retry.consecutiveFailures))], [1]);
+  assert.equal(f.requests.filter(request => request.url === f.assetUrl).length, 1);
+  assert.deepEqual(await readFile(path.join(f.cacheDirectory, f.name)), f.installer);
+  assert.equal(f.events.filter(value => value.event === 'update.proxy_manually_enabled').length, 3);
+  assert.equal(f.network.active.size, 0); assert.ok(f.sessions.every(value => value.cleared));
+});
+
+test('an actual unwritable proxy cache reports cache permissions without retrying setup', async t => {
+  let configurations = 0;
+  const f = await coldConfigurationDownload(t, { registry: () => {
+    configurations++;
+    return Response.json({ ok: true, proxyConfig: { enabled: true, revision: 1, subscriptionUrl: url } });
+  } });
+  await chmod(f.cacheDirectory, 0o500);
+  try {
+    let probe;
+    try { probe = await mkdtemp(path.join(f.cacheDirectory, 'permission-probe-')); }
+    catch (error) { assert.ok(['EACCES', 'EPERM'].includes(error.code)); }
+    if (probe) {
+      await rm(probe, { recursive: true });
+      t.skip('this filesystem or user does not enforce the fixture directory permissions');
+      return;
+    }
+    const failed = await f.manager.downloadUpdate();
+    assert.equal(failed.status, 'error'); assert.equal(failed.error.code, 'CACHE_PERMISSION');
+    assert.match(failed.error.message, /缓存.*权限/); assert.equal(failed.retry, null); assert.equal(failed.canRetry, true);
+    assert.equal(configurations, 1); assert.equal(f.children.length, 0);
+    assert.equal(f.requests.filter(request => request.url === f.assetUrl).length, 0);
+    assert.equal(f.updateStates.some(value => value.retry?.active), false);
+    assert.equal(f.network.active.size, 0); assert.ok(f.sessions.every(value => value.cleared));
+  } finally { await chmod(f.cacheDirectory, 0o700); }
+});
+
+for (const [label, proxyConfig] of [
+  ['unsafe subscription', { enabled: true, revision: 1, subscriptionUrl: 'https://127.0.0.1/sub' }],
+  ['missing subscription', { enabled: true, revision: 1, subscriptionUrl: '' }],
+  ['invalid revision', { enabled: true, revision: -1, subscriptionUrl: url }],
+  ['invalid enabled flag', { enabled: 'true', revision: 1, subscriptionUrl: url }],
+  ['missing fields', {}], ['missing configuration', null]
+]) {
+  test(`a first ${label} configuration retains its validation error without retrying`, async t => {
+    let configurations = 0;
+    const f = await coldConfigurationDownload(t, { registry: () => {
+      configurations++;
+      return Response.json({ ok: true, proxyConfig });
+    } });
+    const failed = await f.manager.downloadUpdate();
+    assert.equal(failed.status, 'error'); assert.equal(failed.error.code, 'PROXY_CONFIG_INVALID');
+    assert.equal(failed.retry, null); assert.equal(failed.canRetry, true); assert.equal(configurations, 1);
+    assert.equal(f.requests.filter(request => request.url === f.assetUrl).length, 0);
+    assert.equal(f.directRequests.includes(url), false); assert.equal(f.children.length, 0);
+    assert.equal(f.updateStates.some(value => value.retry?.active), false);
+    assert.equal(f.network.active.size, 0); assert.ok(f.sessions.every(value => value.cleared));
+  });
+}
+
+test('an invalid fresh configuration still falls back to the previously validated administrator cache', async t => {
+  let invalid = false;
+  const f = await fixture(t, { registry: () => Response.json({ ok: true, proxyConfig: invalid
+    ? { enabled: true, revision: 2, subscriptionUrl: 'https://127.0.0.1/sub' }
+    : { enabled: true, revision: 1, subscriptionUrl: url } }) });
+  const signal = new AbortController().signal;
+  assert.equal((await f.network.getConfiguration(f.network.fetchDirect, signal)).revision, 1);
+  invalid = true;
+  const cached = await f.reloadNetwork().getConfiguration(f.network.fetchDirect, signal);
+  assert.equal(cached.revision, 1); assert.equal(cached.enabled, true); assert.equal(cached.subscriptionUrl, url);
+});
+
+for (const revision of [0, 1]) {
+  test(`an explicit disabled configuration at revision ${revision} never retries a failed direct download`, async t => {
+    let configurations = 0;
+    const f = await coldConfigurationDownload(t, { registry: () => {
+      configurations++;
+      return Response.json({ ok: true, proxyConfig: { enabled: false, revision, subscriptionUrl: '' } });
+    }, updateResponse: () => Readable.from((async function* () { throw new Error('direct network unavailable'); })()) });
+    const failed = await f.manager.downloadUpdate();
+    assert.equal(failed.status, 'error'); assert.equal(failed.error.code, 'NETWORK_ERROR'); assert.equal(failed.retry, null);
+    assert.equal(configurations, 1); assert.equal(f.requests.filter(request => request.url === f.assetUrl).length, 1);
+    assert.equal(f.children.length, 0); assert.equal(f.network.active.size, 0);
+    assert.ok(f.sessions.every(value => value.cleared));
+  });
+}
 
 test('existing system proxy routes and configured PAC DIRECT skip config, subscriptions and built-in core on every desktop platform', async t => {
   for (const platform of ['darwin', 'win32', 'linux']) for (const configuredProxy of [false, true]) {

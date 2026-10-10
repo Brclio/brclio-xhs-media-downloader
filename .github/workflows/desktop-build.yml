@@ -127,6 +127,10 @@ jobs:
         run: npm run desktop:verify:login-reset
       - name: Verify retry and update controls in the real desktop renderer
         run: npx electron scripts/verify-desktop-ui.mjs
+      - name: Verify updater retries through the real manager, IPC and original preload
+        # Deterministic offline streams only. Real subscriptions require explicit --live.
+        timeout-minutes: 3
+        run: npm run desktop:verify:update-retry
       - name: Verify public and packaged learning page assets, navigation and QR saving
         run: npm run build:web && npx electron scripts/verify-learning-ui.cjs
       - name: Verify anonymous VIP community access, responsive layout and original QR saving
