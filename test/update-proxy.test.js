@@ -211,6 +211,9 @@ for (const initialStatus of [404, 503]) test(`controller HTTP ${initialStatus} a
 
 for (const stalled of ['responding', 'request', 'body']) {
   test(`incomplete ${stalled} controller inventory reaches the bounded startup deadline and cleans up`, { timeout: 2000 }, async t => {
+    // The mocked core has no IO handles; retain one while unref'ed AbortSignal deadlines run.
+    const keepAlive = setInterval(() => {}, 1000);
+    t.after(() => clearInterval(keepAlive));
     let requests = 0;
     const f = await fixture(t, { coreStartupTimeoutMs: 30, inventory: () => {
       requests++;

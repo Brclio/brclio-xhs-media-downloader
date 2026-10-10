@@ -1,6 +1,6 @@
 # Brclio 小红书下载器
 
-[v2.0.14](docs/releases/v2.0.14.md) 与 [Android v1.0.15](docs/releases/android-v1.0.15.md) 将版本检测改为优先直连，首轮最多等待 8 秒；成功时不读取代理配置、不抓取订阅或启动内置代理。仅连接故障、超时、限流或服务器临时故障才按现有代理规则回退。安装包下载、断点续传与安装流程保持原有规则。
+[v2.0.15](docs/releases/v2.0.15.md) 与 [Android v1.0.15](docs/releases/android-v1.0.15.md) 将版本检测改为优先直连，首轮最多等待 8 秒；成功时不读取代理配置、不抓取订阅或启动内置代理。仅连接故障、超时、限流或服务器临时故障才按现有代理规则回退。安装包下载、断点续传与安装流程保持原有规则。
 
 [v2.0.12 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.12)，改进实况整包导出：网页与 Mac / Windows「制作实况」默认导出含完整 `.pvt` 实况包的 ZIP。在 Mac 解压后，通过 Finder 隔空投送整个 `.pvt` 到 iPhone；本次用户实机确认 HEIC 2 秒、JPEG 3 秒两种样本均可在「照片」作为实况接收并长按播放。支持 0.5–8 秒成片、视频 1 / 1.5 / 2 / 3 倍速，以及与成片一致的片段和封面预览；1 倍速可保留声音或静音，其他倍速成片统一静音。8 秒是本工具的成片范围，本轮优先保留已验证的手机交接方式。Android 沿用 v1.0.13。三平台构建与升级门禁、公开附件、正式 Mac 包生成和[线上网站核验](docs/releases/v2.0.12-web-verification.json)通过，详见[本次版本说明](docs/releases/v2.0.12.md)与[实况包和实机验证记录](docs/live-photo-pvt-verification.json)。
 
