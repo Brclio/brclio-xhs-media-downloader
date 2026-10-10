@@ -5,7 +5,7 @@ import { defaultReviewNickname, randomReviewNickname, normalizeReviewNickname } 
 const money = cents => cents == null ? '待核实' : `¥${(cents / 100).toFixed(2)}`;
 const date = value => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—';
 const statuses = { pending: '付款待核实', confirmed: '已确认收款', legacy_unverified: '历史发码 · 收款待核实' };
-const methods = { wechat: '微信支付', alipay: '支付宝', other: '其他方式', unknown: '待核实' };
+const methods = { wechat: '微信支付', alipay: '支付宝', other: '其他方式', unknown: '待核实', activation_code: '激活码套餐入账' };
 function node(tag, className, text) {
   const item = document.createElement(tag);
   item.className = className || '';
@@ -41,7 +41,7 @@ export function initializeCommerceUI({ accountPanel, openAccount }) {
   orders.id = 'software-orders';
   orders.setAttribute('aria-labelledby', 'software-orders-title');
   orders.innerHTML = `<div class="commerce-heading"><div><span class="account-eyebrow">YOUR PURCHASES</span><h2 id="software-orders-title">我的全部订单</h2></div><button id="orders-refresh" class="button button-secondary" type="button">刷新订单</button></div>
-    <p class="commerce-help">仅展示当前软件账号的订单。扫码付款后可在「开通会员」提交付款核实，管理员核实收款后更新；发码与会员兑换分别处理。</p>
+    <p class="commerce-help">仅展示当前软件账号的订单。扫码付款后可在「开通会员」提交付款核实；管理员按套餐发放激活码后，套餐金额即为实收金额，收到激活码后请兑换开通会员。</p>
     <p id="orders-notice" class="commerce-notice" role="status" aria-live="polite">登录软件账号后查看订单。</p><div id="orders-list" class="orders-list"></div><div id="orders-pagination" class="commerce-pagination"></div>`;
   accountPanel.append(orders);
   const $ = id => document.getElementById(id);
@@ -100,9 +100,10 @@ export function initializeCommerceUI({ accountPanel, openAccount }) {
       ordersPage = result.page;
       for (const order of result.orders) {
         const row = node('article', 'order-item'); const heading = node('div', 'order-heading');
-        heading.append(node('strong', '', order.planName || '会员订单'), node('span', `order-status order-status-${order.status}`, statuses[order.status] || '待核实'));
+        const activationReceipt = order.source === 'activation_code';
+        heading.append(node('strong', '', order.planName || '会员订单'), node('span', `order-status order-status-${order.status}`, activationReceipt ? '套餐发码 · 已入账' : statuses[order.status] || '待核实'));
         const facts = node('dl', 'order-facts');
-        for (const [label, value] of [['订单编号', order.id], ['套餐金额', money(order.priceCents)], ['实收金额', money(order.amountCents)], ['付款方式', methods[order.paymentMethod] || '待核实'], ['创建时间', date(order.createdAt)], ['收款时间', date(order.paidAt)]]) {
+        for (const [label, value] of [['订单编号', order.id], ['套餐金额', money(order.priceCents)], ['实收金额', money(order.amountCents)], ['收款 / 入账方式', methods[order.paymentMethod] || '待核实'], ['创建时间', date(order.createdAt)], [activationReceipt ? '入账时间' : '收款时间', date(order.paidAt)]]) {
           const pair = node('div'); pair.append(node('dt', '', label), node('dd', '', value)); facts.append(pair);
         }
         row.append(heading, facts); $('orders-list').append(row);

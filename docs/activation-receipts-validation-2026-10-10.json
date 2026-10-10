@@ -1,0 +1,98 @@
+{
+  "verifiedAt": "2026-10-10T05:42:41.822Z",
+  "origin": "https://xhs.download.brclio.com",
+  "deployment": {
+    "worker": "3176362e-6cd5-4e06-aef9-98d412ec4d58",
+    "pagesUrl": "https://82255802.brclio-xhs-pages.pages.dev",
+    "baseCommit": "49b24ef",
+    "workingTreeChangesIncluded": true
+  },
+  "tests": {
+    "node": {
+      "pass": 1119,
+      "skipped": 12,
+      "fail": 0
+    },
+    "focusedCommerce": {
+      "pass": 28,
+      "fail": 0
+    },
+    "adminCommerceRenderer": {
+      "checks": 16,
+      "passed": true,
+      "historicalSnapshotYuan": 2
+    },
+    "cloudflareDryRun": "passed",
+    "diffCheck": "passed"
+  },
+  "productionHttpChecks": [
+    "/admin/ HTTP 200",
+    "/admin/ matches final build byte for byte",
+    "admin disables cache",
+    "admin denies framing",
+    "admin CSP retained",
+    "/admin/admin.js HTTP 200",
+    "/admin/admin.js matches final build byte for byte",
+    "/commerce-ui.js HTTP 200",
+    "/commerce-ui.js matches final build byte for byte",
+    "/lib/membership-plans.js HTTP 200",
+    "/lib/membership-plans.js matches final build byte for byte",
+    "production serves new Worker",
+    "unauthenticated revenue remains protected",
+    "unauthenticated orders remain protected",
+    "cross-origin revenue is denied",
+    "production saved-price receipts aggregate to 20250 cents",
+    "historic targeted records have no remaining confirmation state",
+    "three sampled screenshot records are automatic receipts"
+  ],
+  "assetHashes": [
+    {
+      "path": "/admin/",
+      "sha256": "fa7c5303a4ff2796da1b26333f4c823fdfdb62fdd0ca4b2eb34346812d14c6e6"
+    },
+    {
+      "path": "/admin/admin.js",
+      "sha256": "33393dce6998220d3bc408fac0c99e010c05825dc5e48bad00dfe136801b740d"
+    },
+    {
+      "path": "/commerce-ui.js",
+      "sha256": "753e9e18434c56a772b704742a8d973cccca5ae0c89dc89fc73d3aa86427922c"
+    },
+    {
+      "path": "/lib/membership-plans.js",
+      "sha256": "f05f781f5241af8472c85fbd1b7fdb381238172bfb56e67e0fb93cad3c8e17a2"
+    }
+  ],
+  "authoritativeDataVerification": {
+    "mode": "read-only production state evaluated with deployed commerce source locally; no production state mutation",
+    "stateSha": "a836ec9f05ad7dcaa9844cb03204b453807890c5",
+    "totalCents": 20250,
+    "confirmedCount": 13,
+    "activationCodeCount": 13,
+    "pendingCount": 0,
+    "legacyUnverifiedCount": 0,
+    "byPlan": [
+      {
+        "planId": "daily",
+        "planName": "日付",
+        "totalCents": 2300,
+        "count": 8
+      },
+      {
+        "planId": "yearly",
+        "planName": "年付",
+        "totalCents": 14970,
+        "count": 3
+      },
+      {
+        "planId": "monthly",
+        "planName": "月付",
+        "totalCents": 2980,
+        "count": 2
+      }
+    ]
+  },
+  "limitations": [
+    "The in-app browser bridge timed out, so the authenticated production admin DOM was not re-inspected. Real renderer checks used isolated HTTPS fixtures; production frontend assets and Worker identity were verified separately."
+  ]
+}

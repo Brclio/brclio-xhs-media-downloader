@@ -279,20 +279,45 @@ test('revenue uses exact cents and Shanghai payment dates including both edges o
   for (const input of [{ startDate: '2026-02-30' }, { endDate: '2026-13-01' }, { startDate: '2026-10-10', endDate: '2026-10-09' }]) await assert.rejects(f.call('admin-revenue', input, f.sessions[2]), { code: 'INVALID_DATE_RANGE' });
 });
 
-test('gifts, redemptions and quoted legacy prices are never counted as receipts; legacy confirmation links once', async () => {
-  const f = fixture(), id = randomUUID(), giftId = randomUUID();
-  f.state.codes[id] = { id, recipientId: f.users[0].id, planId: 'monthly', planName: '月付', priceCents: 1990, createdAt: '2026-09-01T00:00:00Z', status: 'used', redeemedBy: f.users[0].id, digest: 'private-code-digest' };
+test('historical targeted plan codes are receipts at their saved price without migration or reconfirmation', async () => {
+  const f = fixture(), id = randomUUID(), giftId = randomUUID(), genericId = randomUUID();
+  f.state.codes[id] = { id, recipientId: f.users[0].id, planId: 'monthly', planName: '历史月付', priceCents: 1590, createdAt: '2026-09-01T16:00:00Z', status: 'used', redeemedBy: f.users[0].id, redeemedAt: '2026-09-03T00:00:00Z', digest: 'private-code-digest' };
   f.state.codes[giftId] = { id: giftId, type: 'permanent', createdAt: '2026-09-01T00:00:00Z', status: 'used', redeemedBy: f.users[0].id };
-  const legacy = (await f.call('orders-mine')).orders;
-  assert.equal(legacy.length, 1); assert.equal(legacy[0].status, 'legacy_unverified'); assert.equal(legacy[0].amountCents, null);
-  assert.ok(!JSON.stringify(legacy).includes('digest'));
-  assert.equal((await f.call('admin-revenue', {}, f.sessions[2])).revenue.totalCents, 0);
-  const confirmed = await f.call('admin-record-order', f.record({ orderId: `legacy-${id}` }), f.sessions[2]);
-  assert.equal(confirmed.order.codeId, id);
-  assert.equal((await f.call('orders-mine')).total, 1, 'linked legacy record is replaced by its receipt');
-  assert.equal((await f.call('admin-revenue', {}, f.sessions[2])).revenue.legacyUnverifiedCount, 0);
-  await assert.rejects(f.call('admin-record-order', f.record({ codeId: id }), f.sessions[2]), { code: 'ORDER_CODE_DUPLICATE' });
+  f.state.codes[genericId] = { id: genericId, planId: 'monthly', priceCents: 1990, createdAt: '2026-09-01T00:00:00Z', status: 'used', redeemedBy: f.users[0].id };
+  for (const patch of [{ priceCents: 0 }, { priceCents: -1 }, { priceCents: 1.99 }, { priceCents: '1990' }, { priceCents: 1_000_000_001 }, { priceCents: Number.MAX_SAFE_INTEGER + 1 }, { createdAt: 'invalid' }, { status: 'void' }, { planId: 'gift' }]) {
+    const excludedId = randomUUID(); f.state.codes[excludedId] = { ...f.state.codes[id], id: excludedId, ...patch };
+  }
+  const before = structuredClone(f.state), orders = (await f.call('orders-mine')).orders;
+  assert.equal(orders.length, 1); assert.equal(orders[0].id, `legacy-${id}`); assert.equal(orders[0].status, 'confirmed');
+  assert.equal(orders[0].amountCents, 1590); assert.equal(orders[0].priceCents, 1590); assert.equal(orders[0].planName, '历史月付');
+  assert.equal(orders[0].paidAt, f.state.codes[id].createdAt); assert.equal(orders[0].source, 'activation_code'); assert.equal(orders[0].paymentMethod, 'activation_code');
+  assert.ok(!JSON.stringify(orders).includes('digest')); assert.equal(orders[0].confirmedBy, undefined);
+  const revenue = (await f.call('admin-revenue', { startDate: '2026-09-02', endDate: '2026-09-02' }, f.sessions[2])).revenue;
+  assert.equal(revenue.totalCents, 1590); assert.equal(revenue.confirmedCount, 1); assert.equal(revenue.activationCodeCount, 1); assert.equal(revenue.legacyUnverifiedCount, 0);
+  assert.deepEqual(revenue.byDay, [{ date: '2026-09-02', totalCents: 1590, count: 1 }]);
+  assert.deepEqual(revenue.byPaymentMethod, [{ paymentMethod: 'activation_code', totalCents: 1590, count: 1 }]);
+  assert.equal((await f.call('admin-orders', { status: 'legacy_unverified' }, f.sessions[2])).total, 0);
+  assert.equal((await f.call('admin-orders', { status: 'confirmed' }, f.sessions[2])).total, 1);
+  assert.deepEqual(f.state, before, 'reading old issued codes does not rewrite storage or create payment evidence');
+  await assert.rejects(f.call('admin-record-order', f.record({ orderId: `legacy-${id}` }), f.sessions[2]), { code: 'ORDER_ALREADY_CONFIRMED' });
+  await assert.rejects(f.call('admin-record-order', f.record({ codeId: id }), f.sessions[2]), { code: 'ORDER_ALREADY_CONFIRMED' });
   await assert.rejects(f.call('admin-record-order', f.record({ userId: f.users[1].id, codeId: id }), f.sessions[2]), { code: 'ORDER_CODE_MISMATCH' });
+  assert.deepEqual(f.state, before, 'reconfirmation attempts cannot add a duplicate receipt');
+});
+
+test('targeted plan issuance counts once before and after redemption while direct grants and generic gifts do not create receipts', async () => {
+  const f = fixture();
+  await f.call('admin-membership', { userId: f.users[1].id, operation: 'days', days: 30, reason: '直接开通的会员另行核实收款', requestId: randomUUID() }, f.sessions[2]);
+  assert.equal((await f.call('admin-revenue', {}, f.sessions[2])).revenue.totalCents, 0);
+  const { codes: [code] } = await f.call('admin-generate-codes', { userId: f.users[0].id, planId: 'monthly', count: 1, reason: '所选套餐金额就是实收费用', requestId: randomUUID() }, f.sessions[2]);
+  const issued = (await f.call('orders-mine')).orders[0];
+  assert.equal(issued.status, 'confirmed'); assert.equal(issued.codeId, code.id); assert.equal(issued.amountCents, 1990);
+  assert.equal((await f.call('admin-revenue', {}, f.sessions[2])).revenue.totalCents, 1990);
+  await f.call('redeem', { code: code.code, requestId: randomUUID() });
+  const redeemed = (await f.call('orders-mine')).orders;
+  assert.equal(redeemed.length, 1); assert.deepEqual(redeemed[0], issued);
+  const revenue = (await f.call('admin-revenue', {}, f.sessions[2])).revenue;
+  assert.equal(revenue.totalCents, 1990); assert.equal(revenue.confirmedCount, 1); assert.equal(revenue.activationCodeCount, 1); assert.equal(revenue.pendingCount, 0);
 });
 
 test('administrator receipts reject invalid amounts, missing evidence, mismatched users and unsafe dates', async () => {
@@ -312,7 +337,8 @@ test('confirmed receipts can link a subsequently issued targeted code without ch
   const pending = (await f.call('order-create', f.userInput({ planId: 'monthly', paymentMethod: 'wechat' }))).order;
   const confirmed = (await f.call('admin-record-order', f.record({ orderId: pending.id, amountCents: 1800 }), f.sessions[2])).order;
   const issued = await f.call('admin-generate-codes', { userId: f.users[0].id, planId: 'monthly', count: 1, reason: '确认收款后发放定向激活码', requestId: randomUUID() }, f.sessions[2]);
-  assert.equal((await f.call('orders-mine')).total, 2, 'unlinked issuance remains a separate unverified historical record');
+  assert.equal((await f.call('orders-mine')).total, 2, 'unlinked issuance is counted until explicitly linked to its prior receipt');
+  assert.equal((await f.call('admin-revenue', {}, f.sessions[2])).revenue.totalCents, 3790);
   const before = structuredClone(f.state.orders[confirmed.id]);
   const input = { orderId: confirmed.id, codeId: issued.codes[0].id, reason: '关联此订单付款后发放的激活码', requestId: randomUUID(), amountCents: 999999, paidAt: '2020-01-01T00:00:00Z', transactionReference: 'ignored-override' };
   const linked = await f.call('admin-link-order-code', input, f.sessions[2]);
@@ -320,7 +346,7 @@ test('confirmed receipts can link a subsequently issued targeted code without ch
   assert.deepEqual({ ...f.state.orders[confirmed.id], codeId: before.codeId }, before, 'all original receipt fields are immutable');
   const orders = await f.call('orders-mine'); assert.equal(orders.total, 1); assert.equal(orders.orders[0].id, confirmed.id);
   const revenue = (await f.call('admin-revenue', {}, f.sessions[2])).revenue;
-  assert.equal(revenue.totalCents, 1800); assert.equal(revenue.confirmedCount, 1); assert.equal(revenue.legacyUnverifiedCount, 0);
+  assert.equal(revenue.totalCents, 1800); assert.equal(revenue.confirmedCount, 1); assert.equal(revenue.activationCodeCount, 0); assert.equal(revenue.legacyUnverifiedCount, 0);
   const audit = f.state.audit.filter(entry => entry.action === 'admin-link-order-code');
   assert.equal(audit.length, 1); assert.equal(audit[0].before.codeId, null); assert.equal(audit[0].after.codeId, issued.codes[0].id);
   assert.equal(audit[0].reason, input.reason);
@@ -364,7 +390,9 @@ test('concurrent code links, receipt confirmations and lost responses preserve s
     f.call('admin-record-order', f.record({ orderId: pending.id, codeId: code.id }), f.sessions[2]),
   ]);
   assert.equal(raced.filter(result => result.status === 'fulfilled').length, 1);
-  assert.equal(raced.find(result => result.status === 'rejected').reason.code, 'ORDER_CODE_DUPLICATE');
+  assert.equal(raced[0].status, 'fulfilled', 'linking an existing receipt succeeds while reconfirmation cannot create another');
+  assert.ok(['ORDER_ALREADY_CONFIRMED', 'ORDER_CODE_DUPLICATE'].includes(raced[1].reason.code));
+  assert.equal(f.state.orders[pending.id].status, 'pending');
   assert.equal(Object.values(f.state.orders).filter(order => order.codeId === code.id).length, 1);
   const g = fixture(), order = (await g.call('admin-record-order', g.record(), g.sessions[2])).order;
   const { codes: [gCode] } = await g.call('admin-generate-codes', { userId: g.users[0].id, planId: 'monthly', count: 1, reason: '测试同请求关联并发重试', requestId: randomUUID() }, g.sessions[2]);
@@ -396,7 +424,8 @@ test('voided unlinked targeted codes are not orders while linked confirmed recei
   assert.equal((await f.call('orders-mine')).total, 1);
   await f.call('admin-void-code', { codeId: unlinked.id, reason: '未收款取消发码', requestId: randomUUID() }, f.sessions[2]);
   assert.equal((await f.call('orders-mine')).total, 0);
-  assert.equal((await f.call('admin-revenue', {}, f.sessions[2])).revenue.legacyUnverifiedCount, 0);
+  const voidedRevenue = (await f.call('admin-revenue', {}, f.sessions[2])).revenue;
+  assert.equal(voidedRevenue.totalCents, 0); assert.equal(voidedRevenue.activationCodeCount, 0);
   const confirmed = (await f.call('admin-record-order', f.record(), f.sessions[2])).order, linked = await issue();
   await f.call('admin-link-order-code', { orderId: confirmed.id, codeId: linked.id, reason: '关联已收款后发出的有效激活码', requestId: randomUUID() }, f.sessions[2]);
   await f.call('admin-void-code', { codeId: linked.id, reason: '作废激活码不改变已收款事实', requestId: randomUUID() }, f.sessions[2]);

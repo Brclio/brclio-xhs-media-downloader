@@ -84,15 +84,20 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
     if (admin) Object.assign(result, { email: own(state.users, order.userId)?.email || '', transactionReference: order.transactionReference || '', reason: order.reason || '', confirmedBy: order.confirmedBy || null });
     return result;
   }
-  function legacyOrder(code) {
-    return { id: `legacy-${code.id}`, userId: code.recipientId, planId: code.planId, planName: code.planName || getMembershipPlan(code.planId).name, priceCents: code.priceCents, amountCents: null, status: 'legacy_unverified', paymentMethod: '', paidAt: null, createdAt: code.createdAt, confirmedAt: null, codeId: code.id, source: 'legacy_activation' };
+  function activationOrder(code) {
+    if (!['unused', 'used'].includes(code.status) || !code.recipientId || !getMembershipPlan(code.planId) || !Number.isSafeInteger(code.priceCents) || code.priceCents < 1 || code.priceCents > maxAmount || !validTime(code.createdAt)) return null;
+    // Targeted plan issuance records the administrator's selected sale amount.
+    // Read old and new codes through the same view, retaining the historical
+    // price snapshot and stable order ID without writing a migration.
+    return { id: `legacy-${code.id}`, userId: code.recipientId, planId: code.planId, planName: code.planName || getMembershipPlan(code.planId).name, priceCents: code.priceCents, amountCents: code.priceCents, status: 'confirmed', paymentMethod: 'activation_code', paidAt: code.createdAt, createdAt: code.createdAt, confirmedAt: code.createdAt, confirmedBy: code.createdBy || null, codeId: code.id, source: 'activation_code' };
   }
   function ledger(state) {
     const orders = Object.values(state.orders || {}), linked = new Set(orders.map(order => order.codeId).filter(Boolean));
     for (const code of Object.values(state.codes)) {
-      // A quoted plan price is not a payment. Generic gifts and redemptions never
-      // become sales; old targeted issues remain explicitly unverified records.
-      if (['unused', 'used'].includes(code.status) && code.recipientId && getMembershipPlan(code.planId) && Number.isSafeInteger(code.priceCents) && code.priceCents >= 0 && validTime(code.createdAt) && !linked.has(code.id)) orders.push(legacyOrder(code));
+      // An explicit receipt linked to this code takes precedence, preserving its
+      // original amount and payment date. Generic gifts have no targeted sale.
+      const order = !linked.has(code.id) && activationOrder(code);
+      if (order) orders.push(order);
     }
     return orders.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
   }
@@ -130,7 +135,7 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
       add(byPaymentMethod, order.paymentMethod, { paymentMethod: order.paymentMethod }, order.amountCents);
       const date = shanghaiDate(order.paidAt); add(byDay, date, { date }, order.amountCents);
     }
-    return { revenue: { currency: 'CNY', timeZone: 'Asia/Shanghai', ...range, totalCents, confirmedCount: confirmed.length, pendingCount: ranged.filter(order => order.status === 'pending').length, legacyUnverifiedCount: ranged.filter(order => order.status === 'legacy_unverified').length, byPlan: [...byPlan.values()], byPaymentMethod: [...byPaymentMethod.values()], byDay: [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date)) } };
+    return { revenue: { currency: 'CNY', timeZone: 'Asia/Shanghai', ...range, totalCents, confirmedCount: confirmed.length, activationCodeCount: confirmed.filter(order => order.source === 'activation_code').length, pendingCount: ranged.filter(order => order.status === 'pending').length, legacyUnverifiedCount: ranged.filter(order => order.status === 'legacy_unverified').length, byPlan: [...byPlan.values()], byPaymentMethod: [...byPaymentMethod.values()], byDay: [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date)) } };
   }
   async function mutate(request) {
     const id = randomUUID();
@@ -193,7 +198,7 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
         if (Object.values(state.orders).some(order => order.paymentKey === paymentKey)) fail('ORDER_PAYMENT_DUPLICATE', '该渠道的收款流水号已经入账，请勿重复确认。', 409);
         let prior = null, codeId = input.codeId || null;
         if (input.orderId) {
-          prior = own(state.orders, input.orderId) || ledger(state).find(order => order.id === input.orderId && order.status === 'legacy_unverified');
+          prior = own(state.orders, input.orderId) || ledger(state).find(order => order.id === input.orderId);
           if (!prior || prior.userId !== target.id || prior.planId !== plan.id) fail('ORDER_NOT_FOUND', '订单不存在或与所选用户、套餐不符。', 404);
           if (prior.status === 'confirmed') fail('ORDER_ALREADY_CONFIRMED', '该订单已经确认收款，不能再次修改。', 409);
           if (prior.codeId && codeId && prior.codeId !== codeId) fail('ORDER_CODE_MISMATCH', '激活码与历史记录不一致。', 409);
@@ -203,6 +208,7 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
           const code = own(state.codes, codeId);
           if (!code || code.status === 'void' || (code.recipientId && code.recipientId !== target.id) || (code.redeemedBy && code.redeemedBy !== target.id) || (code.planId && code.planId !== plan.id)) fail('ORDER_CODE_MISMATCH', '激活码不存在、已作废或与该用户及套餐不符。', 409);
           if (Object.values(state.orders).some(order => order.codeId === codeId)) fail('ORDER_CODE_DUPLICATE', '该激活码已经关联订单，不能重复入账。', 409);
+          if (activationOrder(code)) fail('ORDER_ALREADY_CONFIRMED', '该套餐激活码已按所选套餐金额入账，无需再次确认收款。', 409);
         }
         const order = { id: prior?.status === 'pending' ? prior.id : id, userId: target.id, planId: plan.id, planName: prior?.planName || plan.name, priceCents: prior?.priceCents ?? plan.priceCents, amountCents: input.amountCents, status: 'confirmed', paymentMethod: input.paymentMethod, paidAt: iso(Date.parse(input.paidAt)), createdAt: prior?.createdAt || iso(time), confirmedAt: iso(time), confirmedBy: user.id, codeId, source: prior?.status === 'pending' ? prior.source : 'admin_record', transactionReference, paymentKey, reason: input.reason.trim() };
         state.orders[order.id] = order;

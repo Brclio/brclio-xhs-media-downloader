@@ -310,7 +310,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     identity.append(text, membershipBadge(membership)); content.append(identity);
     content.append(facts([['注册时间', fmt(user.createdAt)], ['账号角色', user.role === 'admin' ? '管理员' : '普通用户'], ['会员生效时间', fmt(membership.startsAt)], ['会员到期时间', membership.type === 'permanent' ? '永久有效' : fmt(membership.expiresAt)], ['已绑定设备', `${(user.devices || []).filter((d) => d.status === 'active').length} 台`], ['状态校验时间', fmt(state.serverTime)]]));
     const issueShortcut = el('div', 'issue-shortcut');
-    const issueDescription = el('div'); issueDescription.append(el('h3', '', '付款后发放激活码'), el('p', 'field-help', '选择套餐，生成后直接发送至此账号邮箱，由客户自行兑换。'));
+    const issueDescription = el('div'); issueDescription.append(el('h3', '', '付款后发放激活码'), el('p', 'field-help', '选择的套餐金额就是实际收款，生成后自动计入营业额，再发送至此账号邮箱供客户兑换。'));
     issueShortcut.append(issueDescription, button('为此邮箱发码', 'button-secondary', async () => {
       issue.searchRequest += 1;
       if (!issue.recipients.some((item) => item.id === user.id)) issue.recipients.unshift(user);
@@ -375,6 +375,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   function inputLabel(title, input, className) { const label = el('label', className, title); label.append(input); return label; }
   function membershipForm(user) {
     const section = el('section'); section.append(el('h3', '', '调整会员权益'));
+    section.append(el('p', 'field-help', '直接开通或调整会员不会自动计入营业额。如已收款，请到“订单与营业额”手动确认实际金额；选择套餐发放激活码会按套餐金额自动入账。'));
     const form = el('form', 'membership-form');
     const operation = el('select'); operation.id = 'membership-operation';
     [['days', '开通 / 续期指定天数'], ['permanent', '开通永久会员'], ['until', '设置准确到期时间'], ['adjust', '延长 / 缩短现有会员'], ['cancel', '取消会员权益']].forEach(([value, text]) => { const option = el('option', '', text); option.value = value; operation.append(option); });
@@ -429,7 +430,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   $('issue-plan').value = 'monthly';
   function updateIssuePlan() {
     const plan = MEMBERSHIP_PLANS.find((item) => item.id === $('issue-plan').value);
-    $('issue-plan-help').textContent = `${plan.name}会员有效期 ${plan.days} 天，从兑换时开始计算；已有有效期会员会顺延。兑换截止时间仅限制可兑换的最后时间，留空表示不限制。`;
+    $('issue-plan-help').textContent = `所选套餐的 ¥${plan.priceLabel} 即实际收款，生成激活码时自动入账，无需再次确认收款。会员有效期 ${plan.days} 天，从兑换时开始计算；已有有效期会员会顺延。兑换截止时间仅限制可兑换的最后时间，留空表示不限制。`;
   }
   updateIssuePlan();
   $('issue-plan').addEventListener('change', updateIssuePlan);
@@ -439,7 +440,9 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   }
   function issuePlanText(code) {
     const plan = MEMBERSHIP_PLANS.find((item) => item.id === code.planId);
-    return plan ? `${plan.name} · ¥${plan.priceLabel}` : code.planName || '指定时长会员';
+    const name = code.planName || plan?.name || '指定时长会员';
+    const price = Number.isSafeInteger(code.priceCents) ? String(code.priceCents / 100) : plan?.priceLabel;
+    return price ? `${name} · ¥${price}` : name;
   }
   function showIssueCode(code, reason = '') {
     issue.code = code; issue.reason = reason || '会员开通，发送激活码至所选客户邮箱';
@@ -453,7 +456,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       panel.append(emptyPreview); return;
     }
     const heading = el('div', 'panel-heading'); heading.append(el('h3', '', '发放详情'), badge(deliveryStatus(code), code.delivery?.status === 'failed' ? 'badge-danger' : 'badge-gold'));
-    panel.append(heading, facts([['收件邮箱', code.recipientEmail], ['套餐 / 价格', issuePlanText(code)], ['会员有效期', `${code.days} 天 · 兑换后开始`], ['兑换截止', code.redeemBy ? fmt(code.redeemBy) : '不限制'], ['创建时间', fmt(code.createdAt)], ['邮件提交时间', fmt(code.delivery?.sentAt)]], 'issue-facts'));
+    panel.append(heading, facts([['收件邮箱', code.recipientEmail], ['套餐 / 实收', issuePlanText(code)], ['会员有效期', `${code.days} 天 · 兑换后开始`], ['兑换截止', code.redeemBy ? fmt(code.redeemBy) : '不限制'], ['创建时间', fmt(code.createdAt)], ['邮件提交时间', fmt(code.delivery?.sentAt)]], 'issue-facts'));
     if (code.code) { const raw = el('textarea'); raw.id = 'issue-code'; raw.readOnly = true; raw.rows = 2; raw.spellcheck = false; raw.value = code.code; panel.append(inputLabel('本次生成的激活码', raw)); }
     else panel.append(el('p', 'field-help', '原码已从页面清除，仍可发送此记录对应的激活码，不会重复生成。'));
     panel.append(el('p', 'small-text issue-record', `记录 ID：${code.id}`));
@@ -473,8 +476,9 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   function displayIssued(result, input) {
     const code = result.codes?.[0];
     if (!code) throw new Error('未返回激活码记录，请刷新记录核对后再继续。');
+    state.loaded.delete('orders');
     showIssueCode(code, input.reason);
-    tell(result.replayed ? '已找回本次生成的记录，未重复生成。可直接将同一激活码发送至客户邮箱。' : '激活码已生成。请核对右侧收件邮箱、套餐和有效期，然后点击发送。', 'success');
+    tell(result.replayed ? '已找回本次生成的记录，未重复生成或入账。可直接将同一激活码发送至客户邮箱。' : '激活码已生成，并按所选套餐金额自动入账，无需再次确认收款。请核对右侧收件邮箱、套餐和有效期，然后点击发送。', 'success');
   }
   function displaySent(result) {
     const code = result.code;
@@ -517,7 +521,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       if (code.status === 'unused') control.append(button('作废', 'button-danger button-small', async () => {
         const reason = await confirmAction('作废激活码', `记录：${code.id}\n权益：${code.type === 'permanent' ? '永久会员' : `${code.days} 天会员`}\n\n作废后无法兑换，已使用的激活码不能恢复为未使用。`, { danger: true, confirm: '确认作废' });
         if (!reason) return;
-        await mutate('admin-void-code', { codeId: code.id, reason }); tell('激活码已作废。', 'success'); state.loaded.delete('audit'); await loadCodes();
+        await mutate('admin-void-code', { codeId: code.id, reason }); tell('激活码已作废。', 'success'); state.loaded.delete('audit'); state.loaded.delete('orders'); await loadCodes();
       }));
       if (!control.childElementCount) control.append(el('span', 'small-text', '—'));
       return [record(code.id, `创建于 ${fmt(code.createdAt)}`), record(code.planId ? `${issuePlanText(code)} · ${code.days} 天` : code.type === 'permanent' ? '永久会员' : `${code.days} 天会员`, `兑换截止：${code.redeemBy ? fmt(code.redeemBy) : '不限制'}`), record(code.recipientEmail || '未指定邮箱', code.recipientEmail ? deliveryStatus(code) : '手动发放'), badge(labels[status] || status, status === 'used' ? '' : status === 'unused' ? 'badge-gold' : 'badge-muted'), record(code.redeemedEmail || code.redeemedBy || '—', code.redeemedAt ? fmt(code.redeemedAt) : ''), control];
@@ -781,7 +785,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       finishUpdateProxySave(result);
     });
   });
-  const paymentMethodLabels = { alipay: '支付宝', wechat: '微信支付', other: '其他' };
+  const paymentMethodLabels = { alipay: '支付宝', wechat: '微信支付', other: '其他', activation_code: '激活码套餐入账' };
   function money(cents) { return Number.isSafeInteger(cents) ? `¥${(cents / 100).toFixed(2)}` : '未确认'; }
   function beijingTime(value) {
     if (!value) return '—';
@@ -828,19 +832,22 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     if (!commerce.orders.length) return empty($('orders-list'), '没有匹配的订单。可调整筛选条件或录入已核实的收款。');
     const statusLabels = { confirmed: '已确认收款', pending: '待确认收款', legacy_unverified: '历史发码 · 未确认收款' };
     $('orders-list').replaceChildren(table(['订单 / 账号', '套餐 / 金额', '状态 / 日期（北京）', '收款凭证 / 激活码', '操作'], commerce.orders.map(order => {
+      const activationReceipt = order.source === 'activation_code';
       const identity = record(order.id, order.email || order.userId);
       identity.append(el('span', 'small-text', `创建：${beijingTime(order.createdAt)}`));
       const amount = record(order.planName || order.planId, `套餐标价 ${money(order.priceCents)}`);
       amount.append(el('strong', 'order-received', order.status === 'confirmed' ? `实收 ${money(order.amountCents)}` : '实收尚未确认'));
-      const status = el('div'); status.append(badge(statusLabels[order.status] || order.status, order.status === 'confirmed' ? '' : 'badge-muted'), el('span', 'small-text', order.status === 'confirmed' ? `收款：${beijingTime(order.paidAt)}` : '未计入营业额'));
-      if (order.confirmedAt) status.append(el('span', 'small-text', `确认：${beijingTime(order.confirmedAt)}`));
-      const reference = record(order.paymentMethod ? paymentMethodLabels[order.paymentMethod] || order.paymentMethod : '待核对收款渠道', order.transactionReference ? `流水：${order.transactionReference}` : '未录入收款流水');
+      const status = el('div'); status.append(badge(activationReceipt ? '套餐发码 · 已入账' : statusLabels[order.status] || order.status, order.status === 'confirmed' ? '' : 'badge-muted'), el('span', 'small-text', order.status === 'confirmed' ? `${activationReceipt ? '入账' : '收款'}：${beijingTime(order.paidAt)}` : '未计入营业额'));
+      if (order.confirmedAt && !activationReceipt) status.append(el('span', 'small-text', `确认：${beijingTime(order.confirmedAt)}`));
+      const reference = activationReceipt
+        ? record('激活码套餐入账', '按所选套餐金额自动入账')
+        : record(order.paymentMethod ? paymentMethodLabels[order.paymentMethod] || order.paymentMethod : '待核对收款渠道', order.transactionReference ? `流水：${order.transactionReference}` : '未录入收款流水');
       if (order.codeId) reference.append(el('span', 'small-text', `激活码记录：${order.codeId}`));
       if (order.reason) { const details = el('details'); details.append(el('summary', '', '核对说明'), el('p', 'order-reason', order.reason)); reference.append(details); }
       const control = el('div', 'order-actions');
       if (order.status === 'confirmed') {
-        control.append(el('span', 'small-text', '已确认，收款只读'));
-        if (!order.codeId) control.append(button('关联激活码', 'button-secondary button-small', () => openOrderLink(order)));
+        control.append(el('span', 'small-text', activationReceipt ? '已自动入账，无需确认' : '已确认，收款只读'));
+        if (!order.codeId && !activationReceipt) control.append(button('关联激活码', 'button-secondary button-small', () => openOrderLink(order)));
         else control.append(el('span', 'small-text', '已关联激活码'));
       } else control.append(button('确认收款', 'button-secondary button-small', () => selectOrderRecord(order)));
       return [identity, amount, status, reference, control];
@@ -861,7 +868,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     const total = el('div', 'revenue-total'); total.append(el('span', 'small-text', '已确认实际收款 · 人民币'), el('strong', '', money(revenue.totalCents || 0)));
     const range = revenue.startDate || revenue.endDate ? `${revenue.startDate || '最早'} 至 ${revenue.endDate || '至今'}` : '全部时间';
     total.append(el('span', 'small-text', `${range} · 北京时间`));
-    $('revenue-summary').replaceChildren(total, facts([['已确认收款', `${revenue.confirmedCount || 0} 笔`], ['待确认订单', `${revenue.pendingCount || 0} 笔 · 不计收入`], ['历史发码待核实', `${revenue.legacyUnverifiedCount || 0} 笔 · 不计收入`]], 'revenue-facts'));
+    $('revenue-summary').replaceChildren(total, facts([['已入账收款', `${revenue.confirmedCount || 0} 笔`], ['套餐发码入账', `${revenue.activationCodeCount || 0} 笔 · 已计收入`], ['待确认订单', `${revenue.pendingCount || 0} 笔 · 不计收入`]], 'revenue-facts'));
     const breakdown = $('revenue-breakdown'); breakdown.replaceChildren();
     const groups = [ ['按会员套餐', revenue.byPlan || [], entry => entry.planName || entry.planId], ['按收款渠道', revenue.byPaymentMethod || [], entry => paymentMethodLabels[entry.paymentMethod] || entry.paymentMethod] ];
     for (const [heading, entries, label] of groups) {
@@ -914,7 +921,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   async function finishOrderRecord(result) {
     const order = result.order;
     resetOrderRecord();
-    const message = `收款已确认：${order.id} · 实收 ${money(order.amountCents)}。已计入营业额；会员开通请继续使用激活码功能。`;
+    const message = `收款已确认：${order.id} · 实收 ${money(order.amountCents)}。已计入营业额，会员权益保持不变。`;
     $('order-record-result').textContent = message; tell(message, 'success'); state.loaded.delete('audit');
     await Promise.all([loadOrders(commerce.page), loadRevenue()]);
   }
@@ -970,7 +977,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       if (commerce.target) input.orderId = commerce.target.id;
       if ($('order-code-id').value.trim()) input.codeId = $('order-code-id').value.trim();
       const plan = MEMBERSHIP_PLANS.find(item => item.id === input.planId); const email = $('order-user').selectedOptions[0]?.textContent || input.userId;
-      if (!await confirmAction('确认实际收款并入账', `账号：${email}\n套餐：${plan?.name || input.planId}\n实际收款：${money(amountCents)}\n渠道：${paymentMethodLabels[input.paymentMethod]}\n收款时间：${beijingTime(input.paidAt)}（北京时间）\n流水：${input.transactionReference}\n核对说明：${input.reason}\n\n确认后保存只读收款记录并计入营业额。会员权益仍需通过激活码开通。`, { reasonRequired: false, confirm: '确认收款并入账' })) return;
+      if (!await confirmAction('确认实际收款并入账', `账号：${email}\n套餐：${plan?.name || input.planId}\n实际收款：${money(amountCents)}\n渠道：${paymentMethodLabels[input.paymentMethod]}\n收款时间：${beijingTime(input.paidAt)}（北京时间）\n流水：${input.transactionReference}\n核对说明：${input.reason}\n\n确认后保存只读收款记录并计入营业额，会员权益保持不变。`, { reasonRequired: false, confirm: '确认收款并入账' })) return;
       await finishOrderRecord(await mutate('admin-record-order', input));
     });
   });

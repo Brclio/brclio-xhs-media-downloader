@@ -136,22 +136,22 @@ test('production Worker and AccountRuntime isolate public reviews, personal orde
     assert.equal(forged.response.status, 401); assert.equal(forged.body.error.code, 'INVALID_DEVICE_PROOF');
   });
 
-  await t.test('cookie selection and draft assertions isolate orders while grants and quoted prices remain unverified', async () => {
+  await t.test('cookie selection isolates orders while targeted plan codes count automatically and direct grants need receipts', async () => {
     const anonymousOrder = await call('order-create', orderInput()); assert.equal(anonymousOrder.response.status, 401);
     const owner = await call('orders-mine', { expectedUserId: ownerId }, bothCookies);
-    assert.equal(owner.response.status, 200); assert.equal(owner.body.orders.length, 1); assert.equal(owner.body.orders[0].status, 'legacy_unverified');
-    assert.equal(owner.body.orders[0].amountCents, null); assert.equal(owner.body.orders[0].email, undefined);
+    assert.equal(owner.response.status, 200); assert.equal(owner.body.orders.length, 1); assert.equal(owner.body.orders[0].status, 'confirmed');
+    assert.equal(owner.body.orders[0].amountCents, 1990); assert.equal(owner.body.orders[0].source, 'activation_code'); assert.equal(owner.body.orders[0].email, undefined);
     const other = await call('orders-mine', { expectedUserId: otherId }, otherCookie); assert.equal(other.body.total, 0);
     const changed = await call('orders-mine', { expectedUserId: ownerId }, otherCookie); assert.equal(changed.response.status, 409); assert.equal(changed.body.error.code, 'ACCOUNT_CHANGED');
     const before = await call('admin-revenue', {}, bothCookies);
-    assert.equal(before.body.revenue.totalCents, 0); assert.equal(before.body.revenue.legacyUnverifiedCount, 1);
+    assert.equal(before.body.revenue.totalCents, 1990); assert.equal(before.body.revenue.activationCodeCount, 1); assert.equal(before.body.revenue.legacyUnverifiedCount, 0);
     const input = orderInput(), reported = await call('order-create', input, bothCookies);
     assert.equal(reported.response.status, 200, JSON.stringify(reported.body));
     assert.equal(reported.body.order.status, 'pending'); assert.equal(reported.body.order.amountCents, null); assert.equal(reported.body.order.priceCents, 1990);
     const repeat = await call('order-create', { ...input, requestId: randomUUID() }, ownerCookie);
     assert.equal(repeat.body.order.id, reported.body.order.id);
     const after = await call('admin-revenue', {}, adminCookie);
-    assert.equal(after.body.revenue.totalCents, 0); assert.equal(after.body.revenue.pendingCount, 1);
+    assert.equal(after.body.revenue.totalCents, 1990); assert.equal(after.body.revenue.pendingCount, 1);
     assert.equal(state.users[ownerId].membership.type, 'none');
     for (const action of ['admin-orders', 'admin-revenue', 'admin-record-order']) {
       const browserDenied = await call(action, {}, ownerCookie); assert.equal(browserDenied.response.status, 401);
@@ -161,7 +161,11 @@ test('production Worker and AccountRuntime isolate public reviews, personal orde
 
   await t.test('only confirmed integer cents enter Shanghai-date revenue and uncertain receipt retries stay idempotent', async () => {
     const pending = Object.values(state.orders).find(order => order.status === 'pending');
-    const input = receiptInput({ orderId: pending.id, codeId: legacyId });
+    const reconfirm = await call('admin-record-order', receiptInput({ orderId: `legacy-${legacyId}` }), adminCookie);
+    assert.equal(reconfirm.response.status, 409); assert.equal(reconfirm.body.error.code, 'ORDER_ALREADY_CONFIRMED');
+    const duplicateCode = await call('admin-record-order', receiptInput({ codeId: legacyId }), adminCookie);
+    assert.equal(duplicateCode.response.status, 409); assert.equal(duplicateCode.body.error.code, 'ORDER_ALREADY_CONFIRMED');
+    const input = receiptInput({ orderId: pending.id });
     commitWithoutReceipt = true;
     const uncertain = await call('admin-record-order', input, bothCookies);
     assert.equal(uncertain.response.status, 503); assert.equal(uncertain.body.ok, false);
@@ -170,6 +174,10 @@ test('production Worker and AccountRuntime isolate public reviews, personal orde
     assert.equal(replay.body.order.id, pending.id); assert.equal(replay.body.order.status, 'confirmed'); assert.equal(replay.body.order.amountCents, 1800);
     const duplicate = await call('admin-record-order', { ...input, requestId: randomUUID(), orderId: undefined, codeId: undefined }, adminCookie);
     assert.equal(duplicate.response.status, 409); assert.equal(duplicate.body.error.code, 'ORDER_PAYMENT_DUPLICATE');
+    const linked = await call('admin-link-order-code', { orderId: pending.id, codeId: legacyId, reason: '关联此收款已发放的套餐码', requestId: randomUUID() }, adminCookie);
+    assert.equal(linked.response.status, 200, JSON.stringify(linked.body)); assert.equal(linked.body.order.codeId, legacyId);
+    const allRevenue = await call('admin-revenue', {}, adminCookie);
+    assert.equal(allRevenue.body.revenue.totalCents, 1800); assert.equal(allRevenue.body.revenue.activationCodeCount, 0);
     const revenue = await call('admin-revenue', { startDate: '2026-01-02', endDate: '2026-01-02' }, bothCookies);
     assert.equal(revenue.response.status, 200); assert.equal(revenue.body.revenue.totalCents, 1800); assert.equal(revenue.body.revenue.confirmedCount, 1);
     assert.deepEqual(revenue.body.revenue.byDay, [{ date: '2026-01-02', totalCents: 1800, count: 1 }]);
