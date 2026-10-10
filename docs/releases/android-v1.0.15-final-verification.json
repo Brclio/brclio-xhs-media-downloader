@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 1,
+  "platform": "android",
+  "verifiedAt": "2026-10-10T16:02:27.408Z",
+  "version": "1.0.15",
+  "versionCode": 10015,
+  "release": {
+    "tag": "android-v1.0.15",
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/android-v1.0.15",
+    "publishedAt": "2026-10-10T15:51:35Z",
+    "draft": false,
+    "prerelease": false,
+    "publicAssets": [
+      "Brclio-XHS-Android-1.0.15-release.apk",
+      "Brclio-XHS-Android-1.0.15-release.apk.sha256",
+      "SHA256SUMS.txt",
+      "android-update.json"
+    ]
+  },
+  "source": {
+    "commit": "4ebf40f544f9a931c73261f74f4c52186f6790b4",
+    "tagResolvesToCommit": true,
+    "remoteTagVerified": true,
+    "buildSourceDirty": false
+  },
+  "publicPackage": {
+    "name": "Brclio-XHS-Android-1.0.15-release.apk",
+    "bytes": 73153114,
+    "sha256": "1d385fe4366d60af5c3d0168c3f8f24e70eb0ebbd3d82cc5048487a0a22ccb0a",
+    "applicationId": "com.brclio.xhs",
+    "versionName": "1.0.15",
+    "versionCode": 10015,
+    "minSdk": 26,
+    "targetSdk": 35,
+    "manifestIdentityVerified": true,
+    "signatureVerified": true,
+    "stableSigningCertificateSha256": "2dc79fe8e949ed400a777e8fe29b80e2660862a728a6c1f1fb4e63fcf750d95b",
+    "checksumFilesVerified": true
+  },
+  "ci": {
+    "runId": 38064825374,
+    "attempt": 1,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38064825374",
+    "sourceCommit": "4ebf40f544f9a931c73261f74f4c52186f6790b4",
+    "jobs": {
+      "build": "success",
+      "upgradeEmulator": "success",
+      "publish": "success"
+    },
+    "releaseJUnit": {
+      "suites": 13,
+      "tests": 81,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "releaseLintPassed": true,
+    "packagedProxyGatePassed": true,
+    "packagedProxy": {
+      "version": "v1.19.32",
+      "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+      "apkSha256": "1d385fe4366d60af5c3d0168c3f8f24e70eb0ebbd3d82cc5048487a0a22ccb0a",
+      "bundledSubscriptionsAbsent": true,
+      "configurationSource": "management-api",
+      "sourceArchiveVerified": true,
+      "licenseVerified": true,
+      "launcherSourceVerified": true,
+      "coreCount": 3,
+      "launcherCount": 3,
+      "binaries": [
+        {
+          "abi": "arm64-v8a",
+          "coreSha256": "bb9afbd48717f92d59e07da35fb694b83d40d6edb63eb9033c2ee4174137d195",
+          "launcherSha256": "ff95c71875b2b74bec1de86eb84c3d07c56c835b1450f6153189950e81a6ac14",
+          "elfVerified": true
+        },
+        {
+          "abi": "armeabi-v7a",
+          "coreSha256": "10e85ebad5380e5cdcb4028b6ba40910593bc9c37ce6b50e9f3a21adfca1408d",
+          "launcherSha256": "ff81f7c906142998023476a721d999d5f70ca208e6db032c9da96404b86cb4c0",
+          "elfVerified": true
+        },
+        {
+          "abi": "x86_64",
+          "coreSha256": "1c5aa8e8a7006e4093560fe48505fd1587de29210879e806822cb1094b334413",
+          "launcherSha256": "7d1fd4b61597cae9b0095e8792612d21581125bb5eea2fa7f7152a2209f371a3",
+          "elfVerified": true
+        }
+      ]
+    },
+    "emulatorUpgrade": {
+      "verifiedAt": "2026-10-10T15:51:05.371Z",
+      "method": "adb install -r",
+      "apiLevel": 35,
+      "sourceCommit": "4ebf40f544f9a931c73261f74f4c52186f6790b4",
+      "apkSha256": "1d385fe4366d60af5c3d0168c3f8f24e70eb0ebbd3d82cc5048487a0a22ccb0a",
+      "targetVersion": "1.0.15",
+      "targetVersionCode": 10015,
+      "baselineVersion": "1.0.2",
+      "baselineVersionCode": 10002,
+      "signaturesVerified": true,
+      "oldAndNewLaunchVerified": true,
+      "uidPreserved": true,
+      "firstInstallTimePreserved": true,
+      "userSettingPreserved": true,
+      "updateCheckUiVerified": true,
+      "inAppInstallerConfirmationTested": false,
+      "manualFallbackFixtureVerified": true,
+      "vipCommunityVerified": true,
+      "architecture": "x86_64",
+      "appCrashDetected": false,
+      "userSettingName": "Allow from this source"
+    },
+    "manualBrowserFixture": {
+      "applicationId": "com.brclio.xhs.debug",
+      "fixtureVersion": "0.0.0-debug",
+      "sourceCopyOnly": true,
+      "productionApkModified": false,
+      "installerFailureWasInjected": true,
+      "nativeNetworkMocked": false,
+      "nativeUrlOverride": false,
+      "attempts": [
+        {
+          "attempt": 1,
+          "elapsedMs": 17141,
+          "actualBrowserIntentVerified": true
+        }
+      ],
+      "actualBrowserIntentVerified": true,
+      "publicReleaseResolvedBeforeCandidatePublication": "android-v1.0.13",
+      "limitations": [
+        "The installer failure was a debug-WebView UI fixture. No production installer failure or browser download completion is claimed.",
+        "The real native method fetched public release metadata and its checksum and dispatched the observed browser APK intent."
+      ]
+    },
+    "offlineVipCommunity": {
+      "offlinePageVerified": true,
+      "nativeSafQrSaveVerified": true,
+      "returnToSinglePostVerified": true,
+      "sharedInputPreserved": true
+    },
+    "uiCaptureRetries": 0
+  },
+  "localArm64OfficialSignedUpgrade": {
+    "apiLevel": 35,
+    "architecture": "arm64-v8a",
+    "baselineVersion": "1.0.0",
+    "baselineVersionCode": 10000,
+    "targetVersion": "1.0.15",
+    "targetVersionCode": 10015,
+    "method": "adb install -r",
+    "apkSha256": "1d385fe4366d60af5c3d0168c3f8f24e70eb0ebbd3d82cc5048487a0a22ccb0a",
+    "stableSignatureVerified": true,
+    "uidPreserved": true,
+    "firstInstallTimePreserved": true,
+    "launchVerified": true,
+    "visibleUpdateUi": {
+      "currentVersion": "1.0.15",
+      "result": "当前已是最新正式版。",
+      "buttonVisible": true
+    },
+    "proxyCleanupVerified": true,
+    "emulatorSystemProxyTemporarilyDisabled": true,
+    "emulatorSystemProxyRestored": true,
+    "observedInternalFallback": true,
+    "strictLiveDirectSuccessVerified": false,
+    "inAppInstallerConfirmationTested": false,
+    "physicalDeviceTested": false
+  },
+  "directFirstAndReadiness": {
+    "metadataDirectAttemptUsesProxyNoProxy": true,
+    "metadataDirectTimeoutSeconds": 8,
+    "metadataFallbackRetainsExistingSystemAndInternalProxyPolicy": true,
+    "packageDownloadRoutingUnchanged": true,
+    "directSuccessNoProxyUnitTestPassed": true,
+    "readinessEndpoint": "/proxies/BRCLIO_UPDATE",
+    "requiresConfiguredSelectorAndAllUniqueExpectedNodes": true,
+    "readinessStartupDeadlineSeconds": 12,
+    "maximumPollCallTimeoutMilliseconds": 500,
+    "cancellationAndExpiredDeadlineTestsPassed": true,
+    "maximum2048NodeSelectorResponseBoundTestPassed": true
+  },
+  "localDebugRegression": {
+    "java": {
+      "suites": 13,
+      "tests": 81,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lintPassed": true,
+    "nodeAndroid": {
+      "passed": 79,
+      "skipped": 1,
+      "skipReason": "Linux-only parent-death hook fixture on macOS"
+    },
+    "isolatedDirectFailureFixture": {
+      "apiLevel": 35,
+      "architecture": "arm64-v8a",
+      "sourceOrBinaryFixture": true,
+      "bootstrapTransportFixture": false,
+      "backendRevision": 1,
+      "configuredSubscriptionCount": 1,
+      "nodesProbed": 16,
+      "availableNodes": 15,
+      "normalCleanup": true,
+      "cancellationCleanup": true,
+      "ownerDeathCleanup": true,
+      "systemProxyRestored": true,
+      "noVpnInterfaceAdded": true,
+      "controllerWithoutAuthenticationStatus": 401,
+      "proxyWithoutAuthenticationStatus": 407
+    }
+  },
+  "readinessRaceCorrection": {
+    "pinnedMihomoVersion": "v1.19.32",
+    "pinnedMihomoSourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+    "failedOldRun": 38062618904,
+    "failedOldAttempt": 1,
+    "oldAndroidTagPreserved": "android-v1.0.14",
+    "finding": "Controller /version can answer before the configured proxy map is installed. HTTP_404 x16 was generated by the local controller for missing proxy names; upstream probe failures use503/504.",
+    "earlierRegionalGitHub404HypothesisCorrected": true,
+    "newRunNativeManualBrowserFixturePassedOnFirstAttempt": true
+  },
+  "crossHostLauncherComparison": {
+    "ndkVersion": "27.2.12479018",
+    "strictLocalByteVerifierPassed": false,
+    "productionCiExactOutputGatePassed": true,
+    "difference": "Exactly2 .comment annotation bytes per ABI: Linux Clang +bolt/+mlgo and macOS Clang -bolt/-mlgo.",
+    "allBytesOutsideCompilerCommentIdentical": true,
+    "allCodeBytesAndElfLoadableSegmentsIdentical": true,
+    "productionVerifierUnchanged": true,
+    "abis": [
+      {
+        "abi": "arm64-v8a",
+        "differentByteCount": 2,
+        "allElfLoadableSegmentsIdentical": true,
+        "codeBytesIdentical": true,
+        "differencesOutsideLoadableSegments": true
+      },
+      {
+        "abi": "armeabi-v7a",
+        "differentByteCount": 2,
+        "allElfLoadableSegmentsIdentical": true,
+        "codeBytesIdentical": true,
+        "differencesOutsideLoadableSegments": true
+      },
+      {
+        "abi": "x86_64",
+        "differentByteCount": 2,
+        "allElfLoadableSegmentsIdentical": true,
+        "codeBytesIdentical": true,
+        "differencesOutsideLoadableSegments": true
+      }
+    ]
+  },
+  "limitations": [
+    "No physical Android device was tested.",
+    "Signed system Package Manager replacement used adb install -r; in-app APK download and Android system-installer confirmation were not tested.",
+    "The local signed startup/manual checks used internal fallback at least once; this run does not establish live direct success.",
+    "The browser fallback gate injected installer-failure UI in a disposable debug source copy; real native metadata/checksum lookup and observed browser intent were tested, but production installer failure and browser download completion were not.",
+    "Exact launcher bytes differ across the Linux/macOS pinned-NDK compiler annotations; the strict local comparison remains false while all executable/loadable bytes match and the unchanged production CI gate passed."
+  ],
+  "privacy": {
+    "privateAccountDataIncluded": false,
+    "subscriptionAddressesOrNodeCredentialsIncluded": false,
+    "screenshotsIncluded": false
+  }
+}

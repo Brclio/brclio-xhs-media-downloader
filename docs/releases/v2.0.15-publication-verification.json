@@ -1,0 +1,332 @@
+{
+  "version": "2.0.15",
+  "tag": "v2.0.15",
+  "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.15",
+  "publishedAt": "2026-10-10T16:12:44Z",
+  "verifiedAt": "2026-10-10T16:16:52.743Z",
+  "assetCount": 11,
+  "builds": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "comparedSources": 237,
+      "sourceDirty": false
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "comparedSources": 237,
+      "sourceDirty": false
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "comparedSources": 237,
+      "sourceDirty": false
+    }
+  ],
+  "updates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "2.0.12",
+      "asset": "Brclio-XHS-2.0.15-mac-arm64.dmg",
+      "bytes": 167474351
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "2.0.12",
+      "asset": "Brclio-XHS-2.0.15-mac-x64.dmg",
+      "bytes": 175202536
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "2.0.12",
+      "asset": "Brclio-XHS-2.0.15-windows-x64-setup.exe",
+      "bytes": 146521730
+    }
+  ],
+  "legacyUpdater": {
+    "version": "1.8.13",
+    "tag": "v1.8.13",
+    "sourceSha": "83830d4db9b52e7e81a890a4c02d44b5eb02095c"
+  },
+  "legacyUpdates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-2.0.15-mac-arm64.dmg",
+      "bytes": 167474351,
+      "sha256": "c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9",
+      "manifestChecksumVerified": true
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-2.0.15-mac-x64.dmg",
+      "bytes": 175202536,
+      "sha256": "b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28",
+      "manifestChecksumVerified": true
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "fromVersion": "1.8.13",
+      "asset": "XHS-Downloader-2.0.15-windows-x64-setup.exe",
+      "bytes": 146521730,
+      "sha256": "bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c",
+      "manifestChecksumVerified": true
+    }
+  ],
+  "compatibilityAliasesVerified": true,
+  "remoteDigestsVerified": true,
+  "publicManifestsVerified": true,
+  "anonymousUpdaterVisible": true,
+  "publicInstallerProbes": [
+    {
+      "name": "Brclio-XHS-2.0.15-mac-arm64.dmg",
+      "bytes": 167474351,
+      "sha256": "c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-arm64.zip",
+      "bytes": 168384518,
+      "sha256": "c312c48c806e35a6ebb877dbacd7578a9a51172dac1c3856f8d52cd8781afead",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-x64.dmg",
+      "bytes": 175202536,
+      "sha256": "b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-x64.zip",
+      "bytes": 176180218,
+      "sha256": "fcac864333d1ffb314fb6a4ab8c979180c1f8a721217305780dc21fe7a86112f",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-windows-x64-setup.exe",
+      "bytes": 146521730,
+      "sha256": "bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-windows-x64-portable.exe",
+      "bytes": 146283182,
+      "sha256": "733849fb6f74ec52844b032ecff6f825ca22287fe2e12762deefe47c63ac424e",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-2.0.15-mac-arm64.dmg",
+      "bytes": 167474351,
+      "sha256": "c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-2.0.15-mac-x64.dmg",
+      "bytes": 175202536,
+      "sha256": "b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28",
+      "method": "HEAD",
+      "status": 200
+    },
+    {
+      "name": "XHS-Downloader-2.0.15-windows-x64-setup.exe",
+      "bytes": 146521730,
+      "sha256": "bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c",
+      "method": "HEAD",
+      "status": 200
+    }
+  ],
+  "workflow": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38065548306",
+    "workflowSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+    "event": "push",
+    "conclusion": "success",
+    "jobs": [
+      "mac-intel",
+      "mac-arm64",
+      "windows-x64",
+      "Publish verified installers"
+    ],
+    "nativeClipboardVerified": true
+  },
+  "result": "PASS",
+  "desktopLatest": "v2.0.15",
+  "publicAssets": [
+    {
+      "name": "Brclio-XHS-2.0.15-mac-arm64.dmg",
+      "bytes": 167474351,
+      "sha256": "c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-arm64.dmg"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-arm64.zip",
+      "bytes": 168384518,
+      "sha256": "c312c48c806e35a6ebb877dbacd7578a9a51172dac1c3856f8d52cd8781afead",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-arm64.zip"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-x64.dmg",
+      "bytes": 175202536,
+      "sha256": "b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-x64.dmg"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-x64.zip",
+      "bytes": 176180218,
+      "sha256": "fcac864333d1ffb314fb6a4ab8c979180c1f8a721217305780dc21fe7a86112f",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-x64.zip"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-windows-x64-portable.exe",
+      "bytes": 146283182,
+      "sha256": "733849fb6f74ec52844b032ecff6f825ca22287fe2e12762deefe47c63ac424e",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-windows-x64-portable.exe"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-windows-x64-setup.exe",
+      "bytes": 146521730,
+      "sha256": "bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-windows-x64-setup.exe"
+    },
+    {
+      "name": "build-evidence.json",
+      "bytes": 7006,
+      "sha256": "43f4d3015aaa0870b4c13e646e46385002b7e171a15ecbf4bfee1eb6834d75ed",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/build-evidence.json"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 915,
+      "sha256": "c468a9201fcfac5abbe322ce4277b00adc4ae2cd82ed50476af164111883398f",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/SHA256SUMS.txt"
+    },
+    {
+      "name": "XHS-Downloader-2.0.15-mac-arm64.dmg",
+      "bytes": 167474351,
+      "sha256": "c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/XHS-Downloader-2.0.15-mac-arm64.dmg"
+    },
+    {
+      "name": "XHS-Downloader-2.0.15-mac-x64.dmg",
+      "bytes": 175202536,
+      "sha256": "b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/XHS-Downloader-2.0.15-mac-x64.dmg"
+    },
+    {
+      "name": "XHS-Downloader-2.0.15-windows-x64-setup.exe",
+      "bytes": 146521730,
+      "sha256": "bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/XHS-Downloader-2.0.15-windows-x64-setup.exe"
+    }
+  ],
+  "officialAssets": [
+    {
+      "name": "Brclio-XHS-2.0.15-mac-arm64.dmg",
+      "bytes": 167474351,
+      "sha256": "c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-arm64.dmg",
+      "displaySizeMB": "167.5 MB"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-arm64.zip",
+      "bytes": 168384518,
+      "sha256": "c312c48c806e35a6ebb877dbacd7578a9a51172dac1c3856f8d52cd8781afead",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-arm64.zip",
+      "displaySizeMB": "168.4 MB"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-x64.dmg",
+      "bytes": 175202536,
+      "sha256": "b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-x64.dmg",
+      "displaySizeMB": "175.2 MB"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-mac-x64.zip",
+      "bytes": 176180218,
+      "sha256": "fcac864333d1ffb314fb6a4ab8c979180c1f8a721217305780dc21fe7a86112f",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-x64.zip",
+      "displaySizeMB": "176.2 MB"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-windows-x64-portable.exe",
+      "bytes": 146283182,
+      "sha256": "733849fb6f74ec52844b032ecff6f825ca22287fe2e12762deefe47c63ac424e",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-windows-x64-portable.exe",
+      "displaySizeMB": "146.3 MB"
+    },
+    {
+      "name": "Brclio-XHS-2.0.15-windows-x64-setup.exe",
+      "bytes": 146521730,
+      "sha256": "bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-windows-x64-setup.exe",
+      "displaySizeMB": "146.5 MB"
+    }
+  ],
+  "publicManifestsDownloaded": [
+    {
+      "asset": "build-evidence.json",
+      "bytes": 7006,
+      "sha256": "43f4d3015aaa0870b4c13e646e46385002b7e171a15ecbf4bfee1eb6834d75ed"
+    },
+    {
+      "asset": "SHA256SUMS.txt",
+      "bytes": 915,
+      "sha256": "c468a9201fcfac5abbe322ce4277b00adc4ae2cd82ed50476af164111883398f"
+    }
+  ],
+  "additionalPublishedBuildGates": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true,
+      "installedAndPortableUpgradeVerified": true,
+      "automaticRelaunchRendererReadyVerified": true,
+      "restartedRendererCount": 2
+    }
+  ],
+  "publishedAtBeijing": "2026-10-11 00:12:44 UTC+08:00",
+  "publicationDateBeijing": "2026-10-11",
+  "verificationScope": {
+    "installerBodiesDownloaded": false,
+    "installerProbes": "Anonymous HEAD for all nine installer links",
+    "manifestBodiesDownloadedAndHashed": true,
+    "installerDigestComparison": "Published asset SHA256 and size match publisher build evidence and SHA256SUMS; legacy aliases match their official originals",
+    "transport": {
+      "authenticatedMetadata": "GitHub CLI",
+      "anonymousMetadataManifestsAndHeads": "Node fetch via the existing OS HTTP proxy, selected only for this process",
+      "systemProxyChanged": false,
+      "builtInProxyStarted": false,
+      "bareNodeDirectAttempt": "failed before report generation"
+    }
+  }
+}

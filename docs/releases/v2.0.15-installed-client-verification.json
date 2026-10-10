@@ -1,0 +1,164 @@
+{
+  "status": "passed-with-keychain-authorization-pending",
+  "installedBefore": "2.0.7",
+  "target": "2.0.15",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "installLocation": "existing user workspace app bundle",
+  "beforeObserved": [
+    "native About UI",
+    "Info.plist",
+    "running process"
+  ],
+  "oldProcessIds": [
+    44849
+  ],
+  "startedAt": "2026-10-10T16:11:09.820973+00:00",
+  "userProfilePreserved": true,
+  "personalAccountDataIncluded": false,
+  "checkFromOldClient": {
+    "status": "update-available",
+    "latestVersion": "2.0.15",
+    "observedAt": "2026-10-10T16:15:26.823638+00:00",
+    "route": "existing system proxy",
+    "internalProxyStarted": false,
+    "sourceVersion": "2.0.7"
+  },
+  "downloadStarted": true,
+  "downloadCompleted": true,
+  "downloadCompleteObserved": "native update dialog: new version ready, install and restart offered",
+  "installRequestedAt": "2026-10-10T16:16:27.968134+00:00",
+  "installedAfter": "2.0.15",
+  "newProcessIds": [
+    71055
+  ],
+  "previousProcessExited": true,
+  "method": "existing app GUI updater: check, download, install and restart",
+  "manualPackageFallbackUsed": false,
+  "nativeAboutUi": {
+    "version": "2.0.15",
+    "platform": "macOS",
+    "arch": "arm64",
+    "latestStatus": "当前已是最新版本",
+    "checkButtonVisible": true
+  },
+  "automaticRelaunchObserved": true,
+  "taskStatePreservedObserved": true,
+  "xhsLoginPreservedObserved": true,
+  "softwareAccountStatus": "secure storage initialization pending macOS Keychain authorization",
+  "verifiedAt": "2026-10-10T16:17:10.102387+00:00",
+  "sanitizedDiagnostics": [
+    {
+      "at": "2026-10-10T16:14:01.401Z",
+      "event": "update.state",
+      "details": {
+        "status": "available",
+        "latestVersion": "2.0.15"
+      }
+    },
+    {
+      "at": "2026-10-10T16:14:01.414Z",
+      "event": "update.proxy_stopped",
+      "details": {}
+    },
+    {
+      "at": "2026-10-10T16:14:38.749Z",
+      "event": "update.state",
+      "details": {
+        "status": "downloading",
+        "latestVersion": "2.0.15"
+      }
+    },
+    {
+      "at": "2026-10-10T16:15:34.395Z",
+      "event": "update.state",
+      "details": {
+        "status": "downloaded",
+        "latestVersion": "2.0.15"
+      }
+    },
+    {
+      "at": "2026-10-10T16:15:34.403Z",
+      "event": "update.proxy_stopped",
+      "details": {}
+    },
+    {
+      "at": "2026-10-10T16:15:51.303Z",
+      "event": "update.state",
+      "details": {
+        "status": "installing",
+        "latestVersion": "2.0.15"
+      }
+    },
+    {
+      "at": "2026-10-10T16:16:27.876Z",
+      "event": "app.started",
+      "details": {
+        "version": "2.0.15"
+      }
+    },
+    {
+      "at": "2026-10-10T16:16:28.901Z",
+      "event": "app.desktop_ready",
+      "details": {
+        "pid": 71055,
+        "version": "2.0.15"
+      }
+    },
+    {
+      "at": "2026-10-10T16:16:29.729Z",
+      "event": "update.startup_confirmed",
+      "details": {
+        "cleaned": true,
+        "status": "cleaned"
+      }
+    },
+    {
+      "at": "2026-10-10T16:16:34.735Z",
+      "event": "update.state",
+      "details": {
+        "status": "checking",
+        "latestVersion": null
+      }
+    },
+    {
+      "at": "2026-10-10T16:16:34.738Z",
+      "event": "update.check_direct",
+      "details": {}
+    },
+    {
+      "at": "2026-10-10T16:16:35.843Z",
+      "event": "update.state",
+      "details": {
+        "status": "up-to-date",
+        "latestVersion": "2.0.15"
+      }
+    },
+    {
+      "at": "2026-10-10T16:16:35.858Z",
+      "event": "update.proxy_stopped",
+      "details": {}
+    }
+  ],
+  "encryptedAccountFileRetained": {
+    "exists": true,
+    "modificationPredatesUpgrade": true
+  },
+  "backupCleanupConfirmed": true,
+  "productionDirectCheck": {
+    "sourceVersion": "2.0.15",
+    "from": "automatic startup check in upgraded user app",
+    "fixture": false,
+    "start": "2026-10-10T16:16:34.738Z",
+    "finish": "2026-10-10T16:16:35.843Z",
+    "status": "up-to-date",
+    "latestVersion": "2.0.15",
+    "internalProxyStarted": false,
+    "subscriptionRequested": false,
+    "notes": "Diagnostic trace contains direct check followed by success and cleanup, without proxy or subscription selection."
+  },
+  "limits": [
+    "Software account encrypted file is unchanged; authenticated account restore is pending the user responding to macOS Keychain authorization. No password was accessed or entered by the verifier.",
+    "No personal account details, note links, subscriptions or screenshots are included."
+  ]
+}

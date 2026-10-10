@@ -1,0 +1,53 @@
+{
+  "version": "2.0.15",
+  "androidVersion": "1.0.15",
+  "verifiedAt": "2026-10-10T16:27:42.612872+00:00",
+  "base": "https://xhs.download.brclio.com",
+  "status": "production-deployment-blocked-by-authentication",
+  "published": false,
+  "productionChangedByThisRelease": false,
+  "readyChanges": [
+    "download.html: official desktop sizes and publication date",
+    "changelog.html: direct-first release entry and correct local dates",
+    "admin/index.html: proxy used only when direct metadata check needs fallback, or during package downloads"
+  ],
+  "deploymentTargets": [
+    "Cloudflare main Worker brclio-xhs-downloader",
+    "Cloudflare Pages brclio-xhs-pages"
+  ],
+  "pythonWorkerChangeRequired": false,
+  "blocker": "Available Cloudflare browser and Wrangler identities do not have access to the production account. User requested to sign in to the existing production account; no new account or resources created.",
+  "localValidation": {
+    "webBuild": "passed,102 allowlisted public assets",
+    "pagesBuild": "passed",
+    "mainWorkerDryRun": "passed; no deployment performed",
+    "metadataPagesAndReleaseChecks": {
+      "tests": 108,
+      "passed": 108,
+      "failed": 0,
+      "skipped": 0
+    },
+    "changedBuiltAssets": {
+      "workerAndPagesByteIdentical": [
+        "download.html",
+        "changelog.html",
+        "admin/index.html"
+      ],
+      "desktopAndAndroidDatesAndSizesVerified": true
+    }
+  },
+  "existingProductionDownloadPage": {
+    "observedStaticDesktop": "2.0.12",
+    "observedStaticAndroid": "1.0.13",
+    "oldSourceRuntimeReplayPassed": true,
+    "runtimeReplayReport": "v2.0.15-pre-deploy-download-runtime.json",
+    "runtimeCanUseLatestPublicMetadata": true,
+    "conditions": "JavaScript executes and public GitHub API responds within its7-second request deadline. Otherwise static older-version links remain.",
+    "realBrowserNetworkVerification": false
+  },
+  "limits": [
+    "No production deployment or new production byte equality is claimed.",
+    "Client artifacts are publicly released and verified independently from this blocked website deployment."
+  ],
+  "personalAccountDataIncluded": false
+}

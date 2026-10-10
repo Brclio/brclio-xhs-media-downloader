@@ -1,0 +1,1445 @@
+{
+  "schemaVersion": 1,
+  "verified": true,
+  "version": "2.0.15",
+  "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+  "verifiedAt": "2026-10-10T16:15:43.083Z",
+  "workflow": {
+    "runId": 38065548306,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38065548306",
+    "name": "Desktop installers",
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "createdAt": "2026-10-10T15:55:08Z",
+    "updatedAt": "2026-10-10T16:12:47Z"
+  },
+  "firstAttemptFailure": null,
+  "previousReleaseGateFailure": {
+    "schemaVersion": 1,
+    "version": "2.0.14",
+    "sourceSha": "4ebf40f544f9a931c73261f74f4c52186f6790b4",
+    "runId": 38064825196,
+    "attempt": 1,
+    "verifiedAt": "2026-10-10T15:51:04.108760+00:00",
+    "firstFailure": {
+      "test": "incomplete request controller inventory reaches the bounded startup deadline and cleans up",
+      "file": "test/update-proxy.test.js",
+      "line": 213,
+      "failureType": "cancelledByParent",
+      "code": "ERR_TEST_FAILURE",
+      "message": "Promise resolution is still pending but the event loop has already resolved"
+    },
+    "diagnosis": "Node22 AbortSignal.timeout is unref; intentionally stalled mock transport and fake core expose no referenced IO handle. The synthetic test exits before the deadline rather than executing a failed assertion. Production Electron and Mihomo remain live through actual IO handles.",
+    "reproduction": {
+      "runtime": "Node22.23.2",
+      "command": "node --test --test-concurrency=1 --test-name-pattern='incomplete request controller inventory' test/update-proxy.test.js",
+      "before": "cancelledByParent",
+      "after": "2 selected request/body cases passed with scoped referenced test handle",
+      "runtimePath": "local official Node22.23.2 darwin-arm64 executable",
+      "fullFixedSuite": {
+        "runtime": "Node22.23.2",
+        "command": "node --test --test-concurrency=1",
+        "tests": 1180,
+        "passed": 1168,
+        "failed": 0,
+        "cancelled": 0,
+        "skipped": 12,
+        "durationMs": 41484.602792
+      }
+    },
+    "productionChanged": false,
+    "tagMoved": false,
+    "rerunPerformed": false,
+    "resolution": "Test-only fixture keepalive; parent creates a new immutable desktop tag/version.",
+    "jobs": [
+      {
+        "name": "mac-arm64",
+        "status": "completed",
+        "conclusion": "failure",
+        "failedSteps": [
+          "Run node --test --test-concurrency=1"
+        ]
+      },
+      {
+        "name": "windows-x64",
+        "status": "completed",
+        "conclusion": "failure",
+        "failedSteps": [
+          "Run node --test --test-concurrency=1"
+        ]
+      },
+      {
+        "name": "mac-intel",
+        "status": "completed",
+        "conclusion": "failure",
+        "failedSteps": [
+          "Run node --test --test-concurrency=1"
+        ]
+      },
+      {
+        "name": "Publish verified installers",
+        "status": "completed",
+        "conclusion": "skipped",
+        "failedSteps": []
+      }
+    ]
+  },
+  "rerun": {
+    "attempts": 0,
+    "sameImmutableSource": true,
+    "sourceChanged": false
+  },
+  "jobs": [
+    {
+      "name": "mac-intel",
+      "id": 114252322799,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38065548306/job/114252322799",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-10T15:55:14Z",
+      "completedAt": "2026-10-10T16:12:11Z",
+      "platform": "darwin",
+      "arch": "x64",
+      "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+      "sourceDirty": false,
+      "comparedSources": 237,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "macCodeSigning": "adhoc",
+      "macCodeSignatureVerified": true,
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true,
+      "buildEvidence": {
+        "version": "2.0.15",
+        "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+        "sourceDirty": false,
+        "platform": "darwin",
+        "arch": "x64",
+        "productName": "Brclio 小红书下载器",
+        "comparedSources": 237,
+        "bundledPythonVerified": true,
+        "bundledUpdateProxyVerified": true,
+        "bundledUpdateProxy": {
+          "version": "v1.19.32",
+          "target": "mac-x64",
+          "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+          "archiveSha256": "18b382df77bded2ad0fb3db27db5636cb15b20729d5ba995a357eeb9b46bf507",
+          "sourceArchiveVerified": true,
+          "licenseVerified": true,
+          "bundledSubscriptionsAbsent": true,
+          "configurationSource": "management-api",
+          "nativeStartupVerified": true,
+          "codeSignatureVerified": true
+        },
+        "macCodeSignatureVerified": true,
+        "macCodeSigning": "adhoc",
+        "macSignatureContainers": [
+          "dmg",
+          "zip"
+        ],
+        "packagedMacLaunchVerified": true,
+        "packagedMacUpdateVerified": true,
+        "packagedUpdateHistoryVerified": true,
+        "files": [
+          {
+            "name": "Brclio-XHS-2.0.15-mac-x64.dmg",
+            "bytes": 175202536,
+            "sha256": "b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28"
+          },
+          {
+            "name": "Brclio-XHS-2.0.15-mac-x64.zip",
+            "bytes": 176180218,
+            "sha256": "fcac864333d1ffb314fb6a4ab8c979180c1f8a721217305780dc21fe7a86112f"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:14Z",
+          "completedAt": "2026-10-10T15:55:16Z"
+        },
+        {
+          "number": 2,
+          "name": "Validate requested release tag",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T15:55:16Z",
+          "completedAt": "2026-10-10T15:55:16Z"
+        },
+        {
+          "number": 3,
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:16Z",
+          "completedAt": "2026-10-10T15:55:21Z"
+        },
+        {
+          "number": 4,
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:21Z",
+          "completedAt": "2026-10-10T15:55:23Z"
+        },
+        {
+          "number": 5,
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:23Z",
+          "completedAt": "2026-10-10T15:55:23Z"
+        },
+        {
+          "number": 6,
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:23Z",
+          "completedAt": "2026-10-10T15:55:43Z"
+        },
+        {
+          "number": 7,
+          "name": "Prepare the verified update proxy runtime without subscription defaults",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:43Z",
+          "completedAt": "2026-10-10T15:55:45Z"
+        },
+        {
+          "number": 8,
+          "name": "Initialize Electron before concurrent native tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:45Z",
+          "completedAt": "2026-10-10T15:55:52Z"
+        },
+        {
+          "number": 9,
+          "name": "Run node --test --test-concurrency=1",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:52Z",
+          "completedAt": "2026-10-10T15:59:18Z"
+        },
+        {
+          "number": 10,
+          "name": "Verify native Mac replacement and rollback in temporary signed apps",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:59:18Z",
+          "completedAt": "2026-10-10T16:02:36Z"
+        },
+        {
+          "number": 11,
+          "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:36Z",
+          "completedAt": "2026-10-10T16:02:36Z"
+        },
+        {
+          "number": 12,
+          "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:36Z",
+          "completedAt": "2026-10-10T16:02:47Z"
+        },
+        {
+          "number": 13,
+          "name": "Run python scripts/build-mac-python.py",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:47Z",
+          "completedAt": "2026-10-10T16:03:34Z"
+        },
+        {
+          "number": 14,
+          "name": "Run python scripts/build-windows-python.py",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T16:03:34Z",
+          "completedAt": "2026-10-10T16:03:34Z"
+        },
+        {
+          "number": 15,
+          "name": "Verify bundled Python handlers",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:34Z",
+          "completedAt": "2026-10-10T16:03:36Z"
+        },
+        {
+          "number": 16,
+          "name": "Build complete Mac installers with ad hoc code signatures",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:36Z",
+          "completedAt": "2026-10-10T16:06:04Z"
+        },
+        {
+          "number": 17,
+          "name": "Build complete Windows installers with bundled Python",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T16:06:04Z",
+          "completedAt": "2026-10-10T16:06:04Z"
+        },
+        {
+          "number": 18,
+          "name": "Verify packaged source, native runtime, installers, and checksums",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:06:04Z",
+          "completedAt": "2026-10-10T16:09:30Z"
+        },
+        {
+          "number": 19,
+          "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T16:09:30Z",
+          "completedAt": "2026-10-10T16:09:30Z"
+        },
+        {
+          "number": 20,
+          "name": "Exercise real Electron main process, bridge, and both download engines",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:09:30Z",
+          "completedAt": "2026-10-10T16:09:40Z"
+        },
+        {
+          "number": 21,
+          "name": "Verify native image clipboard and multi-file paste",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:09:40Z",
+          "completedAt": "2026-10-10T16:09:44Z"
+        },
+        {
+          "number": 22,
+          "name": "Verify responsive startup and credential access recovery",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:09:44Z",
+          "completedAt": "2026-10-10T16:09:59Z"
+        },
+        {
+          "number": 23,
+          "name": "Verify quitting during startup and reporting genuine startup failures",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:09:59Z",
+          "completedAt": "2026-10-10T16:10:04Z"
+        },
+        {
+          "number": 24,
+          "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:10:04Z",
+          "completedAt": "2026-10-10T16:10:09Z"
+        },
+        {
+          "number": 25,
+          "name": "Verify retry and update controls in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:10:09Z",
+          "completedAt": "2026-10-10T16:10:27Z"
+        },
+        {
+          "number": 26,
+          "name": "Verify updater retries through the real manager, IPC and original preload",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:10:27Z",
+          "completedAt": "2026-10-10T16:10:38Z"
+        },
+        {
+          "number": 27,
+          "name": "Verify public and packaged learning page assets, navigation and QR saving",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:10:38Z",
+          "completedAt": "2026-10-10T16:10:48Z"
+        },
+        {
+          "number": 28,
+          "name": "Verify anonymous VIP community access, responsive layout and original QR saving",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:10:48Z",
+          "completedAt": "2026-10-10T16:10:57Z"
+        },
+        {
+          "number": 29,
+          "name": "Verify membership purchase and redemption in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:10:57Z",
+          "completedAt": "2026-10-10T16:11:01Z"
+        },
+        {
+          "number": 30,
+          "name": "Verify member original videos and browser account authorization in the real renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:11:01Z",
+          "completedAt": "2026-10-10T16:11:15Z"
+        },
+        {
+          "number": 31,
+          "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:11:15Z",
+          "completedAt": "2026-10-10T16:11:18Z"
+        },
+        {
+          "number": 32,
+          "name": "Verify public feedback, browser login and private owner conversations",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:11:18Z",
+          "completedAt": "2026-10-10T16:11:27Z"
+        },
+        {
+          "number": 33,
+          "name": "Verify reviews and personal order history in real web and desktop renderers",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:11:27Z",
+          "completedAt": "2026-10-10T16:11:32Z"
+        },
+        {
+          "number": 34,
+          "name": "Verify confirmed revenue and order administration in a real browser",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:11:32Z",
+          "completedAt": "2026-10-10T16:11:36Z"
+        },
+        {
+          "number": 35,
+          "name": "Verify native credential encryption across two app processes",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:11:36Z",
+          "completedAt": "2026-10-10T16:11:38Z"
+        },
+        {
+          "number": 36,
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:11:38Z",
+          "completedAt": "2026-10-10T16:12:02Z"
+        },
+        {
+          "number": 70,
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:02Z",
+          "completedAt": "2026-10-10T16:12:03Z"
+        },
+        {
+          "number": 71,
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:03Z",
+          "completedAt": "2026-10-10T16:12:07Z"
+        },
+        {
+          "number": 72,
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:07Z",
+          "completedAt": "2026-10-10T16:12:09Z"
+        },
+        {
+          "number": 73,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:09Z",
+          "completedAt": "2026-10-10T16:12:10Z"
+        }
+      ]
+    },
+    {
+      "name": "mac-arm64",
+      "id": 114252322881,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38065548306/job/114252322881",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-10T15:55:16Z",
+      "completedAt": "2026-10-10T16:02:40Z",
+      "platform": "darwin",
+      "arch": "arm64",
+      "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+      "sourceDirty": false,
+      "comparedSources": 237,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "macCodeSigning": "adhoc",
+      "macCodeSignatureVerified": true,
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true,
+      "buildEvidence": {
+        "version": "2.0.15",
+        "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+        "sourceDirty": false,
+        "platform": "darwin",
+        "arch": "arm64",
+        "productName": "Brclio 小红书下载器",
+        "comparedSources": 237,
+        "bundledPythonVerified": true,
+        "bundledUpdateProxyVerified": true,
+        "bundledUpdateProxy": {
+          "version": "v1.19.32",
+          "target": "mac-arm64",
+          "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+          "archiveSha256": "3312a6780652c622890fd4357c6a853bbf865464fd047ac7b7f52dab8de18652",
+          "sourceArchiveVerified": true,
+          "licenseVerified": true,
+          "bundledSubscriptionsAbsent": true,
+          "configurationSource": "management-api",
+          "nativeStartupVerified": true,
+          "codeSignatureVerified": true
+        },
+        "macCodeSignatureVerified": true,
+        "macCodeSigning": "adhoc",
+        "macSignatureContainers": [
+          "dmg",
+          "zip"
+        ],
+        "packagedMacLaunchVerified": true,
+        "packagedMacUpdateVerified": true,
+        "packagedUpdateHistoryVerified": true,
+        "files": [
+          {
+            "name": "Brclio-XHS-2.0.15-mac-arm64.dmg",
+            "bytes": 167474351,
+            "sha256": "c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9"
+          },
+          {
+            "name": "Brclio-XHS-2.0.15-mac-arm64.zip",
+            "bytes": 168384518,
+            "sha256": "c312c48c806e35a6ebb877dbacd7578a9a51172dac1c3856f8d52cd8781afead"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:16Z",
+          "completedAt": "2026-10-10T15:55:17Z"
+        },
+        {
+          "number": 2,
+          "name": "Validate requested release tag",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T15:55:17Z",
+          "completedAt": "2026-10-10T15:55:17Z"
+        },
+        {
+          "number": 3,
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:17Z",
+          "completedAt": "2026-10-10T15:55:20Z"
+        },
+        {
+          "number": 4,
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:20Z",
+          "completedAt": "2026-10-10T15:55:21Z"
+        },
+        {
+          "number": 5,
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:21Z",
+          "completedAt": "2026-10-10T15:55:21Z"
+        },
+        {
+          "number": 6,
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:21Z",
+          "completedAt": "2026-10-10T15:55:32Z"
+        },
+        {
+          "number": 7,
+          "name": "Prepare the verified update proxy runtime without subscription defaults",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:32Z",
+          "completedAt": "2026-10-10T15:55:33Z"
+        },
+        {
+          "number": 8,
+          "name": "Initialize Electron before concurrent native tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:33Z",
+          "completedAt": "2026-10-10T15:55:36Z"
+        },
+        {
+          "number": 9,
+          "name": "Run node --test --test-concurrency=1",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:36Z",
+          "completedAt": "2026-10-10T15:56:39Z"
+        },
+        {
+          "number": 10,
+          "name": "Verify native Mac replacement and rollback in temporary signed apps",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:56:39Z",
+          "completedAt": "2026-10-10T15:58:23Z"
+        },
+        {
+          "number": 11,
+          "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:58:23Z",
+          "completedAt": "2026-10-10T15:58:24Z"
+        },
+        {
+          "number": 12,
+          "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:58:24Z",
+          "completedAt": "2026-10-10T15:58:34Z"
+        },
+        {
+          "number": 13,
+          "name": "Run python scripts/build-mac-python.py",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:58:34Z",
+          "completedAt": "2026-10-10T15:58:45Z"
+        },
+        {
+          "number": 14,
+          "name": "Run python scripts/build-windows-python.py",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T15:58:45Z",
+          "completedAt": "2026-10-10T15:58:45Z"
+        },
+        {
+          "number": 15,
+          "name": "Verify bundled Python handlers",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:58:45Z",
+          "completedAt": "2026-10-10T15:58:46Z"
+        },
+        {
+          "number": 16,
+          "name": "Build complete Mac installers with ad hoc code signatures",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:58:46Z",
+          "completedAt": "2026-10-10T15:59:53Z"
+        },
+        {
+          "number": 17,
+          "name": "Build complete Windows installers with bundled Python",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T15:59:53Z",
+          "completedAt": "2026-10-10T15:59:53Z"
+        },
+        {
+          "number": 18,
+          "name": "Verify packaged source, native runtime, installers, and checksums",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:59:53Z",
+          "completedAt": "2026-10-10T16:00:55Z"
+        },
+        {
+          "number": 19,
+          "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T16:00:55Z",
+          "completedAt": "2026-10-10T16:00:55Z"
+        },
+        {
+          "number": 20,
+          "name": "Exercise real Electron main process, bridge, and both download engines",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:00:55Z",
+          "completedAt": "2026-10-10T16:01:00Z"
+        },
+        {
+          "number": 21,
+          "name": "Verify native image clipboard and multi-file paste",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:00Z",
+          "completedAt": "2026-10-10T16:01:01Z"
+        },
+        {
+          "number": 22,
+          "name": "Verify responsive startup and credential access recovery",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:01Z",
+          "completedAt": "2026-10-10T16:01:13Z"
+        },
+        {
+          "number": 23,
+          "name": "Verify quitting during startup and reporting genuine startup failures",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:13Z",
+          "completedAt": "2026-10-10T16:01:15Z"
+        },
+        {
+          "number": 24,
+          "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:15Z",
+          "completedAt": "2026-10-10T16:01:17Z"
+        },
+        {
+          "number": 25,
+          "name": "Verify retry and update controls in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:17Z",
+          "completedAt": "2026-10-10T16:01:28Z"
+        },
+        {
+          "number": 26,
+          "name": "Verify updater retries through the real manager, IPC and original preload",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:28Z",
+          "completedAt": "2026-10-10T16:01:38Z"
+        },
+        {
+          "number": 27,
+          "name": "Verify public and packaged learning page assets, navigation and QR saving",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:38Z",
+          "completedAt": "2026-10-10T16:01:43Z"
+        },
+        {
+          "number": 28,
+          "name": "Verify anonymous VIP community access, responsive layout and original QR saving",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:43Z",
+          "completedAt": "2026-10-10T16:01:48Z"
+        },
+        {
+          "number": 29,
+          "name": "Verify membership purchase and redemption in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:48Z",
+          "completedAt": "2026-10-10T16:01:51Z"
+        },
+        {
+          "number": 30,
+          "name": "Verify member original videos and browser account authorization in the real renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:51Z",
+          "completedAt": "2026-10-10T16:02:02Z"
+        },
+        {
+          "number": 31,
+          "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:02Z",
+          "completedAt": "2026-10-10T16:02:05Z"
+        },
+        {
+          "number": 32,
+          "name": "Verify public feedback, browser login and private owner conversations",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:05Z",
+          "completedAt": "2026-10-10T16:02:13Z"
+        },
+        {
+          "number": 33,
+          "name": "Verify reviews and personal order history in real web and desktop renderers",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:13Z",
+          "completedAt": "2026-10-10T16:02:16Z"
+        },
+        {
+          "number": 34,
+          "name": "Verify confirmed revenue and order administration in a real browser",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:16Z",
+          "completedAt": "2026-10-10T16:02:18Z"
+        },
+        {
+          "number": 35,
+          "name": "Verify native credential encryption across two app processes",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:18Z",
+          "completedAt": "2026-10-10T16:02:19Z"
+        },
+        {
+          "number": 36,
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:19Z",
+          "completedAt": "2026-10-10T16:02:31Z"
+        },
+        {
+          "number": 70,
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:31Z",
+          "completedAt": "2026-10-10T16:02:31Z"
+        },
+        {
+          "number": 71,
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:31Z",
+          "completedAt": "2026-10-10T16:02:34Z"
+        },
+        {
+          "number": 72,
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:34Z",
+          "completedAt": "2026-10-10T16:02:34Z"
+        },
+        {
+          "number": 73,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:34Z",
+          "completedAt": "2026-10-10T16:02:38Z"
+        }
+      ]
+    },
+    {
+      "name": "windows-x64",
+      "id": 114252322915,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38065548306/job/114252322915",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-10T15:55:11Z",
+      "completedAt": "2026-10-10T16:03:51Z",
+      "platform": "win32",
+      "arch": "x64",
+      "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+      "sourceDirty": false,
+      "comparedSources": 237,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "buildEvidence": {
+        "version": "2.0.15",
+        "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+        "sourceDirty": false,
+        "platform": "win32",
+        "arch": "x64",
+        "productName": "Brclio 小红书下载器",
+        "comparedSources": 237,
+        "bundledPythonVerified": true,
+        "bundledUpdateProxyVerified": true,
+        "bundledUpdateProxy": {
+          "version": "v1.19.32",
+          "target": "win-x64",
+          "sourceCommit": "88dcbf7f1614a67c3b36b848ee3592dfa92ada36",
+          "archiveSha256": "974a4d7ad69aed27aa2e8f91d61113573c14dadb14562c63e58effabf59816f0",
+          "sourceArchiveVerified": true,
+          "licenseVerified": true,
+          "bundledSubscriptionsAbsent": true,
+          "configurationSource": "management-api",
+          "nativeStartupVerified": true
+        },
+        "files": [
+          {
+            "name": "Brclio-XHS-2.0.15-windows-x64-setup.exe",
+            "bytes": 146521730,
+            "sha256": "bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c"
+          },
+          {
+            "name": "Brclio-XHS-2.0.15-windows-x64-portable.exe",
+            "bytes": 146283182,
+            "sha256": "733849fb6f74ec52844b032ecff6f825ca22287fe2e12762deefe47c63ac424e"
+          }
+        ],
+        "packagedWindowsUpdateVerified": true,
+        "packagedWindowsPortableVerified": true,
+        "windowsUpdate": {
+          "previousVersion": "1.8.17",
+          "version": "2.0.15",
+          "oldAssets": [
+            {
+              "name": "Brclio-XHS-1.8.17-windows-x64-setup.exe",
+              "bytes": 124073263,
+              "sha256": "5b70613f04365c10a6898fcb7b4e934441137b98b29fe982b1ec130a881956f7"
+            },
+            {
+              "name": "Brclio-XHS-1.8.17-windows-x64-portable.exe",
+              "bytes": 123834736,
+              "sha256": "e47c0d920c6d2f117ab31cdc7443cb0ce2f95f11e84841467f033ad683f966fb"
+            }
+          ],
+          "realPublishedOldInstallers": true,
+          "realCurrentInstallers": true,
+          "sourceArchivesModified": false,
+          "oldParentWaitVerified": true,
+          "installedInPlaceVerified": true,
+          "automaticRelaunchVerified": true,
+          "automaticRelaunchRendererReadyVerified": true,
+          "restartedRenderers": [
+            {
+              "pid": 8740,
+              "at": "2026-10-10T15:59:42.590Z",
+              "version": "2.0.15"
+            },
+            {
+              "pid": 6556,
+              "at": "2026-10-10T16:00:17.588Z",
+              "version": "2.0.15"
+            }
+          ],
+          "dpapiCredentialsPreserved": true,
+          "pausedTaskPreserved": true,
+          "rendererStoragePreserved": true,
+          "existingInstallationPortableUpdateVerified": true,
+          "standalonePortableMigrationTested": false,
+          "portableOriginalPreserved": true,
+          "currentPortableLaunchVerified": true,
+          "cancelBeforeInstallVerified": true,
+          "rollbackImplemented": false,
+          "powerLossRecoveryTested": false,
+          "machineWideUacTested": false,
+          "profileIsolation": "fresh disposable GitHub runner account",
+          "installDirectoryIsolation": "temporary"
+        }
+      },
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:12Z",
+          "completedAt": "2026-10-10T15:55:13Z"
+        },
+        {
+          "number": 2,
+          "name": "Validate requested release tag",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T15:55:13Z",
+          "completedAt": "2026-10-10T15:55:13Z"
+        },
+        {
+          "number": 3,
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:13Z",
+          "completedAt": "2026-10-10T15:55:19Z"
+        },
+        {
+          "number": 4,
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:19Z",
+          "completedAt": "2026-10-10T15:55:25Z"
+        },
+        {
+          "number": 5,
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:25Z",
+          "completedAt": "2026-10-10T15:55:25Z"
+        },
+        {
+          "number": 6,
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:25Z",
+          "completedAt": "2026-10-10T15:55:42Z"
+        },
+        {
+          "number": 7,
+          "name": "Prepare the verified update proxy runtime without subscription defaults",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:42Z",
+          "completedAt": "2026-10-10T15:55:44Z"
+        },
+        {
+          "number": 8,
+          "name": "Initialize Electron before concurrent native tests",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:44Z",
+          "completedAt": "2026-10-10T15:55:48Z"
+        },
+        {
+          "number": 9,
+          "name": "Run node --test --test-concurrency=1",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:55:48Z",
+          "completedAt": "2026-10-10T15:57:18Z"
+        },
+        {
+          "number": 10,
+          "name": "Verify native Mac replacement and rollback in temporary signed apps",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T15:57:18Z",
+          "completedAt": "2026-10-10T15:57:18Z"
+        },
+        {
+          "number": 11,
+          "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:57:18Z",
+          "completedAt": "2026-10-10T15:57:19Z"
+        },
+        {
+          "number": 12,
+          "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:57:19Z",
+          "completedAt": "2026-10-10T15:57:25Z"
+        },
+        {
+          "number": 13,
+          "name": "Run python scripts/build-mac-python.py",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T15:57:25Z",
+          "completedAt": "2026-10-10T15:57:25Z"
+        },
+        {
+          "number": 14,
+          "name": "Run python scripts/build-windows-python.py",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:57:25Z",
+          "completedAt": "2026-10-10T15:57:27Z"
+        },
+        {
+          "number": 15,
+          "name": "Verify bundled Python handlers",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:57:27Z",
+          "completedAt": "2026-10-10T15:57:28Z"
+        },
+        {
+          "number": 16,
+          "name": "Build complete Mac installers with ad hoc code signatures",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T15:57:28Z",
+          "completedAt": "2026-10-10T15:57:28Z"
+        },
+        {
+          "number": 17,
+          "name": "Build complete Windows installers with bundled Python",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:57:28Z",
+          "completedAt": "2026-10-10T15:58:44Z"
+        },
+        {
+          "number": 18,
+          "name": "Verify packaged source, native runtime, installers, and checksums",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:58:44Z",
+          "completedAt": "2026-10-10T15:58:48Z"
+        },
+        {
+          "number": 19,
+          "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T15:58:48Z",
+          "completedAt": "2026-10-10T16:00:35Z"
+        },
+        {
+          "number": 20,
+          "name": "Exercise real Electron main process, bridge, and both download engines",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:00:35Z",
+          "completedAt": "2026-10-10T16:00:43Z"
+        },
+        {
+          "number": 21,
+          "name": "Verify native image clipboard and multi-file paste",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:00:43Z",
+          "completedAt": "2026-10-10T16:00:45Z"
+        },
+        {
+          "number": 22,
+          "name": "Verify responsive startup and credential access recovery",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:00:45Z",
+          "completedAt": "2026-10-10T16:00:58Z"
+        },
+        {
+          "number": 23,
+          "name": "Verify quitting during startup and reporting genuine startup failures",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:00:58Z",
+          "completedAt": "2026-10-10T16:01:10Z"
+        },
+        {
+          "number": 24,
+          "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:10Z",
+          "completedAt": "2026-10-10T16:01:13Z"
+        },
+        {
+          "number": 25,
+          "name": "Verify retry and update controls in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:13Z",
+          "completedAt": "2026-10-10T16:01:24Z"
+        },
+        {
+          "number": 26,
+          "name": "Verify updater retries through the real manager, IPC and original preload",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:24Z",
+          "completedAt": "2026-10-10T16:01:34Z"
+        },
+        {
+          "number": 27,
+          "name": "Verify public and packaged learning page assets, navigation and QR saving",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:34Z",
+          "completedAt": "2026-10-10T16:01:45Z"
+        },
+        {
+          "number": 28,
+          "name": "Verify anonymous VIP community access, responsive layout and original QR saving",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:45Z",
+          "completedAt": "2026-10-10T16:01:56Z"
+        },
+        {
+          "number": 29,
+          "name": "Verify membership purchase and redemption in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:01:56Z",
+          "completedAt": "2026-10-10T16:02:04Z"
+        },
+        {
+          "number": 30,
+          "name": "Verify member original videos and browser account authorization in the real renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:02:04Z",
+          "completedAt": "2026-10-10T16:03:07Z"
+        },
+        {
+          "number": 31,
+          "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:07Z",
+          "completedAt": "2026-10-10T16:03:11Z"
+        },
+        {
+          "number": 32,
+          "name": "Verify public feedback, browser login and private owner conversations",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:11Z",
+          "completedAt": "2026-10-10T16:03:21Z"
+        },
+        {
+          "number": 33,
+          "name": "Verify reviews and personal order history in real web and desktop renderers",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:21Z",
+          "completedAt": "2026-10-10T16:03:28Z"
+        },
+        {
+          "number": 34,
+          "name": "Verify confirmed revenue and order administration in a real browser",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-10-10T16:03:28Z",
+          "completedAt": "2026-10-10T16:03:28Z"
+        },
+        {
+          "number": 35,
+          "name": "Verify native credential encryption across two app processes",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:28Z",
+          "completedAt": "2026-10-10T16:03:30Z"
+        },
+        {
+          "number": 36,
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:30Z",
+          "completedAt": "2026-10-10T16:03:40Z"
+        },
+        {
+          "number": 70,
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:40Z",
+          "completedAt": "2026-10-10T16:03:41Z"
+        },
+        {
+          "number": 71,
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:41Z",
+          "completedAt": "2026-10-10T16:03:46Z"
+        },
+        {
+          "number": 72,
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:46Z",
+          "completedAt": "2026-10-10T16:03:49Z"
+        },
+        {
+          "number": 73,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:03:49Z",
+          "completedAt": "2026-10-10T16:03:49Z"
+        }
+      ]
+    },
+    {
+      "name": "Publish verified installers",
+      "id": 114255682126,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38065548306/job/114255682126",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-10T16:12:13Z",
+      "completedAt": "2026-10-10T16:12:46Z",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:14Z",
+          "completedAt": "2026-10-10T16:12:15Z"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:15Z",
+          "completedAt": "2026-10-10T16:12:16Z"
+        },
+        {
+          "number": 3,
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:16Z",
+          "completedAt": "2026-10-10T16:12:17Z"
+        },
+        {
+          "number": 4,
+          "name": "Run actions/download-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:17Z",
+          "completedAt": "2026-10-10T16:12:26Z"
+        },
+        {
+          "number": 5,
+          "name": "Verify all platforms and publish the complete release",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:26Z",
+          "completedAt": "2026-10-10T16:12:44Z"
+        },
+        {
+          "number": 9,
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:44Z",
+          "completedAt": "2026-10-10T16:12:45Z"
+        },
+        {
+          "number": 10,
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:45Z",
+          "completedAt": "2026-10-10T16:12:45Z"
+        },
+        {
+          "number": 11,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-10-10T16:12:45Z",
+          "completedAt": "2026-10-10T16:12:45Z"
+        }
+      ]
+    }
+  ],
+  "publication": {
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.15",
+    "tag": "v2.0.15",
+    "publishedAt": "2026-10-10T16:12:44Z",
+    "assetCount": 11,
+    "buildEvidenceSha256": "43f4d3015aaa0870b4c13e646e46385002b7e171a15ecbf4bfee1eb6834d75ed",
+    "manifestSha256": "c468a9201fcfac5abbe322ce4277b00adc4ae2cd82ed50476af164111883398f",
+    "desktopArtifactDigestsMatched": true,
+    "assets": [
+      {
+        "name": "Brclio-XHS-2.0.15-mac-arm64.dmg",
+        "bytes": 167474351,
+        "digest": "sha256:c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-arm64.dmg"
+      },
+      {
+        "name": "Brclio-XHS-2.0.15-mac-arm64.zip",
+        "bytes": 168384518,
+        "digest": "sha256:c312c48c806e35a6ebb877dbacd7578a9a51172dac1c3856f8d52cd8781afead",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-arm64.zip"
+      },
+      {
+        "name": "Brclio-XHS-2.0.15-mac-x64.dmg",
+        "bytes": 175202536,
+        "digest": "sha256:b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-x64.dmg"
+      },
+      {
+        "name": "Brclio-XHS-2.0.15-mac-x64.zip",
+        "bytes": 176180218,
+        "digest": "sha256:fcac864333d1ffb314fb6a4ab8c979180c1f8a721217305780dc21fe7a86112f",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-x64.zip"
+      },
+      {
+        "name": "Brclio-XHS-2.0.15-windows-x64-portable.exe",
+        "bytes": 146283182,
+        "digest": "sha256:733849fb6f74ec52844b032ecff6f825ca22287fe2e12762deefe47c63ac424e",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-windows-x64-portable.exe"
+      },
+      {
+        "name": "Brclio-XHS-2.0.15-windows-x64-setup.exe",
+        "bytes": 146521730,
+        "digest": "sha256:bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-windows-x64-setup.exe"
+      },
+      {
+        "name": "build-evidence.json",
+        "bytes": 7006,
+        "digest": "sha256:43f4d3015aaa0870b4c13e646e46385002b7e171a15ecbf4bfee1eb6834d75ed",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/build-evidence.json"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 915,
+        "digest": "sha256:c468a9201fcfac5abbe322ce4277b00adc4ae2cd82ed50476af164111883398f",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/SHA256SUMS.txt"
+      },
+      {
+        "name": "XHS-Downloader-2.0.15-mac-arm64.dmg",
+        "bytes": 167474351,
+        "digest": "sha256:c8be3ad3108473d9b34ba07e371f400fcd622153a165af269c3c9b995c0e7cf9",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/XHS-Downloader-2.0.15-mac-arm64.dmg"
+      },
+      {
+        "name": "XHS-Downloader-2.0.15-mac-x64.dmg",
+        "bytes": 175202536,
+        "digest": "sha256:b1658988afe6459521f7c4823d9039f43347601e8ee8bd4be3e573ffe39b0d28",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/XHS-Downloader-2.0.15-mac-x64.dmg"
+      },
+      {
+        "name": "XHS-Downloader-2.0.15-windows-x64-setup.exe",
+        "bytes": 146521730,
+        "digest": "sha256:bb1e12b3ffa71b69be3a5ca80f828dc813f2403bb04a4121c9dc3e911e768f7c",
+        "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/XHS-Downloader-2.0.15-windows-x64-setup.exe"
+      }
+    ]
+  },
+  "scope": "GitHub native runner builds, package/startup/update acceptance and public release metadata; the user installed application is verified separately.",
+  "installedApplicationModified": false
+}

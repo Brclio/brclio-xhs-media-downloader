@@ -1,0 +1,80 @@
+{
+  "checkedAt": "2026-10-10T16:23:53.584Z",
+  "result": "PASS",
+  "scope": "Exact prior source HTML and JavaScript replay with current public GitHub release metadata; this is not a live browser/CORS/network test",
+  "priorSource": "608bc8789af5af3fedff0ce55241bd852e165550",
+  "currentDownloadJSSame": true,
+  "downloadJSSha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433",
+  "initialStatic": {
+    "desktop": "v2.0.12",
+    "android": "v1.0.13"
+  },
+  "releaseMetadata": {
+    "desktop": {
+      "tag": "v2.0.15",
+      "publishedAt": "2026-10-10T16:12:44Z"
+    },
+    "android": {
+      "tag": "android-v1.0.15",
+      "publishedAt": "2026-10-10T15:51:35Z"
+    }
+  },
+  "successfulMetadataReplay": {
+    "desktop": "v2.0.15",
+    "desktopDate": "发布于 2026.10.11",
+    "desktopAssets": {
+      "mac-arm64": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-arm64.dmg",
+        "size": "167.5 MB"
+      },
+      "mac-x64": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-mac-x64.dmg",
+        "size": "175.2 MB"
+      },
+      "windows-setup": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-windows-x64-setup.exe",
+        "size": "146.5 MB"
+      },
+      "windows-portable": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/Brclio-XHS-2.0.15-windows-x64-portable.exe",
+        "size": "146.3 MB"
+      }
+    },
+    "android": "v1.0.15",
+    "androidDate": "安卓发布于 2026.10.10",
+    "androidAPK": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.15/Brclio-XHS-Android-1.0.15-release.apk",
+    "androidSize": "73.2 MB",
+    "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.15/Brclio-XHS-Android-1.0.15-release.apk.sha256",
+    "desktopStatus": "已核对最新正式版 v2.0.15，安装包由 GitHub Releases 提供。查看最新发布 ↗",
+    "androidStatus": "已核对安卓正式版 v1.0.15，APK 与 SHA-256 校验文件均已上传。"
+  },
+  "offlineReplay": {
+    "desktop": "v2.0.12",
+    "desktopDate": "发布于 2026.10.10",
+    "desktopAssets": {
+      "mac-arm64": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.12/Brclio-XHS-2.0.12-mac-arm64.dmg",
+        "size": "159.7 MB"
+      },
+      "mac-x64": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.12/Brclio-XHS-2.0.12-mac-x64.dmg",
+        "size": "167.1 MB"
+      },
+      "windows-setup": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.12/Brclio-XHS-2.0.12-windows-x64-setup.exe",
+        "size": "139.7 MB"
+      },
+      "windows-portable": {
+        "href": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.12/Brclio-XHS-2.0.12-windows-x64-portable.exe",
+        "size": "139.5 MB"
+      }
+    },
+    "android": "v1.0.13",
+    "androidDate": "发布于 2026.10.09 · Android 8.0+",
+    "androidAPK": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk",
+    "androidSize": "73.2 MB",
+    "androidChecksum": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/android-v1.0.13/Brclio-XHS-Android-1.0.13-release.apk.sha256",
+    "desktopStatus": "版本信息暂未刷新，仍可下载已发布的 v2.0.12。查看最新发布 ↗",
+    "androidStatus": "安卓版本信息暂未刷新，仍可下载已发布的 v1.0.13。"
+  }
+}
