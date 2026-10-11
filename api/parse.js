@@ -21,7 +21,13 @@ function readJsonBody(req) {
   }
 }
 
-export default async function handler(req, res) {
+const defaultConsoleError = error => console.error("parse error", error);
+
+export function createParseHandler({ fetchPage = fetchNotePage, onParsed = () => {}, onError = defaultConsoleError } = {}) {
+  return (req, res) => handler(req, res, { fetchPage, onParsed, onError });
+}
+
+async function handler(req, res, { fetchPage, onParsed, onError }) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
 
@@ -65,7 +71,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { finalUrl, html } = await fetchNotePage(inputUrl);
+    const { finalUrl, html } = await fetchPage(inputUrl);
     const noteId = extractNoteId(finalUrl) || extractNoteId(inputUrl);
 
     if (!noteId) {
@@ -75,6 +81,8 @@ export default async function handler(req, res) {
     const parsed = parseNoteHtml(html, { noteId });
     const publicImages = parsed.images.map(image => ({ ...image, liveVideo: publicPlaybackVideo(image.liveVideo) }));
     const publicVideos = parsed.videos.map(publicPlaybackVideo).filter(Boolean);
+    onParsed({ strategy: parsed.strategy, imageCount: publicImages.length,
+      videoCount: publicVideos.length, originalVideoCount: parsed.originalVideos?.length || 0 });
 
     if (publicImages.length === 0 && publicVideos.length === 0 && !parsed.originalVideos?.length) {
       throw new XhsError(
@@ -144,7 +152,9 @@ export default async function handler(req, res) {
       ? error.message
       : "服务器解析失败，请稍后重试。";
 
-    console.error("parse error", error);
+    onError(error);
     return res.status(statusCode).json({ success: false, engine: "node", message, ...(error.code === "INVALID_JSON" ? { code: "INVALID_JSON" } : {}) });
   }
 }
+
+export default createParseHandler();

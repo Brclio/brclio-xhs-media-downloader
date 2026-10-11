@@ -1,10 +1,9 @@
-import parse from '../api/parse.js';
+import parse from './native-parse.js';
 import image from '../api/image.js';
 import video from '../api/video.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
 import packageInfo from '../package.json' with { type: 'json' };
-import { parseWithFallback } from './parse-fallback.js';
 export { AccountRuntime } from './account-runtime.js';
 export { ParseRuntime } from './parse-runtime.js';
 import { invokeHandler, readBoundedBody, RequestTooLargeError, MAX_API_BODY_BYTES, MAX_ACCOUNT_BODY_BYTES } from './http-adapter.js';
@@ -63,19 +62,17 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
         } else if (['/api/parse', '/api/python_parse'].includes(path) && env.PARSE_RUNTIME) {
           response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName('parsing-v1')).fetch(request);
         } else if (Object.hasOwn(nodeRoutes, path)) {
-          response = await parseWithFallback(request, env, nativeRequest => invokeHandler(nodeRoutes[path], nativeRequest));
+          response = await invokeHandler(nodeRoutes[path], request);
         } else if (PYTHON_ROUTES.has(path)) {
-          response = await parseWithFallback(request, env, async nativeRequest => {
           if (!env.PYTHON_API?.fetch) {
-            return json({ success: false, engine: 'python', message: 'Python 服务暂时不可用，请稍后重试。' }, 503);
+            response = json({ success: false, engine: 'python', message: 'Python 服务暂时不可用，请稍后重试。' }, 503);
           } else {
             // Bound chunked uploads before forwarding; copying preserves method,
             // URL, query and headers while the private binding avoids public hops.
-            const body = await readBoundedBody(nativeRequest, MAX_API_BODY_BYTES);
-            const forwarded = new Request(nativeRequest, { body: ['GET', 'HEAD'].includes(nativeRequest.method) ? undefined : body });
-            return env.PYTHON_API.fetch(forwarded);
+            const body = await readBoundedBody(request, MAX_API_BODY_BYTES);
+            const forwarded = new Request(request, { body: ['GET', 'HEAD'].includes(request.method) ? undefined : body });
+            response = await env.PYTHON_API.fetch(forwarded);
           }
-          });
         } else if (path.startsWith('/api/')) {
           response = json({ success: false, message: '接口不存在。' }, 404);
         } else if (env.ASSETS?.fetch) {

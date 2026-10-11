@@ -1,10 +1,9 @@
-import parse from '../api/parse.js';
+import parse from './native-parse.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
-import { parseWithFallback } from './parse-fallback.js';
 import { invokeHandler, readBoundedBody, MAX_API_BODY_BYTES, MAX_ACCOUNT_BODY_BYTES, RequestTooLargeError } from './http-adapter.js';
 
-/** Keep HTML parsing and fallback orchestration within the DO CPU allowance. */
+/** Keep native HTML parsing within the DO CPU allowance. */
 export class ParseRuntime {
   constructor(_state, env) {
     this.env = env;
@@ -24,16 +23,14 @@ export class ParseRuntime {
           : nativeRequest => invokeHandler(createAccountHandler({ env: this.env }), nativeRequest, { maxBodyBytes: MAX_ACCOUNT_BODY_BYTES });
         return await invokeHandler(createHostedMemberVideoHandler({ env: this.env, accountFetch }), request);
       }
-      return await parseWithFallback(request, this.env, async nativeRequest => {
-        if (!python) return invokeHandler(parse, nativeRequest);
-        if (!this.env.PYTHON_API?.fetch) {
-          return json({ success: false, engine: 'python', message: 'Python 服务暂时不可用，请稍后重试。' }, 503);
-        }
-        const body = await readBoundedBody(nativeRequest, MAX_API_BODY_BYTES);
-        return this.env.PYTHON_API.fetch(new Request(nativeRequest, {
-          body: ['GET', 'HEAD'].includes(nativeRequest.method) ? undefined : body,
-        }));
-      });
+      if (!python) return await invokeHandler(parse, request);
+      if (!this.env.PYTHON_API?.fetch) {
+        return json({ success: false, engine: 'python', message: 'Python 服务暂时不可用，请稍后重试。' }, 503);
+      }
+      const body = await readBoundedBody(request, MAX_API_BODY_BYTES);
+      return await this.env.PYTHON_API.fetch(new Request(request, {
+        body: ['GET', 'HEAD'].includes(request.method) ? undefined : body,
+      }));
     } catch (error) {
       const tooLarge = error instanceof RequestTooLargeError;
       return json({

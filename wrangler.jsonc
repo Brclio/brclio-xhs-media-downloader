@@ -7,9 +7,6 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": false,
-  "vars": {
-    "XHS_PARSE_FALLBACK_ORIGIN": "https://xhs-images-video-vercel-downloader.vercel.app"
-  },
   "assets": {
     "directory": "dist-web",
     "binding": "ASSETS",

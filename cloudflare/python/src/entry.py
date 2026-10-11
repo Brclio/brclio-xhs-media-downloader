@@ -29,6 +29,89 @@ REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 BASE_HEADERS = {"X-Content-Type-Options": "nosniff", "X-XHS-Engine": "python"}
 
 
+# Diagnostics contain only fixed classes, bounded counts, and public hosts.
+# Note URLs, query values, identifiers, headers, HTML, and exceptions stay private.
+DIAGNOSTIC_HOSTS = {"www.xiaohongshu.com", "xiaohongshu.com", "xhslink.com",
+                    "www.xhslink.com", "xhslink.cn", "www.xhslink.cn"}
+DIAGNOSTIC_PATH_CLASSES = {"note", "shortlink", "captcha", "login", "other"}
+DIAGNOSTIC_STRATEGIES = {"exact-initial-state", "note-id-local-media",
+    "note-id-local-image-list", "note-id-local-video", "primary-meta-media",
+    "primary-meta-cover", "primary-meta-video", "not-found"}
+CAPTCHA_TITLES = {"小红书安全验证", "小红书 - 安全验证", "安全验证 - 小红书"}
+LOGIN_TITLES = {"小红书登录", "小红书 - 登录", "登录 - 小红书"}
+
+
+def diagnostic_location(url: str) -> dict:
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    path = parsed.path.lower()
+    path_class = "other"
+    if re.search(r"(?:^|/)captcha(?:/|$)", path):
+        path_class = "captcha"
+    elif re.search(r"(?:^|/)(?:login|signin|website-login)(?:/|$)", path):
+        path_class = "login"
+    elif re.match(r"^/(?:explore|discovery/item|item)/[a-z0-9_-]{12,64}(?:/|$)", path):
+        path_class = "note"
+    elif host in {"xhslink.com", "www.xhslink.com", "xhslink.cn", "www.xhslink.cn"}:
+        path_class = "shortlink"
+    return {"host": host if host in DIAGNOSTIC_HOSTS else "other", "pathClass": path_class}
+
+
+def page_diagnostics(url: str, page_html: str, note_id: str = "", *, html_bytes: int = 0) -> dict:
+    location = diagnostic_location(url)
+    title_match = re.search(r"<title\b[^>]*>([\s\S]*?)</title>", page_html, re.I)
+    title = re.sub(r"\s+", " ", title_match[1][:256]).strip() if title_match else ""
+    return {"finalHost": location["host"], "finalPathClass": location["pathClass"],
+        "htmlBytes": html_bytes, "noteIdPresent": bool(note_id),
+        "initialStatePresent": bool(re.search(r"(?:window\.)?__INITIAL_STATE__\s*=|\bid=[\"']__INITIAL_STATE__[\"']", page_html)),
+        "currentNotePresent": bool(note_id and re.search(
+            r"[\"']" + re.escape(note_id) + r"[\"']\s*:|[\"'](?:noteId|note_id|id|itemId|item_id)[\"']\s*:\s*[\"']"
+            + re.escape(note_id) + r"[\"']", page_html)),
+        "challengeDetected": location["pathClass"] == "captcha" or title in CAPTCHA_TITLES,
+        "loginDetected": location["pathClass"] == "login" or title in LOGIN_TITLES}
+
+
+def new_parse_diagnostics() -> dict:
+    return {"upstream": [], **page_diagnostics("", ""), "strategy": "unknown",
+            "imageCount": 0, "videoCount": 0, "originalVideoCount": 0}
+
+
+def emit_parse_failure(diagnostics: dict, *, phase: str, failure_class: str) -> None:
+    def count(value, maximum=10000):
+        return value if type(value) is int and 0 <= value <= maximum else 0
+
+    payload = {"event": "xhs_native_parse_failure", "engine": "python",
+        "phase": phase if phase in {"fetch", "parse"} else "parse",
+        "failureClass": failure_class if failure_class in {
+            "fetch-failed", "note-id-missing", "no-media", "captcha", "login"} else "no-media",
+        "upstream": [{"status": count(item.get("status"), 599),
+            "host": item.get("host") if item.get("host") in DIAGNOSTIC_HOSTS else "other",
+            "pathClass": item.get("pathClass") if item.get("pathClass") in DIAGNOSTIC_PATH_CLASSES else "other"}
+            for item in diagnostics.get("upstream", [])[:6] if isinstance(item, dict)],
+        "finalHost": diagnostics.get("finalHost") if diagnostics.get("finalHost") in DIAGNOSTIC_HOSTS else "other",
+        "finalPathClass": diagnostics.get("finalPathClass") if diagnostics.get("finalPathClass") in DIAGNOSTIC_PATH_CLASSES else "other",
+        "htmlBytes": count(diagnostics.get("htmlBytes"), MAX_HTML_BYTES),
+        "strategy": diagnostics.get("strategy") if diagnostics.get("strategy") in DIAGNOSTIC_STRATEGIES else "unknown",
+        **{key: count(diagnostics.get(key)) for key in ("imageCount", "videoCount", "originalVideoCount")},
+        **{key: diagnostics.get(key) is True for key in ("noteIdPresent", "initialStatePresent", "currentNotePresent", "challengeDetected", "loginDetected")}}
+    try:
+        print("CF_NATIVE_PARSE_FAILURE", json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+    except Exception:
+        # Diagnostics must never turn an existing API response into a failure.
+        pass
+
+
+def reject_missing_media(diagnostics: dict, message: str, failure_class: str) -> None:
+    if diagnostics.get("challengeDetected"):
+        failure_class = "captcha"
+        message = "小红书要求安全验证，云端暂时无法读取这篇笔记，请稍后重试。"
+    elif diagnostics.get("loginDetected"):
+        failure_class = "login"
+        message = "小红书要求登录后查看，云端暂时无法读取这篇笔记，请稍后重试。"
+    emit_parse_failure(diagnostics, phase="parse", failure_class=failure_class)
+    raise XhsError(message, 422)
+
+
 def json_response(status: int, payload: dict) -> Response:
     return Response(
         json.dumps(payload, ensure_ascii=False), status=status,
@@ -81,7 +164,7 @@ async def read_limited(response, limit: int, message: str) -> bytes:
 
 
 async def safe_fetch(url: str, *, headers: dict, validator, label: str,
-                     timeout_ms: int = 15000):
+                     timeout_ms: int = 15000, diagnostics: dict | None = None):
     signal = AbortSignal.timeout(timeout_ms)
     if label == "视频 CDN":
         validator = is_public_playback_url
@@ -90,6 +173,11 @@ async def safe_fetch(url: str, *, headers: dict, validator, label: str,
             raise XhsError(f"{label}跳转到了不受支持的地址。", 502)
         response = await fetch(url, method="GET", headers=headers,
                                redirect="manual", signal=signal)
+        if diagnostics is not None and len(diagnostics["upstream"]) < 6:
+            location_class = diagnostic_location(url)
+            diagnostics["upstream"].append({"status": int(response.status), **location_class})
+            diagnostics.update({"finalHost": location_class["host"], "finalPathClass": location_class["pathClass"],
+                "challengeDetected": location_class["pathClass"] == "captcha", "loginDetected": location_class["pathClass"] == "login"})
         if response.status not in REDIRECT_STATUSES:
             return response, url
         location = response.headers.get("Location", "")
@@ -100,14 +188,18 @@ async def safe_fetch(url: str, *, headers: dict, validator, label: str,
     raise XhsError(f"{label}跳转次数过多。", 502)
 
 
-async def fetch_note_page(input_url: str) -> tuple[str, str]:
+async def fetch_note_page(input_url: str, *, diagnostics: dict | None = None) -> tuple[str, str]:
     if not is_allowed_page_url(input_url):
         raise XhsError("分享链接地址不受支持。")
+    diagnostics = diagnostics if diagnostics is not None else new_parse_diagnostics()
+    diagnostics["noteIdPresent"] = bool(extract_note_id(input_url))
     try:
         response, final_url = await safe_fetch(
             input_url, headers=PAGE_HEADERS, validator=is_allowed_page_url,
-            label="分享链接",
+            label="分享链接", diagnostics=diagnostics,
         )
+        note_id = extract_note_id(final_url) or extract_note_id(input_url)
+        diagnostics.update(page_diagnostics(final_url, "", note_id))
         if not 200 <= response.status < 300:
             status = response.status
             await discard_body(response)
@@ -120,12 +212,15 @@ async def fetch_note_page(input_url: str) -> tuple[str, str]:
             page_html = raw.decode(charset, errors="replace")
         except LookupError:
             page_html = raw.decode("utf-8", errors="replace")
+        diagnostics.update(page_diagnostics(final_url, page_html, note_id, html_bytes=len(raw)))
+        if not page_html.strip():
+            raise XhsError("小红书页面返回内容为空。", 502)
     except XhsError:
+        emit_parse_failure(diagnostics, phase="fetch", failure_class="fetch-failed")
         raise
     except Exception as error:
+        emit_parse_failure(diagnostics, phase="fetch", failure_class="fetch-failed")
         raise XhsError("访问小红书页面失败，请稍后重试。", 502) from error
-    if not page_html.strip():
-        raise XhsError("小红书页面返回内容为空。", 502)
     return final_url, page_html
 
 
@@ -173,15 +268,19 @@ async def parse_request(request) -> Response:
                 "url": build_no_watermark_url(token), "livePhoto": False, "liveVideo": None}],
             "videos": [],
         })
-    final_url, page_html = await fetch_note_page(input_url)
+    diagnostics = new_parse_diagnostics()
+    final_url, page_html = await fetch_note_page(input_url, diagnostics=diagnostics)
     note_id = extract_note_id(final_url) or extract_note_id(input_url)
     if not note_id:
-        raise XhsError("无法从分享链接中识别当前笔记 ID。", 422)
+        reject_missing_media(diagnostics, "无法从分享链接中识别当前笔记 ID。", "note-id-missing")
     parsed = parse_note_html(page_html, note_id)
     public_images = [{**image, "liveVideo": public_playback_video(image.get("liveVideo"))} for image in parsed["images"]]
     public_videos = [video for item in parsed["videos"] if (video := public_playback_video(item))]
     if not public_images and not public_videos and not parsed.get("originalVideos"):
-        raise XhsError("没有解析到图片或视频。笔记可能已删除、需要登录，或者小红书页面结构已更新。", 422)
+        diagnostics.update({"strategy": parsed.get("strategy"), "imageCount": len(public_images),
+            "videoCount": len(public_videos), "originalVideoCount": len(parsed.get("originalVideos", []))})
+        reject_missing_media(diagnostics,
+            "没有解析到图片或视频。笔记可能已删除、需要登录，或者小红书页面结构已更新。", "no-media")
     images = [{"index": index, "token": item["token"], "url": item["url"],
                "livePhoto": bool(item.get("livePhoto")),
                "liveVideo": media_fields(item["liveVideo"])
