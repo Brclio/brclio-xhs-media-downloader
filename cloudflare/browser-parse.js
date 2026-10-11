@@ -1,0 +1,131 @@
+import { extractInputUrl, extractNoteId, isDirectImageUrl } from '../lib/xhs.js';
+import { MAX_API_BODY_BYTES, readBoundedBody } from './http-adapter.js';
+
+export const BROWSER_BUDGET_STORAGE_KEY = 'browser-parse-budget-v1';
+export const BROWSER_ATTEMPT_RESERVATION_MS = 180_000;
+export const BROWSER_DAILY_BUDGET_MS = 600_000;
+export const BROWSER_START_INTERVAL_MS = 30_000;
+const START_TIMEOUT_MS = 20_000;
+const PAGE_HOSTS = new Set(['www.xiaohongshu.com', 'xiaohongshu.com']);
+const SHORT_HOSTS = new Set(['xhslink.com', 'www.xhslink.com', 'xhslink.cn', 'www.xhslink.cn']);
+const CLOSED_HEADER = 'X-Browser-Closed';
+const ELAPSED_HEADER = 'X-Browser-Elapsed-Ms';
+const DAY_MS = 86_400_000;
+
+const json = (body, status) => Response.json(body, { status, headers: {
+  'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+} });
+
+async function candidate(request) {
+  const endpoint = new URL(request.url);
+  if (request.method !== 'POST' || !['/api/parse', '/api/python_parse'].includes(endpoint.pathname)
+    || request.signal.aborted
+    || request.headers.get('sec-fetch-site')?.toLowerCase() === 'cross-site'
+    || (request.headers.has('Origin') && request.headers.get('Origin') !== endpoint.origin)
+    || !/^application\/json(?:\s*;|$)/i.test(request.headers.get('Content-Type') || '')) return null;
+  const body = JSON.parse(await readBoundedBody(request, MAX_API_BODY_BYTES));
+  if (typeof body?.text !== 'string' || !body.text.trim() || body.text.length > 3000) return null;
+  const sourceURL = extractInputUrl(body.text);
+  if (sourceURL.length > 10_000 || isDirectImageUrl(sourceURL)) return null;
+  const url = new URL(sourceURL);
+  if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443')) return null;
+  const noteId = extractNoteId(sourceURL);
+  if (!SHORT_HOSTS.has(url.hostname) && !(PAGE_HOSTS.has(url.hostname)
+    && /^\/(?:explore|discovery\/item)\/[a-f0-9]{24}\/?$/i.test(url.pathname) && noteId)) return null;
+  return { engine: endpoint.pathname === '/api/python_parse' ? 'python' : 'node', sourceURL, noteId };
+}
+
+function numericRecord(record) {
+  return record && Number.isInteger(record.day) && record.day >= 0
+    && Number.isFinite(record.usedMs) && record.usedMs >= 0
+    && Number.isFinite(record.lastStartMs) && record.lastStartMs >= -BROWSER_START_INTERVAL_MS;
+}
+
+async function reserve(storage, now) {
+  const day = Math.floor(now / DAY_MS);
+  return storage.transaction(async transaction => {
+    const previous = await transaction.get(BROWSER_BUDGET_STORAGE_KEY);
+    if (previous !== undefined && !numericRecord(previous)) return null;
+    const record = previous?.day === day
+      ? { day, usedMs: previous.usedMs, lastStartMs: previous.lastStartMs }
+      : { day, usedMs: 0, lastStartMs: previous?.lastStartMs ?? -BROWSER_START_INTERVAL_MS };
+    if (now - record.lastStartMs < BROWSER_START_INTERVAL_MS
+      || record.usedMs + BROWSER_ATTEMPT_RESERVATION_MS > BROWSER_DAILY_BUDGET_MS) return null;
+    record.usedMs += BROWSER_ATTEMPT_RESERVATION_MS;
+    record.lastStartMs = now;
+    await transaction.put(BROWSER_BUDGET_STORAGE_KEY, record);
+    return { day };
+  });
+}
+
+async function refundConfirmedClose(storage, reservation, response) {
+  if (response.headers.get(CLOSED_HEADER) !== '1') return;
+  const rawElapsed = response.headers.get(ELAPSED_HEADER);
+  if (rawElapsed === null || !/^\d+(?:\.\d+)?$/.test(rawElapsed)) return;
+  const elapsed = Number(rawElapsed);
+  if (!Number.isFinite(elapsed) || elapsed < 0 || elapsed > BROWSER_ATTEMPT_RESERVATION_MS) return;
+  const refund = BROWSER_ATTEMPT_RESERVATION_MS - Math.min(BROWSER_ATTEMPT_RESERVATION_MS, Math.ceil(elapsed) + 5000);
+  if (refund <= 0) return;
+  try {
+    await storage.transaction(async transaction => {
+      const record = await transaction.get(BROWSER_BUDGET_STORAGE_KEY);
+      if (!numericRecord(record) || record.day !== reservation.day) return;
+      await transaction.put(BROWSER_BUDGET_STORAGE_KEY, {
+        day: record.day, usedMs: Math.max(0, record.usedMs - refund), lastStartMs: record.lastStartMs,
+      });
+    });
+  } catch { /* A failed refund retains the conservative reservation. */ }
+}
+
+function publicResponse(response) {
+  const headers = new Headers(response.headers);
+  headers.delete(CLOSED_HEADER); headers.delete(ELAPSED_HEADER);
+  headers.set('Cache-Control', 'no-store'); headers.set('X-Content-Type-Options', 'nosniff');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+async function startSession(stub, payload, signal) {
+  const controller = new AbortController();
+  let rejectAbort;
+  const aborted = new Promise((_resolve, reject) => { rejectAbort = reject; });
+  const abort = () => { controller.abort(); rejectAbort(new Error('browser-start-cancelled')); };
+  const timer = setTimeout(abort, START_TIMEOUT_MS);
+  signal.addEventListener('abort', abort, { once: true });
+  try {
+    if (signal.aborted) throw new Error('browser-start-cancelled');
+    return await Promise.race([stub.fetch(new Request('https://browser-session.internal/__internal/browser/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal,
+    })), aborted]);
+  } finally { clearTimeout(timer); signal.removeEventListener('abort', abort); }
+}
+
+/** Ordinary Browser Run reading is isolated per request; only explicit verification retains a session. */
+export async function maybeParseWithBrowser(request, nativeResponse, { env, state } = {}) {
+  if (!env?.BROWSER || !env?.PARSE_RUNTIME || !state?.storage?.transaction
+    || ![422, 502, 504].includes(nativeResponse.status)) return nativeResponse;
+  try {
+    const input = await candidate(request);
+    if (!input) return nativeResponse;
+    const reservation = await reserve(state.storage, Date.now());
+    if (!reservation) return json({ success: false, engine: input.engine, code: 'BROWSER_BUSY',
+      message: '浏览器解析暂时繁忙，请稍后再试。' }, 503);
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    const token = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    const stub = env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName(`browser:${token}`));
+    const response = await startSession(stub, { token, ...input }, request.signal);
+    if (!(response instanceof Response)) return nativeResponse;
+    if (response.status === 422) {
+      const body = JSON.parse(await readBoundedBody(response, MAX_API_BODY_BYTES));
+      if (body?.code === 'VERIFICATION_REQUIRED' && body.success === false && body.engine === input.engine
+        && typeof body.verificationUrl === 'string' && body.verificationUrl.length <= MAX_API_BODY_BYTES
+        && typeof body.expiresAt === 'number' && Number.isFinite(body.expiresAt)) {
+        // A live verification session keeps its complete reservation, even if a bad close header is present.
+        return json({ success: false, engine: input.engine, code: 'VERIFICATION_REQUIRED',
+          message: '小红书需要验证，请完成验证后继续解析。', verificationUrl: body.verificationUrl,
+          verificationToken: token, expiresAt: body.expiresAt }, 422);
+      }
+    }
+    await refundConfirmedClose(state.storage, reservation, response);
+    return response.ok ? publicResponse(response) : nativeResponse;
+  } catch { return nativeResponse; }
+}

@@ -59,6 +59,29 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
             ? nativeRequest => env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(nativeRequest)
             : nativeRequest => invokeHandler(accountFactory({ env, clientIp: cloudflareClientIp }), nativeRequest, { maxBodyBytes: MAX_ACCOUNT_BODY_BYTES });
           response = await invokeHandler(createHostedMemberVideoHandler({ env, accountFetch }), request);
+        } else if (path.startsWith('/__internal/')) {
+          response = json({ success: false, message: '接口不存在。' }, 404);
+        } else if (path === '/api/parse_verification') {
+          if (request.method !== 'POST') response = json({ success: false, message: '只支持 POST 请求。' }, 405, { Allow: 'POST' });
+          else if ((request.headers.has('Origin') && request.headers.get('Origin') !== new URL(request.url).origin)
+            || request.headers.get('Sec-Fetch-Site') === 'cross-site') response = json({ success: false, message: '请求来源无效。' }, 403);
+          else {
+            let data;
+            try { data = JSON.parse(await readBoundedBody(request, MAX_API_BODY_BYTES)); } catch (error) {
+              if (error instanceof RequestTooLargeError) throw error;
+            }
+            if (!data || typeof data.token !== 'string' || !/^[a-f0-9]{64}$/.test(data.token) || !['resume', 'cancel'].includes(data.action)) {
+              response = json({ success: false, message: '验证请求无效。' }, 400);
+            } else if (!env.PARSE_RUNTIME) response = json({ success: false, message: '验证服务暂时不可用。' }, 503);
+            else {
+              response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName(`browser:${data.token}`)).fetch(new Request(`https://browser.internal/__internal/browser/${data.action}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: data.token }),
+              }));
+              const headers = new Headers(response.headers);
+              headers.delete('X-Browser-Closed'); headers.delete('X-Browser-Elapsed-Ms');
+              response = new Response(response.body, { status: response.status, headers });
+            }
+          }
         } else if (['/api/parse', '/api/python_parse'].includes(path) && env.PARSE_RUNTIME) {
           response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName('parsing-v1')).fetch(request);
         } else if (Object.hasOwn(nodeRoutes, path)) {

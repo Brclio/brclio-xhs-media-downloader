@@ -180,6 +180,57 @@ class WorkerRuntimeTests(unittest.TestCase):
         self.assertEqual(self.call("/api/other")[0], 404)
         self.assertEqual(self.call("/api/python_parse.py", {"text": "https://ci.xiaohongshu.com/image"})[0], 200)
 
+    def rendered_body(self, *, protected=False):
+        note_id = NOTE.rsplit("/", 1)[-1]
+        protected_url = "https://sns-video-bd.xhscdn.com/spectrum/private-original"
+        stream = {"masterUrl": protected_url if protected else VIDEO,
+                  "backupUrls": [VIDEO, protected_url] if protected else [],
+                  "audioCodec": "aac", "audioChannels": 2}
+        note = {"noteId": note_id, "title": "独立 Python 页面", "desc": "运行时验证",
+            "imageList": [{"urlDefault": "https://ci.xiaohongshu.com/fixture/image", "livePhoto": True,
+                           "stream": {"h264": [stream]}}],
+            "video": {"media": {"stream": {"h264": [stream]}}}}
+        return {"noteId": note_id, "finalUrl": NOTE + "?case=blocked",
+            "html": "<script>window.__INITIAL_STATE__=" + json.dumps(
+                {"note": {"noteDetailMap": {note_id: {"note": note}}}}, ensure_ascii=False) + ";</script>"}
+
+    def test_private_rendered_html_is_independent_and_never_fetches(self):
+        # This final URL's fixture fetch returns 461. A successful result proves
+        # that private parsing uses the supplied HTML without an outbound fetch.
+        status, headers, body = self.call("/__internal/parse-rendered-note", self.rendered_body(protected=True))
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["X-XHS-Engine"], "python")
+        self.assertEqual(headers["Cache-Control"], "private, no-store")
+        self.assertEqual((body["strategy"], body["count"], body["videoCount"], body["livePhotoCount"]),
+                         ("exact-initial-state", 1, 1, 1))
+        self.assertEqual(body["videos"][0]["url"], VIDEO)
+        self.assertEqual(body["images"][0]["liveVideo"]["url"], VIDEO)
+        self.assertNotIn("spectrum/", json.dumps(body))
+
+    def test_private_rendered_identity_schema_methods_and_public_boundary(self):
+        payload = self.rendered_body()
+        cases = [{**payload, "noteId": "other1234567890abcdef1234"},
+                 {**payload, "finalUrl": NOTE.replace("https:", "http:")},
+                 {**payload, "finalUrl": NOTE.replace("www.xiaohongshu.com", "evil.test")},
+                 {**payload, "finalUrl": NOTE + ";other"},
+                 {**payload, "headers": {"Cookie": "private"}}, {**payload, "html": []}]
+        for body in cases:
+            self.assertEqual(self.call("/__internal/parse-rendered-note", body)[0], 400)
+        for method in ("GET", "PUT", "OPTIONS"):
+            self.assertEqual(self.call("/__internal/parse-rendered-note", method=method)[0], 405)
+        for path in ("/__internal/parse-rendered-note/", "/api/parse-rendered-note", "/api/rendered-note"):
+            self.assertEqual(self.call(path, payload)[0], 404)
+        self.assertEqual(self.call("/api/python-parse", payload)[0], 400)
+        self.assertEqual(self.call("/api/python-parse", {"text": NOTE, "html": "x" * 16384})[0], 413)
+
+    def test_private_rendered_request_and_html_caps_in_real_streams(self):
+        path = "/__internal/parse-rendered-note"
+        maximum_html = 6 * 1024 * 1024
+        self.assertEqual(self.call(path, b"x" * (maximum_html + 16384 + 1))[0], 413)
+        self.assertEqual(self.call(path, {**self.rendered_body(), "html": "x" * (maximum_html + 1)})[0], 413)
+        # A prior oversized input must not break the binding request transport.
+        self.assertEqual(self.call(path, self.rendered_body())[0], 200)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

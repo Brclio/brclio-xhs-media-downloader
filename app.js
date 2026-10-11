@@ -13,6 +13,7 @@ import { inspectVideoBlob } from "./lib/media-tracks.js";
 import { imageDimensionsFromHeader, validateImageDimensions } from "./lib/image-dimensions.js";
 import { getAccountBridge } from "./lib/browser-account.js";
 import { openAccountUI } from "./account-ui.js";
+import { waitForNoteVerification } from "./lib/parse-verification.js";
 
 const state = {
   title: "小红书图片",
@@ -2008,6 +2009,7 @@ async function parseShareText(text, engine) {
   });
 
   const payload = await response.json().catch(() => ({}));
+  if (payload.code === 'VERIFICATION_REQUIRED') return waitForNoteVerification(payload);
   if (!response.ok || !payload.success) {
     throw new Error(payload.message || `解析失败：HTTP ${response.status}`);
   }

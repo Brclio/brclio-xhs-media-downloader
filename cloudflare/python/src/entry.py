@@ -22,6 +22,9 @@ from parser_core import (
 )
 
 MAX_REQUEST_BYTES = 16 * 1024
+MAX_RENDERED_REQUEST_BYTES = MAX_HTML_BYTES + MAX_REQUEST_BYTES
+RENDERED_NOTE_PATH = "/__internal/parse-rendered-note"
+RENDERED_NOTE_HOSTS = {"www.xiaohongshu.com", "xiaohongshu.com"}
 MAX_IMAGE_BYTES = 4_200_000
 MAX_CHUNK_BYTES = 3_500_000
 MAX_VIDEO_BYTES = 512 * 1024 * 1024
@@ -243,36 +246,18 @@ def media_fields(media: dict, *, video: bool = False) -> dict:
     return values
 
 
-async def parse_request(request) -> Response:
-    raw = await read_limited(request, MAX_REQUEST_BYTES, "请求内容过大。")
+async def read_json_request(request, *, limit: int = MAX_REQUEST_BYTES):
+    raw = await read_limited(request, limit, "请求内容过大。")
     if not raw:
         raise XhsError("请求内容为空。")
     try:
-        body = json.loads(raw.decode("utf-8"))
+        return json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise XhsError("请求 JSON 格式无效。") from error
-    raw_text = str(body.get("text", "")).strip() if isinstance(body, dict) else ""
-    if not raw_text:
-        raise XhsError("请粘贴小红书分享文案或链接。")
-    if len(raw_text) > MAX_INPUT_LENGTH:
-        raise XhsError("输入内容过长。", 413)
-    input_url = extract_input_url(raw_text)
-    if is_direct_image_url(input_url):
-        token = extract_original_asset_token(input_url)
-        if not token or not validate_asset_token(token):
-            raise XhsError("无法从图片地址中提取原始资源标识。")
-        return json_response(200, {
-            "success": True, "engine": "python", "title": "小红书图片",
-            "content": "", "type": "image", "count": 1, "livePhotoCount": 0,
-            "videoCount": 0, "images": [{"index": 1, "token": token,
-                "url": build_no_watermark_url(token), "livePhoto": False, "liveVideo": None}],
-            "videos": [],
-        })
-    diagnostics = new_parse_diagnostics()
-    final_url, page_html = await fetch_note_page(input_url, diagnostics=diagnostics)
-    note_id = extract_note_id(final_url) or extract_note_id(input_url)
-    if not note_id:
-        reject_missing_media(diagnostics, "无法从分享链接中识别当前笔记 ID。", "note-id-missing")
+
+
+def note_page_response(page_html: str, note_id: str, *, diagnostics: dict) -> Response:
+    """Both network and private rendered pages use the independent Python parser."""
     parsed = parse_note_html(page_html, note_id)
     public_images = [{**image, "liveVideo": public_playback_video(image.get("liveVideo"))} for image in parsed["images"]]
     public_videos = [video for item in parsed["videos"] if (video := public_playback_video(item))]
@@ -296,6 +281,63 @@ async def parse_request(request) -> Response:
         "videoCount": len(videos), "originalVideoCount": len(parsed.get("originalVideos", [])),
         "hasOriginalVideo": bool(parsed.get("originalVideos")), "images": images, "videos": videos,
     })
+
+
+async def parse_rendered_request(request) -> Response:
+    """Private service-binding input only; never fetch URLs or import cookies."""
+    body = await read_json_request(request, limit=MAX_RENDERED_REQUEST_BYTES)
+    if not isinstance(body, dict) or set(body) != {"finalUrl", "html", "noteId"} or any(
+            not isinstance(body[key], str) for key in ("finalUrl", "html", "noteId")):
+        raise XhsError("内部页面解析输入无效。")
+    final_url, page_html, note_id = body["finalUrl"], body["html"], body["noteId"]
+    if len(final_url) > MAX_INPUT_LENGTH or re.search(r"[\x00-\x20\x7f\\]", final_url):
+        raise XhsError("内部页面地址无效。")
+    try:
+        parsed_url = urlparse(final_url)
+        allowed_url = (parsed_url.scheme == "https" and parsed_url.hostname in RENDERED_NOTE_HOSTS
+            and parsed_url.port in (None, 443) and parsed_url.username is None
+            and parsed_url.password is None and not parsed_url.fragment and not parsed_url.params
+            and re.fullmatch(r"/(?:explore|discovery/item|item)/[A-Za-z0-9_-]{12,64}/?", parsed_url.path))
+    except ValueError:
+        allowed_url = False
+    if not allowed_url or not re.fullmatch(r"[A-Za-z0-9_-]{12,64}", note_id) or extract_note_id(final_url) != note_id:
+        raise XhsError("内部页面地址与笔记不匹配。")
+    try:
+        html_bytes = len(page_html.encode("utf-8"))
+    except UnicodeEncodeError as error:
+        raise XhsError("内部页面内容编码无效。") from error
+    if html_bytes > MAX_HTML_BYTES:
+        raise XhsError("页面内容过大，已停止解析。", 413)
+    diagnostics = new_parse_diagnostics()
+    diagnostics.update(page_diagnostics(final_url, page_html, note_id, html_bytes=html_bytes))
+    return note_page_response(page_html, note_id, diagnostics=diagnostics)
+
+
+async def parse_request(request) -> Response:
+    body = await read_json_request(request)
+    raw_text = str(body.get("text", "")).strip() if isinstance(body, dict) else ""
+    if not raw_text:
+        raise XhsError("请粘贴小红书分享文案或链接。")
+    if len(raw_text) > MAX_INPUT_LENGTH:
+        raise XhsError("输入内容过长。", 413)
+    input_url = extract_input_url(raw_text)
+    if is_direct_image_url(input_url):
+        token = extract_original_asset_token(input_url)
+        if not token or not validate_asset_token(token):
+            raise XhsError("无法从图片地址中提取原始资源标识。")
+        return json_response(200, {
+            "success": True, "engine": "python", "title": "小红书图片",
+            "content": "", "type": "image", "count": 1, "livePhotoCount": 0,
+            "videoCount": 0, "images": [{"index": 1, "token": token,
+                "url": build_no_watermark_url(token), "livePhoto": False, "liveVideo": None}],
+            "videos": [],
+        })
+    diagnostics = new_parse_diagnostics()
+    final_url, page_html = await fetch_note_page(input_url, diagnostics=diagnostics)
+    note_id = extract_note_id(final_url) or extract_note_id(input_url)
+    if not note_id:
+        reject_missing_media(diagnostics, "无法从分享链接中识别当前笔记 ID。", "note-id-missing")
+    return note_page_response(page_html, note_id, diagnostics=diagnostics)
 
 
 def safe_filename(value: str) -> str:
@@ -426,29 +468,32 @@ async def video_request(query: dict) -> Response:
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         request = request if isinstance(request, Request) else Request(request)
-        path = urlparse(request.url).path.rstrip("/")
-        operation = path.rsplit("/", 1)[-1].replace("_", "-")
-        operation = operation.removesuffix(".py")
-        if operation not in {"python-parse", "python-image", "python-video"}:
+        raw_path = urlparse(request.url).path
+        rendered = raw_path == RENDERED_NOTE_PATH
+        operation = "rendered-note" if rendered else raw_path.rstrip("/").rsplit("/", 1)[-1].replace("_", "-").removesuffix(".py")
+        if not rendered and operation not in {"python-parse", "python-image", "python-video"}:
             return json_response(404, {"success": False, "message": "接口不存在。"})
-        method = "POST" if operation == "python-parse" else "GET"
-        if request.method == "OPTIONS":
+        method = "POST" if operation in {"python-parse", "rendered-note"} else "GET"
+        if request.method == "OPTIONS" and not rendered:
             return Response(status=204, headers={**BASE_HEADERS, "Allow": f"{method}, OPTIONS"})
         if request.method != method:
             return json_response(405, {"success": False, "message": f"只支持 {method} 请求。"})
         try:
+            if rendered:
+                return await parse_rendered_request(request)
             if operation == "python-parse":
                 return await parse_request(request)
             query = parse_qs(urlparse(request.url).query)
             return await (image_request(query) if operation == "python-image" else video_request(query))
         except XhsError as error:
             payload = {"success": False, "message": str(error)}
-            if operation == "python-parse":
+            if operation in {"python-parse", "rendered-note"}:
                 payload["engine"] = "python"
             return json_response(error.status_code, payload)
         except Exception as error:
             # Do not log note URLs, headers, or user input.
             print("Python Worker error", operation, type(error).__name__)
             message = {"python-parse": "Python 服务器解析失败，请切换 Node.js 或稍后重试。",
+                       "rendered-note": "Python 页面解析失败，请稍后重试。",
                        "python-image": "Python 图片下载失败。", "python-video": "Python 视频下载失败。"}[operation]
             return json_response(500, {"success": False, "engine": "python", "message": message})
