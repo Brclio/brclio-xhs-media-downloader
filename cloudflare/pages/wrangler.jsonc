@@ -1,6 +1,7 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "brclio-xhs-pages",
+  "account_id": "c8b059429c868f6d0e528f9e10325f46",
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-09-22",
   "services": [

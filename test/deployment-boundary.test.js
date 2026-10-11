@@ -62,12 +62,16 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   }
   await mkdir(path.join(root, 'assets/downloads'), { recursive: true });
   await writeFile(path.join(root, 'assets/downloads/hero.webp'), 'public-image');
+  for (const name of ['assets/.DS_Store', 'admin/.DS_Store', 'assets/downloads/.DS_Store', 'assets/downloads/._hero.webp']) {
+    await writeFile(path.join(root, name), 'private-macOS-metadata');
+  }
   await mkdir(path.join(root, 'assets/membership'), { recursive: true });
   for (const name of ['wechat-pay', 'alipay', 'wechat-contact']) {
     await writeFile(path.join(root, `assets/membership/${name}.png`), 'public-qr');
   }
   const out = await buildWeb(root);
   const files = (await readdir(out, { recursive: true })).map(name => name.replaceAll('\\', '/'));
+  assert.ok(!files.some(name => path.basename(name) === '.DS_Store' || path.basename(name).startsWith('._')), 'macOS directory metadata and resource forks never become static URLs');
   assert.ok(files.includes('admin/index.html'));
   assert.ok(files.includes('lib/archive.js'));
   assert.ok(files.includes('lib/membership-plans.js'), 'client and admin share the public plan catalog');

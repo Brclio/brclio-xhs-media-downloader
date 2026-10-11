@@ -64,7 +64,12 @@ export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.u
       }
       await writeFile(destination, html);
     } else {
-      await cp(path.join(root, name), destination, { recursive: true, dereference: false });
+      await cp(path.join(root, name), destination, {
+        recursive: true,
+        dereference: false,
+        // Finder metadata and AppleDouble resource forks are not public assets.
+        filter: source => path.basename(source) !== '.DS_Store' && !path.basename(source).startsWith('._'),
+      });
     }
   }
   return output;
