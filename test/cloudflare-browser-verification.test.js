@@ -120,11 +120,12 @@ test('cancellation interrupts one resume, duplicate cancels do not queue, and la
 });
 
 test('unconfirmed failures forbid resume but permit cleanup without refunding or renewing the deadline', async () => {
-  let result = () => Response.json({ success: false }, { status: 503, headers: { 'X-Browser-Failure-Code': 'private-failure-sentinel' } });
+  let result = () => Response.json({ success: false }, { status: 503, headers: { 'X-Browser-Failure-Code': 'private-failure-sentinel', 'X-Browser-Page': 'private-page-sentinel' } });
   const f = fixture(() => result()); await f.register(); const deadline = f.entry().expiresAt;
   f.values.set('browser-parse-budget-v1', { day: 1, usedMs: 180000, lastStartMs: f.now() });
   const response = await f.registry.dispatch({ token, action: 'resume' });
   assert.equal(response.status, 503); assert.equal(response.headers.get('X-Browser-Failure-Code'), null);
+  assert.equal(response.headers.get('X-Browser-Page'), null);
   assert.equal(f.entry().terminal, true); assert.equal(f.entry().expiresAt, deadline);
   assert.equal((await f.registry.dispatch({ token, action: 'resume' })).status, 410); assert.equal(f.calls.length, 1);
   result = () => Response.json({ success: true, cancelled: true }, { headers: { 'X-Browser-Closed': '1' } });

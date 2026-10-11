@@ -1,6 +1,6 @@
 import { extractInputUrl, extractNoteId, isDirectImageUrl } from '../lib/xhs.js';
 import { MAX_API_BODY_BYTES, readBoundedBody } from './http-adapter.js';
-import { BrowserVerificationRegistry, BROWSER_FAILURE_HEADER, browserFailureCode, cancelUnregisteredVerification, publicBrowserResponse, verificationPayload } from './browser-verification.js';
+import { BrowserVerificationRegistry, BROWSER_FAILURE_HEADER, BROWSER_PAGE_HEADER, browserFailureCode, browserPageClassification, cancelUnregisteredVerification, publicBrowserResponse, verificationPayload } from './browser-verification.js';
 
 export const BROWSER_BUDGET_STORAGE_KEY = 'browser-parse-budget-v1';
 export const BROWSER_ATTEMPT_RESERVATION_MS = 180_000;
@@ -134,13 +134,17 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
       console.warn('CF_BROWSER_FALLBACK_RESULT', JSON.stringify({ phase, outcome, nativeStatus: nativeResponse.status, ...presence }));
     } catch {}
   };
-  const nativeFallback = (outcome, failureCode) => {
+  const nativeFallback = (outcome, failureCode, page) => {
     failed(outcome);
     if (nativeResponse.status < 400) return nativeResponse;
     const headers = new Headers(nativeResponse.headers);
     headers.delete(BROWSER_FAILURE_HEADER);
+    headers.delete(BROWSER_PAGE_HEADER);
     headers.delete('X-XHS-Browser-Failure-Code');
+    headers.delete('X-XHS-Browser-Page');
     if (failureCode !== undefined) headers.set('X-XHS-Browser-Failure-Code', browserFailureCode(failureCode));
+    const pageClass = browserPageClassification(page);
+    if (pageClass) headers.set('X-XHS-Browser-Page', pageClass);
     headers.set('X-XHS-Browser-Fallback', `${phase}/${outcome}`);
     headers.set('Cache-Control', 'no-store');
     return new Response(nativeResponse.body, { status: nativeResponse.status, statusText: nativeResponse.statusText, headers });
@@ -197,6 +201,6 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
     }
     phase = 'response';
     await refundConfirmedClose(state.storage, reservation, response);
-    return response.ok ? publicBrowserResponse(response) : nativeFallback(rejection, response.headers.get(BROWSER_FAILURE_HEADER));
+    return response.ok ? publicBrowserResponse(response) : nativeFallback(rejection, response.headers.get(BROWSER_FAILURE_HEADER), response.headers.get(BROWSER_PAGE_HEADER));
   } catch { return nativeFallback('outer-exception', 'BROWSER_FAILED'); }
 }

@@ -8,6 +8,9 @@ export const BROWSER_VERIFICATION_RESUME_INTERVAL_MS = 2_000;
 const CLOSED_HEADER = 'X-Browser-Closed';
 const ELAPSED_HEADER = 'X-Browser-Elapsed-Ms';
 export const BROWSER_FAILURE_HEADER = 'X-Browser-Failure-Code';
+export const BROWSER_PAGE_HEADER = 'X-Browser-Page';
+export const browserPageClassification = value => typeof value === 'string'
+  && /^(?:apex|www|shortlink|other)\/(?:note|captcha|login|shortlink|root|error|other|blank)$/.test(value) ? value : null;
 const FAILURE_CODES = new Set(['BROWSER_EXPIRED', 'BROWSER_NOT_FOUND', 'BROWSER_NOT_READY', 'BROWSER_TIMEOUT',
   'BROWSER_ACQUIRE_FAILED', 'BROWSER_TARGET_FAILED', 'BROWSER_CONNECT_FAILED', 'BROWSER_CDP_FAILED',
   'BROWSER_CDP_PROTOCOL', 'BROWSER_HTML_TOO_LARGE', 'BROWSER_LIVE_VIEW_FAILED', 'BROWSER_LIVE_VIEW_INVALID',
@@ -29,7 +32,7 @@ const unavailable = () => json({ success: false, code: 'BROWSER_UNAVAILABLE', me
 
 export function publicBrowserResponse(response) {
   const headers = new Headers(response.headers);
-  headers.delete(CLOSED_HEADER); headers.delete(ELAPSED_HEADER); headers.delete(BROWSER_FAILURE_HEADER);
+  headers.delete(CLOSED_HEADER); headers.delete(ELAPSED_HEADER); headers.delete(BROWSER_FAILURE_HEADER); headers.delete(BROWSER_PAGE_HEADER);
   headers.set('Cache-Control', 'no-store'); headers.set('X-Content-Type-Options', 'nosniff');
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }

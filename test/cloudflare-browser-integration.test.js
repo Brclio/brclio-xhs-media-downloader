@@ -97,7 +97,7 @@ test('inactive browser verification rejects valid tokens before namespace lookup
 
 test('public bearer requests route only to the global verifier and drop caller headers and override fields', async () => {
   const fixture = namespaceFixture(() => Response.json({ success: true }, { headers: {
-    'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '12', 'X-Browser-Failure-Code': 'private-boundary-sentinel',
+    'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '12', 'X-Browser-Failure-Code': 'private-boundary-sentinel', 'X-Browser-Page': 'private-boundary-page-sentinel',
   } }));
   for (const [currentToken, action] of [[token, 'resume'], [otherToken, 'cancel']]) {
     const response = await worker.fetch(post('/api/parse_verification', {
@@ -108,6 +108,7 @@ test('public bearer requests route only to the global verifier and drop caller h
     assert.equal(response.headers.get('x-browser-closed'), null);
     assert.equal(response.headers.get('x-browser-elapsed-ms'), null);
     assert.equal(response.headers.get('x-browser-failure-code'), null);
+    assert.equal(response.headers.get('x-browser-page'), null);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     const forwarded = fixture.calls.at(-1);
     assert.equal(forwarded.id, 'parsing-v1');
@@ -121,12 +122,13 @@ test('public parsing boundaries strip private diagnostics and retain only the fi
   for (const path of ['/api/parse', '/api/python_parse']) {
     const fixture = namespaceFixture(() => Response.json({ success: false }, { status: 422, headers: {
       'X-Browser-Failure-Code': 'private-boundary-sentinel', 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1',
-      'X-XHS-Browser-Failure-Code': 'BROWSER_ACQUIRE_FAILED',
+      'X-XHS-Browser-Failure-Code': 'BROWSER_ACQUIRE_FAILED', 'X-Browser-Page': 'private-page-sentinel', 'X-XHS-Browser-Page': 'other/error',
     } }));
     const response = await worker.fetch(post(path, { text: noteUrl }), { BROWSER: {}, PARSE_RUNTIME: fixture.binding });
     assert.equal(response.status, 422); assert.deepEqual(await response.json(), { success: false });
-    for (const header of ['X-Browser-Failure-Code', 'X-Browser-Closed', 'X-Browser-Elapsed-Ms']) assert.equal(response.headers.get(header), null);
+    for (const header of ['X-Browser-Failure-Code', 'X-Browser-Page', 'X-Browser-Closed', 'X-Browser-Elapsed-Ms']) assert.equal(response.headers.get(header), null);
     assert.equal(response.headers.get('X-XHS-Browser-Failure-Code'), 'BROWSER_ACQUIRE_FAILED');
+    assert.equal(response.headers.get('X-XHS-Browser-Page'), 'other/error');
     assert.equal(response.headers.get('Cache-Control'), 'no-store');
   }
 });
@@ -211,6 +213,25 @@ test('private browser errors project only known failure codes and map unknown ex
     assert.deepEqual(await response.json(), { success: false, code: 'BROWSER_UNAVAILABLE', message: '页面读取暂时不可用，请稍后重试。' });
     assert.equal(JSON.parse(logs.at(-1)[1]).code, expected);
     assert.equal(JSON.stringify(logs).includes('private-'), false);
+  }
+});
+
+test('private browser page headers omit absent or invalid diagnostic locations', async t => {
+  const fixture = runtimeFixture();
+  t.mock.method(console, 'warn', () => {});
+  let diagnostic;
+  t.mock.method(fixture.runtime.browser, 'start', async () => {
+    throw Object.assign(new Error('private-error-sentinel'), { code: 'BROWSER_PAGE_REJECTED', diagnostic });
+  });
+  for (const location of [{ hostname: 'other', pathClass: 'error' }, { hostname: 'www', pathClass: 'captcha' },
+    { hostname: 'private-host', pathClass: 'error' }, { hostname: 'other', pathClass: 'private-path' }, null]) {
+    diagnostic = location ? { finalLocation: location, htmlBytes: 250, brandedCaptcha: false, brandedLogin: false } : undefined;
+    const response = await fixture.runtime.fetch(internal('start'));
+    const expected = location && ['other', 'www'].includes(location.hostname) && ['error', 'captcha'].includes(location.pathClass)
+      ? `${location.hostname}/${location.pathClass}` : null;
+    assert.equal(response.status, 503); assert.equal(response.headers.get('X-Browser-Page'), expected);
+    assert.equal(response.headers.get('X-Browser-Failure-Code'), 'BROWSER_PAGE_REJECTED');
+    assert.equal(JSON.stringify([...response.headers]).includes('private-'), false);
   }
 });
 

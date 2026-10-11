@@ -140,11 +140,26 @@ test('browser failure diagnostics expose only allowlisted codes while preserving
   }
 });
 
+test('browser page diagnostics project only fixed hostname/path enums and omit missing or invalid values', async t => {
+  t.mock.method(console, 'warn', () => {});
+  for (const page of ['other/error', 'www/captcha', 'apex/note', 'private-host/error', 'other/private-path',
+    'other/error,private-url-sentinel', 'https://private.example.test/error', null]) {
+    const h = harness(() => Response.json({ success: false }, { status: 503,
+      headers: page === null ? {} : { 'X-Browser-Page': page } }));
+    const original = native(), response = await maybeParseWithBrowser(request(), original, h);
+    assertNativeFallback(response, original, 'response/browser-response-rejected');
+    assert.equal(response.headers.get('X-Browser-Page'), null);
+    assert.equal(response.headers.get('X-XHS-Browser-Page'), ['other/error', 'www/captcha', 'apex/note'].includes(page) ? page : null);
+    assert.equal(JSON.stringify([...response.headers]).includes('private'), false);
+    assert.deepEqual(await response.json(), { success: false, message: 'original native error sentinel' });
+  }
+});
+
 test('browser start preserves Python engine and forwards only private validated input to a unique session', async t => {
   const logs = [];
   for (const method of ['log', 'warn', 'error']) t.mock.method(console, method, (...values) => logs.push(values));
   const h = harness(payload => Response.json({ success: true, engine: payload.engine, images: [], videos: [] }, { headers: {
-    'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '2500', 'X-XHS-Engine': 'python', 'X-Browser-Failure-Code': 'private-success-sentinel',
+    'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '2500', 'X-XHS-Engine': 'python', 'X-Browser-Failure-Code': 'private-success-sentinel', 'X-Browser-Page': 'private-success-page-sentinel',
   } }));
   clock(t);
   const original = native(502);
@@ -157,6 +172,7 @@ test('browser start preserves Python engine and forwards only private validated 
   assert.equal(h.calls[0].request.headers.get('cookie'), null); assert.equal(h.calls[0].request.headers.get('authorization'), null);
   assert.equal(response.headers.get('X-Browser-Closed'), null); assert.equal(response.headers.get('X-Browser-Elapsed-Ms'), null);
   assert.equal(response.headers.get('X-Browser-Failure-Code'), null); assert.equal(response.headers.get('X-XHS-Browser-Failure-Code'), null);
+  assert.equal(response.headers.get('X-Browser-Page'), null); assert.equal(response.headers.get('X-XHS-Browser-Page'), null);
   assert.equal(response.headers.get('X-XHS-Browser-Fallback'), null);
   assert.equal(response.headers.get('X-XHS-Engine'), 'python'); assert.equal(original.bodyUsed, false);
   assert.deepEqual(logs, []);

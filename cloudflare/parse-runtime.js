@@ -2,7 +2,7 @@ import parse from './native-parse.js';
 import { createParseHandler } from '../api/parse.js';
 import { BrowserSessionManager } from './browser-session.js';
 import { maybeParseWithBrowser } from './browser-parse.js';
-import { BrowserVerificationRegistry, BROWSER_FAILURE_HEADER, browserFailureCode } from './browser-verification.js';
+import { BrowserVerificationRegistry, BROWSER_FAILURE_HEADER, BROWSER_PAGE_HEADER, browserFailureCode } from './browser-verification.js';
 import { parsePythonWithSharedPage } from './native-python-parse.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
@@ -94,6 +94,7 @@ export class ParseRuntime {
         const response = json({ success: false, code: expired ? 'VERIFICATION_EXPIRED' : 'BROWSER_UNAVAILABLE',
           message: expired ? '验证已过期，请重新解析。' : '页面读取暂时不可用，请稍后重试。' }, expired ? 410 : 503);
         response.headers.set(BROWSER_FAILURE_HEADER, failureCode);
+        if (page) response.headers.set(BROWSER_PAGE_HEADER, `${page.finalLocation.hostname}/${page.finalLocation.pathClass}`);
         if (error?.closed === true) {
           response.headers.set('X-Browser-Closed', '1');
           response.headers.set('X-Browser-Elapsed-Ms', String(Math.min(180000, Date.now() - started)));
