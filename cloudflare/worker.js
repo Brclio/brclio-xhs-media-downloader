@@ -72,7 +72,7 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
             }
             if (!data || typeof data.token !== 'string' || !/^[a-f0-9]{64}$/.test(data.token) || !['resume', 'cancel'].includes(data.action)) {
               response = json({ success: false, message: '验证请求无效。' }, 400);
-            } else if (!env.PARSE_RUNTIME) response = json({ success: false, message: '验证服务暂时不可用。' }, 503);
+            } else if (!env.PARSE_RUNTIME || !env.BROWSER) response = json({ success: false, message: '验证服务暂时不可用。' }, 503);
             else {
               response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName(`browser:${data.token}`)).fetch(new Request(`https://browser.internal/__internal/browser/${data.action}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: data.token }),

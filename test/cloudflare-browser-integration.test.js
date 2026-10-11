@@ -28,7 +28,7 @@ function namespaceFixture(response = () => Response.json({ success: true })) {
 test('public requests cannot address private browser or rendered-HTML routes through headers', async () => {
   const fixture = namespaceFixture();
   let pythonCalls = 0, assetCalls = 0;
-  const env = { PARSE_RUNTIME: fixture.binding,
+  const env = { BROWSER: {}, PARSE_RUNTIME: fixture.binding,
     PYTHON_API: { fetch() { pythonCalls++; throw new Error('Private binding was reached'); } },
     ASSETS: { fetch() { assetCalls++; return new Response('asset'); } },
   };
@@ -49,7 +49,7 @@ test('verification rejects cross-site sources before body or owner DO dispatch',
   for (const headers of [{ Origin: 'https://evil.test' }, { Origin: 'null' },
     { 'Sec-Fetch-Site': 'cross-site' }, { Origin: origin, 'Sec-Fetch-Site': 'cross-site' }]) {
     const response = await worker.fetch(post('/api/parse_verification', { token, action: 'resume' }, headers),
-      { PARSE_RUNTIME: fixture.binding });
+      { BROWSER: {}, PARSE_RUNTIME: fixture.binding });
     assert.equal(response.status, 403);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     assert.equal(response.headers.get('access-control-allow-origin'), null);
@@ -62,13 +62,13 @@ test('verification validates token type, action, JSON and bounded request body',
   for (const data of [{ token: '', action: 'resume' }, { token: 'a'.repeat(63), action: 'resume' },
     { token: token.toUpperCase(), action: 'resume' }, { token: [token], action: 'resume' },
     { token, action: 'start' }, { token, action: 'resume/../start' }, null, []]) {
-    assert.equal((await worker.fetch(post('/api/parse_verification', data), { PARSE_RUNTIME: fixture.binding })).status, 400);
+    assert.equal((await worker.fetch(post('/api/parse_verification', data), { BROWSER: {}, PARSE_RUNTIME: fixture.binding })).status, 400);
   }
   assert.equal((await worker.fetch(new Request(`${origin}/api/parse_verification`, {
     method: 'POST', body: '{',
-  }), { PARSE_RUNTIME: fixture.binding })).status, 400);
+  }), { BROWSER: {}, PARSE_RUNTIME: fixture.binding })).status, 400);
   assert.equal((await worker.fetch(post('/api/parse_verification', { token, action: 'resume', padding: 'x'.repeat(MAX_API_BODY_BYTES) }),
-    { PARSE_RUNTIME: fixture.binding })).status, 413);
+    { BROWSER: {}, PARSE_RUNTIME: fixture.binding })).status, 413);
   assert.deepEqual(fixture.calls, []);
 });
 
@@ -80,6 +80,19 @@ test('verification has a POST guard and fails safely without a runtime binding',
     if (method === 'HEAD') assert.equal(await response.text(), '');
   }
   assert.equal((await worker.fetch(post('/api/parse_verification', { token, action: 'resume' }))).status, 503);
+  assert.equal((await worker.fetch(post('/api/parse_verification', { token, action: 'resume' }), { BROWSER: {} })).status, 503);
+});
+
+test('inactive browser verification rejects valid tokens before namespace lookup or owner DO dispatch', async () => {
+  const fixture = namespaceFixture();
+  for (const [currentToken, action] of [[token, 'resume'], [otherToken, 'cancel']]) {
+    const response = await worker.fetch(post('/api/parse_verification', { token: currentToken, action },
+      { Origin: origin, 'Sec-Fetch-Site': 'same-origin' }), { PARSE_RUNTIME: fixture.binding });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).success, false);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+  }
+  assert.deepEqual(fixture.calls, []);
 });
 
 test('each bearer token routes only to its owner DO and forwarding drops caller headers and override fields', async () => {
@@ -90,7 +103,7 @@ test('each bearer token routes only to its owner DO and forwarding drops caller 
     const response = await worker.fetch(post('/api/parse_verification', {
       token: currentToken, action, html: 'untrusted', sourceURL: 'https://evil.test', engine: 'python',
     }, { Origin: origin, Cookie: 'private-cookie', Authorization: 'private-authorization', 'X-Internal-Request': '1' }),
-    { PARSE_RUNTIME: fixture.binding });
+    { BROWSER: {}, PARSE_RUNTIME: fixture.binding });
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('x-browser-closed'), null);
     assert.equal(response.headers.get('x-browser-elapsed-ms'), null);
