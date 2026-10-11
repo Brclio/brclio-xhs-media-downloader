@@ -1,8 +1,10 @@
 # Cloudflare 托管
 
-正式站点使用 Pages、主 Worker 和私有 Python Worker。Pages 的 `APP` 绑定把 API 与后台请求交给主 Worker；主 Worker 通过 `PYTHON_API` 调用独立 Python 引擎。生产解析不再调用 Vercel。当前来源 `01b3036` 已部署，主 Worker 版本为 `9b51500e-e863-432e-9c8e-6a185522d59a`，`BROWSER` 绑定与人工接管流程已启用；真实笔记解析、人工验证及下载成功仍待验收，不能称为已修复。网页故障提示在真实验收完成前保留。当前结果见[人工验证核验记录](../docs/releases/v2.0.15-cloudflare-manual-verification.json)；完整部署命令、迁移历史和核验范围见[部署说明](../docs/cloudflare-deployment.md)，Pages 配置见[网关说明](pages/README.md)。
+正式站点使用 Pages、主 Worker 和私有 Python Worker。Pages 的 `APP` 绑定把 API 与后台请求交给主 Worker；主 Worker 通过 `PYTHON_API` 调用独立 Python 引擎。生产解析不再调用 Vercel。当前来源 `5fc80e3` 已部署，主 Worker 版本为 `8f8236dc-2558-4dcf-bbc4-125b8af21405`，`BROWSER` 绑定与人工接管流程已启用；真实笔记解析、人工验证及下载成功仍待验收，不能称为已修复。网页故障提示在真实验收完成前保留。当前结果见[人工验证核验记录](../docs/releases/v2.0.15-cloudflare-manual-verification.json)；完整部署命令、迁移历史和核验范围见[部署说明](../docs/cloudflare-deployment.md)，Pages 配置见[网关说明](pages/README.md)。
 
 ## 人工接管流程
+
+当前网页在有效表单提交的首个异步请求前预开空白窗口，解析不需要验证时关闭；需要验证时导航到已校验的官方 Live View。继续请求取得新入口时，已打开的窗口也必须更新地址；导航失败时重开，被拦截时保留可信点击入口。相关回归 209/209 和四入口脚本／健康检查通过，但内置浏览器实际弹窗仍未取得可见证据，人工完成与媒体下载未验收。
 
 `/api/parse` 与 `/api/python_parse` 先经共享 `fetchNotePage` 抓取策略取得笔记页，再运行所选引擎的独立解析器；Python 不复用 Node.js 的解析结果或媒体列表。符合请求、来源和笔记 URL 限制的指定失败（422、502、504）才尝试独立 Browser Run 会话；上游明确的登录／限流错误由 Cloudflare 适配层归为 422，普通 400 不触发浏览器。可读取目标笔记媒体时交给所选解析器。可信的小红书验证码、登录页或站内访问错误页返回 `VERIFICATION_REQUIRED` 和固定原因，网页尝试打开官方 Live View；被浏览器拦截时保留用户点击的打开按钮。用户自行按页面提示处理，再点「已完成，继续解析」。此流程不自动解题、不共享登录 Cookie，恢复后仍须核对原笔记及有效媒体。
 

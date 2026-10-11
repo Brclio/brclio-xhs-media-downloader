@@ -1,16 +1,16 @@
 {
-  "checkedAt": "2026-10-11T07:39:23.382478+00:00",
+  "checkedAt": "2026-10-11T07:56:08.783Z",
   "status": "manual-handoff-available-real-media-acceptance-pending",
   "hosting": {
     "accountId": "c8b059429c868f6d0e528f9e10325f46",
     "mainWorker": "brclio-xhs-downloader",
     "pagesProject": "brclio-xhs-pages",
-    "pagesDeploymentId": "35f2e61f-fb79-4292-abc5-353bf911fe9c",
+    "pagesDeploymentId": "0f56abc3-f026-4a18-aa7b-539467d7fd19",
     "pythonWorker": "brclio-xhs-python",
     "pythonVersion": "6d84f091-8d1c-426d-9eb6-5aa53cf06dd3",
     "vercelUsed": false,
-    "mainSource": "01b3036a4ab9ab9c769cd397ace5cd9f080afae9",
-    "mainVersion": "9b51500e-e863-432e-9c8e-6a185522d59a"
+    "mainSource": "5fc80e36bc083c85484feccd4c0ffe7f550fb980",
+    "mainVersion": "8f8236dc-2558-4dcf-bbc4-125b8af21405"
   },
   "implementation": {
     "nativeFirst": true,
@@ -45,7 +45,7 @@
     "browserPresent": true
   },
   "verification": {
-    "targetedTests": 169,
+    "targetedTests": 209,
     "failed": 0,
     "skipped": 0,
     "realVideo": "Latest anonymous Python video returns VERIFICATION_REQUIRED/access-error with a validated official Live View capability. Media count remains zero pending human action. Earlier calls returned BROWSER_PAGE_REJECTED with www/error. User-reported web Node video success is retained as separate evidence.",
@@ -199,62 +199,7 @@
     ],
     "providerPlanAndQuota": "unknown; Wrangler OAuth read endpoints returned insufficient access; not treated as exhausted quota",
     "requestSignalHypothesis": "Actual workerd with current compatibility date had valid Request.signal with and without cancellation flag; no change made.",
-    "manualBrowserOpenRequest": "Codex open_in_codex returned queued; the window being shown is not confirmed.",
-    "publicResources": {
-      "checkedAt": "2026-10-11T07:36:20.040302+00:00",
-      "expectedHelperSha256": "4c67d1ce78df00b4ba47258504299e8a8ef6aed0ee6a08b3f032efb0f3c78975",
-      "results": [
-        {
-          "origin": "https://xhs.download.brclio.com",
-          "helperStatus": 200,
-          "helperMatches": true,
-          "healthStatus": 200,
-          "health": {
-            "ok": true,
-            "version": "2.0.15",
-            "pythonBinding": true,
-            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
-          }
-        },
-        {
-          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
-          "helperStatus": 200,
-          "helperMatches": true,
-          "helperTransportRetries": 1,
-          "healthStatus": 200,
-          "health": {
-            "ok": true,
-            "version": "2.0.15",
-            "pythonBinding": true,
-            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
-          }
-        },
-        {
-          "origin": "https://brclio-xhs-pages.pages.dev",
-          "helperStatus": 200,
-          "helperMatches": true,
-          "healthStatus": 200,
-          "health": {
-            "ok": true,
-            "version": "2.0.15",
-            "pythonBinding": true,
-            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
-          }
-        },
-        {
-          "origin": "https://35f2e61f.brclio-xhs-pages.pages.dev",
-          "helperStatus": 200,
-          "helperMatches": true,
-          "healthStatus": 200,
-          "health": {
-            "ok": true,
-            "version": "2.0.15",
-            "pythonBinding": true,
-            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
-          }
-        }
-      ]
-    },
+    "manualBrowserOpenRequest": "Fresh public form open_in_codex request returned queued. Built-in browser DOM, screenshot and CDP reads timed out; actual display remains unconfirmed.",
     "publicBoundaries": {
       "checkedAt": "2026-10-11T07:37:25.703262+00:00",
       "browserAcquisitionsExpected": 0,
@@ -315,10 +260,186 @@
       "code": "VERIFICATION_EXPIRED",
       "remoteCloseConfirmedByThisRequest": false
     },
-    "humanCompletion": "No user completion received during the 180-second canary. The canary Live View expired; the user must initiate a fresh parse from the public web form. No real media success is claimed."
+    "humanCompletion": "No user completion received during the 180-second canary. The canary Live View expired; the user must initiate a fresh parse from the public web form. No real media success is claimed.",
+    "previousTargetedTests": 169,
+    "publicResourcesBeforePopupFix": {
+      "checkedAt": "2026-10-11T07:36:20.040302+00:00",
+      "expectedHelperSha256": "4c67d1ce78df00b4ba47258504299e8a8ef6aed0ee6a08b3f032efb0f3c78975",
+      "results": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "helperStatus": 200,
+          "helperMatches": true,
+          "healthStatus": 200,
+          "health": {
+            "ok": true,
+            "version": "2.0.15",
+            "pythonBinding": true,
+            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
+          }
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "helperStatus": 200,
+          "helperMatches": true,
+          "helperTransportRetries": 1,
+          "healthStatus": 200,
+          "health": {
+            "ok": true,
+            "version": "2.0.15",
+            "pythonBinding": true,
+            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
+          }
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "helperStatus": 200,
+          "helperMatches": true,
+          "healthStatus": 200,
+          "health": {
+            "ok": true,
+            "version": "2.0.15",
+            "pythonBinding": true,
+            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
+          }
+        },
+        {
+          "origin": "https://35f2e61f.brclio-xhs-pages.pages.dev",
+          "helperStatus": 200,
+          "helperMatches": true,
+          "healthStatus": 200,
+          "health": {
+            "ok": true,
+            "version": "2.0.15",
+            "pythonBinding": true,
+            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
+          }
+        }
+      ]
+    },
+    "publicResources": {
+      "checkedAt": "2026-10-11T07:56:08.783Z",
+      "expected": {
+        "app.js": "694b39b94f8747eb96b306e9db59eb1187a6d555d6f6f560e42363f863c34d30",
+        "lib/parse-verification.js": "4d8a189e229f7a78acbc7201c95e0097be31ae99efc9903616fc4ac068f6f853"
+      },
+      "resources": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "path": "app.js",
+          "sha256": "694b39b94f8747eb96b306e9db59eb1187a6d555d6f6f560e42363f863c34d30",
+          "matches": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "path": "lib/parse-verification.js",
+          "sha256": "4d8a189e229f7a78acbc7201c95e0097be31ae99efc9903616fc4ac068f6f853",
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "path": "app.js",
+          "sha256": "694b39b94f8747eb96b306e9db59eb1187a6d555d6f6f560e42363f863c34d30",
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "path": "lib/parse-verification.js",
+          "sha256": "4d8a189e229f7a78acbc7201c95e0097be31ae99efc9903616fc4ac068f6f853",
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "path": "app.js",
+          "sha256": "694b39b94f8747eb96b306e9db59eb1187a6d555d6f6f560e42363f863c34d30",
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "path": "lib/parse-verification.js",
+          "sha256": "4d8a189e229f7a78acbc7201c95e0097be31ae99efc9903616fc4ac068f6f853",
+          "matches": true
+        },
+        {
+          "origin": "https://0f56abc3.brclio-xhs-pages.pages.dev",
+          "path": "app.js",
+          "sha256": "694b39b94f8747eb96b306e9db59eb1187a6d555d6f6f560e42363f863c34d30",
+          "matches": true
+        },
+        {
+          "origin": "https://0f56abc3.brclio-xhs-pages.pages.dev",
+          "path": "lib/parse-verification.js",
+          "sha256": "4d8a189e229f7a78acbc7201c95e0097be31ae99efc9903616fc4ac068f6f853",
+          "matches": true
+        }
+      ],
+      "health": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "ok": true,
+          "pythonBinding": true,
+          "version": "2.0.15",
+          "deploymentId": "8f8236dc-2558-4dcf-bbc4-125b8af21405"
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "ok": true,
+          "pythonBinding": true,
+          "version": "2.0.15",
+          "deploymentId": "8f8236dc-2558-4dcf-bbc4-125b8af21405"
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "ok": true,
+          "pythonBinding": true,
+          "version": "2.0.15",
+          "deploymentId": "8f8236dc-2558-4dcf-bbc4-125b8af21405"
+        },
+        {
+          "origin": "https://0f56abc3.brclio-xhs-pages.pages.dev",
+          "ok": true,
+          "pythonBinding": true,
+          "version": "2.0.15",
+          "deploymentId": "8f8236dc-2558-4dcf-bbc4-125b8af21405"
+        }
+      ]
+    },
+    "frontendPopupFollowup": {
+      "source": "5fc80e36bc083c85484feccd4c0ffe7f550fb980",
+      "pagesDeploymentId": "0f56abc3-f026-4a18-aa7b-539467d7fd19",
+      "popupPreparedBeforeFirstAwait": true,
+      "existingWindowNavigatedToRefreshedLiveView": true,
+      "failedNavigationReopensWindow": true,
+      "blockedPopupKeepsTrustedAnchor": true,
+      "desktopDoesNotPreopenWebPopup": true,
+      "cleanupOnSuccessFailureAndCancel": true,
+      "tests": {
+        "combined": 209,
+        "failed": 0,
+        "skipped": 0,
+        "realAppAndHelperVmIntegration": 14
+      },
+      "userReport": "User did not see the window and could not refresh the old page.",
+      "builtInBrowser": {
+        "tabInventoryAccessible": true,
+        "visibilityRequestAcknowledged": true,
+        "domScreenshotAndCdpRead": "timed out",
+        "nativeCodexSurface": "not allowed by computer-use tool; no bypass attempted",
+        "freshPublicPageOpenRequest": "queued",
+        "actualWindowVisible": "unconfirmed",
+        "humanVerificationCompleted": false,
+        "realMediaDownloadCompleted": false,
+        "directFreshTabCreation": "timed out; creation outcome unconfirmed"
+      },
+      "newBrowserAcquisitionsDuringUiFix": 0,
+      "actualUpstreamAccessClaimedFixed": false,
+      "ordinaryParseTemporarilyOpensWaitingWindow": true,
+      "readOnlySecurityReview": "No new blocker found; 50 overlapping frontend tests passed independently. No real UI or media acceptance claimed."
+    }
   },
   "remaining": [
-    "Human personally handles the first-party access/login/captcha page, then resumes original note.",
+    "Confirm the fresh public web form and first-party verification window are visible in the built-in browser.",
+    "Human personally handles any first-party access/login/captcha page, then resumes the original note.",
     "Real Node/Python video and image parse plus actual media download."
   ],
   "releaseAssetsRebuiltOrReplaced": false,
