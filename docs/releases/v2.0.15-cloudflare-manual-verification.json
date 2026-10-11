@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-11T07:36:53.612130+00:00",
+  "checkedAt": "2026-10-11T07:39:23.382478+00:00",
   "status": "manual-handoff-available-real-media-acceptance-pending",
   "hosting": {
     "accountId": "c8b059429c868f6d0e528f9e10325f46",
@@ -283,8 +283,39 @@
           "expected": 400,
           "passed": true
         }
-      ]
-    }
+      ],
+      "followup": {
+        "reason": "Pages _routes.json forwards only /api/* and /admin*. A POST to /__internal/* remains on static assets and is denied with 405; the main Worker denies the same route with 404. Both responses expose no private capability.",
+        "checks": [
+          {
+            "origin": "pages-custom-domain",
+            "path": "/__internal/browser/start",
+            "method": "POST",
+            "status": 405,
+            "expected": 405,
+            "privateCapabilityExposed": false,
+            "passed": true
+          },
+          {
+            "origin": "main-worker-workers-dev",
+            "path": "/__internal/browser/start",
+            "method": "POST",
+            "status": 404,
+            "expected": 404,
+            "privateCapabilityExposed": false,
+            "passed": true
+          }
+        ]
+      }
+    },
+    "canaryExpiry": {
+      "checkedAt": "2026-10-11T07:38:52.951420+00:00",
+      "deadlinePassed": true,
+      "cancelStatus": 410,
+      "code": "VERIFICATION_EXPIRED",
+      "remoteCloseConfirmedByThisRequest": false
+    },
+    "humanCompletion": "No user completion received during the 180-second canary. The canary Live View expired; the user must initiate a fresh parse from the public web form. No real media success is claimed."
   },
   "remaining": [
     "Human personally handles the first-party access/login/captcha page, then resumes original note.",
