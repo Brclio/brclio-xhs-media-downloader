@@ -1,5 +1,5 @@
 {
-  "status": "passed-with-keychain-authorization-pending",
+  "status": "passed",
   "installedBefore": "2.0.7",
   "target": "2.0.15",
   "platform": "darwin",
@@ -45,7 +45,7 @@
   "automaticRelaunchObserved": true,
   "taskStatePreservedObserved": true,
   "xhsLoginPreservedObserved": true,
-  "softwareAccountStatus": "secure storage initialization pending macOS Keychain authorization",
+  "softwareAccountStatus": "restored-authenticated",
   "verifiedAt": "2026-10-10T16:17:10.102387+00:00",
   "sanitizedDiagnostics": [
     {
@@ -158,7 +158,15 @@
     "notes": "Diagnostic trace contains direct check followed by success and cleanup, without proxy or subscription selection."
   },
   "limits": [
-    "Software account encrypted file is unchanged; authenticated account restore is pending the user responding to macOS Keychain authorization. No password was accessed or entered by the verifier.",
+    "No password was read or entered by the verifier. Account restoration was verified in the authenticated native UI after the earlier pending state resolved.",
     "No personal account details, note links, subscriptions or screenshots are included."
-  ]
+  ],
+  "softwareAccountRestoreVerifiedAt": "2026-10-11T00:44:57.368897+00:00",
+  "softwareAccountUi": {
+    "secureStoragePending": false,
+    "secureStorageUnavailable": false,
+    "authenticatedMembershipVisible": true,
+    "accountLogoutControlVisible": true,
+    "personalDetailsOmitted": true
+  }
 }
