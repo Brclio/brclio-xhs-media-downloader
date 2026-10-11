@@ -352,7 +352,8 @@
     "v2.0.15-feature-coverage.md",
     "v2.0.15-web-verification.json",
     "../live-photo-pvt-verification.json",
-    "v2.0.15-cloudflare-only-diagnostics.json"
+    "v2.0.15-cloudflare-only-diagnostics.json",
+    "v2.0.15-cloudflare-browser-followup.json"
   ],
   "cloudflareOnlyFollowUp": {
     "status": "cloudflare_only_deployed_challenge_cause_confirmed_parse_unresolved",
@@ -384,5 +385,12 @@
     "observedFailure": "Both native engines redirected to a CAPTCHA page, returned 10358 HTML bytes without current-note state or media, and returned API 422.",
     "diagnosticReport": "v2.0.15-cloudflare-only-diagnostics.json",
     "humanInTheLoopAdopted": false
+  },
+  "latestCloudflareBrowserFollowup": {
+    "status": "web_parse_unresolved_browser_trial_disabled",
+    "report": "v2.0.15-cloudflare-browser-followup.json",
+    "nativeAndBrowserRecoveryConfirmed": false,
+    "automaticBrowserRetriesEnabled": false,
+    "supersedesCurrentDeploymentIdentityOnly": true
   }
 }

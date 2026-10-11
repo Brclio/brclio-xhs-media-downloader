@@ -1052,5 +1052,11 @@
   "referenceConventions": {
     "sourceEvidencePaths": "Repository-root relative source paths.",
     "releaseReportPaths": "Relative to docs/releases unless prefixed ../ or an absolute public HTTPS URL."
+  },
+  "latestCloudflareBrowserFollowup": {
+    "status": "web_parse_unresolved_browser_trial_disabled",
+    "report": "v2.0.15-cloudflare-browser-followup.json",
+    "positiveWebNoteAcceptance": false,
+    "automaticBrowserRetriesEnabled": false
   }
 }

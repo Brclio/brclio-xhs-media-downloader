@@ -2,9 +2,30 @@
 
 ## Cloudflare-only 维护边界
 
-正式托管方案仅使用 Pages、主 Worker、私有 Python Worker 与现有服务绑定。部署和恢复生产不以 Vercel 项目、域名或函数为前提。10 月 11 日已发布移除外部解析回退与新增原生诊断的两套 Worker，来源提交为 `76c0b02e59c82c6f63db658bc8d5b3121a451ddf`：主 Worker 版本 ID 为 `3f03b7ee-7261-4ce4-a4eb-636d94ac2298`，部署 ID 为 `4d2923cb-2085-4ade-82a2-9b29b5cca8b4`，流量为 100%；Python 版本 ID 为 `ed93abf4-e2a2-4111-b7ca-6eeaf7b81c88`，部署 ID 为 `23850dae-c0d1-4d41-a5dd-3a5f21162e76`，发布于 UTC 04:37:22。此次静态资源更新为 0，无需新发 Pages；24 项绑定和 19 个 Secret 名称保留，仅移除旧外部解析回退的普通变量，没有读取 Secret 值。
+正式托管方案仅使用 Pages、主 Worker、私有 Python Worker 与现有服务绑定。部署和恢复生产不以 Vercel 项目、域名或函数为前提。Browser Run 普通读取与手动验证码流程已做上线实验，但真实样本全部失败；现已移除 `BROWSER` 绑定，停用自动浏览器重试，避免继续产生无效成本和延迟。无绑定时，合法 `/api/parse_verification` 请求也返回 503，不查询或分派会话 Durable Object。生产保留两套原生解析及安全失败诊断，解析问题尚未修复。
 
-该轮生产匿名检查 58/58 通过，正式域名与 Worker 健康检查均返回 200 并确认新主 Worker 版本。对同一真实视频笔记，各引擎仅执行一次匿名解析：两者都由笔记页 302 跳到验证码页 200，获得 10,358 字节 HTML，缺少初始状态和当前笔记对象，媒体数量为 0，API 仍返回 422。问题已定位为该次上游安全验证拦截，尚未修复；没有采用浏览器渲染、人机协作或自动解题方案。证据见[Cloudflare-only 安全诊断](releases/v2.0.15-cloudflare-only-diagnostics.json)。匿名检查与单篇诊断不等同于全部会员、邮件和媒体业务均通过。
+## 2026-10-11：Browser Run 实验与停用（当前）
+
+来源提交 `9fdae65898cd67be0edc6f7e0f96b2cd35eb25d1` 部署了 Python 版本 `6d84f091-8d1c-426d-9eb6-5aa53cf06dd3`、首个实验主 Worker 版本 `98c5601c-c604-4099-927f-b5b8d57579da`，以及 [Pages 部署 0ff2c350](https://0ff2c350.brclio-xhs-pages.pages.dev)。公开文件共 90 个，涉及网页脚本、样式和新增验证模块三项静态变更。随后提交 `a592e8969614d076d94cb6de599afbe8aef4b7e1` 调整嵌套 CAPTCHA 分类优先级并补充安全失败摘要，实验主 Worker 更新为 `c26e3784-dd84-492f-a506-8b85f75cbd16`；该补丁未更换上述 Python 和 Pages 发布。最终停用与门禁版本来源为 `aced84ecd75d1bcf9e0d922498e2fc9b6e4ebd70`，已移除主 Worker 的 `BROWSER` 绑定，当前主 Worker 版本为 `8443f3c1-c8af-4ee8-91bf-397e73e149d6`，自动浏览器重试已停用；此次静态资源更新为 0。
+
+实验期间只新增 `BROWSER` 绑定；停用后恢复原有 24 项绑定，19 个 Secret 名称、两个 Durable Object namespace 和 Python 服务绑定保留。Python 私有页面解析路径的 59 项测试、主流程 91 项测试及补充 47 项专项测试通过；最终停用与接口门禁的 32 项专项测试也通过，包括无绑定时验证请求不分派会话对象。这些是本地边界与回归证据，不代替真实上游验收。模块、测试、Python 私有 helper 和网页交互准备代码保留，但无绑定时不启动浏览器会话，也不为该重试产生新的 Browser Run 用量。发布、资源和真实样本结果统一记录在 [Browser Run 后续核验](releases/v2.0.15-cloudflare-browser-followup.json)。
+
+保留的实验实现如下，当前生产不启用这条路径：
+
+1. `/api/parse` 与 `/api/python_parse` 先执行原生抓取和所选解析器。仅符合来源、输入和请求限制的指定失败（422、502、504）才尝试独立 Browser Run 会话，普通页面可读取时直接交给所选引擎解析。
+2. 如果确认需要 CAPTCHA，返回 `VERIFICATION_REQUIRED`，网页显示官方 Live View 入口。用户本人完成验证后点击继续，服务端读取同一临时会话的 HTML；不自动解题，不导入或共享登录 Cookie，登录页会被拒绝。
+3. Node.js 和 Python 分别使用自己的解析器。Python HTML 仅经 `PYTHON_API` 私有服务绑定发送到 `/__internal/parse-rendered-note`，该路径不发起额外网络请求。公网主 Worker 对 `/__internal/*` 一律返回 404，不能通过请求头切换为私有入口；公开解析请求仍限 16 KiB，不接受外部 HTML 替代分享文本。
+4. 每次尝试使用独立随机 bearer token 和对应的 `browser:<token>` 对象。继续、取消通过同源 `/api/parse_verification` 路由；token 和 Live View URL 都具有临时访问权限，不能写入公开日志或分享。会话期限 180 秒，成功、失败、取消和到期均触发关闭；提供方关闭失败时仅保留已过期生命周期信息用于有界重试，不再允许继续解析。
+
+实验实现使用 Durable Object 存储保存每日数字预算，以及单个临时会话的 `sessionId`、`targetId`、期限、引擎、笔记标识和来源 URL。来源 URL 可能带分享查询参数，只用于该私有短期会话，关闭后删除；HTML、Cookie 和 Live View URL 不持久保存。停用后历史数字预算记录留存，已记录的实验会话均已关闭；无绑定时不会开启新会话或写入新预算。该存储不是账号或业务数据库，GitHub 继续是账号与反馈的权威数据源。
+
+**真实结果全部未通过：**同一真实视频的两次 Node Browser Run canary 均返回 422，未出现可用验证入口。首次安全诊断为 `BROWSER_PAGE_REJECTED`、`closed: true`；分类补丁后仍是该错误且会话已关闭，安全摘要显示上游 `www` 主机的 `error` 路径、12,644 字节 HTML，明确 CAPTCHA／登录标记均为 false。UTC 05:25:09 的 Python 视频测试也返回 422、无验证入口，安全摘要同样为该错误页且已关闭；UTC 05:25:43 的 Node 图文测试返回 422、无验证入口，但在 tail 窗口之外，只能确认 API 失败，不能给它指定浏览器失败原因。没有完成用户手动验证或两引擎浏览器解析成功验收，实验已停用。此前原生抓取确实遇到 CAPTCHA 的记录保留在下方。
+
+## 2026-10-11：移除外部回退与原生诊断（前一轮）
+
+10 月 11 日已发布移除外部解析回退与新增原生诊断的两套 Worker，来源提交为 `76c0b02e59c82c6f63db658bc8d5b3121a451ddf`：主 Worker 版本 ID 为 `3f03b7ee-7261-4ce4-a4eb-636d94ac2298`，部署 ID 为 `4d2923cb-2085-4ade-82a2-9b29b5cca8b4`，流量为 100%；Python 版本 ID 为 `ed93abf4-e2a2-4111-b7ca-6eeaf7b81c88`，部署 ID 为 `23850dae-c0d1-4d41-a5dd-3a5f21162e76`，发布于 UTC 04:37:22。此次静态资源更新为 0，无需新发 Pages；24 项绑定和 19 个 Secret 名称保留，仅移除旧外部解析回退的普通变量，没有读取 Secret 值。
+
+该轮生产匿名检查 58/58 通过，正式域名与 Worker 健康检查均返回 200 并确认新主 Worker 版本。对同一真实视频笔记，各引擎仅执行一次匿名解析：两者都由笔记页 302 跳到验证码页 200，获得 10,358 字节 HTML，缺少初始状态和当前笔记对象，媒体数量为 0，API 仍返回 422。问题已定位为该次上游安全验证拦截；当时尚未采用浏览器读取或人机协作流程。后续 Browser Run 发布仍未取得真实成功结果，且没有采用自动解题方案。证据见[Cloudflare-only 安全诊断](releases/v2.0.15-cloudflare-only-diagnostics.json)。匿名检查与单篇诊断不等同于全部会员、邮件和媒体业务均通过。
 
 以下前一轮发布的 Python 未重发、健康检查和媒体结果均为当时记录，不代表此次诊断更新后的状态。
 
@@ -43,18 +64,19 @@ Cloudflare 服务已部署，正式站点为 [xhs.download.brclio.com](https://x
 | 网页与后台 | 沿用 `deploy/build-web.mjs` 的公开文件白名单，构建到 `dist-web/`；主 Worker 使用 Static Assets，Pages 构建另复制到 `cloudflare/pages/dist/` |
 | Node.js 下载逻辑 | 主 Worker 调用现有图片、视频处理器；Fetch 适配层保持响应字节、下载文件名与视频分段头 |
 | `AccountRuntime` | 主 Worker 的 `ACCOUNT_RUNTIME` 私有 Durable Object 绑定；执行现有账号处理器、GitHub 状态验证和 SMTP，不读写 Durable Object 存储 |
-| `ParseRuntime` | 主 Worker 的 `PARSE_RUNTIME` 私有 Durable Object 绑定；执行 Node.js 解析或调用 Python 服务，不读写 Durable Object 存储 |
+| `ParseRuntime` | 主 Worker 的 `PARSE_RUNTIME` 私有 Durable Object 绑定；执行 Node.js 解析或调用 Python 服务，保留实验数字预算与短期会话管理代码，当前不启动浏览器重试 |
+| Browser Run（停用） | `BROWSER` 绑定已移除；普通读取与官方 Live View 手动验证代码保留，真实实验未通过，不是当前可用能力 |
 | Python 解析核心 | 从 `api/python_parse.py` 生成 `cloudflare/python/src/parser_core.py`；只维护原始解析器，使用 `sync_core.py` 同步 |
 | 账号业务数据 | 继续使用同一 GitHub 私有仓库和权威状态文件，无新增数据库或数据复制流程 |
 | 桌面主页批量与更新 | 继续在本地 Electron、登录浏览器和内置 Python 中运行；安装包仍由原发布流程提供 |
 
-公开 Python 接口保留 `/api/python_parse`、`/api/python_image`、`/api/python_video`。主 Worker 通过私有服务绑定调用 Python；解析、图片和视频均由 Cloudflare 提供，原生解析失败时返回所选引擎的错误，不调用 Vercel。网页与已安装客户端继续使用原有接口路径；保留同一生产域名时，无需仅为换托管平台重打包客户端。
+公开 Python 接口保留 `/api/python_parse`、`/api/python_image`、`/api/python_video`。主 Worker 通过私有服务绑定调用 Python；解析、图片和视频均由 Cloudflare 提供，不调用 Vercel。当前无 `BROWSER` 绑定，原生解析失败返回所选引擎的原有错误，不自动打开浏览器或手动验证入口。网页与已安装客户端继续使用原有接口路径；验证交互准备代码虽已随网页资源发布，但流程已停用，也没有重新发布桌面安装包。
 
 Pages 网关保留原始请求和响应，包括 Origin、Cookie、请求字节、客户端 IP 与视频 Range 头。所有账号 Secrets、私有 Python 绑定和业务处理仍留在主 Worker，Pages 不配置账号密钥。普通静态资源通过 `_routes.json` 排除在 Functions 调用之外；后台资源经过主 Worker，以保留安全响应头。Pages 的构建、绑定和本地联调命令见 [网关说明](../cloudflare/pages/README.md)。
 
 账号后端通过请求自己的 `env` 读取 Cloudflare 绑定，不修改全局 `process.env`。客户端 IP 在 Cloudflare 仅取平台覆盖的 `cf-connecting-ip`。后台 CSP、禁止嵌入、禁止缓存及同源校验保留。
 
-主 Worker 已部署两个 SQLite 类型的 Durable Object：`ACCOUNT_RUNTIME → AccountRuntime` 与 `PARSE_RUNTIME → ParseRuntime`，对应 `account-runtime-v1` 和 `parse-runtime-v1` 类迁移。它们提供独立执行环境，避免较复杂的账号 JSON、完整反馈校验和解析流程受主 Worker 的短 CPU 配额限制；代码不使用 Durable Object 存储，GitHub 仍是唯一账号和反馈数据源。固定对象名称分别为 `accounts-v1`、`parsing-v1`，并不把业务一致性改为依赖内存锁。
+主 Worker 已部署两个 SQLite 类型的 Durable Object：`ACCOUNT_RUNTIME → AccountRuntime` 与 `PARSE_RUNTIME → ParseRuntime`，对应 `account-runtime-v1` 和 `parse-runtime-v1` 类迁移。它们提供独立执行环境，避免较复杂的账号 JSON、完整反馈校验和解析流程受主 Worker 的短 CPU 配额限制。`AccountRuntime` 不读写 Durable Object 存储；`ParseRuntime` 的实验存储仅涉及数字预算和上述临时浏览器生命周期，不保存账号、反馈或页面 HTML，停用后历史数字预算仍保留。GitHub 仍是唯一账号和反馈数据源。固定对象名称分别为 `accounts-v1`、`parsing-v1`，实验浏览器会话按 `browser:<token>` 隔离，并不把业务一致性改为依赖内存锁。
 
 反馈最终校验通过 GitHub GraphQL 批量读取分片，64 个分片使用 4 次查询；超过 8 MB、接近 8 MiB 的完整反馈在真实 workerd 与 SQLite Durable Object 中通过校验测试。写入仍使用原 GitHub SHA 冲突校验，不截断或缩减反馈内容。
 
@@ -104,7 +126,7 @@ uv run --directory cloudflare/python python tests/runtime_test.py
 uv run --directory cloudflare/python pywrangler deploy --dry-run
 ```
 
-`pywrangler sync` 为干净检出安装 Python Worker 的 `python_modules`，须先于 `runtime_test.py`。`npm run cloudflare:check` 检查主 Worker 构建；Python dry-run 独立检查 Python 部署包。`npm test` 包含原 Node.js / Python 用例、主 Worker 的接口与环境注入。Cloudflare-only 改动应另验解析失败不会发起外部后端请求；历史回退用例的通过记录不等同于新方案已上线。Python `runtime_test.py` 启动隔离的真实 workerd，使用生产入口与解析器，仅替换出站网络为固定测试响应；覆盖图文、实况、音轨元数据、重定向、图片字节、视频分段和响应限额。测试入口不会加入生产包。
+`pywrangler sync` 为干净检出安装 Python Worker 的 `python_modules`，须先于 `runtime_test.py`。`npm run cloudflare:check` 检查主 Worker 构建；Python dry-run 独立检查 Python 部署包。`npm test` 包含原 Node.js / Python 用例、主 Worker 的接口与环境注入。Cloudflare-only 改动应另验解析失败不会发起外部后端请求，并核对私有路径公网 404、会话所有权、同源门禁、取消与到期关闭。模拟 Browser Run 与弹窗的回归通过不代表真实上游或用户手动验证成功。Python `runtime_test.py` 启动隔离的真实 workerd，使用生产入口与解析器，仅替换出站网络为固定测试响应；覆盖图文、实况、音轨元数据、重定向、图片字节、视频分段、响应限额及私有 HTML 解析边界。测试入口不会加入生产包。
 
 在两个终端分别启动服务：
 
@@ -142,7 +164,7 @@ npm run cloudflare:verify -- http://127.0.0.1:8787 --json
 
    后续 Secrets 已配置时，`npm run cloudflare:deploy` 会依次部署 Python Worker、主 Worker，并重新构建和部署 Pages。定向维护只发布实际变更的部分：Python 源码与配置未变时保留其现有部署，仍核对绑定与实际 Python 响应；公开文件或网关未变时也无需只为更新主 Worker 重发 Pages。需要同步更新完整 Secrets 时，单独运行上面的 `npx wrangler deploy --secrets-file ...`，再运行 `npm run cloudflare:deploy:pages`；不要向包含多个子命令的 npm 发布脚本透传该选项。
 
-3. 记录两个部署结果和主 Worker 的 `workers.dev` 地址。在该地址执行 `npm run cloudflare:verify -- https://实际主Worker地址 --json`，检查 `/api/health` 返回的平台、版本及 Python 绑定。绑定存在只证明配置已连接，实际 Python 路由仍须通过检查。通过授权真实样本核对两套原生解析与下载字节，并确认已移除外部解析回退配置和调用；解析失败时如实记录原生错误。
+3. 记录两个部署结果和主 Worker 的 `workers.dev` 地址。在该地址执行 `npm run cloudflare:verify -- https://实际主Worker地址 --json`，检查 `/api/health` 返回的平台、版本及 Python 绑定。绑定存在只证明配置已连接，实际 Python 路由仍须通过检查。通过授权真实样本核对两套原生解析与下载字节，并确认已移除外部解析回退和停用自动 Browser Run 重试；失败时如实保留原生状态及安全分类，不记录分享链接、HTML 或验证凭据。未来重新启用浏览器实验须单独核对实际额度、会话隔离与真实用户手动验证，不把准备代码视为成功验收。
 4. 首次创建 Pages 时按 [网关说明](../cloudflare/pages/README.md) 操作；已有项目使用 `npm run cloudflare:deploy:pages` 构建并发布。仅构建使用 `npm run build:cloudflare`。Pages 的 `APP` 必须绑定已部署主 Worker。在实际 `pages.dev` 地址重复匿名与媒体检查；Direct Upload 不会自动配置 Git 推送部署。
 5. 核验 SMTP 连接、GitHub 私有仓库读取、真实图文／实况／视频。使用正式 `AUTH_SITE_ORIGIN` 时，其他预览域名的管理员请求应被拒绝；不能为预览方便修改生产 Origin 或弱化来源校验。9 月 23 日曾完成真实验证码发送、收件、管理员登录和跨后端会话核验；历史证据不替代本轮验收。发验证码、兑换、撤销等业务写入须有明确授权，不作为默认匿名检查。
 6. 先在 Pages 项目添加 `xhs.download.brclio.com` 自定义域名，再在其实际权威 DNS 提供商处把该子域名 CNAME 指向项目返回的 `pages.dev` 主机名；无需为子域名迁移整个根域 DNS。只创建 CNAME 而未在 Pages 注册域名可能返回 522。只修改目标主机名，保留原 DNS/路由记录供回滚；等待 Pages 域名状态、证书与真实 HTTPS 请求均正常。见 [Pages 自定义域名说明](https://developers.cloudflare.com/pages/configuration/custom-domains/)。Python Worker 继续无公开域名。
@@ -159,7 +181,9 @@ npm run cloudflare:verify -- http://127.0.0.1:8787 --json
 
 GitHub API 与 SMTP 服务原有的限流、容量和发送限制仍存在。访问统计继续使用原独立统计服务，网站托管迁移不修改其部署。
 
-SQLite 类型 Durable Objects 可用于 Workers Free，当前文档默认每次调用最多 30 秒 CPU，但有独立请求、持续时间和存储额度；没有使用 SQL 存储也不代表调用与运行时间不计量。本次已通过账号、完整反馈和解析用例，仍须按真实负载监测两个固定对象的并发及额度。详见 [Durable Objects 定价](https://developers.cloudflare.com/durable-objects/platform/pricing/) 与 [限额](https://developers.cloudflare.com/durable-objects/platform/limits/)。
+SQLite 类型 Durable Objects 可用于 Workers Free，当前文档默认每次调用最多 30 秒 CPU，但有独立请求、持续时间和存储额度。ParseRuntime 留存实验数字预算，短期会话管理代码也曾使用存储，因此需同时监测调用、持续时间和存储；历史账号与反馈用例通过不等于浏览器实验已通过。详见 [Durable Objects 定价](https://developers.cloudflare.com/durable-objects/platform/pricing/) 与 [限额](https://developers.cloudflare.com/durable-objects/platform/limits/)。
+
+自动 Browser Run 重试已停用，不再为解析失败开启新浏览器会话。保留代码按 UTC 日使用 600,000 毫秒的本地预算，每次预留 180,000 毫秒、新会话至少间隔 30 秒；只有确认关闭才退回未使用的预留时间，并保留安全余量。这些实验保护不是 Cloudflare 计费上限保证，也不代表免费额度或所有访问都可成功；本次没有自动升级套餐。若未来明确重新启用，应先核对实际账号的 [Browser Run 限额](https://developers.cloudflare.com/browser-run/limits/) 与 [计费规则](https://developers.cloudflare.com/browser-run/pricing/)。
 
 <a id="已有验证记录"></a>
 

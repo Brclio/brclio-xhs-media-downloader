@@ -1,0 +1,367 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-11T05:36:06.179150+00:00",
+  "release": "v2.0.15",
+  "status": "web_parse_unresolved_browser_trial_disabled",
+  "scope": "Cloudflare-only web follow-up; desktop and Android release assets were not rebuilt or replaced.",
+  "production": {
+    "mainWorker": {
+      "name": "brclio-xhs-downloader",
+      "versionId": "8443f3c1-c8af-4ee8-91bf-397e73e149d6",
+      "sourceCommit": "aced84ecd75d1bcf9e0d922498e2fc9b6e4ebd70",
+      "deploymentId": "eeff616f-7266-43b0-b8e0-401acd748da8",
+      "createdAt": "2026-10-11T05:32:37.110639Z",
+      "trafficPercent": 100
+    },
+    "pythonWorker": {
+      "name": "brclio-xhs-python",
+      "versionId": "6d84f091-8d1c-426d-9eb6-5aa53cf06dd3",
+      "deploymentId": "5f44d093-a020-4d60-96c4-f915a9a9bfb3",
+      "sourceCommit": "9fdae65898cd67be0edc6f7e0f96b2cd35eb25d1",
+      "trafficPercent": 100
+    },
+    "pages": {
+      "name": "brclio-xhs-pages",
+      "deploymentOrigin": "https://0ff2c350.brclio-xhs-pages.pages.dev",
+      "staticSourceCommit": "9fdae65898cd67be0edc6f7e0f96b2cd35eb25d1",
+      "deploymentId": "0ff2c350-7a20-4715-bd64-276b90042653",
+      "projectId": "7dff80d0-dbf3-46f6-841e-38ec201f5fe0"
+    },
+    "browserBindingEnabled": false,
+    "automaticBrowserRetriesEnabled": false,
+    "externalParseFallbackRemoved": true,
+    "newProjectsCreated": false,
+    "paidPlanOrBillingChanged": false,
+    "preservation": {
+      "bindingDescriptorCount": 24,
+      "all24BindingDescriptorsUnchanged": true,
+      "secretNameCount": 19,
+      "secretNamesUnchanged": true,
+      "noBrowserBinding": true
+    },
+    "metadataProvenance": {
+      "mainFreshlyQueried": true,
+      "pythonAndPagesLastQueriedAt": "2026-10-11T05:31:36.439348+00:00",
+      "pythonAndPagesReusedByFinalGuardReport": true,
+      "sourceCommit": "Operator-reported source; Cloudflare metadata does not attest source bytes."
+    }
+  },
+  "comparison": {
+    "method": "Read-only repository and historical migration evidence; no Vercel request or restoration in this follow-up.",
+    "nodeSharedFetchAndParser": true,
+    "nodeConfiguredHeadersUnchangedSinceMigration": true,
+    "pythonGeneratedPureCoreAndConfiguredHeadersMatch": true,
+    "transportDifferences": [
+      "Node platform fetch versus Workers fetch",
+      "Python urllib versus Workers fetch",
+      "Python redirect and timeout scope"
+    ],
+    "normalLocalHtml": {
+      "bytes": 53604,
+      "nodeStrategy": "exact-initial-state",
+      "pythonStrategy": "exact-initial-state",
+      "imageCount": 1,
+      "videoCount": 2,
+      "originalVideoCandidateCount": 1
+    },
+    "cloudflareNativeVideoResponse": {
+      "noteStatus": 302,
+      "finalPathClass": "captcha",
+      "finalStatus": 200,
+      "htmlBytes": 10358,
+      "currentNotePresent": false
+    },
+    "conclusion": "Different upstream content is established before parsing. Platform access differences are the strongest supported explanation; IP reputation, region, automatically added headers and TLS/HTTP behavior were not individually isolated.",
+    "allCodeOrRuntimeDifferencesExcluded": false
+  },
+  "browserTrial": {
+    "implemented": true,
+    "ordinaryBrowserFirst": true,
+    "manualVerificationOnlyForExplicitTrustedCaptcha": true,
+    "captchaSolvedAutomatically": false,
+    "cookieInjectionOrStealthUsed": false,
+    "sharedVisitorSessionUsed": false,
+    "maximumSessionLifetimeMs": 180000,
+    "applicationDailyReservationBudgetMs": 600000,
+    "status": "disabled_after_no_positive_real_note_result",
+    "productionCanaries": [
+      {
+        "engine": "node",
+        "inputKind": "video",
+        "checkedAt": "2026-10-11T05:21:07.632Z",
+        "anonymous": true,
+        "status": 422,
+        "success": false,
+        "code": null,
+        "imageCount": 0,
+        "videoCount": 0,
+        "originalVideoCount": 0,
+        "verificationRequired": false,
+        "setCookiePresent": false,
+        "privateHeadersAbsent": true,
+        "durationMs": 7616
+      },
+      {
+        "engine": "python",
+        "inputKind": "video",
+        "checkedAt": "2026-10-11T05:25:09.235Z",
+        "anonymous": true,
+        "status": 422,
+        "success": false,
+        "code": null,
+        "imageCount": 0,
+        "videoCount": 0,
+        "originalVideoCount": 0,
+        "verificationRequired": false,
+        "setCookiePresent": false,
+        "privateHeadersAbsent": true,
+        "durationMs": 7705
+      },
+      {
+        "engine": "node",
+        "inputKind": "image",
+        "checkedAt": "2026-10-11T05:25:43.875Z",
+        "anonymous": true,
+        "status": 422,
+        "success": false,
+        "code": null,
+        "imageCount": 0,
+        "videoCount": 0,
+        "originalVideoCount": 0,
+        "verificationRequired": false,
+        "setCookiePresent": false,
+        "privateHeadersAbsent": true,
+        "durationMs": 7815
+      }
+    ],
+    "safeDiagnostics": [
+      {
+        "mainVersionId": "c26e3784-dd84-492f-a506-8b85f75cbd16",
+        "records": [
+          {
+            "operation": "start",
+            "code": "BROWSER_PAGE_REJECTED",
+            "closed": true,
+            "page": {
+              "finalLocation": {
+                "hostname": "www",
+                "pathClass": "error"
+              },
+              "htmlBytes": 12644,
+              "brandedCaptcha": false,
+              "brandedLogin": false
+            }
+          }
+        ]
+      },
+      {
+        "mainVersionId": "c26e3784-dd84-492f-a506-8b85f75cbd16",
+        "records": [
+          {
+            "operation": "start",
+            "code": "BROWSER_PAGE_REJECTED",
+            "closed": true,
+            "page": {
+              "finalLocation": {
+                "hostname": "www",
+                "pathClass": "error"
+              },
+              "htmlBytes": 12644,
+              "brandedCaptcha": false,
+              "brandedLogin": false
+            }
+          }
+        ]
+      }
+    ],
+    "nodeImageDiagnosticTailCaptured": false,
+    "manualVerificationSucceeded": false,
+    "liveViewUiValidated": false,
+    "inAppBrowserControl": "Attempt to open the official site timed out; no successful new browser UI interaction is claimed.",
+    "codeAndTestsRetainedInactive": true,
+    "reasonForDisabling": "The real video and image notes remained unsuccessful; automatic browser retries added latency and resource use without demonstrated recovery.",
+    "earlierNodeVideoCanary": {
+      "mainVersionId": "98c5601c-c604-4099-927f-b5b8d57579da",
+      "status": 422,
+      "success": false,
+      "verificationRequired": false,
+      "diagnosticCode": "BROWSER_PAGE_REJECTED",
+      "closed": true
+    }
+  },
+  "validation": {
+    "initialJavascriptFocused": {
+      "passed": 91,
+      "failed": 0,
+      "skipped": 0
+    },
+    "browserDiagnosticAndCaptchaPriorityFollowup": {
+      "passed": 47,
+      "failed": 0,
+      "skipped": 0,
+      "overlapsInitialSuite": true
+    },
+    "disabledBindingNativeRegression": {
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0,
+      "overlapsPriorSuites": true
+    },
+    "python": {
+      "passed": 59,
+      "failed": 0,
+      "scope": "native adapter, pure rendered helper and real workerd tests"
+    },
+    "static": {
+      "publicFileCount": 90,
+      "updatedFiles": [
+        "app.js",
+        "style.css",
+        "lib/parse-verification.js"
+      ],
+      "firstPassPassed": 177,
+      "firstPassTotal": 180,
+      "transportFailures": 3,
+      "boundedRechecksPassed": 3,
+      "combinedPassed": 180,
+      "combinedTotal": 180,
+      "fourOriginCriticalFilesPassed": 16,
+      "fourOriginCriticalFilesTotal": 16,
+      "systemMetadataAbsentPassed": 4,
+      "systemMetadataAbsentTotal": 4,
+      "staticBytesUnchangedOnFinalBackendDeploy": true
+    },
+    "anonymous": {
+      "passed": 58,
+      "total": 58,
+      "scope": "Anonymous boundary checks on the browser-trial deployment, not positive upstream media parsing."
+    },
+    "allBusinessFeaturesPassed": false,
+    "realWebNoteParsingRestored": false,
+    "newIPhoneImportTestCompleted": false,
+    "disabledVerificationRouteRegression": {
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0,
+      "overlapsPriorSuites": true,
+      "missingBrowserDispatchesNoOwnerDurableObject": true
+    },
+    "finalHealth": {
+      "passed": 4,
+      "total": 4,
+      "results": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "status": 200,
+          "ok": true,
+          "platform": "cloudflare",
+          "version": "2.0.15",
+          "pythonBinding": true,
+          "deploymentId": "8443f3c1-c8af-4ee8-91bf-397e73e149d6",
+          "setCookiePresent": false,
+          "passed": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "status": 200,
+          "ok": true,
+          "platform": "cloudflare",
+          "version": "2.0.15",
+          "pythonBinding": true,
+          "deploymentId": "8443f3c1-c8af-4ee8-91bf-397e73e149d6",
+          "setCookiePresent": false,
+          "passed": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "status": 200,
+          "ok": true,
+          "platform": "cloudflare",
+          "version": "2.0.15",
+          "pythonBinding": true,
+          "deploymentId": "8443f3c1-c8af-4ee8-91bf-397e73e149d6",
+          "setCookiePresent": false,
+          "passed": true
+        },
+        {
+          "origin": "https://0ff2c350.brclio-xhs-pages.pages.dev",
+          "status": 200,
+          "ok": true,
+          "platform": "cloudflare",
+          "version": "2.0.15",
+          "pythonBinding": true,
+          "deploymentId": "8443f3c1-c8af-4ee8-91bf-397e73e149d6",
+          "setCookiePresent": false,
+          "passed": true
+        }
+      ]
+    },
+    "finalVerificationGuards": {
+      "passed": 4,
+      "total": 4,
+      "results": [
+        {
+          "name": "GET rejects method",
+          "status": 405,
+          "passed": true,
+          "noStore": true,
+          "noCookies": true,
+          "privateHeadersAbsent": true
+        },
+        {
+          "name": "disabled resume rejects before owner dispatch",
+          "status": 503,
+          "passed": true,
+          "noStore": true,
+          "noCookies": true,
+          "privateHeadersAbsent": true
+        },
+        {
+          "name": "disabled cancel rejects before owner dispatch",
+          "status": 503,
+          "passed": true,
+          "noStore": true,
+          "noCookies": true,
+          "privateHeadersAbsent": true
+        },
+        {
+          "name": "cross-site Origin rejected before disabled-service check",
+          "status": 403,
+          "passed": true,
+          "noStore": true,
+          "noCookies": true,
+          "privateHeadersAbsent": true
+        }
+      ]
+    }
+  },
+  "livePhotoScope": {
+    "currentEngineRealVideoBothHeicAndJpegPvtPassed": true,
+    "nativeMacRecognitionPassed": true,
+    "currentClientGuiExportCompleted": false,
+    "newIPhoneImportCompleted": false,
+    "historicalUserIPhoneConfirmation": "2026-10-10 HEIC and JPEG PVT samples",
+    "existingLivePhotoMediaNoteEndToEndNewlyTested": false
+  },
+  "privacy": {
+    "rawHtmlOrTailEventsPublished": false,
+    "shareUrlsNoteIdsTitlesOrMediaUrlsPublished": false,
+    "liveViewTokensOrCookiesPublished": false,
+    "systemProxyChanged": false,
+    "workerSecretValuesRead": false
+  },
+  "conclusion": {
+    "webNodeAndPythonVideoAcceptance": "failed",
+    "webImageAcceptance": "failed",
+    "verificationPopupAcceptance": "not passed",
+    "releaseAssets": "Existing v2.0.15 desktop and Android v1.0.15 assets remain unchanged.",
+    "automaticUpdateCheckDirectFirst": "Previously published and installed-client verified; this backend follow-up does not change it.",
+    "requiredNextProof": "A Cloudflare-only path must actually return the supplied note media, then pass download and human-verification acceptance before it can be described as repaired."
+  },
+  "relatedReports": [
+    "v2.0.15-cloudflare-only-diagnostics.json",
+    "v2.0.15-real-video-verification.json",
+    "v2.0.15-feature-coverage.md",
+    "../cloudflare-deployment.md"
+  ]
+}
