@@ -12,10 +12,10 @@ function fixture({ page = { finalUrl: noteURL, html }, failure, response = () =>
   const fetches = [], bindings = [];
   return {
     fetches, bindings,
-    async call({ body = JSON.stringify({ text: noteURL }), method = 'POST', path = '/api/python_parse?preserved=1' } = {}) {
+    async call({ body = JSON.stringify({ text: noteURL }), method = 'POST', path = '/api/python_parse?preserved=1', origin = 'https://public.example' } = {}) {
       const request = new Request(`https://public.example${path}`, {
         method, headers: { Cookie: 'fixture-cookie', Authorization: 'Bearer fixture-secret',
-          Origin: 'https://public.example', 'Content-Type': 'application/json', 'X-Private': 'fixture-header' },
+          ...(origin === null ? {} : { Origin: origin }), 'Content-Type': 'application/json', 'X-Private': 'fixture-header' },
         body: ['GET', 'HEAD'].includes(method) ? undefined : body,
       });
       return parsePythonWithSharedPage(request, {
@@ -46,6 +46,22 @@ test('valid note HTML is fetched through the shared transport and only the trust
   assert.equal(run.bindings[0].method, 'POST');
   assert.deepEqual(run.bindings[0].headers, [['content-type', 'application/json']]);
   assert.deepEqual(JSON.parse(run.bindings[0].body), { finalUrl: noteURL, noteId, html });
+});
+
+test('native clients retain the independent Python public path and exact response', async () => {
+  const body = JSON.stringify({ text: noteURL });
+  for (const origin of [null, '', 'null', 'https://other.example']) {
+    for (const status of [200, 422, 502, 504]) {
+      const original = Response.json({ success: status === 200, engine: 'python', message: 'native path sentinel' }, { status });
+      const run = fixture({ failure: new Error('shared transport must not run'), response: () => original });
+      assert.equal(await run.call({ origin, body }), original);
+      assert.deepEqual(run.fetches, []);
+      assert.equal(run.bindings.length, 1);
+      assert.equal(run.bindings[0].url, 'https://python.internal/api/python_parse?preserved=1');
+      assert.equal(run.bindings[0].body, body);
+      assert.deepEqual(run.bindings[0].headers, [['content-type', 'application/json']]);
+    }
+  }
 });
 
 test('short links may establish their note ID and URL fragments are removed without changing signed query values', async () => {

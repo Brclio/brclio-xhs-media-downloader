@@ -51,7 +51,7 @@ test('real SQLite ParseRuntime keeps native parsing and failures inside Cloudfla
   }));
   t.after(() => runtime.dispose());
   const call = (path, text, extra = {}) => runtime.dispatchFetch(`https://fixture.example.test${path}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: 'private=do-not-forward', Authorization: 'Bearer do-not-forward' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://fixture.example.test', Cookie: 'private=do-not-forward', Authorization: 'Bearer do-not-forward' },
     body: JSON.stringify({ text, private: 'do-not-forward', ...extra }),
   });
 
@@ -71,6 +71,15 @@ test('real SQLite ParseRuntime keeps native parsing and failures inside Cloudfla
   assert.equal(JSON.parse(python.at(-1).body).html, html);
   assert.equal(python.at(-1).cookie, null);
   assert.deepEqual([...external[0].headers], [...external[1].headers], 'both engines use the configured shared page headers');
+
+  const nativeClient = await runtime.dispatchFetch('https://fixture.example.test/api/python_parse?native=1', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: noteUrl }),
+  });
+  assert.equal(nativeClient.status, 200);
+  assert.equal((await nativeClient.json()).engine, 'python');
+  assert.equal(external.length, 2, 'native client must retain Python transport rather than use shared Node fetch');
+  assert.equal(python.at(-1).url, 'https://python.internal/api/python_parse?native=1');
+  assert.deepEqual(JSON.parse(python.at(-1).body), { text: noteUrl });
 
   const pythonNative = await call('/api/python_parse?preserved=1', 'https://sns-webpic-qc.xhscdn.com/fixture-image-token');
   assert.equal(pythonNative.status, 200);

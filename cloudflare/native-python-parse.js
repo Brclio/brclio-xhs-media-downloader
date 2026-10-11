@@ -63,7 +63,10 @@ function fetchFailure(error) {
 export async function parsePythonWithSharedPage(request, { body, pythonAPI, fetchPage = fetchNotePage } = {}) {
   if (!pythonAPI?.fetch) return json({ message: 'Python 服务暂时不可用，请稍后重试。' }, 503);
   const rawBody = body === undefined ? await readBoundedBody(request, MAX_API_BODY_BYTES) : body;
-  const source = request.method === 'POST' ? candidate(rawBody) : null;
+  // Share the browser transport only for same-origin web forms. Native clients
+  // retain Python's independent public fetch/parse path.
+  const source = request.method === 'POST' && request.headers.get('Origin') === new URL(request.url).origin
+    ? candidate(rawBody) : null;
   if (!source) {
     // Preserve Python's public method/input/direct-image validation without forwarding visitor credentials.
     const url = new URL(request.url);

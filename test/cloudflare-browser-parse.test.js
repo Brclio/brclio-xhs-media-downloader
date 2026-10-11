@@ -5,7 +5,7 @@ import { BrowserVerificationRegistry, BROWSER_VERIFICATION_REGISTRY_KEY as REGIS
 
 const NOTE = 'https://www.xiaohongshu.com/explore/1234567890abcdef12345678?xsec_token=private-query-sentinel';
 const request = (text = NOTE, { path = '/api/parse', method = 'POST', headers = {}, ...extra } = {}) => new Request(`https://fixture.example.test${path}`, {
-  method, headers: { 'Content-Type': 'application/json', ...headers }, ...(method === 'POST' ? { body: JSON.stringify({ text, ignoredCookie: 'private-body-sentinel' }) } : {}), ...extra,
+  method, headers: { 'Content-Type': 'application/json', Origin: 'https://fixture.example.test', ...headers }, ...(method === 'POST' ? { body: JSON.stringify({ text, ignoredCookie: 'private-body-sentinel' }) } : {}), ...extra,
 });
 const native = (status = 422) => Response.json({ success: false, message: 'original native error sentinel' }, { status });
 function assertNativeFallback(response, original, diagnostic) {
@@ -66,6 +66,30 @@ test('native success, absent binding, unrelated errors and invalid inputs never 
   const h = harness(); delete h.env.BROWSER;
   assert.equal(await maybeParseWithBrowser(request(), native(), h).then(response => response.status), 422);
   assert.equal(h.calls.length, 0);
+});
+
+test('native client failures keep original responses and never reserve web verification quota', async t => {
+  t.mock.method(console, 'warn', () => {});
+  for (const path of ['/api/parse', '/api/python_parse']) {
+    for (const status of [422, 502, 504]) {
+      for (const origin of [null, '', 'null']) {
+        const req = request(NOTE, { path });
+        if (origin === null) req.headers.delete('Origin');
+        else req.headers.set('Origin', origin);
+        const h = harness();
+        h.store.values.set(KEY, { day: Math.floor(Date.now() / 86_400_000), usedMs: 600_000, lastStartMs: Date.now() });
+        const before = structuredClone([...h.store.values]);
+        const original = native(status);
+        const response = await maybeParseWithBrowser(req, original, h);
+        assertNativeFallback(response, original, 'input/not-candidate');
+        assert.equal(await response.text(), '{"success":false,"message":"original native error sentinel"}');
+        assert.deepEqual(h.names, []);
+        assert.deepEqual(h.calls, []);
+        assert.deepEqual(h.store.writes, []);
+        assert.deepEqual([...h.store.values], before, 'web daily limit and cooldown must not affect native errors');
+      }
+    }
+  }
 });
 
 test('failure diagnostics identify the exact fallback phase using only a fixed private-data-free projection', async t => {

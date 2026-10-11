@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, symlink, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +16,26 @@ test('desktop protocol serves the real web entry and all first-party JS imports'
     assert.ok((await response.text()).length > 0, name);
     assert.match(response.headers.get('content-security-policy'), /script-src 'self'/);
   }
+});
+
+test('the served desktop app can load every static relative module including the verification helper', async () => {
+  const handle = createProtocolHandler({ rootDirectory, authorize: async () => assert.fail('Static modules must not request account authorization') });
+  const appURL = 'xhs-app://local/app.js';
+  const app = await handle(new Request(appURL, { referrer: 'xhs-app://local/index.html' }));
+  assert.equal(app.status, 200);
+  const source = await app.text();
+  const imports = [...source.matchAll(/^import\s+[\s\S]*?\bfrom\s+["'](\.[^"']+)["'];/gm)].map(match => match[1]);
+  const loaded = new Set();
+  assert.ok(imports.length > 0, 'Use the imports of the actual app served by the protocol');
+  for (const specifier of imports) {
+    const url = new URL(specifier, appURL);
+    const response = await handle(new Request(url, { referrer: appURL }));
+    assert.equal(response.status, 200, `Desktop module import must load: ${specifier}`);
+    assert.equal(response.headers.get('content-type'), 'text/javascript; charset=utf-8', specifier);
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile(path.join(rootDirectory, url.pathname)), specifier);
+    loaded.add(url.href);
+  }
+  assert.ok(loaded.has('xhs-app://local/lib/parse-verification.js'));
 });
 
 test('desktop protocol serves the cropped membership QR images locally', async () => {

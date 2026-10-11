@@ -23,7 +23,8 @@ async function candidate(request) {
   if (request.method !== 'POST' || !['/api/parse', '/api/python_parse'].includes(endpoint.pathname)
     || request.signal.aborted
     || request.headers.get('sec-fetch-site')?.toLowerCase() === 'cross-site'
-    || (request.headers.has('Origin') && request.headers.get('Origin') !== endpoint.origin)
+    // Native clients do not send Origin and cannot complete a web Live View.
+    || request.headers.get('Origin') !== endpoint.origin
     || !/^application\/json(?:\s*;|$)/i.test(request.headers.get('Content-Type') || '')) return null;
   const body = JSON.parse(await readBoundedBody(request, MAX_API_BODY_BYTES));
   if (typeof body?.text !== 'string' || !body.text.trim() || body.text.length > 3000) return null;
