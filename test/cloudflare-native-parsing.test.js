@@ -4,9 +4,9 @@ import { createWorker } from '../cloudflare/worker.js';
 import { ParseRuntime } from '../cloudflare/parse-runtime.js';
 
 const legacyEnvironment = { XHS_PARSE_FALLBACK_ORIGIN: 'https://xhs-images-video-vercel-downloader.vercel.app' };
-const request = path => new Request(`https://fixture.example.test${path}`, {
+const request = (path, text = 'https://xhslink.cn/o/fixture') => new Request(`https://fixture.example.test${path}`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ text: 'https://xhslink.cn/o/fixture' }),
+  body: JSON.stringify({ text }),
 });
 
 test('gateway preserves native parse failures without retrying an external backend', async t => {
@@ -42,7 +42,8 @@ test('gateway and ParseRuntime report missing or failed Python bindings without 
   for (const pythonBinding of [undefined, { fetch: async () => { throw new Error('private binding failure'); } }]) {
     const env = { ...legacyEnvironment, PYTHON_API: pythonBinding };
     for (const runtime of [createWorker(), new ParseRuntime({}, env)]) {
-      const response = await runtime.fetch(request('/api/python_parse'), env);
+      // Direct images isolate binding availability without invoking the shared note transport.
+      const response = await runtime.fetch(request('/api/python_parse', 'https://sns-webpic-qc.xhscdn.com/fixture-image-token'), env);
       assert.equal(response.status, 503);
       const body = await response.json();
       assert.equal(body.engine, 'python');

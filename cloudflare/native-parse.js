@@ -72,7 +72,8 @@ export function createCloudflareParseHandler({ fetchImpl, fetchPage = fetchNoteP
     const handler = createParseHandler({
       fetchPage: async inputUrl => {
         noteIdPresent = Boolean(extractNoteId(inputUrl));
-        const result = await fetchPage(inputUrl, { fetchImpl: async (url, options) => {
+        let result;
+        try { result = await fetchPage(inputUrl, { fetchImpl: async (url, options) => {
           const location = locationSummary(url);
           try {
             const response = await (fetchImpl || globalThis.fetch)(url, options);
@@ -83,7 +84,18 @@ export function createCloudflareParseHandler({ fetchImpl, fetchPage = fetchNoteP
             if (upstream.length < 6) upstream.push({ ...location, status: 0 });
             throw error;
           }
-        } });
+        } }); } catch (error) {
+          // The shared desktop transport retains its original 400 contract.
+          // Only these explicit upstream codes may enter Cloudflare's human
+          // handoff; invalid input and unsupported redirects stay ineligible.
+          if (error instanceof XhsError && error.statusCode === 400
+            && ['AUTH_REQUIRED', 'RATE_LIMITED'].includes(error.code)) {
+            throw Object.assign(new XhsError(error.code === 'AUTH_REQUIRED'
+              ? '小红书要求登录后查看这篇笔记。'
+              : '小红书要求安全验证或暂时限制了访问。', 422), { code: error.code });
+          }
+          throw error;
+        }
         const noteId = extractNoteId(result.finalUrl) || extractNoteId(inputUrl);
         page = pageSummary(result, noteId);
         phase = 'parse';

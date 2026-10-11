@@ -125,26 +125,48 @@ async function startSession(stub, payload, signal) {
 
 /** Ordinary Browser Run reading is isolated per request; only explicit verification retains a session. */
 export async function maybeParseWithBrowser(request, nativeResponse, { env, state } = {}) {
-  if (!env?.BROWSER || !env?.PARSE_RUNTIME || !state?.storage?.transaction
-    || ![422, 502, 504].includes(nativeResponse.status)) return nativeResponse;
+  const presence = { browserBinding: Boolean(env?.BROWSER), parseRuntimeBinding: Boolean(env?.PARSE_RUNTIME),
+    transactionalStorage: Boolean(state?.storage?.transaction) };
+  let phase = 'eligibility';
+  const failed = outcome => {
+    // Fixed projection only, including on early returns. Never include exception text or request/session data.
+    if (nativeResponse.status >= 400) try {
+      console.warn('CF_BROWSER_FALLBACK_RESULT', JSON.stringify({ phase, outcome, nativeStatus: nativeResponse.status, ...presence }));
+    } catch {}
+  };
+  if (!presence.browserBinding) { failed('browser-binding-missing'); return nativeResponse; }
+  if (!presence.parseRuntimeBinding) { failed('parse-runtime-binding-missing'); return nativeResponse; }
+  if (!presence.transactionalStorage) { failed('transactional-storage-missing'); return nativeResponse; }
+  if (![422, 502, 504].includes(nativeResponse.status)) { failed('native-status-ineligible'); return nativeResponse; }
   try {
+    phase = 'input';
     const input = await candidate(request);
-    if (!input) return nativeResponse;
+    if (!input) { failed('not-candidate'); return nativeResponse; }
+    phase = 'reservation';
     const reservation = await reserve(state.storage, Date.now());
-    if (!reservation.ok) return reservationRejected(input.engine, reservation);
+    if (!reservation.ok) {
+      const response = reservationRejected(input.engine, reservation);
+      failed(reservation.reason);
+      return response;
+    }
+    phase = 'start';
     const bytes = crypto.getRandomValues(new Uint8Array(32));
     const token = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
     const stub = env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName(`browser:${token}`));
     let response;
     try { response = await startSession(stub, { token, ...input }, request.signal); }
-    catch {
+    catch (error) {
+      failed(request.signal.aborted ? 'caller-cancelled'
+        : error instanceof Error && error.message === 'browser-start-cancelled' ? 'start-timeout' : 'start-failed');
       // Aborting the transport does not prove the owner stopped its acquisition.
       // Explicitly cancel it; a late start result can never reach registration.
       await cancelUnregisteredVerification(stub, token);
       return nativeResponse;
     }
-    if (!(response instanceof Response)) return nativeResponse;
+    if (!(response instanceof Response)) { failed('invalid-response'); return nativeResponse; }
+    let rejection = 'browser-response-rejected';
     if (response.status === 422) {
+      phase = 'verification';
       const body = JSON.parse(await readBoundedBody(response, MAX_API_BODY_BYTES));
       const payload = verificationPayload(body, input.engine);
       if (payload) {
@@ -154,12 +176,18 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
             .register(token, { expiresAt: payload.expiresAt, engine: input.engine,
               reservation: { day: reservation.day, startedAt: reservation.startedAt } });
         } catch { /* A storage failure must not expose an untracked browser. */ }
-        if (!registered) { await cancelUnregisteredVerification(stub, token); return nativeResponse; }
+        if (!registered) {
+          failed('registration-rejected');
+          await cancelUnregisteredVerification(stub, token); return nativeResponse;
+        }
         // A live verification keeps its complete reservation, even if a bad close header is present.
         return json({ ...payload, verificationToken: token }, 422);
       }
+      if (body?.code === 'VERIFICATION_REQUIRED') rejection = 'invalid-handoff';
     }
+    phase = 'response';
     await refundConfirmedClose(state.storage, reservation, response);
+    if (!response.ok) failed(rejection);
     return response.ok ? publicBrowserResponse(response) : nativeResponse;
-  } catch { return nativeResponse; }
+  } catch { failed('outer-exception'); return nativeResponse; }
 }

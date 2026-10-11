@@ -3,6 +3,7 @@ import { createParseHandler } from '../api/parse.js';
 import { BrowserSessionManager } from './browser-session.js';
 import { maybeParseWithBrowser } from './browser-parse.js';
 import { BrowserVerificationRegistry } from './browser-verification.js';
+import { parsePythonWithSharedPage } from './native-python-parse.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
 import { invokeHandler, readBoundedBody, MAX_API_BODY_BYTES, MAX_ACCOUNT_BODY_BYTES, RequestTooLargeError } from './http-adapter.js';
@@ -117,9 +118,7 @@ export class ParseRuntime {
         return json({ success: false, engine: 'python', message: 'Python 服务暂时不可用，请稍后重试。' }, 503);
       }
       const body = await readBoundedBody(request, MAX_API_BODY_BYTES);
-      const response = await this.env.PYTHON_API.fetch(new Request(request, {
-        body: ['GET', 'HEAD'].includes(request.method) ? undefined : body,
-      }));
+      const response = await parsePythonWithSharedPage(request, { body, pythonAPI: this.env.PYTHON_API });
       return await maybeParseWithBrowser(retained, response, { env: this.env, state: this.state });
     } catch (error) {
       const tooLarge = error instanceof RequestTooLargeError;

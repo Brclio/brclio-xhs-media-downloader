@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createParseHandler } from '../api/parse.js';
 import { createCloudflareParseHandler } from '../cloudflare/native-parse.js';
 import { invokeHandler } from '../cloudflare/http-adapter.js';
+import { XhsError } from '../lib/xhs.js';
 
 const noteId = 'abcdef1234567890abcdef12';
 const secret = 'PRIVATE_DIAGNOSTIC_SENTINEL';
@@ -149,4 +150,41 @@ test('invalid input does not fetch or log and unrecognized hosts cannot enter di
   assert.equal(logs[0].finalPathClass, 'other');
   assert.equal(logs[0].loginDetected, false);
   assertPrivate(logs);
+});
+
+test('explicit upstream auth and rate responses become Browser-eligible only in the Cloudflare adapter', async () => {
+  for (const status of [401, 403, 429, 461, 471]) {
+    const logs = []; let fetches = 0;
+    const handler = createCloudflareParseHandler({ log: value => logs.push(value), fetchImpl: async (_url, options) => {
+      fetches++; assert.equal(new Headers(options.headers).get('cookie'), null);
+      assert.equal(new Headers(options.headers).get('authorization'), null);
+      return new Response(null, { status });
+    } });
+    const response = await invokeHandler(handler, request());
+    assert.equal(response.status, 422); assert.equal(fetches, 1); assert.equal(logs.length, 1);
+    assert.match((await response.json()).message, status === 401 ? /要求登录/ : /安全验证|限制/);
+    assert.deepEqual(logs[0].upstream.map(value => value.status), [status]); assertPrivate(logs);
+  }
+  for (const code of ['AUTH_REQUIRED', 'RATE_LIMITED']) {
+    const failure = Object.assign(new XhsError(secret, 400), { code });
+    const adapter = createCloudflareParseHandler({ fetchPage: async () => { throw failure; }, log() {} });
+    const response = await invokeHandler(adapter, request());
+    assert.equal(response.status, 422); assert.doesNotMatch(JSON.stringify(await response.json()), new RegExp(secret));
+    const desktop = createParseHandler({ fetchPage: async () => { throw failure; }, onError() {} });
+    assert.equal((await invokeHandler(desktop, request())).status, 400);
+  }
+});
+
+test('ordinary 400 errors and unrelated upstream client errors never become browser-eligible', async () => {
+  for (const status of [400, 404]) {
+    let fetches = 0;
+    const adapter = createCloudflareParseHandler({ log() {}, fetchImpl: async () => { fetches++; return new Response(null, { status }); } });
+    assert.equal((await invokeHandler(adapter, request())).status, 400); assert.equal(fetches, 1);
+  }
+  for (const failure of [new XhsError('Unsupported redirect.', 400),
+    Object.assign(new XhsError('Unrelated validation.', 400), { code: 'OTHER' }),
+    Object.assign(new Error(secret), { code: 'RATE_LIMITED', statusCode: 400 })]) {
+    const adapter = createCloudflareParseHandler({ log() {}, fetchPage: async () => { throw failure; } });
+    assert.equal((await invokeHandler(adapter, request())).status, failure instanceof XhsError ? 400 : 500);
+  }
 });

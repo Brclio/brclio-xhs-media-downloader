@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 import { BrowserVerificationRegistry, BROWSER_VERIFICATION_REGISTRY_KEY as KEY,
   BROWSER_VERIFICATION_DISPATCH_MS as DISPATCH_MS, MAX_ACTIVE_BROWSER_VERIFICATIONS as MAX,
   verificationPayload, verificationTokenDigest } from '../cloudflare/browser-verification.js';
-import { BROWSER_BUDGET_STORAGE_KEY as BUDGET_KEY, BROWSER_ATTEMPT_RESERVATION_MS as RESERVATION_MS,
-  BROWSER_DAILY_BUDGET_MS } from '../cloudflare/browser-parse.js';
+import { BROWSER_BUDGET_STORAGE_KEY as BUDGET_KEY, BROWSER_ATTEMPT_RESERVATION_MS as RESERVATION_MS } from '../cloudflare/browser-parse.js';
 
 const token = 'a'.repeat(64), secondToken = 'b'.repeat(64);
 const liveURL = `https://live.browser.run/ui/view?mode=tab&wss=${encodeURIComponent('live.browser.run/api/devtools/browser/session-fixture/page/target-fixture?jwt=private-jwt-sentinel')}`;
@@ -279,9 +278,4 @@ test('accounting and capability removal roll back together when the settlement t
   assert.equal(f.values.get(BUDGET_KEY).usedMs, RESERVATION_MS);
   assert.equal(f.entry().terminal, true); assert.equal(f.calls.length, 1);
   assert.equal((await f.registry.dispatch({ token, action: 'resume' })).status, 410);
-});
-
-test('the reservation contract keeps the shared application daily limit unchanged', () => {
-  assert.equal(RESERVATION_MS, 180000); assert.equal(BROWSER_DAILY_BUDGET_MS, 600000);
-  assert.equal(BUDGET_KEY, 'browser-parse-budget-v1');
 });

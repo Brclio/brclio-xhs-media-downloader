@@ -30,7 +30,13 @@ test('real SQLite ParseRuntime keeps native parsing and failures inside Cloudfla
       const body = await request.text();
       python.push({ method: request.method, url: request.url, body, cookie: request.headers.get('cookie') });
       if (request.method !== 'POST') return new Response(null, { status: 405, headers: { Allow: 'POST' } });
-      if (JSON.parse(body).text.includes('missing')) return Response.json({ success: false, engine: 'python', message: 'fixture native failure' }, { status: 500 });
+      const input = JSON.parse(body);
+      if (new URL(request.url).pathname === '/__internal/parse-rendered-note') {
+        assert.deepEqual(Object.keys(input).sort(), ['finalUrl', 'html', 'noteId']);
+        assert.equal(input.noteId, noteId);
+        assert.equal(request.headers.get('authorization'), null);
+        if (input.html.includes('source unavailable')) return Response.json({ success: false, engine: 'python', message: 'fixture native failure' }, { status: 422 });
+      }
       return Response.json(payload('python'), { headers: { 'X-XHS-Engine': 'python' } });
     } },
     outboundService: async request => {
@@ -57,13 +63,22 @@ test('real SQLite ParseRuntime keeps native parsing and failures inside Cloudfla
   assert.equal(nativeBody.images[0].token, 'fixture-image-token');
   assert.equal(external.length, 1);
 
+  const pythonShared = await call('/api/python_parse', noteUrl, { html: 'must not replace fetched HTML' });
+  assert.equal(pythonShared.status, 200);
+  assert.equal((await pythonShared.json()).engine, 'python');
+  assert.equal(external.length, 2, 'Python uses the same DO outbound transport as Node');
+  assert.equal(python.at(-1).url, 'https://python.internal/__internal/parse-rendered-note');
+  assert.equal(JSON.parse(python.at(-1).body).html, html);
+  assert.equal(python.at(-1).cookie, null);
+  assert.deepEqual([...external[0].headers], [...external[1].headers], 'both engines use the configured shared page headers');
+
   const pythonNative = await call('/api/python_parse?preserved=1', 'https://sns-webpic-qc.xhscdn.com/fixture-image-token');
   assert.equal(pythonNative.status, 200);
   assert.equal((await pythonNative.json()).engine, 'python');
   assert.ok(python.at(-1).url.endsWith('/api/python_parse?preserved=1'));
-  assert.equal(python.at(-1).cookie, 'private=do-not-forward', 'request headers stay on the private binding');
+  assert.equal(python.at(-1).cookie, null, 'visitor credentials are unnecessary on either private Python entry');
 
-  for (const [path, engine, status, upstreamCalls] of [['/api/parse', 'node', 422, 1], ['/api/python_parse', 'python', 500, 0]]) {
+  for (const [path, engine, status, upstreamCalls] of [['/api/parse', 'node', 422, 1], ['/api/python_parse', 'python', 422, 1]]) {
     const before = external.length;
     const response = await call(path, `share text ${noteUrl}?missing=1`);
     assert.equal(response.status, status);

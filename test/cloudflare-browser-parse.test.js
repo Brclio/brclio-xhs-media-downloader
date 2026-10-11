@@ -27,7 +27,8 @@ function harness(response = () => Response.json({ success: true, engine: 'node',
 }
 function clock(t, initial = 1_800_000_000_000) { let value = initial; t.mock.method(Date, 'now', () => value); return { set: next => { value = next; }, advance: ms => { value += ms; }, now: () => value }; }
 
-test('native success, absent binding, unrelated errors and invalid inputs never start a browser or read native body', async () => {
+test('native success, absent binding, unrelated errors and invalid inputs never start a browser or read native body', async t => {
+  t.mock.method(console, 'warn', () => {});
   const cases = [
     [request(), 200], [request(), 400], [request(), 403], [request(), 429], [request(), 500], [request(), 503],
     [request(NOTE, { method: 'GET' }), 422], [request(NOTE, { path: '/api/member_video' }), 422],
@@ -53,6 +54,50 @@ test('native success, absent binding, unrelated errors and invalid inputs never 
   const h = harness(); delete h.env.BROWSER;
   assert.equal(await maybeParseWithBrowser(request(), native(), h).then(response => response.status), 422);
   assert.equal(h.calls.length, 0);
+});
+
+test('failure diagnostics identify the exact fallback phase using only a fixed private-data-free projection', async t => {
+  const logs = [];
+  t.mock.method(console, 'warn', (...values) => logs.push(values));
+  const present = { browserBinding: true, parseRuntimeBinding: true, transactionalStorage: true };
+  const cases = [
+    { setup: h => { delete h.env.BROWSER; }, phase: 'eligibility', outcome: 'browser-binding-missing', presence: { ...present, browserBinding: false } },
+    { setup: h => { delete h.env.PARSE_RUNTIME; }, phase: 'eligibility', outcome: 'parse-runtime-binding-missing', presence: { ...present, parseRuntimeBinding: false } },
+    { setup: h => { h.state.storage = {}; }, phase: 'eligibility', outcome: 'transactional-storage-missing', presence: { ...present, transactionalStorage: false } },
+    { status: 403, phase: 'eligibility', outcome: 'native-status-ineligible' },
+    { input: () => request('https://www.xiaohongshu.com/login'), phase: 'input', outcome: 'not-candidate' },
+    { input: () => request(NOTE, { body: '{private-invalid-json-sentinel' }), phase: 'input', outcome: 'outer-exception' },
+    { setup: h => { h.env.PARSE_RUNTIME.idFromName = () => { throw new Error('private-namespace-error-sentinel'); }; }, phase: 'start', outcome: 'outer-exception' },
+    { response: () => undefined, phase: 'start', outcome: 'invalid-response' },
+    { response: () => { throw new Error('private-owner-error-sentinel'); }, phase: 'start', outcome: 'start-failed' },
+    { response: () => new Response('private-owner-json-sentinel', { status: 422 }), phase: 'verification', outcome: 'outer-exception' },
+    { response: () => Response.json({ success: false, code: 'VERIFICATION_REQUIRED', verificationUrl: 'private-invalid-liveview-sentinel' }, { status: 422 }), phase: 'response', outcome: 'invalid-handoff' },
+    { response: () => Response.json({ success: false, message: 'private-owner-response-sentinel' }, { status: 503 }), phase: 'response', outcome: 'browser-response-rejected' },
+  ];
+  for (const item of cases) {
+    logs.length = 0;
+    const h = harness(item.response), original = native(item.status ?? 422);
+    item.setup?.(h);
+    assert.equal(await maybeParseWithBrowser(item.input?.() ?? request(), original, h), original);
+    assert.equal(original.bodyUsed, false);
+    assert.deepEqual(logs, [['CF_BROWSER_FALLBACK_RESULT', JSON.stringify({ phase: item.phase, outcome: item.outcome,
+      nativeStatus: item.status ?? 422, ...(item.presence ?? present) })]]);
+    const serialized = JSON.stringify(logs);
+    for (const privateValue of ['private-', 'https:', '1234567890abcdef12345678', 'sourceURL', 'headers', 'token']) assert.equal(serialized.includes(privateValue), false);
+  }
+  logs.length = 0;
+  const h = harness(); delete h.env.BROWSER;
+  const original = native(200);
+  assert.equal(await maybeParseWithBrowser(request(), original, h), original);
+  assert.deepEqual(logs, []);
+});
+
+test('a diagnostic logger failure cannot change the preserved native response or start a browser', async t => {
+  t.mock.method(console, 'warn', () => { throw new Error('private-logger-error-sentinel'); });
+  const h = harness(); delete h.env.BROWSER;
+  const original = native();
+  assert.equal(await maybeParseWithBrowser(request(), original, h), original);
+  assert.equal(original.bodyUsed, false); assert.deepEqual(h.calls, []); assert.deepEqual(h.store.writes, []);
 });
 
 test('browser start preserves Python engine and forwards only private validated input to a unique session', async t => {
@@ -100,7 +145,7 @@ test('cooldown reports its rounded remaining seconds and never changes counters 
   assert.match(body.message, /1 秒后重试/); assert.match(body.message, /Node\/Python 共用/);
   assert.equal(body.resetsAt, undefined); assert.equal(original.bodyUsed, false);
   assert.deepEqual(h.store.values.get(KEY), before); assert.deepEqual(h.store.writes, []); assert.deepEqual(h.names, []);
-  assert.deepEqual(logs, [['CF_BROWSER_RESERVATION_REJECTED', JSON.stringify({ reason: 'cooldown', retryAfter: 1, usedMs: RESERVE })]]);
+  assert.deepEqual(logs.filter(([event]) => event === 'CF_BROWSER_RESERVATION_REJECTED'), [['CF_BROWSER_RESERVATION_REJECTED', JSON.stringify({ reason: 'cooldown', retryAfter: 1, usedMs: RESERVE })]]);
   time.advance(1000);
   assert.equal((await maybeParseWithBrowser(request(), native(), h)).status, 200); assert.equal(h.calls.length, 1);
   assert.equal(h.store.values.get(KEY).usedMs, RESERVE * 2);
@@ -148,8 +193,7 @@ test('invalid or unavailable reservation state has an actionable independent err
   const original = native(), response = await maybeParseWithBrowser(request(), original, failed);
   assert.equal(response.status, 503); assert.equal((await response.json()).code, 'BROWSER_STATE_UNAVAILABLE');
   assert.equal(original.bodyUsed, false); assert.deepEqual(failed.names, []); assert.deepEqual(failed.store.writes, []);
-  for (const [event, text] of logs) {
-    assert.equal(event, 'CF_BROWSER_RESERVATION_REJECTED');
+  for (const [, text] of logs.filter(([event]) => event === 'CF_BROWSER_RESERVATION_REJECTED')) {
     assert.deepEqual(JSON.parse(text), { reason: 'state-unavailable', retryAfter: 60, usedMs: null });
     assert.equal(text.includes('private'), false); assert.equal(text.includes('token'), false);
   }
@@ -180,6 +224,8 @@ test('unclosed attempts retain reservation and the daily budget permits at most 
 });
 
 test('verified close refunds actual elapsed plus five seconds while verification keeps the full reservation', async t => {
+  const logs = [];
+  t.mock.method(console, 'warn', (...values) => logs.push(values));
   clock(t);
   const h = harness(payload => Response.json({ success: false, engine: payload.engine, code: 'VERIFICATION_REQUIRED', reason: 'access-error', message: 'ignored internal wording', verificationUrl: liveURL, expiresAt: Date.now() + 180000 }, { status: 422, headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1000' } }));
   const response = await maybeParseWithBrowser(request('https://xhslink.cn/arbitrary/path?private=value'), native(504), h);
@@ -194,6 +240,7 @@ test('verified close refunds actual elapsed plus five seconds while verification
   assert.deepEqual(entries[0].reservation, { day: Math.floor(Date.now() / 86400000), startedAt: Date.now() });
   const serialized = JSON.stringify(entries);
   for (const privateValue of [body.verificationToken, 'private-jwt-sentinel', 'arbitrary/path', 'private=value']) assert.equal(serialized.includes(privateValue), false);
+  assert.deepEqual(logs, []);
 });
 
 test('issued handoff passes its original reservation to lifetime accounting and confirmed cancel refunds only once', async t => {
@@ -214,6 +261,8 @@ test('issued handoff passes its original reservation to lifetime accounting and 
 });
 
 test('a verification registry failure cancels the untracked owner and retains the complete budget', async t => {
+  const logs = [];
+  t.mock.method(console, 'warn', (...values) => logs.push(values));
   clock(t);
   const h = harness((payload, req) => req.url.endsWith('/cancel')
     ? Response.json({ success: true, cancelled: true }, { headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1' } })
@@ -229,6 +278,8 @@ test('a verification registry failure cancels the untracked owner and retains th
   assert.equal(h.calls[1].request.url, 'https://browser.internal/__internal/browser/cancel');
   assert.deepEqual(h.calls[1].payload, { token: h.calls[0].payload.token });
   assert.equal(h.store.values.get(KEY).usedMs, RESERVE); assert.equal(h.store.values.has(REGISTRY_KEY), false);
+  assert.deepEqual(logs, [['CF_BROWSER_FALLBACK_RESULT', JSON.stringify({ phase: 'verification', outcome: 'registration-rejected',
+    nativeStatus: 422, browserBinding: true, parseRuntimeBinding: true, transactionalStorage: true })]]);
 });
 
 test('invalid close evidence, internal failures and corrupt counters fail safely without reading original error', async t => {
@@ -257,8 +308,11 @@ test('cancelled request never consumes budget or starts browser', async () => {
 });
 
 test('start deadline and caller cancellation preserve native error and unconfirmed reservation', async t => {
+  const logs = [];
+  t.mock.method(console, 'warn', (...values) => logs.push(values));
   t.mock.timers.enable({ apis: ['setTimeout'] });
   for (const cancel of [false, true]) {
+    logs.length = 0;
     const h = harness((_payload, req) => req.url.endsWith('/cancel')
       ? Response.json({ success: true, cancelled: true }, { headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1' } })
       : new Promise(() => {})), original = native();
@@ -274,6 +328,8 @@ test('start deadline and caller cancellation preserve native error and unconfirm
     assert.equal(h.store.values.get(KEY).usedMs, RESERVE);
     assert.equal(h.store.values.has(REGISTRY_KEY), false);
     assert.equal(original.bodyUsed, false);
+    assert.deepEqual(logs, [['CF_BROWSER_FALLBACK_RESULT', JSON.stringify({ phase: 'start', outcome: cancel ? 'caller-cancelled' : 'start-timeout',
+      nativeStatus: 422, browserBinding: true, parseRuntimeBinding: true, transactionalStorage: true })]]);
   }
 });
 
