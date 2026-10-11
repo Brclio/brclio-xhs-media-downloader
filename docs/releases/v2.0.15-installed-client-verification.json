@@ -168,5 +168,71 @@
     "authenticatedMembershipVisible": true,
     "accountLogoutControlVisible": true,
     "personalDetailsOmitted": true
+  },
+  "freshManualCheck": {
+    "startedAt": "2026-10-11T02:05:59.220Z",
+    "completedAt": "2026-10-11T02:06:00.202Z",
+    "durationMs": 982,
+    "route": "direct",
+    "status": "up-to-date",
+    "latestVersion": "2.0.15",
+    "internalProxyStarted": false,
+    "systemProxyFallbackSelected": false,
+    "subscriptionRequested": false,
+    "cleanupObserved": true,
+    "ipcOk": true,
+    "uiObservation": {
+      "version": "2.0.15",
+      "aboutSelected": true,
+      "checkButtonReturned": true,
+      "alreadyLatest": true,
+      "internalProxyRunning": false,
+      "authenticatedMembershipVisible": true,
+      "failureVisible": false,
+      "personalDetailsOmitted": true
+    }
+  },
+  "freshProductionAccountRefresh": {
+    "verifiedAt": "2026-10-11T02:13:59.526Z",
+    "origin": "https://xhs.download.brclio.com",
+    "endpoint": "/api/account",
+    "action": "me",
+    "installedSourceMatchesReleaseTag": true,
+    "manualRefresh": {
+      "diagnosticEvents": [
+        {
+          "at": "2026-10-11T02:11:40.073Z",
+          "event": "ipc.started",
+          "status": "started"
+        },
+        {
+          "at": "2026-10-11T02:11:42.268Z",
+          "event": "account.response",
+          "status": 200
+        },
+        {
+          "at": "2026-10-11T02:11:42.269Z",
+          "event": "ipc.completed",
+          "status": "success"
+        }
+      ],
+      "apiResponseObserved": true,
+      "successfulReplyObserved": true,
+      "noFailureEventObserved": true,
+      "sourceAndUiConfirmServerRefresh": true,
+      "priorQueuedMeResponseWithinIpcWindow": true
+    },
+    "uiObservation": {
+      "source": "parent CUA observation after explicit refresh click",
+      "authenticatedMembershipVisible": true,
+      "refreshErrorVisible": false,
+      "secureStoragePendingVisible": false,
+      "personalDetailsOmitted": true
+    },
+    "limits": [
+      "Diagnostic account.response events do not record remoteOrigin. The public origin is independently read from installed production configuration, not claimed as a raw log field.",
+      "The click timestamp is 2026-10-11T02:11:40.073Z; the parent approximate 02:13 UTC refers to the later observation window.",
+      "No device authorization, logout, order or email operation was performed during this refresh check."
+    ]
   }
 }

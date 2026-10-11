@@ -29,6 +29,7 @@ From the repository root:
 ```sh
 node deploy/build-pages.mjs
 node --test test/cloudflare-pages.test.js
+WRANGLER_SEND_METRICS=false node node_modules/wrangler/bin/wrangler.js pages functions build-env cloudflare/pages --outfile /dev/null --env-file=/dev/null
 ```
 
 The `brclio-xhs-pages` Pages project has been created and deployed. Use the
@@ -51,8 +52,18 @@ Pages project-create implementation.
 After the Pages project exists, deploy with:
 
 ```sh
-npx wrangler pages deploy --cwd cloudflare/pages --project-name brclio-xhs-pages --branch main
+CLOUDFLARE_ACCOUNT_ID=c8b059429c868f6d0e528f9e10325f46 npx wrangler pages deploy --cwd cloudflare/pages --project-name brclio-xhs-pages --branch main
 ```
+
+The existing production account ID above was verified against both live
+resources on 2026-10-11. Authenticate to that account before deploying; do not
+infer ownership from a cached Wrangler directory or a browser's current
+account. Pages does not support `account_id` in its Wrangler configuration.
+Select it through `CLOUDFLARE_ACCOUNT_ID`; the main and Python Worker configs
+can pin `account_id` directly. The offline `build-env` command above invokes
+the actual Pages configuration validator in pinned Wrangler 4.136.2 and does
+not deploy or require login. Run it alongside the gateway tests: the general
+Worker schema alone does not catch unsupported Pages fields.
 
 Do not use `wrangler deploy` here: that command targets Workers. Deploy the
 main and Python Workers first, using the repository's existing Cloudflare

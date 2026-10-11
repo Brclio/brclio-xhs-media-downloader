@@ -1,53 +1,1145 @@
 {
+  "schemaVersion": 2,
   "version": "2.0.15",
   "androidVersion": "1.0.15",
-  "verifiedAt": "2026-10-10T16:27:42.612872+00:00",
+  "verifiedAt": "2026-10-11T02:30:51.568954+00:00",
   "base": "https://xhs.download.brclio.com",
-  "status": "production-deployment-blocked-by-authentication",
-  "published": false,
-  "productionChangedByThisRelease": false,
-  "readyChanges": [
-    "download.html: official desktop sizes and publication date",
-    "changelog.html: direct-first release entry and correct local dates",
-    "admin/index.html: proxy used only when direct metadata check needs fallback, or during package downloads"
+  "status": "production-deployed-and-verified",
+  "published": true,
+  "productionChangedByThisRelease": true,
+  "productionAccountId": "c8b059429c868f6d0e528f9e10325f46",
+  "deployments": {
+    "mainWorker": {
+      "name": "brclio-xhs-downloader",
+      "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+      "versionId": "3259261c-bdbd-41e7-914a-3eb6c333fd87",
+      "sourceCommit": "217efb27344ce34b98b03bc2f4d0d1dec441b3fd",
+      "deploymentId": "426eb2ee-e201-4ebb-b7e2-57fe514cace9"
+    },
+    "pages": {
+      "name": "brclio-xhs-pages",
+      "branch": "main",
+      "canonicalOrigin": "https://brclio-xhs-pages.pages.dev",
+      "deploymentOrigin": "https://04eb6ac5.brclio-xhs-pages.pages.dev",
+      "deploymentIdPrefix": "04eb6ac5",
+      "sourceCommit": "4bc023484c39b365c122d92b450d9c04a18f62e6",
+      "upload": {
+        "newFiles": 0,
+        "existingFiles": 89
+      },
+      "gatewayBundlePublished": true,
+      "accountSelection": "CLOUDFLARE_ACCOUNT_ID is explicitly set to the production account by the deployment wrapper; Pages configuration omits unsupported account_id.",
+      "deploymentId": "04eb6ac5-a09c-4620-ad3e-751ac7ac211e",
+      "projectId": "7dff80d0-dbf3-46f6-841e-38ec201f5fe0"
+    },
+    "pythonWorker": {
+      "name": "brclio-xhs-python",
+      "redeployed": false,
+      "runtimeSourceChanged": false,
+      "reason": "No Python runtime change was required; the existing Python service is reached through the main Worker binding.",
+      "deploymentId": "869a8211-e651-44b6-8017-4fb2081e61c2",
+      "versionIds": [
+        "3bafdcc7-0ab2-4d98-a012-416f8d500a82"
+      ]
+    }
+  },
+  "priorProduction": {
+    "pagesSourceCommit": "b255f9abf3a5c3703fc2a477edd05582f364e317",
+    "pagesDeploymentId": "eff7e917-e3d6-4a53-8404-4e3c4d58da54",
+    "comparisonMeaning": "Actual prior production Pages deployment source, rather than the earlier Git documentation-history base.",
+    "sixLivePhotoAssetsAlreadyMatchedPriorProduction": true,
+    "mainWorkerStaticAssetsSynchronized": true
+  },
+  "productionChangeScope": [
+    "Download page official client versions, decimal sizes and publication dates.",
+    "Changelog direct-first release wording and desktop/Android local publication dates.",
+    "Admin help describes direct-first metadata checks and proxy fallback or package download use.",
+    "Main Worker health reports version 2.0.15 and its deployed version identity.",
+    "Public build excludes macOS .DS_Store and AppleDouble ._* metadata recursively.",
+    "Worker and Pages account selection explicitly targets the existing production account."
   ],
-  "deploymentTargets": [
-    "Cloudflare main Worker brclio-xhs-downloader",
-    "Cloudflare Pages brclio-xhs-pages"
-  ],
-  "pythonWorkerChangeRequired": false,
-  "blocker": "Available Cloudflare browser and Wrangler identities do not have access to the production account. User requested to sign in to the existing production account; no new account or resources created.",
   "localValidation": {
-    "webBuild": "passed,102 allowlisted public assets",
-    "pagesBuild": "passed",
-    "mainWorkerDryRun": "passed; no deployment performed",
-    "metadataPagesAndReleaseChecks": {
-      "tests": 108,
-      "passed": 108,
+    "preDeployRegression": {
+      "sourceCommit": "4607e8f54fcf3dae15c0e71e341213bb90d2be1c",
+      "command": "node --test test/download-page.test.js test/cloudflare-pages.test.js test/cloudflare-worker.test.js test/release-artifacts.test.js test/android-release.test.js",
+      "tests": 123,
+      "passed": 123,
       "failed": 0,
+      "cancelled": 0,
       "skipped": 0
     },
-    "changedBuiltAssets": {
-      "workerAndPagesByteIdentical": [
+    "livePhotoTargetedRegression": {
+      "sourceCommit": "4607e8f54fcf3dae15c0e71e341213bb90d2be1c",
+      "command": "node --test test/live-photo-package.test.js test/live-photo-format.test.js test/live-photo-maker.test.js test/live-photo-heic.test.js test/media-tracks.test.js",
+      "tests": 27,
+      "passed": 27,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "finalMetadataAndDeploymentRegression": {
+      "sourceCommit": "4bc023484c39b365c122d92b450d9c04a18f62e6",
+      "command": "node --test test/deployment-boundary.test.js test/cloudflare-pages.test.js test/cloudflare-worker.test.js",
+      "tests": 18,
+      "passed": 18,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationMs": 281.695,
+      "source": "Release owner executed after the Pages configuration correction."
+    },
+    "actualPagesConfigurationValidator": {
+      "sourceCommit": "4bc023484c39b365c122d92b450d9c04a18f62e6",
+      "command": "WRANGLER_SEND_METRICS=false node node_modules/wrangler/bin/wrangler.js pages functions build-env cloudflare/pages --outfile /dev/null --env-file=/dev/null",
+      "exitCode": 0,
+      "source": "Independent reviewer executed the actual installed Wrangler Pages validator."
+    },
+    "cleanBuild": {
+      "publicFiles": 89,
+      "totalBytes": 9623690,
+      "workerAndPagesBytesIdentical": true,
+      "forbiddenSystemMetadataFiles": 0,
+      "all89ContentFilesUnchangedFromInitialManifest": true
+    }
+  },
+  "onlineValidation": {
+    "anonymousChecks": {
+      "checkedAt": "2026-10-11T02:26:31.105Z",
+      "tests": 58,
+      "passed": 58,
+      "failed": 0,
+      "groups": [
+        {
+          "group": "static",
+          "tests": 18,
+          "passed": 18,
+          "failed": 0
+        },
+        {
+          "group": "node",
+          "tests": 16,
+          "passed": 16,
+          "failed": 0
+        },
+        {
+          "group": "python",
+          "tests": 16,
+          "passed": 16,
+          "failed": 0
+        },
+        {
+          "group": "member-video-guest",
+          "tests": 3,
+          "passed": 3,
+          "failed": 0
+        },
+        {
+          "group": "account-http-boundary",
+          "tests": 5,
+          "passed": 5,
+          "failed": 0
+        }
+      ],
+      "results": [
+        {
+          "name": "static/home",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/changelog",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/feedback-board",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/feedback-script",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/feedback-style",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/main-script",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/main-style",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/account-script",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/reviews-script",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/reviews-style",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/review-nicknames-module",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/browser-account-module",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/archive-module",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/favicon",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/admin",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/admin-trailing-slash",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/admin-script",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "static/admin-style",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "node/parse/method",
+          "ok": true,
+          "status": 405
+        },
+        {
+          "name": "node/parse/empty",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "node/parse/malformed",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "node/parse/untrusted-url",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "node/parse/input-size",
+          "ok": true,
+          "status": 413
+        },
+        {
+          "name": "node/parse/direct-image",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "node/image/method",
+          "ok": true,
+          "status": 405
+        },
+        {
+          "name": "node/image/missing-input",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "node/video/method",
+          "ok": true,
+          "status": 405
+        },
+        {
+          "name": "node/video/missing-input",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "node/image/invalid-token",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "node/video/untrusted-url",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "node/video/invalid-range",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "node/video/oversize-range",
+          "ok": true,
+          "status": 413
+        },
+        {
+          "name": "node/video/original-meta-denied",
+          "ok": true,
+          "status": 403
+        },
+        {
+          "name": "node/video/original-chunk-denied",
+          "ok": true,
+          "status": 403
+        },
+        {
+          "name": "python/parse/method",
+          "ok": true,
+          "status": 405
+        },
+        {
+          "name": "python/parse/empty",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "python/parse/malformed",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "python/parse/untrusted-url",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "python/parse/input-size",
+          "ok": true,
+          "status": 413
+        },
+        {
+          "name": "python/parse/direct-image",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "name": "python/image/method",
+          "ok": true,
+          "status": 405
+        },
+        {
+          "name": "python/image/missing-input",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "python/video/method",
+          "ok": true,
+          "status": 405
+        },
+        {
+          "name": "python/video/missing-input",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "python/image/invalid-token",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "python/video/untrusted-url",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "python/video/invalid-range",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "python/video/oversize-range",
+          "ok": true,
+          "status": 413
+        },
+        {
+          "name": "python/video/original-meta-denied",
+          "ok": true,
+          "status": 403
+        },
+        {
+          "name": "python/video/original-chunk-denied",
+          "ok": true,
+          "status": 403
+        },
+        {
+          "name": "member-video/guest-resolve",
+          "ok": true,
+          "status": 401
+        },
+        {
+          "name": "member-video/guest-ticket-meta",
+          "ok": true,
+          "status": 401
+        },
+        {
+          "name": "member-video/guest-ticket-chunk",
+          "ok": true,
+          "status": 401
+        },
+        {
+          "name": "account/method",
+          "ok": true,
+          "status": 405
+        },
+        {
+          "name": "account/content-type",
+          "ok": true,
+          "status": 415
+        },
+        {
+          "name": "account/malformed",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "account/invalid-shape",
+          "ok": true,
+          "status": 400
+        },
+        {
+          "name": "account/body-size",
+          "ok": true,
+          "status": 413
+        }
+      ],
+      "scope": "Anonymous static content, Node/Python validation, guest member-source denial and account HTTP-boundary rejection; no login, send-code, mail or member mutation."
+    },
+    "health": [
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "status": 200,
+        "ok": true,
+        "platform": "cloudflare",
+        "version": "2.0.15",
+        "pythonBinding": true,
+        "deploymentId": "3259261c-bdbd-41e7-914a-3eb6c333fd87",
+        "setCookiePresent": false,
+        "expectedIdentityMatches": true
+      },
+      {
+        "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+        "status": 200,
+        "ok": true,
+        "platform": "cloudflare",
+        "version": "2.0.15",
+        "pythonBinding": true,
+        "deploymentId": "3259261c-bdbd-41e7-914a-3eb6c333fd87",
+        "setCookiePresent": false,
+        "expectedIdentityMatches": true
+      },
+      {
+        "origin": "https://brclio-xhs-pages.pages.dev",
+        "status": 200,
+        "ok": true,
+        "platform": "cloudflare",
+        "version": "2.0.15",
+        "pythonBinding": true,
+        "deploymentId": "3259261c-bdbd-41e7-914a-3eb6c333fd87",
+        "setCookiePresent": false,
+        "expectedIdentityMatches": true
+      },
+      {
+        "origin": "https://04eb6ac5.brclio-xhs-pages.pages.dev",
+        "status": 200,
+        "ok": true,
+        "platform": "cloudflare",
+        "version": "2.0.15",
+        "pythonBinding": true,
+        "deploymentId": "3259261c-bdbd-41e7-914a-3eb6c333fd87",
+        "setCookiePresent": false,
+        "expectedIdentityMatches": true
+      }
+    ],
+    "staticBytes": {
+      "manifest": {
+        "algorithm": "sha256",
+        "encoding": "UTF-8 JSON.stringify(files) with properties path,bytes,sha256 in this order; files sorted by public relative path; no trailing newline.",
+        "sha256": "66ee8c00c65042c33a1f36ca70709269d8e06d671bfd905a725f1ee96ec67b5e",
+        "fileCount": 89,
+        "totalBytes": 9623690,
+        "files": [
+          {
+            "path": "account-ui.css",
+            "bytes": 14215,
+            "sha256": "73a178612eda6da3e66a1aa368c82e8892409a209d8951fcd6d32bb769687a19"
+          },
+          {
+            "path": "account-ui.js",
+            "bytes": 25833,
+            "sha256": "45ff8e326a46aba6799f8d3442d5719084aee90fd770503f9d679423b20a6653"
+          },
+          {
+            "path": "admin/admin.css",
+            "bytes": 26345,
+            "sha256": "dcfdf4e1b068ed39ef9eb4532d4c0a21a34d72e5a75fa9db2cc853b8b4f3b7da"
+          },
+          {
+            "path": "admin/admin.js",
+            "bytes": 88701,
+            "sha256": "33393dce6998220d3bc408fac0c99e010c05825dc5e48bad00dfe136801b740d"
+          },
+          {
+            "path": "admin/index.html",
+            "bytes": 22732,
+            "sha256": "bcc86a5ee48e572d70588a891d53f4bf27361ff3cf35e4642065ffefd519e7a8"
+          },
+          {
+            "path": "aiyc.svg",
+            "bytes": 3913,
+            "sha256": "6c9919d43f082026aee9a4a57243f3d12b6ac94b38d68fc3653ef718c3362b50"
+          },
+          {
+            "path": "app.js",
+            "bytes": 86924,
+            "sha256": "b35f0975cd0889a8806a20ef5c46d79a59ab19f1f7e2cd69513718e53f53e5d7"
+          },
+          {
+            "path": "assets/downloads/desktop-scrapbook.webp",
+            "bytes": 266064,
+            "sha256": "5ac0dc3aa3667b35c68f40ef925a86916fc6ddbecc8274c811045615ec38ae60"
+          },
+          {
+            "path": "assets/learning/book-promo.png",
+            "bytes": 1951638,
+            "sha256": "44487b44c1b6c7d12911f7cde4402034fe10fc485723ebdfaa5d96e07211abfd"
+          },
+          {
+            "path": "assets/membership/alipay.png",
+            "bytes": 187550,
+            "sha256": "1b3f23f79d57aa1e29159c4434a82d2292e0505ffc3f9c27ac8ed5f8c273b817"
+          },
+          {
+            "path": "assets/membership/wechat-contact.png",
+            "bytes": 195721,
+            "sha256": "2339efcb8f89743ff399c4ba5804472267c6ad0165dd05c2634689def0045623"
+          },
+          {
+            "path": "assets/membership/wechat-pay.png",
+            "bytes": 88790,
+            "sha256": "ee10f6aadd594c7137b6be444cfb2c733685bd0c44366bf3cb2fcd14a0909a04"
+          },
+          {
+            "path": "assets/product/coast.svg",
+            "bytes": 3723,
+            "sha256": "58b9dab60c5f93b1c1aa5b532fdafd7e8688ecccefc5c6080972c21cfa06aaf5"
+          },
+          {
+            "path": "assets/product/mountains.svg",
+            "bytes": 4041,
+            "sha256": "900c7e14994fede13176895c922f200e2b8fcadc1b7abc4d8fcca459dc2ed7f3"
+          },
+          {
+            "path": "assets/product/sunset.svg",
+            "bytes": 3786,
+            "sha256": "ab6193f9045d6210e3d6b3b4df154e828863620a3c13920faf32d31b9710be16"
+          },
+          {
+            "path": "assets/support/alipay-tip-qr.png",
+            "bytes": 137329,
+            "sha256": "871dc5f04e85c353fa4002a5f5d980c4ba9b6ca369b00b23d0c20ae6c03c7947"
+          },
+          {
+            "path": "assets/support/ip-explorer.jpg",
+            "bytes": 616041,
+            "sha256": "95b495c86c6a98abf2edf487cc3ae5dc9b92730835d80ceacbb14244e3664a2f"
+          },
+          {
+            "path": "assets/support/ip-portrait.jpg",
+            "bytes": 29990,
+            "sha256": "7171c31b2f52c65859426f668d20a92afeb39b161a335455f696481f4c91183a"
+          },
+          {
+            "path": "assets/support/wechat-beta-group-qr.jpg",
+            "bytes": 167265,
+            "sha256": "a4a3d9264c2d4e138d399942f267f7defe3721220b85a42bfffd18b8618a0c83"
+          },
+          {
+            "path": "assets/support/wechat-official-account-qr.png",
+            "bytes": 32408,
+            "sha256": "d0c13b7ebb39368b3abbe3748144b48e958bc9bac8bd429c91e6d0ab13029d99"
+          },
+          {
+            "path": "assets/support/wechat-personal-qr.png",
+            "bytes": 178625,
+            "sha256": "da13f6f542c512e7dba06a91f357a75118b4f4a90dee152a57d8d1f64988f41f"
+          },
+          {
+            "path": "assets/support/wechat-tip-qr.png",
+            "bytes": 69618,
+            "sha256": "00f1391e531d2c35dc1c0f7b9b9954b541b597d48a67a9305f165beb9932810a"
+          },
+          {
+            "path": "assets/support/wechat-video-channel-qr-cropped.png",
+            "bytes": 157701,
+            "sha256": "320f6f26c532cd0bb8b1a86aba030dcc653c4027d6ee96de87274b9fea4eeb75"
+          },
+          {
+            "path": "assets/support/wechat-video-channel-qr.jpg",
+            "bytes": 88373,
+            "sha256": "fc17732d796487ea55ee0e606bab77d6ce7af9dbaaa82e4a7588b2200a0e53d8"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-Emscripten.txt",
+            "bytes": 5093,
+            "sha256": "620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-GPL-3.txt",
+            "bytes": 35149,
+            "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-Kvazaar-extras.txt",
+            "bytes": 2565,
+            "sha256": "9149e720b3a5a4a7fc3ad1b78165e9666aad7185bb1dc30b733063a5e08e2efb"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-compiler-rt.txt",
+            "bytes": 16708,
+            "sha256": "1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-kvazaar.txt",
+            "bytes": 1549,
+            "sha256": "3c1dc3d7f8a3d08c14f4fbe9942f45764d8a21a3296e8d83446f33fd65f21c38"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-libcxx.txt",
+            "bytes": 16703,
+            "sha256": "539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-libcxxabi.txt",
+            "bytes": 16706,
+            "sha256": "e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-libheif.txt",
+            "bytes": 44366,
+            "sha256": "fa81ce652315b013359d6e8e4744335f31a50c7c192907176d3632f78a3b4596"
+          },
+          {
+            "path": "assets/vendor/heic/LICENSE-musl.txt",
+            "bytes": 6204,
+            "sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af"
+          },
+          {
+            "path": "assets/vendor/heic/NOTICE.md",
+            "bytes": 3847,
+            "sha256": "7d9f4b1fdcb5dc212bf7d0d80d03f264a7a88d0dd4b97e10b6bed212c0710220"
+          },
+          {
+            "path": "assets/vendor/heic/build/encode.cpp",
+            "bytes": 4042,
+            "sha256": "6e90e4939c315a91fc5ebeba9cbf62f75f275c751fb3a83fe4cf10a6bba388d0"
+          },
+          {
+            "path": "assets/vendor/heic/build/rebuild.sh",
+            "bytes": 3100,
+            "sha256": "2ebc9880e1fbf7338eb153dd9d3e16da316566c087fcd17c36d923907eef5828"
+          },
+          {
+            "path": "assets/vendor/heic/heic-encoder.js",
+            "bytes": 20916,
+            "sha256": "6ab24a00f26b6b877df48444fb344b916571bba5135188beba1134b1cc4b5b80"
+          },
+          {
+            "path": "assets/vendor/heic/heic-encoder.wasm",
+            "bytes": 1244949,
+            "sha256": "3b3281af4c463fca86f8a2bd956951df16f91256c9ac3514196b947793af02c0"
+          },
+          {
+            "path": "assets/vendor/heic/provenance.json",
+            "bytes": 3202,
+            "sha256": "17676388ae59fec57a75524af2998fabc1dc1abd9eef7f0e3f19716862bb9143"
+          },
+          {
+            "path": "assets/vendor/heic/source/kvazaar-2.3.2.tar.gz",
+            "bytes": 599732,
+            "sha256": "52cfc5f6eefa1ed5fd4e9ac695be696783f969883781b6705742134e9f4baca9"
+          },
+          {
+            "path": "assets/vendor/heic/source/libheif-1.23.5.tar.gz",
+            "bytes": 2220568,
+            "sha256": "86b2c12a90b0d59db9cbdb7b212d0ee0d6c280ac3937948cb6c8911dc3b52322"
+          },
+          {
+            "path": "changelog.css",
+            "bytes": 18431,
+            "sha256": "264ed94c224f8dcc943824ea221cdb56ac3eaa0b0b74c1291c5c07f5a03fc30d"
+          },
+          {
+            "path": "changelog.html",
+            "bytes": 169426,
+            "sha256": "bb879786b2b87f8565a7a04c433fcbb2afec35f8c19a1ac93864ca7f301ce58c"
+          },
+          {
+            "path": "changelog.js",
+            "bytes": 4344,
+            "sha256": "c7b02344cf25d6765d1b4fc3d972709b4d665806d9b88488825eb9dc7217925e"
+          },
+          {
+            "path": "commerce-ui.css",
+            "bytes": 5461,
+            "sha256": "c83f73d114c29689efe26228ffa6b27193ffbeec23ae42283aa1b541730f0af7"
+          },
+          {
+            "path": "commerce-ui.js",
+            "bytes": 17467,
+            "sha256": "753e9e18434c56a772b704742a8d973cccca5ae0c89dc89fc73d3aa86427922c"
+          },
+          {
+            "path": "desktop-ui.css",
+            "bytes": 54103,
+            "sha256": "9e2c9f6a05dd20e3fd2e745252b07831998c35529b334836042b23542ccc4270"
+          },
+          {
+            "path": "desktop-ui.js",
+            "bytes": 97217,
+            "sha256": "d45adadc977a37daa91899461469616cbb539e7e6fb486ed28dd44b6923ac4e0"
+          },
+          {
+            "path": "download.css",
+            "bytes": 23755,
+            "sha256": "c88c11fa656bc0d3c0aa22a6ab98e20e7c389cc8c012c1de435de22215f3e235"
+          },
+          {
+            "path": "download.html",
+            "bytes": 28196,
+            "sha256": "4d8e4521c4d06210eeaad0eb38fbaf31e2ec2e840917dabb1ee5d9514c1c2a56"
+          },
+          {
+            "path": "download.js",
+            "bytes": 9796,
+            "sha256": "6daf16d8202c0a6e0c655294a45b8316e72841f947e40b90fb3919ad6e840433"
+          },
+          {
+            "path": "favicon.svg",
+            "bytes": 370,
+            "sha256": "829b051b8ef0a80fa95d7f1909af52af9e4c32bad4ce82c70618a5c901d0719b"
+          },
+          {
+            "path": "feedback.css",
+            "bytes": 12972,
+            "sha256": "fcf8af6a9e141d1bb96587e01d490fa1b10eb23b6bc5afea41b79334d71b8051"
+          },
+          {
+            "path": "feedback.html",
+            "bytes": 10012,
+            "sha256": "5367f68b5c74eff448174698339effe0eff1316d608fcd9860a9aa09343ea6cc"
+          },
+          {
+            "path": "feedback.js",
+            "bytes": 29448,
+            "sha256": "16b88bba6579fa9d0586dcec7f90324ba36ed625b07b2df3a7aaf886d618147c"
+          },
+          {
+            "path": "index.html",
+            "bytes": 59475,
+            "sha256": "eada513afe2e75163833788eb1a33e3b49700fca616da66dfe0d869688494ef3"
+          },
+          {
+            "path": "learn.css",
+            "bytes": 14887,
+            "sha256": "81f3303749afbdffcdae138a23492ebd97e4159f362571364404893ad15725f4"
+          },
+          {
+            "path": "learn.html",
+            "bytes": 11582,
+            "sha256": "91d473337c137234ac260f64544524408be84782b16c00b7b214682ba6df9367"
+          },
+          {
+            "path": "learn.js",
+            "bytes": 3180,
+            "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78"
+          },
+          {
+            "path": "lib/archive.js",
+            "bytes": 6890,
+            "sha256": "afde62f237a971f6554354d64d8b8f146a529f530fbc761ffc29174522ab904b"
+          },
+          {
+            "path": "lib/browser-account.js",
+            "bytes": 6762,
+            "sha256": "6d461fa856d0c9b6e101165ff7511ca9b55358d069cc050e7ef10f372ae0f52f"
+          },
+          {
+            "path": "lib/clipboard.js",
+            "bytes": 2248,
+            "sha256": "03fa8d8dece3a94945ad96ebf8bdd71f4385e5431dd898b002c62da77f2b5237"
+          },
+          {
+            "path": "lib/image-dimensions.js",
+            "bytes": 3196,
+            "sha256": "138c66de524f4bd0722bb7ac1caaa1ab8c538749b891ace9c0530788969c8694"
+          },
+          {
+            "path": "lib/live-photo-format.js",
+            "bytes": 16848,
+            "sha256": "2e92ed013e11fddbb892781096267c7ac06a7db190448e01c80b6d377c7cbea3"
+          },
+          {
+            "path": "lib/live-photo-heic-encoder.js",
+            "bytes": 2981,
+            "sha256": "87957c8d170d6c1ed132d30ed7f5ea7012ba8c7eba886b6237e1e381cef59650"
+          },
+          {
+            "path": "lib/live-photo-heic-worker.js",
+            "bytes": 2169,
+            "sha256": "e510265d91f51a4b687fe0a6030365303d488c02674c9ccce19bce7eedccfe34"
+          },
+          {
+            "path": "lib/live-photo-heic.js",
+            "bytes": 19407,
+            "sha256": "633d21486079a16cddd5bca32b3d1d809a40fdaed53703fdf8ca933674318c4d"
+          },
+          {
+            "path": "lib/live-photo-maker.js",
+            "bytes": 22047,
+            "sha256": "400ae6141fa46637e4a6820c975c436e0e858e975ebf383fe3937fbb69fc8c39"
+          },
+          {
+            "path": "lib/live-photo-package.js",
+            "bytes": 5441,
+            "sha256": "04e7d8a391e9ddef74140b811e6df9269577a3457e207312f886d530f4cad7a3"
+          },
+          {
+            "path": "lib/media-tracks.js",
+            "bytes": 4528,
+            "sha256": "66b623832d0a6376293ff2e8dd5c2760c9b53e591cd92e09ae352a8b0a4c24dd"
+          },
+          {
+            "path": "lib/membership-plans.js",
+            "bytes": 816,
+            "sha256": "f05f781f5241af8472c85fbd1b7fdb381238172bfb56e67e0fb93cad3c8e17a2"
+          },
+          {
+            "path": "lib/review-nicknames.js",
+            "bytes": 23346,
+            "sha256": "90127ba72e7172822183187276bce3781b3140fbcb5a275217514d52e580b844"
+          },
+          {
+            "path": "live.css",
+            "bytes": 15485,
+            "sha256": "2fb94f8e363566c3a8d96938c45f629c9917a2bd10244345fc87d3b873e6660c"
+          },
+          {
+            "path": "live.html",
+            "bytes": 12667,
+            "sha256": "82f6af872e9225cca48f759685c500201376127859854d8c05c9c93c5af454d2"
+          },
+          {
+            "path": "live.js",
+            "bytes": 29949,
+            "sha256": "ba20a6a9fd4d11ef7cc9d7c0dcb8027f3e1543ea75cca0724c34a356179ea99d"
+          },
+          {
+            "path": "membership.css",
+            "bytes": 13435,
+            "sha256": "ddb18233f95510e41d98330d76f03b2418d7ea0f1a1640fa39b7f4c687f574f6"
+          },
+          {
+            "path": "membership.html",
+            "bytes": 14969,
+            "sha256": "e9b4337a511107ffb304fbc852bd782b0d6b3d5a410df08054391e5c23599099"
+          },
+          {
+            "path": "membership.js",
+            "bytes": 805,
+            "sha256": "fda26da0c330b33c515d99f575ea2669342cf12e01be9efb49bf6cdc5ff34c1e"
+          },
+          {
+            "path": "product.css",
+            "bytes": 43381,
+            "sha256": "14542ba6a6de12ffa4e7a31db86f19688cf4415b270c0870c2b69bf4d9b24a78"
+          },
+          {
+            "path": "product.html",
+            "bytes": 20179,
+            "sha256": "c67fd42a7527ec62021b75b42902c1d8d752d74ca9fcadba441da92c384bcb68"
+          },
+          {
+            "path": "product.js",
+            "bytes": 10223,
+            "sha256": "bcea0a624d9894c55da12ed6979ef8d24fdf9e7d78d93ca021350bc13decba0d"
+          },
+          {
+            "path": "site-header.css",
+            "bytes": 6334,
+            "sha256": "cdcef719e45dd8b2e60ac23e4f31c772d042ec958bb076c5445bdd152c68e3de"
+          },
+          {
+            "path": "style.css",
+            "bytes": 33474,
+            "sha256": "3ac6cd52f1f5a884cf9fd7b079847b0b2e721585ac405598b055954aced223f4"
+          },
+          {
+            "path": "support.css",
+            "bytes": 15999,
+            "sha256": "308519734c2a1f7fde85099d9e8d565db85a911b42b5050cb86130532acb7424"
+          },
+          {
+            "path": "vip.css",
+            "bytes": 5599,
+            "sha256": "8745e78c24ea73132ccb8e048fb1f7a418e5a9231e4b6baa6964f267453f1ab9"
+          },
+          {
+            "path": "vip.html",
+            "bytes": 5956,
+            "sha256": "70328f287b8bfcf65efe483eb976ce4176eea8477a8501c1b1c45cfc26e43049"
+          },
+          {
+            "path": "vip.js",
+            "bytes": 3180,
+            "sha256": "c97c59dab3ea21092d16f64b76c895a385073d562a0108c7adf3e85b948b0c78"
+          },
+          {
+            "path": "visit-counter.css",
+            "bytes": 6743,
+            "sha256": "4e48341f90f394d3434187f6624f8900debbd5d6ca8da8e84fc8c24a2f004c6c"
+          },
+          {
+            "path": "visit-counter.js",
+            "bytes": 5786,
+            "sha256": "630332089e0b540eb9b55b4d4095fe96f145588bcab96441308ddb9516747661"
+          }
+        ]
+      },
+      "checkedOrigins": [
+        "https://xhs.download.brclio.com",
+        "https://brclio-xhs-downloader.brclio-xhs.workers.dev"
+      ],
+      "expectedFilesPerOrigin": 89,
+      "totalComparisons": 178,
+      "matches": 178,
+      "mismatches": 0,
+      "comparison": "Exact decoded HTTP response byte count and SHA256 against the built public files."
+    },
+    "pagesCriticalHtml": {
+      "checkedOrigins": [
+        "https://brclio-xhs-pages.pages.dev",
+        "https://04eb6ac5.brclio-xhs-pages.pages.dev"
+      ],
+      "files": [
         "download.html",
         "changelog.html",
         "admin/index.html"
       ],
-      "desktopAndAndroidDatesAndSizesVerified": true
+      "comparisons": 6,
+      "matches": 6,
+      "adminRouting": "Pages forwards /admin* to the main Worker; both Pages origins match the same built admin content."
+    },
+    "removedMetadata": {
+      "path": "/assets/.DS_Store",
+      "originalBinaryNoLongerServed": true,
+      "results": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "status": 200,
+          "bytes": 59475,
+          "sha256": "eada513afe2e75163833788eb1a33e3b49700fca616da66dfe0d869688494ef3"
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "status": 404,
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "status": 200,
+          "bytes": 59475,
+          "sha256": "eada513afe2e75163833788eb1a33e3b49700fca616da66dfe0d869688494ef3"
+        },
+        {
+          "origin": "https://04eb6ac5.brclio-xhs-pages.pages.dev",
+          "status": 200,
+          "bytes": 59475,
+          "sha256": "eada513afe2e75163833788eb1a33e3b49700fca616da66dfe0d869688494ef3"
+        }
+      ],
+      "interpretation": "The Worker returns HTTP404 with zero bytes. Official and Pages origins return the exact built homepage fallback, rather than the former metadata binary."
     }
   },
-  "existingProductionDownloadPage": {
-    "observedStaticDesktop": "2.0.12",
-    "observedStaticAndroid": "1.0.13",
-    "oldSourceRuntimeReplayPassed": true,
-    "runtimeReplayReport": "v2.0.15-pre-deploy-download-runtime.json",
-    "runtimeCanUseLatestPublicMetadata": true,
-    "conditions": "JavaScript executes and public GitHub API responds within its7-second request deadline. Otherwise static older-version links remain.",
-    "realBrowserNetworkVerification": false
+  "realPublicMedia": {
+    "verifiedAt": "2026-10-11T02:21:00.648Z",
+    "source": "User-authorized public note; original share URL and all note content omitted.",
+    "fixture": false,
+    "anonymous": true,
+    "parse": [
+      {
+        "engine": "node",
+        "backend": "cloudflare-native",
+        "status": 200,
+        "success": true,
+        "imageCount": 6,
+        "videoCount": 0,
+        "livePlaybackCount": 0,
+        "originalVideoCount": 0,
+        "originalSourcesExposed": false
+      },
+      {
+        "engine": "python",
+        "backend": "cloudflare-native",
+        "status": 200,
+        "success": true,
+        "imageCount": 6,
+        "videoCount": 0,
+        "livePlaybackCount": 0,
+        "originalVideoCount": 0,
+        "originalSourcesExposed": false
+      }
+    ],
+    "firstImage": {
+      "bytes": 310278,
+      "sha256": "b8e12fa20b7efc5aac07d34cc5108e949933e25797b728408080968df85c91cf",
+      "mime": "image/jpeg",
+      "signatureMatchesMime": true,
+      "nodeStatus": 200,
+      "pythonStatus": 200,
+      "attachmentHeaderPresent": true,
+      "engineHeadersMatch": true,
+      "bytesMatchAcrossEngines": true
+    },
+    "videosApplicable": false,
+    "reason": "The supplied note contains six images and no ordinary playback video.",
+    "privateInputRemoved": true,
+    "rawBodiesUrlsTokensTitlesAndContentSaved": false
+  },
+  "observedCurrentClient": {
+    "version": "2.0.15",
+    "manualUpdateCheck": {
+      "verifiedAt": "2026-10-11T02:10:29.165357+00:00",
+      "durationMs": 982,
+      "route": "direct",
+      "status": "up-to-date",
+      "internalProxyStarted": false,
+      "subscriptionRequested": false
+    },
+    "accountRefresh": {
+      "verifiedAt": "2026-10-11T02:13:59.526Z",
+      "responseStatus": 200,
+      "successfulIpcReplyObserved": true,
+      "authenticatedMembershipVisible": true,
+      "personalDetailsOmitted": true
+    },
+    "details": "v2.0.15-installed-client-verification.json",
+    "scope": "Separate current native-client observations; not an additional installer or Android device test."
+  },
+  "issuesFoundAndResolved": [
+    {
+      "issue": "macOS metadata copied into the initial public build",
+      "initialProductionAudit": {
+        "anonymousTests": 58,
+        "anonymousPassed": 58,
+        "staticComparisons": 90,
+        "staticMatches": 89,
+        "staticMismatches": 1
+      },
+      "initialWorkerExposure": {
+        "status": 200,
+        "bytes": 6148,
+        "sha256": "6defed3308fcaf36149105b23fa89d7f50d37d001df0463735710f5ddaab11eb"
+      },
+      "resolution": "Public build filters .DS_Store and AppleDouble ._* recursively; output-contract regressions pass. Both entry points were republished from the clean 89-file build, then all content bytes and removed-metadata responses were independently checked.",
+      "fixSourceCommit": "217efb27344ce34b98b03bc2f4d0d1dec441b3fd",
+      "initialFailureEvidencePreserved": true
+    },
+    {
+      "issue": "Wrangler Pages rejects account_id in its configuration schema",
+      "failureStage": "Local configuration validation before upload",
+      "productionPagesChangedOnFailure": false,
+      "resolution": "Removed the unsupported Pages field and explicitly selected the existing account with CLOUDFLARE_ACCOUNT_ID in the deployment wrapper. Actual Pages validator and final production deployment succeeded.",
+      "fixSourceCommit": "4bc023484c39b365c122d92b450d9c04a18f62e6"
+    }
+  ],
+  "browserObservation": {
+    "source": "Release owner visual inspection of an official download page in the in-app browser using full-page screenshot.",
+    "downloadHeroRendered": true,
+    "playwrightDomReads": "Repeatedly timed out",
+    "automatedCardClickVerified": false,
+    "runtimeGithubRequestsObserved": false,
+    "claim": "Visual rendering and displayed version/date/size/latest-status text verified. No automated card-click or captured browser GitHub request is claimed.",
+    "desktopVersionVisible": "2.0.15",
+    "androidVersionVisible": "1.0.15",
+    "desktopDateVisible": "2026.10.11",
+    "androidDateVisible": "2026.10.10",
+    "visibleSizesMb": {
+      "macArmDmg": 167.5,
+      "macIntelDmg": 175.2,
+      "windowsInstaller": 146.5,
+      "windowsPortable": 146.3,
+      "androidApk": 73.2
+    },
+    "latestMetadataSuccessTextVisible": true
+  },
+  "transport": {
+    "verifier": "Node fetch through the existing OS proxy for each verifier process",
+    "systemProxyChanged": false,
+    "builtInProxyStarted": false,
+    "anonymousVerifierCredentials": "omit"
   },
   "limits": [
-    "No production deployment or new production byte equality is claimed.",
-    "Client artifacts are publicly released and verified independently from this blocked website deployment."
+    "The anonymous suite and one public image note do not establish every authenticated account, commerce, member-video, email or admin mutation flow.",
+    "The note has no ordinary video; live upstream video metadata and range download were not exercised by this note.",
+    "Live Photo source/build regressions and byte equality do not constitute a new physical Apple Photos import test.",
+    "Native update and account observations are documented separately; website publication does not add installer, signing or physical Android-device proof.",
+    "Browser visual inspection does not establish runtime GitHub API requests or download-card click behavior."
   ],
-  "personalAccountDataIncluded": false
+  "personalAccountDataIncluded": false,
+  "privateShareUrlsIncluded": false,
+  "credentialDataIncluded": false,
+  "responseBodiesIncluded": false,
+  "privateFilesystemPathsIncluded": false,
+  "resourcePreservation": {
+    "verifiedAt": "2026-10-11T02:30:51.568954+00:00",
+    "readOnlyVerification": true,
+    "productionIdentityConfirmed": true,
+    "productionAccountMatchesPreflight": true,
+    "globalIdentityUnchanged": true,
+    "independentIdentitiesRemainSeparate": true,
+    "bindingDescriptorCount": 25,
+    "bindingDescriptorsUnchanged": true,
+    "existingSecretCount": 19,
+    "allExistingSecretNamesPreserved": true,
+    "secretValuesRequestedOrCompared": false,
+    "durableObjectNamespacesUnchanged": true,
+    "durableObjectNamespacesStillExist": true,
+    "pythonServiceBindingUnchanged": true,
+    "pythonDeploymentUnchanged": true,
+    "pagesProductionBranchIsMain": true,
+    "pagesSourceCommitMatches": true,
+    "pagesAppBindingMatchesSourceConfig": true,
+    "pagesAppBindingHasNoNamedEnvironment": true
+  }
 }

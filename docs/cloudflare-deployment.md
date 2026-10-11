@@ -1,5 +1,15 @@
 # Cloudflare 部署与迁移核验
 
+## 2026-10-11：v2.0.15 发布复核
+
+本次重新通过认证身份、账号 ID 和实时资源核对生产归属：账号 `c8b059429c868f6d0e528f9e10325f46`，主 Worker `brclio-xhs-downloader`，Pages `brclio-xhs-pages`。主 Worker 当前版本 ID 为 `3259261c-bdbd-41e7-914a-3eb6c333fd87`，最终 Pages 发布入口为 [04eb6ac5.brclio-xhs-pages.pages.dev](https://04eb6ac5.brclio-xhs-pages.pages.dev)。主 Worker 来源为 `217efb27344ce34b98b03bc2f4d0d1dec441b3fd`，Pages 来源为 `4bc023484c39b365c122d92b450d9c04a18f62e6`；后者仅移除了 Pages 不支持的配置字段，89 个公开文件内容相同。
+
+生产匿名接口 58/58、正式域名与 Worker 的文件比对 178/178、Pages 两入口关键页面比对 6/6 通过，四入口健康检查均为 v2.0.15 且 Python 绑定存在。真实公开笔记在两套原生解析引擎均返回 6 张图片，首图下载均为 310,278 字节 JPEG，SHA-256 一致。现有正式桌面客户端的账号权益刷新也返回 HTTP 200；本次没有发送验证码或重测 SMTP 投递，没有创建新资源或重发 Python Worker。详细证据与本次视频、浏览器交互等范围限制见 [网页验收记录](releases/v2.0.15-web-verification.json)。
+
+公开构建现排除嵌套 `.DS_Store` 和 `._*` 文件，已核对原元数据不再提供。主 Worker 和 Python Worker 配置固定上述账号 ID；Pages 配置不接受 `account_id`，发布必须通过 `CLOUDFLARE_ACCOUNT_ID` 明确选择账号，不能依赖缓存推断。Pages 独立配置校验命令见[网关说明](../cloudflare/pages/README.md)。
+
+## 2026-09-23：迁移记录
+
 Cloudflare 服务已部署，正式站点为 [xhs.download.brclio.com](https://xhs.download.brclio.com)，另有 [Pages 入口](https://brclio-xhs-pages.pages.dev)。Pages 自定义域名和证书验证均已激活，正式域名 `/api/health` 返回 200，并确认由本轮 Cloudflare 主 Worker 提供服务。真实笔记解析、图片下载、账号登录、后台读取和 SMTP 收件已有核验证据，正式域名完整回归的结果继续记录在本文末尾。这次迁移保留 Vercel 的笔记解析回退，并非完全停止使用 Vercel：网页和图片、视频下载在 Cloudflare 处理，当原生笔记解析受到上游限制或失败时，仅交给原 Vercel 服务返回解析 JSON。
 
 本轮已配置的 DNS 记录如下；原目标保留用于必要时回滚：
