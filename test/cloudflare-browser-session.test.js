@@ -6,13 +6,15 @@ import { BrowserSessionManager, BrowserSessionError, BROWSER_SESSION_KEY,
 const token = 'a'.repeat(64), otherToken = 'b'.repeat(64);
 const noteId = 'abcdef1234567890abcdef12', otherId = '1234567890abcdef12345678';
 const sourceURL = `https://www.xiaohongshu.com/explore/${noteId}?xsec_token=PRIVATE_SOURCE`;
-const noteHTML = `<html><script>window.__INITIAL_STATE__={"noteId":"${noteId}"}</script></html>`;
+const noteHTML = `<html><script>window.__INITIAL_STATE__=${JSON.stringify({ note: { noteDetailMap: {
+  [noteId]: { note: { noteId, imageList: [{ urlDefault: 'https://ci.xiaohongshu.com/test/image' }] } },
+} } })};</script></html>`;
 const page = (finalUrl = sourceURL, html = noteHTML) => ({ finalUrl, html });
 const gate = () => page('https://www.xiaohongshu.com/captcha/check', '<title>小红书安全验证</title>');
 const privateSentinel = 'PRIVATE_RAW_EXCEPTION_OR_LIVE_TOKEN';
 
 function fixture({ snapshots = [page()], callTimeoutMs = 30, waitMs = 100, socketBehavior,
-  acquire, close, getSession, liveView, sleep, now = 1_000_000, storage: suppliedStorage } = {}) {
+  acquire, close, getSession, liveView, sleep, frameTrees, now = 1_000_000, storage: suppliedStorage } = {}) {
   const calls = { acquire: [], newTarget: [], connect: [], commands: [], close: [], liveView: [], sockets: [] };
   const data = new Map(), puts = [], alarms = [];
   let time = now;
@@ -31,6 +33,17 @@ function fixture({ snapshots = [page()], callTimeoutMs = 30, waitMs = 100, socke
       const command = JSON.parse(text); calls.commands.push(command);
       const emit = value => this.dispatchEvent(new MessageEvent('message', { data: typeof value === 'string' ? value : JSON.stringify(value) }));
       if (socketBehavior) return socketBehavior({ command, emit, socket: this });
+      if (command.method === 'Page.enable') {
+        queueMicrotask(() => emit({ id: command.id, result: {} })); return;
+      }
+      if (command.method === 'Page.navigate') {
+        queueMicrotask(() => emit({ id: command.id, result: { frameId: 'frame_1', loaderId: 'loader_1' } })); return;
+      }
+      if (command.method === 'Page.getFrameTree') {
+        const frame = frameTrees ? (frameTrees.length > 1 ? frameTrees.shift() : frameTrees[0])
+          : { id: 'frame_1', loaderId: calls.commands.some(value => value.method === 'Page.navigate') ? 'loader_1' : 'old_loader', url: sourceURL };
+        queueMicrotask(() => emit({ id: command.id, result: { frameTree: { frame } } })); return;
+      }
       const snapshot = snapshots.length > 1 ? snapshots.shift() : snapshots[0];
       queueMicrotask(() => emit({ id: command.id, result: { result: { type: 'object', value: snapshot } } }));
     }
@@ -116,14 +129,16 @@ test('CAPTCHA prompts only after an ordinary navigation and persists no HTML or 
   assert.ok(f.calls.sockets.every(socket => socket.closed));
 });
 
-test('trusted nested CAPTCHA takes priority over login path and title without accepting ordinary login', async () => {
+test('trusted nested CAPTCHA takes priority over login path and title', async () => {
   const f = fixture({ snapshots: [page('https://www.xiaohongshu.com/website-login/captcha?private=SECRET',
     '<title>小红书登录</title>')] });
-  assert.equal((await f.start()).kind, 'verification');
+  const result = await f.start();
+  assert.equal(result.kind, 'verification'); assert.equal(result.reason, 'captcha');
   assert.equal(f.calls.liveView.length, 1); assert.equal(f.calls.close.length, 0);
   const ordinary = fixture({ snapshots: [page('https://www.xiaohongshu.com/website-login', '<title>小红书登录</title>')] });
-  await rejectsCode(ordinary.start(), 'BROWSER_PAGE_REJECTED');
-  assert.equal(ordinary.calls.liveView.length, 0); assert.equal(ordinary.calls.close.length, 1);
+  const loginResult = await ordinary.start();
+  assert.equal(loginResult.kind, 'verification'); assert.equal(loginResult.reason, 'login');
+  assert.equal(ordinary.calls.liveView.length, 1); assert.equal(ordinary.calls.close.length, 0);
   const untrusted = fixture({ snapshots: [page('https://evil.example/website-login/captcha', '<title>小红书安全验证</title>')] });
   await rejectsCode(untrusted.start(), 'BROWSER_PAGE_REJECTED');
   assert.equal(untrusted.calls.liveView.length, 0);
@@ -132,7 +147,7 @@ test('trusted nested CAPTCHA takes priority over login path and title without ac
 test('failure diagnostics project only fixed location classes, byte count and branded booleans', async () => {
   const cases = [
     [page('chrome-error://chromewebdata/?PRIVATE_LOCATION', '<title>PRIVATE_HTML</title>'), 'other', 'error', false, false],
-    [page('https://www.xiaohongshu.com/website-login?PRIVATE_QUERY#PRIVATE_HASH', '<title>小红书登录</title>'), 'www', 'login', false, true],
+    [page('https://www.xiaohongshu.com/website-login/unknown?PRIVATE_QUERY#PRIVATE_HASH', '<title>小红书登录</title>'), 'www', 'login', false, true],
     [page('https://xiaohongshu.com/?PRIVATE_QUERY', '<title>PRIVATE_HTML</title>'), 'apex', 'root', false, false],
     [page('https://xhslink.cn/o/PRIVATE_PATH', '<title>PRIVATE_HTML</title>'), 'shortlink', 'shortlink', false, false],
     [page('https://evil.example/PRIVATE_PATH?PRIVATE_QUERY', '<title>小红书安全验证</title>PRIVATE_HTML'), 'other', 'other', true, false],
@@ -179,6 +194,209 @@ test('resume after eviction reads the same target, preserves deadline and never 
   assert.equal(f.calls.acquire.length, 1); assert.equal(f.calls.newTarget.length, 1); assert.equal(f.data.size, 0);
 });
 
+test('trusted login and access-error pages stay open for manual action without automatically navigating', async () => {
+  for (const hostname of ['www.xiaohongshu.com', 'xiaohongshu.com']) {
+    for (const [path, reason] of [['/website-login', 'login'], ['/login/', 'login'], ['/signin', 'login'],
+      ['/website-login/error', 'access-error'], ['/captcha/check', 'captcha']]) {
+      const f = fixture({ snapshots: [page(`https://${hostname}${path}?private=PRIVATE_QUERY`, '<title>小红书</title>')] });
+      const result = await f.start();
+      assert.equal(result.kind, 'verification'); assert.equal(result.reason, reason);
+      assert.equal(f.calls.acquire.length, 1); assert.equal(f.calls.newTarget.length, 1);
+      assert.equal(f.calls.close.length, 0); assert.equal(f.calls.liveView.length, 1);
+      assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 0);
+      assert.equal(f.data.get(BROWSER_SESSION_KEY).deadline, result.expiresAt);
+      assert.ok(f.puts.every(saved => Object.keys(saved).length === 6));
+    }
+  }
+});
+
+test('matching original note pages with branded CAPTCHA or login remain available to their owner', async () => {
+  for (const [title, reason] of [['小红书安全验证', 'captcha'], ['小红书登录', 'login']]) {
+    const f = fixture({ snapshots: [page(sourceURL, `<title>${title}</title>`)] });
+    const result = await f.start(); assert.equal(result.kind, 'verification'); assert.equal(result.reason, reason);
+    assert.equal(f.calls.close.length, 0);
+  }
+});
+
+test('manual handoff does not broaden the trusted host, path or note identity boundary', async () => {
+  for (const url of ['https://evil.example/website-login/error', 'https://www.xiaohongshu.com.evil.example/login',
+    'https://foo.xiaohongshu.com/website-login/error', 'http://www.xiaohongshu.com/website-login/error',
+    'https://www.xiaohongshu.com:8443/website-login/error', 'https://www.xiaohongshu.com/website-login/error/more',
+    'https://www.xiaohongshu.com/arbitrary', 'https://xhslink.cn/login']) {
+    const f = fixture({ snapshots: [page(url, '<title>小红书安全验证</title>')] });
+    await rejectsCode(f.start(), 'BROWSER_PAGE_REJECTED');
+    assert.equal(f.calls.liveView.length, 0); assert.equal(f.calls.close.length, 1);
+  }
+  const mismatch = fixture({ snapshots: [page(`https://www.xiaohongshu.com/explore/${otherId}`, '<title>小红书登录</title>')] });
+  await rejectsCode(mismatch.start(), 'BROWSER_NOTE_MISMATCH'); assert.equal(mismatch.calls.liveView.length, 0);
+});
+
+test('explicit resume from a login or access error retries the saved source once in the same target', async () => {
+  for (const path of ['/website-login', '/website-login/error']) {
+    const blocked = page(`https://www.xiaohongshu.com${path}`, '<title>小红书</title>');
+    const f = fixture({ snapshots: [blocked, blocked, page()] });
+    const first = await f.start();
+    const next = new BrowserSessionManager(f.state, f.browser, f.options);
+    const result = await next.resume({ token });
+    assert.equal(result.kind, 'page'); assert.equal(result.noteId, noteId); assert.equal(result.closed, true);
+    const navigations = f.calls.commands.filter(value => value.method === 'Page.navigate');
+    assert.deepEqual(navigations.map(value => value.params), [{ url: sourceURL }]);
+    assert.equal(f.calls.acquire.length, 1); assert.equal(f.calls.newTarget.length, 1);
+    assert.ok(f.calls.connect.every(value => value.sessionId === 'session_1' && value.options.targetId === 'target_1'));
+    assert.equal(f.puts[0].deadline, first.expiresAt); assert.equal(f.data.size, 0);
+  }
+});
+
+test('one manual retry that remains gated returns the same deadline and does not loop navigation', async () => {
+  const blocked = page('https://www.xiaohongshu.com/website-login/error', '<title>小红书</title>');
+  const f = fixture({ snapshots: [blocked] }); const first = await f.start(); f.advance(1_000);
+  const result = await f.manager.resume({ token });
+  assert.equal(result.kind, 'verification'); assert.equal(result.reason, 'access-error');
+  assert.equal(result.expiresAt, first.expiresAt); assert.equal(f.calls.close.length, 0);
+  assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 1);
+  assert.equal(f.calls.acquire.length, 1); assert.equal(f.calls.newTarget.length, 1);
+});
+
+test('manual CAPTCHA resume only observes the current page and never navigates the challenge', async () => {
+  const f = fixture({ snapshots: [gate()] }); await f.start();
+  const result = await f.manager.resume({ token });
+  assert.equal(result.kind, 'verification'); assert.equal(result.reason, 'captcha');
+  assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 0);
+});
+
+test('manual retry rejects a changed note and revalidates the stored source before navigation', async () => {
+  const blocked = page('https://www.xiaohongshu.com/website-login/error', '<title>小红书</title>');
+  const f = fixture({ snapshots: [blocked, blocked, page(`https://www.xiaohongshu.com/explore/${otherId}`)] });
+  await f.start(); await rejectsCode(f.manager.resume({ token }), 'BROWSER_NOTE_MISMATCH');
+  assert.equal(f.calls.close.length, 1); assert.equal(f.data.size, 0);
+  const corrupt = fixture({ snapshots: [blocked] }); await corrupt.start();
+  corrupt.data.get(BROWSER_SESSION_KEY).sourceURL = 'https://evil.example/';
+  await rejectsCode(corrupt.manager.resume({ token }), 'BROWSER_PAGE_REJECTED');
+  assert.equal(corrupt.calls.commands.filter(value => value.method === 'Page.navigate').length, 0);
+  assert.equal(corrupt.calls.close.length, 1);
+  const wrongSource = fixture({ snapshots: [blocked] }); await wrongSource.start();
+  wrongSource.data.get(BROWSER_SESSION_KEY).sourceURL = `https://www.xiaohongshu.com/explore/${otherId}`;
+  await rejectsCode(wrongSource.manager.resume({ token }), 'BROWSER_NOTE_MISMATCH');
+  assert.equal(wrongSource.calls.commands.filter(value => value.method === 'Page.navigate').length, 0);
+  assert.equal(wrongSource.calls.close.length, 1);
+});
+
+test('manual navigation failures are bounded, close the session and expose no provider text', async () => {
+  const blocked = page('https://www.xiaohongshu.com/website-login/error', '<title>小红书</title>');
+  for (const stalled of [false, true]) {
+    const f = fixture({ callTimeoutMs: 10, socketBehavior: ({ command, emit }) => {
+      if (command.method === 'Page.navigate') {
+        if (!stalled) queueMicrotask(() => emit({ id: command.id, result: { errorText: privateSentinel } }));
+      } else if (command.method === 'Page.enable') {
+        queueMicrotask(() => emit({ id: command.id, result: {} }));
+      } else if (command.method === 'Page.getFrameTree') {
+        queueMicrotask(() => emit({ id: command.id, result: { frameTree: { frame: { id: 'frame_1', loaderId: 'old_loader', url: blocked.finalUrl } } } }));
+      } else queueMicrotask(() => emit({ id: command.id, result: { result: { type: 'object', value: blocked } } }));
+    } });
+    await f.start();
+    await rejectsCode(f.manager.resume({ token }), stalled ? 'BROWSER_TIMEOUT' : 'BROWSER_PAGE_UNAVAILABLE');
+    assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 1);
+    assert.equal(f.calls.close.length, 1); assert.equal(f.data.size, 0);
+    assert.ok(f.calls.sockets.every(socket => socket.closed));
+  }
+});
+
+test('manual retry waits for its new main-frame loader before reading the old login page again', async () => {
+  const blocked = page('https://www.xiaohongshu.com/website-login/error', '<title>小红书</title>');
+  const f = fixture({ snapshots: [blocked, blocked, page()], frameTrees: [
+    { id: 'frame_1', loaderId: 'old_loader', url: blocked.finalUrl },
+    { id: 'frame_1', loaderId: 'old_loader', url: blocked.finalUrl },
+    { id: 'frame_1', loaderId: 'old_loader', url: blocked.finalUrl },
+    { id: 'frame_1', loaderId: 'loader_1', url: sourceURL },
+  ] });
+  await f.start(); const result = await f.manager.resume({ token });
+  assert.equal(result.kind, 'page'); assert.equal(result.closed, true);
+  assert.equal(f.calls.commands.filter(value => value.method === 'Page.getFrameTree').length, 4);
+  assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 1);
+  const methods = f.calls.commands.map(value => value.method);
+  assert.deepEqual(methods.slice(2), ['Page.enable', 'Page.getFrameTree', 'Page.navigate', 'Page.getFrameTree',
+    'Page.getFrameTree', 'Page.getFrameTree', 'Runtime.evaluate']);
+  assert.equal(f.time, 1_000_020);
+});
+
+test('a safe same-target script redirect can finish after its loader supersedes the navigation loader', async () => {
+  const blocked = page('https://www.xiaohongshu.com/website-login/error', '<title>小红书</title>');
+  const f = fixture({ snapshots: [blocked, blocked, page()], frameTrees: [
+    { id: 'frame_1', loaderId: 'old_loader', url: blocked.finalUrl },
+    { id: 'frame_1', loaderId: 'redirect_loader', url: sourceURL },
+  ] });
+  await f.start(); const result = await f.manager.resume({ token });
+  assert.equal(result.kind, 'page'); assert.equal(result.closed, true);
+  assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 1);
+});
+
+test('a committed first-party CAPTCHA redirect returns manual handoff with the original absolute deadline', async () => {
+  const blocked = page('https://www.xiaohongshu.com/website-login/error', '<title>小红书</title>');
+  const f = fixture({ snapshots: [blocked, blocked, gate()], frameTrees: [
+    { id: 'frame_1', loaderId: 'old_loader', url: blocked.finalUrl },
+    { id: 'frame_1', loaderId: 'loader_1', url: gate().finalUrl },
+  ] });
+  const first = await f.start(); const result = await f.manager.resume({ token });
+  assert.equal(result.kind, 'verification'); assert.equal(result.reason, 'captcha');
+  assert.equal(result.expiresAt, first.expiresAt); assert.equal(f.calls.close.length, 0);
+  assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 1);
+});
+
+test('a navigation context destroyed response is retried within the existing wait budget', async () => {
+  const blocked = page('https://www.xiaohongshu.com/website-login', '<title>小红书</title>');
+  let reads = 0;
+  let navigated = false;
+  const f = fixture({ socketBehavior: ({ command, emit }) => {
+    let result;
+    if (command.method === 'Page.enable') result = {};
+    else if (command.method === 'Page.navigate') { navigated = true; result = { frameId: 'frame_1', loaderId: 'loader_1' }; }
+    else if (command.method === 'Page.getFrameTree') result = { frameTree: { frame: { id: 'frame_1', loaderId: navigated ? 'loader_1' : 'old_loader', url: sourceURL } } };
+    else {
+      reads++;
+      if (reads === 3) {
+        queueMicrotask(() => emit({ id: command.id, error: { code: -32000, message: 'Execution context was destroyed.' } })); return;
+      }
+      result = { result: { type: 'object', value: reads <= 2 ? blocked : page() } };
+    }
+    queueMicrotask(() => emit({ id: command.id, result }));
+  } });
+  await f.start(); const result = await f.manager.resume({ token });
+  assert.equal(result.kind, 'page'); assert.equal(result.closed, true);
+  assert.equal(reads, 4); assert.equal(f.calls.close.length, 1);
+  assert.equal(f.time, 1_000_010);
+});
+
+test('only specific Runtime.evaluate context errors are retried and repeated context errors remain bounded', async () => {
+  for (const [code, message, expected] of [[-32000, privateSentinel, 'BROWSER_CDP_FAILED'],
+    [-1, 'Execution context was destroyed.', 'BROWSER_CDP_FAILED'],
+    [-32000, 'Cannot find context with specified id', 'BROWSER_PAGE_UNAVAILABLE']]) {
+    const f = fixture({ waitMs: 50, socketBehavior: ({ command, emit }) => {
+      queueMicrotask(() => emit({ id: command.id, error: { code, message } }));
+    } });
+    await rejectsCode(f.start(), expected);
+    assert.equal(f.calls.close.length, 1); assert.equal(f.data.size, 0);
+    assert.ok(f.time <= 1_000_050);
+  }
+});
+
+test('navigation commitment is bounded and failed or unsafe commits close the session', async () => {
+  const blocked = page('https://www.xiaohongshu.com/website-login/error', '<title>小红书</title>');
+  for (const [frame, expected] of [
+    [{ id: 'frame_1', loaderId: 'old_loader', url: blocked.finalUrl }, 'BROWSER_TIMEOUT'],
+    [{ id: 'frame_1', loaderId: 'loader_1', url: 'https://evil.example/' }, 'BROWSER_PAGE_REJECTED'],
+    [{ id: 'frame_1', loaderId: 'loader_1', url: `https://www.xiaohongshu.com/explore/${otherId}` }, 'BROWSER_NOTE_MISMATCH'],
+  ]) {
+    const f = fixture({ snapshots: [blocked], frameTrees: [
+      { id: 'frame_1', loaderId: 'old_loader', url: blocked.finalUrl }, frame,
+    ], waitMs: 50 });
+    await f.start(); await rejectsCode(f.manager.resume({ token }), expected);
+    assert.equal(f.calls.close.length, 1); assert.equal(f.data.size, 0);
+    assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 1);
+    assert.ok(f.calls.sockets.every(socket => socket.closed));
+    assert.ok(f.time <= 1_000_050);
+  }
+});
+
 test('a shortlink with no known ID establishes identity only on a final valid note page', async () => {
   const f = fixture();
   const result = await f.start({ noteId: null, sourceURL: 'https://xhslink.cn/o/fixture' });
@@ -191,8 +409,7 @@ test('known note ID mismatches and homepage or recommendation pages are rejected
     [page(`https://www.xiaohongshu.com/explore/${otherId}`), 'BROWSER_NOTE_MISMATCH'],
     [page('https://www.xiaohongshu.com/', noteHTML), 'BROWSER_PAGE_REJECTED'],
     [page('https://www.xiaohongshu.com/explore/'), 'BROWSER_PAGE_REJECTED'],
-    [page('https://www.xiaohongshu.com/website-login'), 'BROWSER_PAGE_REJECTED'],
-    [page(sourceURL, '<title>小红书登录</title>'), 'BROWSER_PAGE_REJECTED'],
+    [page('https://www.xiaohongshu.com/website-login/unknown'), 'BROWSER_PAGE_REJECTED'],
   ]) {
     const f = fixture({ snapshots: [snapshot] });
     await rejectsCode(f.start(), expected);
@@ -246,10 +463,9 @@ test('HTML limit uses UTF-8 bytes and rejects oversize before returning a page',
   }
 });
 
-test('ordinary hydration waits are bounded, do not prompt without a gate, and clean up connections', async () => {
+test('ordinary hydration without target media is bounded, never claimed as complete, and cleans up', async () => {
   const f = fixture({ snapshots: [page(sourceURL, '<html>loading</html>')], waitMs: 80 });
-  const result = await f.start();
-  assert.equal(result.kind, 'page'); assert.equal(result.html, '<html>loading</html>');
+  await rejectsCode(f.start(), 'BROWSER_PAGE_UNAVAILABLE');
   assert.equal(f.time, 1_000_080); assert.equal(f.calls.liveView.length, 0);
   assert.ok(f.calls.commands.length <= 9); assert.ok(f.calls.sockets.every(socket => socket.closed));
 });
@@ -308,16 +524,57 @@ test('closing is not closed: only an observed null/closed session permits a clos
   await rejectsCode(uncertain.manager.resume({ token }), 'BROWSER_EXPIRED');
 });
 
-test('close failure retains expired metadata, retries on alarms and stops retrying at the hard cap', async () => {
+test('close failure retains expired metadata with bounded backoff until the provider confirms closure', async () => {
   let canClose = false;
   const f = fixture({ close: () => { if (!canClose) throw new Error(privateSentinel); return { status: 'closed' }; } });
   assert.equal((await f.start()).closed, false);
   f.advance(10_000); await f.manager.alarm(); assert.equal(f.calls.close.length, 2);
   canClose = true; f.advance(10_000); await f.manager.alarm(); assert.equal(f.data.size, 0);
-  const capped = fixture({ close: () => { throw new Error(privateSentinel); } });
-  await capped.start(); const attempts = capped.calls.close.length;
-  capped.advance(60_000); await capped.manager.alarm();
-  assert.equal(capped.calls.close.length, attempts); assert.equal(capped.data.size, 0);
+  let trackedClosed = false;
+  const tracked = fixture({ close: () => { if (!trackedClosed) throw new Error(privateSentinel); return { status: 'closed' }; } });
+  assert.equal((await tracked.start()).closed, false);
+  tracked.advance(60_000); await tracked.manager.alarm();
+  assert.equal(tracked.calls.close.length, 2); assert.equal(tracked.data.size, 1);
+  assert.equal(tracked.data.get(BROWSER_SESSION_KEY).sourceURL, '');
+  assert.equal(tracked.data.get(BROWSER_SESSION_KEY).noteId, null);
+  assert.equal(Object.keys(tracked.data.get(BROWSER_SESSION_KEY)).length, 6);
+  assert.equal(tracked.state.storage.alarm, tracked.time + 60_000);
+  tracked.advance(300_000); await tracked.manager.alarm();
+  assert.equal(tracked.calls.close.length, 3); assert.equal(tracked.data.size, 1);
+  assert.equal(tracked.state.storage.alarm, tracked.time + 300_000);
+  await rejectsCode(tracked.manager.resume({ token }), 'BROWSER_EXPIRED');
+  assert.equal(tracked.data.size, 1);
+  trackedClosed = true; tracked.advance(300_000); await tracked.manager.alarm();
+  assert.equal(tracked.data.size, 0); assert.equal(tracked.state.storage.alarm, null);
+});
+
+test('failed cleanup storage never reports a confirmed close and retries without retaining a share query', async () => {
+  const values = new Map(); let failDelete = true, alarm;
+  const storage = { async get(key) { return structuredClone(values.get(key)); },
+    async put(key, value) { values.set(key, structuredClone(value)); },
+    async delete(key) { if (failDelete) throw new Error(privateSentinel); return values.delete(key); },
+    async setAlarm(value) { alarm = value; }, async deleteAlarm() { alarm = null; } };
+  const f = fixture({ storage }); const result = await f.start();
+  assert.equal(result.closed, false); assert.equal(values.size, 1);
+  assert.equal(values.get(BROWSER_SESSION_KEY).sourceURL, '');
+  assert.equal(values.get(BROWSER_SESSION_KEY).noteId, null);
+  assert.ok(alarm > f.time);
+  await rejectsCode(f.manager.resume({ token }), 'BROWSER_EXPIRED');
+  failDelete = false; f.advance(10_000); await f.manager.alarm();
+  assert.equal(values.size, 0); assert.equal(alarm, null);
+});
+
+test('failed expiration writes block in-memory resume and recover cleanup when storage returns', async () => {
+  const values = new Map(); let puts = 0, failWrites = true, confirmed = false;
+  const storage = { async get(key) { return structuredClone(values.get(key)); },
+    async put(key, value) { puts++; if (puts >= 4 && failWrites) throw new Error(privateSentinel); values.set(key, structuredClone(value)); },
+    async delete(key) { return values.delete(key); }, async setAlarm() {}, async deleteAlarm() {} };
+  const f = fixture({ storage, close: () => ({ status: confirmed ? 'closed' : 'closing' }),
+    getSession: () => ({ status: 'running' }) });
+  assert.equal((await f.start()).closed, false);
+  await rejectsCode(f.manager.resume({ token }), 'BROWSER_EXPIRED');
+  failWrites = false; confirmed = true; f.advance(10_000); await f.manager.alarm();
+  assert.equal(values.size, 0);
 });
 
 test('late acquire is closed after timeout and never claims a confirmed close before its ID arrives', async () => {
@@ -328,6 +585,30 @@ test('late acquire is closed after timeout and never claims a confirmed close be
   deliver({ sessionId: 'late_session' });
   await new Promise(resolve => setTimeout(resolve, 5));
   assert.deepEqual(f.calls.close, ['late_session']); assert.equal(f.data.size, 0);
+});
+
+test('a late acquired session whose close fails retains sanitized cleanup metadata until confirmation', async () => {
+  let deliver, confirmed = false;
+  const f = fixture({ callTimeoutMs: 10, acquire: () => new Promise(resolve => { deliver = resolve; }),
+    close: () => { if (!confirmed) throw new Error(privateSentinel); return { status: 'closed' }; } });
+  await rejectsCode(f.start(), 'BROWSER_ACQUIRE_FAILED');
+  deliver({ sessionId: 'late_session' }); await new Promise(resolve => setTimeout(resolve, 5));
+  const saved = f.data.get(BROWSER_SESSION_KEY);
+  assert.equal(saved.sessionId, 'late_session'); assert.equal(saved.sourceURL, ''); assert.equal(saved.noteId, null);
+  assert.equal(Object.keys(saved).length, 6); assert.ok(saved.deadline <= f.time);
+  confirmed = true; f.advance(10_000); await f.manager.alarm();
+  assert.equal(f.data.size, 0);
+});
+
+test('a temporary lifecycle write failure cannot skip closing a known late-acquired session', async () => {
+  let deliver;
+  const f = fixture({ callTimeoutMs: 10, acquire: () => new Promise(resolve => { deliver = resolve; }) });
+  await rejectsCode(f.start(), 'BROWSER_ACQUIRE_FAILED');
+  const put = f.state.storage.put;
+  f.state.storage.put = async () => { throw new Error(privateSentinel); };
+  deliver({ sessionId: 'late_session' }); await new Promise(resolve => setTimeout(resolve, 5));
+  assert.deepEqual(f.calls.close, ['late_session']); assert.equal(f.data.size, 0);
+  f.state.storage.put = put;
 });
 
 test('cancellation interrupts a polling operation, then closes and deletes its session', async () => {
@@ -346,6 +627,19 @@ test('generic initial state alone does not finish before the current note hydrat
   const result = await f.start();
   assert.equal(result.html, noteHTML); assert.equal(f.calls.commands.length, 2);
   assert.equal(f.time, 1_000_010);
+});
+
+test('a matching note ID with empty media waits for that note media instead of closing early', async () => {
+  const empty = `<script>window.__INITIAL_STATE__=${JSON.stringify({ note: { noteDetailMap: {
+    [noteId]: { note: { noteId, imageList: [], video: {} } },
+  } } })};</script>`;
+  const f = fixture({ snapshots: [page(sourceURL, empty), page()] });
+  const result = await f.start();
+  assert.equal(result.html, noteHTML); assert.equal(result.closed, true);
+  assert.equal(f.calls.commands.length, 2); assert.equal(f.time, 1_000_010);
+  const unavailable = fixture({ snapshots: [page(sourceURL, empty)], waitMs: 50 });
+  await rejectsCode(unavailable.start(), 'BROWSER_PAGE_UNAVAILABLE');
+  assert.equal(unavailable.calls.close.length, 1); assert.equal(unavailable.data.size, 0);
 });
 
 test('valid primary media can finish a matching note page without an initial-state marker', async () => {

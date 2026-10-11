@@ -2,6 +2,7 @@ import parse from './native-parse.js';
 import { createParseHandler } from '../api/parse.js';
 import { BrowserSessionManager } from './browser-session.js';
 import { maybeParseWithBrowser } from './browser-parse.js';
+import { BrowserVerificationRegistry } from './browser-verification.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
 import { invokeHandler, readBoundedBody, MAX_API_BODY_BYTES, MAX_ACCOUNT_BODY_BYTES, RequestTooLargeError } from './http-adapter.js';
@@ -11,6 +12,7 @@ export class ParseRuntime {
   constructor(state, env) {
     this.state = state;
     this.env = env;
+    this.verifications = new BrowserVerificationRegistry(state.storage, env.PARSE_RUNTIME);
     this.browser = new BrowserSessionManager(state, env.BROWSER, {
       authorizeToken: token => typeof token === 'string' && /^[a-f0-9]{64}$/.test(token)
         && state.id?.equals?.(env.PARSE_RUNTIME.idFromName(`browser:${token}`)),
@@ -25,6 +27,17 @@ export class ParseRuntime {
     const json = (body, status) => Response.json(body, { status, headers: {
       'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
     } });
+    if (path === '/__internal/browser-verification') {
+      if (request.method !== 'POST') return json({ success: false }, 405);
+      if (!this.env.BROWSER || !this.env.PARSE_RUNTIME) return json({ success: false }, 503);
+      try {
+        if (this.state.id?.equals?.(this.env.PARSE_RUNTIME.idFromName('parsing-v1')) !== true) return json({ success: false }, 404);
+        const body = JSON.parse(await readBoundedBody(request, MAX_API_BODY_BYTES));
+        return await this.verifications.dispatch({ token: body?.token, action: body?.action });
+      } catch (error) {
+        return json({ success: false, message: '验证请求无效。' }, error instanceof RequestTooLargeError ? 413 : 400);
+      }
+    }
     if (path.startsWith('/__internal/browser/')) {
       if (request.method !== 'POST') return json({ success: false }, 405);
       const started = Date.now();
@@ -37,6 +50,7 @@ export class ParseRuntime {
           success: false, engine: result.engine, code: 'VERIFICATION_REQUIRED',
           message: '小红书要求安全验证。请打开验证窗口完成验证，再继续解析。',
           verificationUrl: result.verificationUrl, expiresAt: result.expiresAt,
+          ...(['captcha', 'login', 'access-error'].includes(result.reason) ? { reason: result.reason } : {}),
         }, 422);
         let response;
         if (operation === 'cancel') response = json({ success: true, cancelled: true }, 200);

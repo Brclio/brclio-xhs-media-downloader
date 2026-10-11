@@ -3,11 +3,11 @@ import { parseNoteHtml } from '../lib/xhs.js';
 /** Per-owner Browser Run lifecycle. The caller routes one unguessable token to
  * one DO and authorizes it again after eviction. No HTML, cookies or Live View
  * URLs persist. The private sourceURL may contain a share query and is kept only
- * in temporary lifecycle storage, deleted on close (180s session deadline). */
+ * in temporary lifecycle storage. Expiry clears the note/share input; an
+ * unconfirmed remote close retains only expired cleanup identifiers. */
 export const BROWSER_SESSION_KEY = 'browser-session';
 export const BROWSER_SESSION_TTL_MS = 180_000;
 export const MAX_BROWSER_HTML_BYTES = 6 * 1024 * 1024;
-const CLEANUP_GRACE_MS = 60_000;
 const CALL_TIMEOUT_MS = 5_000;
 const MAX_WIRE_CHARS = 8 * 1024 * 1024;
 const GUARDRAILS = Object.freeze(['xiaohongshu.com', '*.xiaohongshu.com',
@@ -51,7 +51,7 @@ function pageDiagnostic(page) {
 const SAFE_CODES = new Set(['BROWSER_OWNER_REQUIRED', 'BROWSER_OWNER_REJECTED', 'BROWSER_PAGE_REJECTED',
   'BROWSER_INPUT_REJECTED', 'BROWSER_NOTE_MISMATCH', 'BROWSER_CANCELLED', 'BROWSER_EXPIRED',
   'BROWSER_TIMEOUT', 'BROWSER_STORAGE', 'BROWSER_CLOSE_FAILED', 'BROWSER_CONNECT_FAILED',
-  'BROWSER_CDP_PROTOCOL', 'BROWSER_CDP_FAILED', 'BROWSER_HTML_TOO_LARGE', 'BROWSER_PAGE_UNAVAILABLE',
+  'BROWSER_CDP_PROTOCOL', 'BROWSER_CDP_FAILED', 'BROWSER_CONTEXT_UNAVAILABLE', 'BROWSER_HTML_TOO_LARGE', 'BROWSER_PAGE_UNAVAILABLE',
   'BROWSER_LIVE_VIEW_FAILED', 'BROWSER_LIVE_VIEW_INVALID', 'BROWSER_FAILED', 'BROWSER_NOT_READY',
   'BROWSER_ACQUIRE_FAILED', 'BROWSER_TARGET_FAILED', 'BROWSER_NOT_FOUND']);
 export class BrowserSessionError extends Error {
@@ -75,16 +75,25 @@ function pageURL(value) {
 }
 const noteFromURL = url => NOTE_HOSTS.has(url.hostname)
   ? /^(?:\/explore\/|\/discovery\/item\/)([a-f\d]{24})\/?$/i.exec(url.pathname)?.[1].toLowerCase() || null : null;
-const isCaptcha = (url, html) => NOTE_HOSTS.has(url.hostname) && (
-  /(?:^|\/)captcha(?:\/|$)/i.test(url.pathname)
-  || brandedTitle(html, CAPTCHA_TITLES));
-const isLogin = (url, html) => /(?:^|\/)(?:login|signin|website-login)(?:\/|$)/i.test(url.pathname)
-  || brandedTitle(html, LOGIN_TITLES);
+function gateReason(url, html) {
+  if (!NOTE_HOSTS.has(url.hostname)) return null;
+  // Only known first-party handoff paths may keep a session alive. A branded
+  // title is additional evidence only on a validated note URL, never on an
+  // arbitrary page or recommendation route.
+  if (/^\/(?:captcha|website-login\/captcha)(?:\/[a-z\d_-]+)*\/?$/i.test(url.pathname)) return 'captcha';
+  if (/^\/website-login\/error\/?$/i.test(url.pathname)) return 'access-error';
+  if (/^\/(?:website-login|login|signin)\/?$/i.test(url.pathname)) return 'login';
+  if (noteFromURL(url)) {
+    if (brandedTitle(html, CAPTCHA_TITLES)) return 'captcha';
+    if (brandedTitle(html, LOGIN_TITLES)) return 'login';
+  }
+  return null;
+}
 function ready(html, noteId) {
-  if (new RegExp(`["']${noteId}["']\\s*:|["'](?:noteId|note_id|itemId|item_id)["']\\s*:\\s*["']${noteId}["']`).test(html)) return true;
+  const hasCurrentNote = new RegExp(`["']${noteId}["']\\s*:|["'](?:noteId|note_id|itemId|item_id)["']\\s*:\\s*["']${noteId}["']`).test(html);
   // Generic INITIAL_STATE or recommendations are not evidence of hydration for
   // this note. The existing pure parser validates any primary-media fallback.
-  if (!/<meta\b[^>]*(?:og:image|og:video)/i.test(html)) return false;
+  if (!hasCurrentNote && !/<meta\b[^>]*(?:og:image|og:video)/i.test(html)) return false;
   try {
     const parsed = parseNoteHtml(html, { noteId });
     return Boolean(parsed.images.length || parsed.videos.length || parsed.originalVideos?.length);
@@ -103,7 +112,7 @@ export class BrowserSessionManager {
     this.callTimeoutMs = Math.max(1, Math.min(CALL_TIMEOUT_MS, callTimeoutMs));
     this.waitMs = Math.max(1, Math.min(12_000, waitMs));
     this.pollMs = Math.max(1, Math.min(250, pollMs));
-    this.tail = Promise.resolve(); this.cancelEpoch = 0;
+    this.tail = Promise.resolve(); this.cancelEpoch = 0; this.closingSessions = new Set();
   }
   _lock(action) { const result = this.tail.then(action); this.tail = result.catch(() => {}); return result; }
   async _authorize(token) {
@@ -113,7 +122,7 @@ export class BrowserSessionManager {
   }
   _check(record, epoch) {
     if (epoch !== this.cancelEpoch) fail('BROWSER_CANCELLED');
-    if (this.now() >= record.deadline) fail('BROWSER_EXPIRED');
+    if (this.now() >= record.deadline || this.closingSessions.has(record.sessionId)) fail('BROWSER_EXPIRED');
   }
   _bounded(promise, milliseconds, code = 'BROWSER_TIMEOUT', onLate) {
     let done = false;
@@ -148,11 +157,16 @@ export class BrowserSessionManager {
   async _close(record) {
     // Expire before the close attempt: a failed close can never be resumed.
     record.deadline = Math.min(record.deadline, this.now());
+    if (record.sessionId) {
+      this.closingSessions.add(record.sessionId);
+      // Long-lived cleanup needs only resource identifiers. Share queries and
+      // note identity must not survive the absolute expired lifecycle.
+      record.sourceURL = ''; record.noteId = null;
+    }
     try { await this._put(record); } catch { /* Still close the remote resource. */ }
     let closed = false;
-    const cleanupUntil = record.deadline + CLEANUP_GRACE_MS;
-    const closeUntil = Math.min(this.now() + this.callTimeoutMs, cleanupUntil);
-    if (record.sessionId && this.now() < cleanupUntil) {
+    const closeUntil = this.now() + this.callTimeoutMs;
+    if (record.sessionId) {
       try {
         const result = await this._call(() => this.browser.closeSession(record.sessionId), closeUntil, 'BROWSER_CLOSE_FAILED');
         closed = result === 'closed' || result?.status === 'closed' || result?.state === 'closed';
@@ -160,17 +174,19 @@ export class BrowserSessionManager {
           const current = await this._call(() => this.browser.getSession(record.sessionId), closeUntil, 'BROWSER_CLOSE_FAILED');
           closed = current === null || current?.status === 'closed' || current?.state === 'closed';
         }
-      } catch { /* Retain only expired lifecycle metadata for bounded alarm retries. */ }
+      } catch { /* Retain expired lifecycle metadata until closure is confirmed. */ }
     }
-    if (closed || this.now() >= record.deadline + CLEANUP_GRACE_MS) {
-      try { await this._delete(); } catch {
-        try { await this._alarmAt(this.now() + 10_000); } catch { /* Provider inactivity is the final fallback. */ }
-      }
-    } else {
-      try { await this._put(record); await this._alarmAt(Math.min(this.now() + 10_000, record.deadline + CLEANUP_GRACE_MS)); }
-      catch { /* keepAlive is bounded even if storage is unavailable. */ }
+    if (closed || !record.sessionId) {
+      try { await this._delete(); this.closingSessions.delete(record.sessionId); return closed; }
+      catch { closed = false; /* A storage failure never claims completed cleanup. */ }
     }
-    return closed;
+    // Live View activity can refresh the provider's inactivity timer, so failed
+    // closes must retain their absolute expired record without a hard discard.
+    const elapsed = Math.max(0, this.now() - record.deadline);
+    const retryIn = elapsed < 60_000 ? 10_000 : elapsed < 300_000 ? 60_000 : 300_000;
+    try { await this._put(record); await this._alarmAt(this.now() + retryIn); }
+    catch { /* Preserve any already-written expired record; never refund as closed. */ }
+    return false;
   }
   async _lateAcquire(value, expired) {
     if (!opaqueId(value?.sessionId)) return;
@@ -179,7 +195,11 @@ export class BrowserSessionManager {
         const current = await this._stored();
         if (current && !current.sessionId && current.deadline === expired.deadline
           && current.engine === expired.engine && current.sourceURL === expired.sourceURL) {
-          current.sessionId = value.sessionId; await this._put(current); await this._close(current); return;
+          current.sessionId = value.sessionId; await this._close(current); return;
+        }
+        if (!current) {
+          const late = { ...expired, sessionId: value.sessionId, deadline: Math.min(expired.deadline, this.now()) };
+          await this._close(late); return;
         }
         await this._call(() => this.browser.closeSession(value.sessionId), this.now() + this.callTimeoutMs, 'BROWSER_CLOSE_FAILED');
       } catch { /* An acquisition that outlives local cleanup still has bounded inactivity. */ }
@@ -203,7 +223,11 @@ export class BrowserSessionManager {
       const item = pending.get(data?.id);
       if (!item) return;
       pending.delete(data.id);
-      if (data.error) item.reject(new BrowserSessionError('BROWSER_CDP_FAILED'));
+      if (data.error) {
+        const transientContext = item.method === 'Runtime.evaluate' && data.error.code === -32000
+          && /^(?:Execution context was destroyed\.?|Cannot find context with specified id|Cannot find default execution context)$/.test(data.error.message || '');
+        item.reject(new BrowserSessionError(transientContext ? 'BROWSER_CONTEXT_UNAVAILABLE' : 'BROWSER_CDP_FAILED'));
+      }
       else item.resolve(data.result);
     };
     const closed = () => rejectAll('BROWSER_CONNECT_FAILED');
@@ -219,25 +243,71 @@ export class BrowserSessionManager {
       socket.removeEventListener('message', message); socket.removeEventListener('close', closed); socket.removeEventListener('error', closed);
       try { socket.close(); } catch { /* Remote lifecycle is closed separately. */ }
     };
-    return { dispose, evaluate: async () => {
+    const command = async (method, params) => {
       this._check(record, epoch);
       const id = ++nextId;
-      const reply = new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+      const reply = new Promise((resolve, reject) => pending.set(id, { resolve, reject, method }));
       // Install rejection handling before send, which can synchronously fail.
       const result = this._call(() => reply, until, 'BROWSER_TIMEOUT');
-      try { socket.send(JSON.stringify({ id, method: 'Runtime.evaluate', params: {
-        expression: SNAPSHOT, returnByValue: true, awaitPromise: false,
-      } })); } catch { pending.get(id)?.reject(new BrowserSessionError('BROWSER_CONNECT_FAILED')); }
+      try { socket.send(JSON.stringify({ id, method, params })); }
+      catch { pending.get(id)?.reject(new BrowserSessionError('BROWSER_CONNECT_FAILED')); }
       try { return await result; } finally { pending.delete(id); }
-    } };
+    };
+    return { dispose,
+      evaluate: () => command('Runtime.evaluate', { expression: SNAPSHOT, returnByValue: true, awaitPromise: false }),
+      enablePage: () => command('Page.enable', {}),
+      frameTree: () => command('Page.getFrameTree', {}),
+      navigate: url => command('Page.navigate', { url }) };
+  }
+  async _returnToSource(record, epoch, until) {
+    // Called only by an explicit resume after observing login/access-error.
+    // Revalidate persisted input after an eviction before a single same-target
+    // navigation; the request can never supply a navigation URL or CDP command.
+    const source = pageURL(record.sourceURL);
+    const id = noteFromURL(source);
+    if (!id && !LINK_HOSTS.has(source.hostname)) fail('BROWSER_INPUT_REJECTED');
+    if (id && record.noteId && id !== record.noteId) fail('BROWSER_NOTE_MISMATCH');
+    const cdp = await this._connect(record, until, epoch);
+    try {
+      await cdp.enablePage();
+      const before = (await cdp.frameTree())?.frameTree?.frame;
+      if (!opaqueId(before?.id) || !opaqueId(before?.loaderId)) fail('BROWSER_CDP_PROTOCOL');
+      const result = await cdp.navigate(source.href);
+      this._check(record, epoch);
+      if (result?.errorText) fail('BROWSER_PAGE_UNAVAILABLE');
+      if (!opaqueId(result?.frameId) || (result.loaderId && !opaqueId(result.loaderId))) fail('BROWSER_CDP_PROTOCOL');
+      // No loaderId means a same-document navigation; the next bounded DOM poll
+      // determines whether the page is still gated. A command reply for a full
+      // navigation does not mean its new document has committed.
+      if (!result.loaderId) return;
+      while (this.now() < until) {
+        this._check(record, epoch);
+        const frame = (await cdp.frameTree())?.frameTree?.frame;
+        if (!frame || frame.id !== result.frameId || !opaqueId(frame.loaderId)) fail('BROWSER_CDP_PROTOCOL');
+        const current = pageURL(frame.url);
+        const currentId = noteFromURL(current);
+        if (currentId && record.noteId && currentId !== record.noteId) fail('BROWSER_NOTE_MISMATCH');
+        // A subsequent same-target script redirect can commit another loader
+        // before we read it. Any changed loader is acceptable only within the
+        // existing URL/note boundary; DOM validation still follows below.
+        if (frame.loaderId !== before.loaderId) return;
+        await this.sleep(Math.min(this.pollMs, until - this.now()));
+      }
+      fail('BROWSER_TIMEOUT');
+    } finally { cdp.dispose(); }
   }
   async _poll(record, epoch, until) {
     const cdp = await this._connect(record, until, epoch);
-    let lastPage, diagnostic;
+    let diagnostic;
     try {
       while (this.now() < until) {
         this._check(record, epoch);
-        const result = await cdp.evaluate();
+        let result;
+        try { result = await cdp.evaluate(); }
+        catch (error) {
+          if (!(error instanceof BrowserSessionError) || error.code !== 'BROWSER_CONTEXT_UNAVAILABLE') throw error;
+          await this.sleep(Math.min(this.pollMs, until - this.now())); continue;
+        }
         this._check(record, epoch);
         if (result?.exceptionDetails || !result?.result || result.result.type !== 'object') fail('BROWSER_CDP_FAILED');
         const page = result.result.value;
@@ -251,23 +321,24 @@ export class BrowserSessionManager {
         const url = pageURL(page.finalUrl);
         const id = noteFromURL(url);
         if (id && record.noteId && id !== record.noteId) fail('BROWSER_NOTE_MISMATCH');
-        if (isCaptcha(url, page.html)) return { kind: 'gate' };
-        if (isLogin(url, page.html)) fail('BROWSER_PAGE_REJECTED');
+        const reason = gateReason(url, page.html);
+        if (reason) {
+          if (id && !record.noteId) { record.noteId = id; await this._put(record); }
+          return { kind: 'gate', reason };
+        }
         if (id) {
           if (!record.noteId) { record.noteId = id; await this._put(record); }
-          lastPage = { kind: 'page', engine: record.engine, noteId: id, finalUrl: url.href, html: page.html };
-          if (ready(page.html, id)) return lastPage;
+          if (ready(page.html, id)) return { kind: 'page', engine: record.engine, noteId: id, finalUrl: url.href, html: page.html };
         } else if (!LINK_HOSTS.has(url.hostname) || url.href !== record.sourceURL) fail('BROWSER_PAGE_REJECTED');
         await this.sleep(Math.min(this.pollMs, until - this.now()));
       }
       this._check(record, epoch);
-      if (lastPage) return lastPage;
       fail('BROWSER_PAGE_UNAVAILABLE');
     } catch (error) {
       throw new BrowserSessionError(error instanceof BrowserSessionError ? error.code : 'BROWSER_FAILED', false, diagnostic);
     } finally { cdp.dispose(); }
   }
-  async _verification(record, epoch, until) {
+  async _verification(record, epoch, until, reason) {
     this._check(record, epoch);
     const remaining = record.deadline - this.now();
     const view = await this._call(() => this.browser.getLiveView(record.sessionId,
@@ -286,13 +357,18 @@ export class BrowserSessionManager {
       || socketURL.hash || socketURL.searchParams.getAll('jwt').length !== 1 || !/^[A-Za-z0-9_.-]{1,8192}$/.test(socketURL.searchParams.get('jwt') || '')
       || socketURL.pathname !== `/api/devtools/browser/${record.sessionId}/page/${record.targetId}`) fail('BROWSER_LIVE_VIEW_INVALID');
     await this._alarmAt(record.deadline);
-    return { kind: 'verification', engine: record.engine, verificationUrl: url.href, expiresAt: record.deadline };
+    return { kind: 'verification', engine: record.engine, reason, verificationUrl: url.href, expiresAt: record.deadline };
   }
-  async _run(record, epoch, until) {
+  async _run(record, epoch, until, manualResume = false) {
     try {
-      const outcome = await this._poll(record, epoch, until);
+      let outcome = await this._poll(record, epoch, until);
       this._check(record, epoch);
-      if (outcome.kind === 'gate') return await this._verification(record, epoch, until);
+      if (manualResume && outcome.kind === 'gate' && (outcome.reason === 'login' || outcome.reason === 'access-error')) {
+        await this._returnToSource(record, epoch, until);
+        outcome = await this._poll(record, epoch, until);
+        this._check(record, epoch);
+      }
+      if (outcome.kind === 'gate') return await this._verification(record, epoch, until, outcome.reason);
       return { ...outcome, closed: await this._close(record) };
     } catch (error) {
       const closed = await this._close(record);
@@ -355,7 +431,7 @@ export class BrowserSessionManager {
       const record = await this._stored();
       if (!record || !record.sessionId || !record.targetId) fail('BROWSER_NOT_FOUND');
       if (this.now() >= record.deadline) { const closed = await this._close(record); throw new BrowserSessionError('BROWSER_EXPIRED', closed); }
-      return this._run(record, epoch, Math.min(record.deadline, this.now() + this.waitMs));
+      return this._run(record, epoch, Math.min(record.deadline, this.now() + this.waitMs), true);
     });
   }
   async cancel({ token } = {}) {
@@ -370,7 +446,9 @@ export class BrowserSessionManager {
     return this._lock(async () => {
       const record = await this._stored();
       if (!record) return;
-      if (this.now() < record.deadline) { await this._alarmAt(record.deadline); return; }
+      if (this.now() < record.deadline && !this.closingSessions.has(record.sessionId)) {
+        await this._alarmAt(record.deadline); return;
+      }
       await this._close(record);
     });
   }

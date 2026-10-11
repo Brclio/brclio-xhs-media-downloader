@@ -64,7 +64,7 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
         } else if (path === '/api/parse_verification') {
           if (request.method !== 'POST') response = json({ success: false, message: '只支持 POST 请求。' }, 405, { Allow: 'POST' });
           else if ((request.headers.has('Origin') && request.headers.get('Origin') !== new URL(request.url).origin)
-            || request.headers.get('Sec-Fetch-Site') === 'cross-site') response = json({ success: false, message: '请求来源无效。' }, 403);
+            || request.headers.get('Sec-Fetch-Site')?.toLowerCase() === 'cross-site') response = json({ success: false, message: '请求来源无效。' }, 403);
           else {
             let data;
             try { data = JSON.parse(await readBoundedBody(request, MAX_API_BODY_BYTES)); } catch (error) {
@@ -74,8 +74,8 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
               response = json({ success: false, message: '验证请求无效。' }, 400);
             } else if (!env.PARSE_RUNTIME || !env.BROWSER) response = json({ success: false, message: '验证服务暂时不可用。' }, 503);
             else {
-              response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName(`browser:${data.token}`)).fetch(new Request(`https://browser.internal/__internal/browser/${data.action}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: data.token }),
+              response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName('parsing-v1')).fetch(new Request('https://browser.internal/__internal/browser-verification', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: data.token, action: data.action }),
               }));
               const headers = new Headers(response.headers);
               headers.delete('X-Browser-Closed'); headers.delete('X-Browser-Elapsed-Ms');

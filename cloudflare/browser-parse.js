@@ -1,5 +1,6 @@
 import { extractInputUrl, extractNoteId, isDirectImageUrl } from '../lib/xhs.js';
 import { MAX_API_BODY_BYTES, readBoundedBody } from './http-adapter.js';
+import { BrowserVerificationRegistry, cancelUnregisteredVerification, publicBrowserResponse, verificationPayload } from './browser-verification.js';
 
 export const BROWSER_BUDGET_STORAGE_KEY = 'browser-parse-budget-v1';
 export const BROWSER_ATTEMPT_RESERVATION_MS = 180_000;
@@ -77,13 +78,6 @@ async function refundConfirmedClose(storage, reservation, response) {
   } catch { /* A failed refund retains the conservative reservation. */ }
 }
 
-function publicResponse(response) {
-  const headers = new Headers(response.headers);
-  headers.delete(CLOSED_HEADER); headers.delete(ELAPSED_HEADER);
-  headers.set('Cache-Control', 'no-store'); headers.set('X-Content-Type-Options', 'nosniff');
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-}
-
 async function startSession(stub, payload, signal) {
   const controller = new AbortController();
   let rejectAbort;
@@ -112,20 +106,30 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
     const bytes = crypto.getRandomValues(new Uint8Array(32));
     const token = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
     const stub = env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName(`browser:${token}`));
-    const response = await startSession(stub, { token, ...input }, request.signal);
+    let response;
+    try { response = await startSession(stub, { token, ...input }, request.signal); }
+    catch {
+      // Aborting the transport does not prove the owner stopped its acquisition.
+      // Explicitly cancel it; a late start result can never reach registration.
+      await cancelUnregisteredVerification(stub, token);
+      return nativeResponse;
+    }
     if (!(response instanceof Response)) return nativeResponse;
     if (response.status === 422) {
       const body = JSON.parse(await readBoundedBody(response, MAX_API_BODY_BYTES));
-      if (body?.code === 'VERIFICATION_REQUIRED' && body.success === false && body.engine === input.engine
-        && typeof body.verificationUrl === 'string' && body.verificationUrl.length <= MAX_API_BODY_BYTES
-        && typeof body.expiresAt === 'number' && Number.isFinite(body.expiresAt)) {
-        // A live verification session keeps its complete reservation, even if a bad close header is present.
-        return json({ success: false, engine: input.engine, code: 'VERIFICATION_REQUIRED',
-          message: '小红书需要验证，请完成验证后继续解析。', verificationUrl: body.verificationUrl,
-          verificationToken: token, expiresAt: body.expiresAt }, 422);
+      const payload = verificationPayload(body, input.engine);
+      if (payload) {
+        let registered = false;
+        try {
+          if (!request.signal.aborted) registered = await new BrowserVerificationRegistry(state.storage, env.PARSE_RUNTIME)
+            .register(token, { expiresAt: payload.expiresAt, engine: input.engine });
+        } catch { /* A storage failure must not expose an untracked browser. */ }
+        if (!registered) { await cancelUnregisteredVerification(stub, token); return nativeResponse; }
+        // A live verification keeps its complete reservation, even if a bad close header is present.
+        return json({ ...payload, verificationToken: token }, 422);
       }
     }
     await refundConfirmedClose(state.storage, reservation, response);
-    return response.ok ? publicResponse(response) : nativeResponse;
+    return response.ok ? publicBrowserResponse(response) : nativeResponse;
   } catch { return nativeResponse; }
 }

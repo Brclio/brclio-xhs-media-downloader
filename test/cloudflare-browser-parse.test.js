@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { maybeParseWithBrowser, BROWSER_BUDGET_STORAGE_KEY as KEY, BROWSER_ATTEMPT_RESERVATION_MS as RESERVE } from '../cloudflare/browser-parse.js';
+import { BROWSER_VERIFICATION_REGISTRY_KEY as REGISTRY_KEY, verificationTokenDigest } from '../cloudflare/browser-verification.js';
 
 const NOTE = 'https://www.xiaohongshu.com/explore/1234567890abcdef12345678?xsec_token=private-query-sentinel';
 const request = (text = NOTE, { path = '/api/parse', method = 'POST', headers = {}, ...extra } = {}) => new Request(`https://fixture.example.test${path}`, {
   method, headers: { 'Content-Type': 'application/json', ...headers }, ...(method === 'POST' ? { body: JSON.stringify({ text, ignoredCookie: 'private-body-sentinel' }) } : {}), ...extra,
 });
 const native = (status = 422) => Response.json({ success: false, message: 'original native error sentinel' }, { status });
+const liveURL = `https://live.browser.run/ui/view?mode=tab&wss=${encodeURIComponent('live.browser.run/api/devtools/browser/fixture-session/page/fixture-target?jwt=private-jwt-sentinel')}`;
 function storage() {
   const values = new Map(), writes = [];
   let tail = Promise.resolve();
@@ -99,13 +101,36 @@ test('unclosed attempts retain reservation and the daily budget permits at most 
 
 test('verified close refunds actual elapsed plus five seconds while verification keeps the full reservation', async t => {
   clock(t);
-  const h = harness(payload => Response.json({ success: false, engine: payload.engine, code: 'VERIFICATION_REQUIRED', message: 'ignored internal wording', verificationUrl: 'https://live.browser.run/private-credential-fixture', expiresAt: Date.now() + 180000 }, { status: 422, headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1000' } }));
+  const h = harness(payload => Response.json({ success: false, engine: payload.engine, code: 'VERIFICATION_REQUIRED', reason: 'access-error', message: 'ignored internal wording', verificationUrl: liveURL, expiresAt: Date.now() + 180000 }, { status: 422, headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1000' } }));
   const response = await maybeParseWithBrowser(request('https://xhslink.cn/arbitrary/path?private=value'), native(504), h);
   const body = await response.json();
   assert.equal(response.status, 422); assert.equal(body.code, 'VERIFICATION_REQUIRED'); assert.equal(body.engine, 'node');
   assert.equal(body.verificationToken, h.calls[0].payload.token); assert.equal(h.calls[0].payload.noteId, null);
-  assert.equal(body.verificationUrl, 'https://live.browser.run/private-credential-fixture');
+  assert.equal(body.verificationUrl, liveURL); assert.equal(body.reason, 'access-error');
   assert.equal(h.store.values.get(KEY).usedMs, RESERVE); assert.equal(response.headers.get('X-Browser-Closed'), null);
+  const entries = h.store.values.get(REGISTRY_KEY);
+  assert.equal(entries.length, 1); assert.equal(entries[0].digest, await verificationTokenDigest(body.verificationToken));
+  assert.equal(entries[0].expiresAt, body.expiresAt); assert.equal(entries[0].engine, 'node');
+  const serialized = JSON.stringify(entries);
+  for (const privateValue of [body.verificationToken, 'private-jwt-sentinel', 'arbitrary/path', 'private=value']) assert.equal(serialized.includes(privateValue), false);
+});
+
+test('a verification registry failure cancels the untracked owner and retains the complete budget', async t => {
+  clock(t);
+  const h = harness((payload, req) => req.url.endsWith('/cancel')
+    ? Response.json({ success: true, cancelled: true }, { headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1' } })
+    : Response.json({ success: false, engine: payload.engine, code: 'VERIFICATION_REQUIRED', verificationUrl: liveURL, expiresAt: Date.now() + 180000 }, { status: 422 }));
+  const originalTransaction = h.store.transaction.bind(h.store);
+  h.store.transaction = operation => originalTransaction(transaction => operation({ ...transaction, put: async (key, value) => {
+    if (key === REGISTRY_KEY) throw new Error('private-storage-error');
+    return transaction.put(key, value);
+  } }));
+  const original = native();
+  assert.equal(await maybeParseWithBrowser(request(), original, h), original);
+  assert.equal(original.bodyUsed, false); assert.equal(h.calls.length, 2);
+  assert.equal(h.calls[1].request.url, 'https://browser.internal/__internal/browser/cancel');
+  assert.deepEqual(h.calls[1].payload, { token: h.calls[0].payload.token });
+  assert.equal(h.store.values.get(KEY).usedMs, RESERVE); assert.equal(h.store.values.has(REGISTRY_KEY), false);
 });
 
 test('invalid close evidence, internal failures and corrupt counters fail safely without reading original error', async t => {
@@ -133,16 +158,42 @@ test('cancelled request never consumes budget or starts browser', async () => {
 test('start deadline and caller cancellation preserve native error and unconfirmed reservation', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   for (const cancel of [false, true]) {
-    const h = harness(() => new Promise(() => {})), original = native();
+    const h = harness((_payload, req) => req.url.endsWith('/cancel')
+      ? Response.json({ success: true, cancelled: true }, { headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1' } })
+      : new Promise(() => {})), original = native();
     const controller = new AbortController();
     const pending = maybeParseWithBrowser(request(NOTE, { signal: controller.signal }), original, h);
     while (h.calls.length === 0) await new Promise(resolve => setImmediate(resolve));
     if (cancel) controller.abort(); else t.mock.timers.tick(20_000);
     assert.equal(await pending, original);
     assert.equal(h.calls[0].request.signal.aborted, true);
+    assert.equal(h.calls.length, 2); assert.equal(h.calls[1].request.url, 'https://browser.internal/__internal/browser/cancel');
+    assert.deepEqual(h.calls[1].payload, { token: h.calls[0].payload.token });
+    assert.equal(h.calls[1].request.signal.aborted, false);
     assert.equal(h.store.values.get(KEY).usedMs, RESERVE);
+    assert.equal(h.store.values.has(REGISTRY_KEY), false);
     assert.equal(original.bodyUsed, false);
   }
+});
+
+test('a late handoff result after pending-start cancellation cannot register or expose a verification token', async () => {
+  let finishStart;
+  const h = harness((_payload, req) => req.url.endsWith('/cancel')
+    ? Response.json({ success: true, cancelled: true }) : new Promise(resolve => { finishStart = resolve; }));
+  const controller = new AbortController(), original = native();
+  const pending = maybeParseWithBrowser(request(NOTE, { signal: controller.signal }), original, h);
+  while (!finishStart) await new Promise(resolve => setImmediate(resolve));
+  controller.abort();
+  const response = await pending;
+  assert.equal(response, original); assert.equal(response.bodyUsed, false);
+  assert.equal(h.calls.length, 2); assert.equal(h.calls[1].request.url, 'https://browser.internal/__internal/browser/cancel');
+  finishStart(Response.json({ success: false, engine: 'node', code: 'VERIFICATION_REQUIRED', reason: 'captcha',
+    verificationUrl: liveURL, expiresAt: Date.now() + 180000 }, { status: 422 }));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(h.store.values.has(REGISTRY_KEY), false);
+  assert.equal(h.store.values.get(KEY).usedMs, RESERVE);
+  assert.equal(h.calls.length, 2);
+  assert.deepEqual(await response.json(), { success: false, message: 'original native error sentinel' });
 });
 
 test('a prior-day close cannot refund another day reservation and midnight does not reset start cooldown', async t => {

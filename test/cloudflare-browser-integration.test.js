@@ -33,7 +33,7 @@ test('public requests cannot address private browser or rendered-HTML routes thr
     ASSETS: { fetch() { assetCalls++; return new Response('asset'); } },
   };
   for (const path of ['/__internal/parse-rendered-note', '/__internal/parse-rendered-note/',
-    '/__internal/browser/start', '/__internal/browser/resume', '/__internal/browser/cancel']) {
+    '/__internal/browser/start', '/__internal/browser/resume', '/__internal/browser/cancel', '/__internal/browser-verification']) {
     const response = await worker.fetch(post(path, { token, finalUrl: noteUrl, html: '<p>private</p>', noteId }, {
       Authorization: `Bearer ${token}`, 'X-Internal-Rendered': 'true', 'X-Internal-Request': '1',
     }), env);
@@ -95,7 +95,7 @@ test('inactive browser verification rejects valid tokens before namespace lookup
   assert.deepEqual(fixture.calls, []);
 });
 
-test('each bearer token routes only to its owner DO and forwarding drops caller headers and override fields', async () => {
+test('public bearer requests route only to the global verifier and drop caller headers and override fields', async () => {
   const fixture = namespaceFixture(() => Response.json({ success: true }, { headers: {
     'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '12',
   } }));
@@ -109,11 +109,62 @@ test('each bearer token routes only to its owner DO and forwarding drops caller 
     assert.equal(response.headers.get('x-browser-elapsed-ms'), null);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     const forwarded = fixture.calls.at(-1);
-    assert.equal(forwarded.id, `browser:${currentToken}`);
-    assert.equal(forwarded.url, `https://browser.internal/__internal/browser/${action}`);
-    assert.deepEqual(forwarded.body, { token: currentToken });
+    assert.equal(forwarded.id, 'parsing-v1');
+    assert.equal(forwarded.url, 'https://browser.internal/__internal/browser-verification');
+    assert.deepEqual(forwarded.body, { token: currentToken, action });
     assert.deepEqual(forwarded.headers, { 'content-type': 'application/json' });
   }
+});
+
+function globalVerificationFixture(ownerResponse = () => Response.json({ success: true, engine: 'node' })) {
+  const values = new Map(), names = [], dispatches = [], writes = [];
+  let tail = Promise.resolve(), runtime;
+  const storage = { transaction(operation) {
+    const pending = tail.then(() => operation({
+      async get(key) { return values.has(key) ? structuredClone(values.get(key)) : undefined; },
+      async put(key, value) { values.set(key, structuredClone(value)); writes.push({ key, value: structuredClone(value) }); },
+    }));
+    tail = pending.catch(() => {}); return pending;
+  } };
+  const binding = { idFromName(name) { names.push(name); return name; }, get(id) { return { async fetch(request) {
+    dispatches.push({ id, url: request.url, headers: Object.fromEntries(request.headers), body: await request.clone().json() });
+    return id === 'parsing-v1' ? runtime.fetch(request) : ownerResponse(request);
+  } }; } };
+  const env = { BROWSER: {}, PARSE_RUNTIME: binding };
+  runtime = new ParseRuntime({ id: { equals: id => id === 'parsing-v1' }, storage }, env);
+  return { runtime, env, names, dispatches, writes };
+}
+
+test('public unknown tokens reach only the existing global verifier and never create owner objects', async () => {
+  const f = globalVerificationFixture();
+  for (let index = 0; index < 24; index++) {
+    const response = await worker.fetch(post('/api/parse_verification', {
+      token: index.toString(16).padStart(64, '0'), action: index % 2 ? 'resume' : 'cancel',
+    }), f.env);
+    assert.equal(response.status, 410);
+    assert.equal((await response.json()).code, 'VERIFICATION_EXPIRED');
+  }
+  assert.ok(f.names.every(name => name === 'parsing-v1'));
+  assert.equal(f.dispatches.length, 24); assert.ok(f.dispatches.every(call => call.id === 'parsing-v1'));
+  assert.deepEqual(f.writes, []);
+});
+
+test('an issued capability addresses its owner once and cannot be replayed after successful parsing', async () => {
+  const f = globalVerificationFixture(() => Response.json({ success: true, engine: 'node', count: 1 }, {
+    headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '3000' },
+  }));
+  await f.runtime.verifications.register(token, { engine: 'node', expiresAt: Date.now() + 180000 });
+  const response = await worker.fetch(post('/api/parse_verification', {
+    token, action: 'resume', html: '<p>forged</p>', engine: 'python', sourceURL: 'https://evil.test/',
+  }, { Cookie: 'private-cookie', Authorization: 'Bearer private-auth', Origin: origin }), f.env);
+  assert.equal(response.status, 200); assert.equal((await response.json()).count, 1);
+  assert.equal(response.headers.get('x-browser-closed'), null); assert.equal(response.headers.get('x-browser-elapsed-ms'), null);
+  const owners = f.dispatches.filter(call => call.id.startsWith('browser:'));
+  assert.equal(owners.length, 1); assert.equal(owners[0].id, `browser:${token}`);
+  assert.equal(owners[0].url, 'https://browser.internal/__internal/browser/resume');
+  assert.deepEqual(owners[0].body, { token }); assert.deepEqual(owners[0].headers, { 'content-type': 'application/json' });
+  for (const action of ['resume', 'cancel']) assert.equal((await worker.fetch(post('/api/parse_verification', { token, action }), f.env)).status, 410);
+  assert.equal(f.dispatches.filter(call => call.id.startsWith('browser:')).length, 1);
 });
 
 function runtimeFixture({ ownerToken = token, record, pythonFetch } = {}) {
@@ -188,4 +239,22 @@ test('cancel is idempotent without a session and never parses or acquires', asyn
     assert.deepEqual(await response.json(), { success: true, cancelled: true });
   }
   assert.deepEqual(fixture.calls, []);
+});
+
+test('a browser owner cannot act as the global verification directory', async () => {
+  const fixture = runtimeFixture();
+  const response = await fixture.runtime.fetch(post('/__internal/browser-verification', { token, action: 'resume' }));
+  assert.equal(response.status, 404); assert.deepEqual(fixture.calls, []);
+});
+
+test('the private owner response projects only supported manual handoff reason enums', async t => {
+  const fixture = runtimeFixture();
+  let reason = 'captcha';
+  t.mock.method(fixture.runtime.browser, 'resume', async () => ({ kind: 'verification', engine: 'node', reason,
+    verificationUrl: 'https://live.browser.run/private-fixture', expiresAt: Date.now() + 180000 }));
+  for (reason of ['captcha', 'login', 'access-error', 'private-reason-sentinel']) {
+    const response = await fixture.runtime.fetch(internal('resume'));
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).reason, reason === 'private-reason-sentinel' ? undefined : reason);
+  }
 });

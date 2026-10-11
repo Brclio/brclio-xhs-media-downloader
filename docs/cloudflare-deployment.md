@@ -2,11 +2,13 @@
 
 ## Cloudflare-only 维护边界
 
-正式托管方案仅使用 Pages、主 Worker、私有 Python Worker 与现有服务绑定。部署和恢复生产不以 Vercel 项目、域名或函数为前提。Browser Run 普通读取与手动验证码流程已做上线实验，但真实样本全部失败；现已移除 `BROWSER` 绑定，停用自动浏览器重试，避免继续产生无效成本和延迟。无绑定时，合法 `/api/parse_verification` 请求也返回 503，不查询或分派会话 Durable Object。生产保留两套原生解析及安全失败诊断，解析问题尚未修复。
+正式托管方案仅使用 Pages、主 Worker、私有 Python Worker 与现有服务绑定，不依赖 Vercel。本轮重新启用 `BROWSER` 和人工接管流程，正在发布核验；网页故障提示在真实笔记解析与下载验收完成前保留。原生引擎失败后，可信小红书验证码、登录或站内访问错误页可交给用户本人处理，恢复时仍需确认原笔记的有效媒体。不能把打开了窗口或自动测试通过当成解析已恢复。
 
-## 2026-10-11：Browser Run 实验与停用（当前）
+人工入口的继续／取消请求先经 `parsing-v1` 有效会话目录，未知 token 不创建 owner 对象；目录最多三条且只保存 SHA256 和数字状态。会话绝对期限仍为 180 秒，提供方关闭未确认时只保留过期标识用于退避清理，不允许继续、不宣称关闭。完整当前实现边界见[Cloudflare 说明](../cloudflare/README.md)。下方实验、停用及媒体结果均保留为历史证据。
 
-来源提交 `9fdae65898cd67be0edc6f7e0f96b2cd35eb25d1` 部署了 Python 版本 `6d84f091-8d1c-426d-9eb6-5aa53cf06dd3`、首个实验主 Worker 版本 `98c5601c-c604-4099-927f-b5b8d57579da`，以及 [Pages 部署 0ff2c350](https://0ff2c350.brclio-xhs-pages.pages.dev)。公开文件共 90 个，涉及网页脚本、样式和新增验证模块三项静态变更。随后提交 `a592e8969614d076d94cb6de599afbe8aef4b7e1` 调整嵌套 CAPTCHA 分类优先级并补充安全失败摘要，实验主 Worker 更新为 `c26e3784-dd84-492f-a506-8b85f75cbd16`；该补丁未更换上述 Python 和 Pages 发布。最终停用与门禁版本来源为 `aced84ecd75d1bcf9e0d922498e2fc9b6e4ebd70`，已移除主 Worker 的 `BROWSER` 绑定，当前主 Worker 版本为 `8443f3c1-c8af-4ee8-91bf-397e73e149d6`，自动浏览器重试已停用；此次静态资源更新为 0。
+## 2026-10-11：Browser Run 实验与停用（历史）
+
+来源提交 `9fdae65898cd67be0edc6f7e0f96b2cd35eb25d1` 部署了 Python 版本 `6d84f091-8d1c-426d-9eb6-5aa53cf06dd3`、首个实验主 Worker 版本 `98c5601c-c604-4099-927f-b5b8d57579da`，以及 [Pages 部署 0ff2c350](https://0ff2c350.brclio-xhs-pages.pages.dev)。公开文件共 90 个，涉及网页脚本、样式和新增验证模块三项静态变更。随后提交 `a592e8969614d076d94cb6de599afbe8aef4b7e1` 调整嵌套 CAPTCHA 分类优先级并补充安全失败摘要，实验主 Worker 更新为 `c26e3784-dd84-492f-a506-8b85f75cbd16`；该补丁未更换上述 Python 和 Pages 发布。最终停用与门禁版本来源为 `aced84ecd75d1bcf9e0d922498e2fc9b6e4ebd70`，已移除主 Worker 的 `BROWSER` 绑定，当时主 Worker 版本为 `8443f3c1-c8af-4ee8-91bf-397e73e149d6`，自动浏览器重试已停用；此次静态资源更新为 0。
 
 实验期间只新增 `BROWSER` 绑定；停用后恢复原有 24 项绑定，19 个 Secret 名称、两个 Durable Object namespace 和 Python 服务绑定保留。Python 私有页面解析路径的 59 项测试、主流程 91 项测试及补充 47 项专项测试通过；最终停用与接口门禁的 32 项专项测试也通过，包括无绑定时验证请求不分派会话对象。这些是本地边界与回归证据，不代替真实上游验收。模块、测试、Python 私有 helper 和网页交互准备代码保留，但无绑定时不启动浏览器会话，也不为该重试产生新的 Browser Run 用量。发布、资源和真实样本结果统一记录在 [Browser Run 后续核验](releases/v2.0.15-cloudflare-browser-followup.json)。
 
@@ -183,7 +185,7 @@ GitHub API 与 SMTP 服务原有的限流、容量和发送限制仍存在。访
 
 SQLite 类型 Durable Objects 可用于 Workers Free，当前文档默认每次调用最多 30 秒 CPU，但有独立请求、持续时间和存储额度。ParseRuntime 留存实验数字预算，短期会话管理代码也曾使用存储，因此需同时监测调用、持续时间和存储；历史账号与反馈用例通过不等于浏览器实验已通过。详见 [Durable Objects 定价](https://developers.cloudflare.com/durable-objects/platform/pricing/) 与 [限额](https://developers.cloudflare.com/durable-objects/platform/limits/)。
 
-自动 Browser Run 重试已停用，不再为解析失败开启新浏览器会话。保留代码按 UTC 日使用 600,000 毫秒的本地预算，每次预留 180,000 毫秒、新会话至少间隔 30 秒；只有确认关闭才退回未使用的预留时间，并保留安全余量。这些实验保护不是 Cloudflare 计费上限保证，也不代表免费额度或所有访问都可成功；本次没有自动升级套餐。若未来明确重新启用，应先核对实际账号的 [Browser Run 限额](https://developers.cloudflare.com/browser-run/limits/) 与 [计费规则](https://developers.cloudflare.com/browser-run/pricing/)。
+本轮重新启用 Browser Run 与人工接管，按 UTC 日使用 600,000 毫秒的本地预算，每次预留 180,000 毫秒、新会话至少间隔 30 秒；只有确认关闭才退回未使用的预留时间，并保留安全余量。这些实验保护不是 Cloudflare 计费上限保证，也不代表免费额度或所有访问都可成功；本次没有自动升级套餐。发布和验收仍须观察实际账号的 [Browser Run 限额](https://developers.cloudflare.com/browser-run/limits/) 与 [计费规则](https://developers.cloudflare.com/browser-run/pricing/)。
 
 <a id="已有验证记录"></a>
 
