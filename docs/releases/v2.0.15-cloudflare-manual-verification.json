@@ -1,0 +1,308 @@
+{
+  "checkedAt": "2026-10-11T07:36:53.612130+00:00",
+  "status": "manual-handoff-available-real-media-acceptance-pending",
+  "hosting": {
+    "accountId": "c8b059429c868f6d0e528f9e10325f46",
+    "mainWorker": "brclio-xhs-downloader",
+    "pagesProject": "brclio-xhs-pages",
+    "pagesDeploymentId": "35f2e61f-fb79-4292-abc5-353bf911fe9c",
+    "pythonWorker": "brclio-xhs-python",
+    "pythonVersion": "6d84f091-8d1c-426d-9eb6-5aa53cf06dd3",
+    "vercelUsed": false,
+    "mainSource": "01b3036a4ab9ab9c769cd397ace5cd9f080afae9",
+    "mainVersion": "9b51500e-e863-432e-9c8e-6a185522d59a"
+  },
+  "implementation": {
+    "nativeFirst": true,
+    "pythonUsesSharedNoteFetch": true,
+    "pythonParserIndependent": true,
+    "isolatedManualLiveView": true,
+    "automaticCaptchaSolving": false,
+    "visitorCookiesForwardedToBrowser": false,
+    "publicInternalRoutes": false
+  },
+  "busyCorrection": {
+    "sharedAcrossEngines": true,
+    "startIntervalMs": 30000,
+    "applicationDailyBudgetMs": 600000,
+    "reservationMs": 180000,
+    "resetUtc": "00:00",
+    "resetBeijing": "08:00",
+    "distinctCodes": [
+      "BROWSER_COOLDOWN",
+      "BROWSER_DAILY_LIMIT",
+      "BROWSER_STATE_UNAVAILABLE"
+    ],
+    "retryAfterHeader": true,
+    "historicalBudgetReset": false,
+    "manualSettlement": "Only confirmed close; full reservation start to close plus 5000ms; atomic capability retirement and refund; no refund for old/unconfirmed/cross-day records."
+  },
+  "productionBindingIntegrity": {
+    "total": 25,
+    "secretNamesCount": 19,
+    "accountRuntimeNamespace": "d3edbdb22f164230bf5a2202edc31dc8",
+    "parseRuntimeNamespace": "99645981698f4c489b880998cad8f1d0",
+    "browserPresent": true
+  },
+  "verification": {
+    "targetedTests": 169,
+    "failed": 0,
+    "skipped": 0,
+    "realVideo": "Latest anonymous Python video returns VERIFICATION_REQUIRED/access-error with a validated official Live View capability. Media count remains zero pending human action. Earlier calls returned BROWSER_PAGE_REJECTED with www/error. User-reported web Node video success is retained as separate evidence.",
+    "canaries": [
+      {
+        "checkedAt": "2026-10-11T06:56:17.211759+00:00",
+        "anonymousRequests": 1,
+        "diagnostics": {
+          "brclio-xhs-downloader": [],
+          "brclio-xhs-python": [
+            {
+              "event": "xhs_native_parse_failure",
+              "engine": "python",
+              "phase": "parse",
+              "failureClass": "captcha",
+              "upstream": [
+                {
+                  "host": "www.xiaohongshu.com",
+                  "pathClass": "note",
+                  "status": 302
+                },
+                {
+                  "host": "www.xiaohongshu.com",
+                  "pathClass": "captcha",
+                  "status": 200
+                }
+              ],
+              "finalHost": "www.xiaohongshu.com",
+              "finalPathClass": "captcha",
+              "htmlBytes": 10358,
+              "strategy": "not-found",
+              "noteIdPresent": true,
+              "initialStatePresent": false,
+              "currentNotePresent": false,
+              "challengeDetected": true,
+              "loginDetected": false,
+              "imageCount": 0,
+              "videoCount": 0,
+              "originalVideoCount": 0
+            }
+          ]
+        },
+        "response": {
+          "engine": "python",
+          "kind": "video",
+          "status": 422,
+          "success": false,
+          "code": null,
+          "images": 0,
+          "videos": 0,
+          "retryAfter": null,
+          "resetsAt": null,
+          "verificationRequired": false,
+          "reason": null
+        }
+      },
+      {
+        "checkedAt": "2026-10-11T07:10:50.478915+00:00",
+        "anonymousRequests": 1,
+        "diagnostics": {
+          "brclio-xhs-downloader": [],
+          "brclio-xhs-python": []
+        },
+        "response": {
+          "engine": "python",
+          "kind": "video",
+          "status": 422,
+          "success": false,
+          "code": null,
+          "images": 0,
+          "videos": 0,
+          "retryAfter": null,
+          "resetsAt": null,
+          "verificationRequired": false,
+          "reason": null,
+          "durationMs": 5698
+        }
+      },
+      {
+        "checkedAt": "2026-10-11T07:19:52.508672+00:00",
+        "anonymousRequests": 1,
+        "diagnostics": {
+          "brclio-xhs-downloader": [],
+          "brclio-xhs-python": []
+        },
+        "tailConnectionsConfirmedBeforeRequest": true,
+        "response": {
+          "engine": "python",
+          "kind": "video",
+          "status": 422,
+          "success": false,
+          "code": null,
+          "images": 0,
+          "videos": 0,
+          "retryAfter": null,
+          "resetsAt": null,
+          "verificationRequired": false,
+          "reason": null,
+          "browserFallback": "response/browser-response-rejected",
+          "durationMs": 6411
+        }
+      },
+      {
+        "checkedAt": "2026-10-11T07:24:57.173395+00:00",
+        "anonymousRequests": 1,
+        "diagnostics": {
+          "brclio-xhs-downloader": [],
+          "brclio-xhs-python": []
+        },
+        "tailConnectionsConfirmedBeforeRequest": true,
+        "response": {
+          "engine": "python",
+          "kind": "video",
+          "status": 422,
+          "success": false,
+          "code": null,
+          "images": 0,
+          "videos": 0,
+          "retryAfter": null,
+          "resetsAt": null,
+          "verificationRequired": false,
+          "reason": null,
+          "browserFallback": "response/browser-response-rejected",
+          "browserFailureCode": "BROWSER_PAGE_REJECTED",
+          "durationMs": 4834
+        }
+      },
+      {
+        "checkedAt": "2026-10-11T07:34:14.884611+00:00",
+        "anonymousRequests": 1,
+        "diagnostics": {
+          "brclio-xhs-downloader": [],
+          "brclio-xhs-python": []
+        },
+        "tailConnectionsConfirmedBeforeRequest": true,
+        "response": {
+          "engine": "python",
+          "kind": "video",
+          "status": 422,
+          "success": false,
+          "code": "VERIFICATION_REQUIRED",
+          "images": 0,
+          "videos": 0,
+          "retryAfter": null,
+          "resetsAt": null,
+          "verificationRequired": true,
+          "reason": "access-error",
+          "durationMs": 6462
+        }
+      }
+    ],
+    "providerPlanAndQuota": "unknown; Wrangler OAuth read endpoints returned insufficient access; not treated as exhausted quota",
+    "requestSignalHypothesis": "Actual workerd with current compatibility date had valid Request.signal with and without cancellation flag; no change made.",
+    "manualBrowserOpenRequest": "Codex open_in_codex returned queued; the window being shown is not confirmed.",
+    "publicResources": {
+      "checkedAt": "2026-10-11T07:36:20.040302+00:00",
+      "expectedHelperSha256": "4c67d1ce78df00b4ba47258504299e8a8ef6aed0ee6a08b3f032efb0f3c78975",
+      "results": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "helperStatus": 200,
+          "helperMatches": true,
+          "healthStatus": 200,
+          "health": {
+            "ok": true,
+            "version": "2.0.15",
+            "pythonBinding": true,
+            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
+          }
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "helperStatus": 200,
+          "helperMatches": true,
+          "helperTransportRetries": 1,
+          "healthStatus": 200,
+          "health": {
+            "ok": true,
+            "version": "2.0.15",
+            "pythonBinding": true,
+            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
+          }
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "helperStatus": 200,
+          "helperMatches": true,
+          "healthStatus": 200,
+          "health": {
+            "ok": true,
+            "version": "2.0.15",
+            "pythonBinding": true,
+            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
+          }
+        },
+        {
+          "origin": "https://35f2e61f.brclio-xhs-pages.pages.dev",
+          "helperStatus": 200,
+          "helperMatches": true,
+          "healthStatus": 200,
+          "health": {
+            "ok": true,
+            "version": "2.0.15",
+            "pythonBinding": true,
+            "deploymentId": "9b51500e-e863-432e-9c8e-6a185522d59a"
+          }
+        }
+      ]
+    },
+    "publicBoundaries": {
+      "checkedAt": "2026-10-11T07:37:25.703262+00:00",
+      "browserAcquisitionsExpected": 0,
+      "results": [
+        {
+          "case": "private-route",
+          "status": 405,
+          "expected": 404,
+          "passed": false
+        },
+        {
+          "case": "verification-cross-origin",
+          "status": 403,
+          "expected": 403,
+          "passed": true
+        },
+        {
+          "case": "verification-unknown",
+          "status": 410,
+          "expected": 410,
+          "passed": true
+        },
+        {
+          "case": "invalid-python",
+          "status": 400,
+          "expected": 400,
+          "passed": true
+        }
+      ]
+    }
+  },
+  "remaining": [
+    "Human personally handles the first-party access/login/captcha page, then resumes original note.",
+    "Real Node/Python video and image parse plus actual media download."
+  ],
+  "releaseAssetsRebuiltOrReplaced": false,
+  "repairNoticeRetained": true,
+  "rejectedPageCorrection": {
+    "observed": "www/error",
+    "previousFailure": "BROWSER_PAGE_REJECTED",
+    "exactPathsAdded": [
+      "/error",
+      "/404",
+      "/403",
+      "/500"
+    ],
+    "reason": "access-error",
+    "sameTargetAndOriginalDeadline": true,
+    "claimedToResolveUpstreamAccess": false
+  }
+}
