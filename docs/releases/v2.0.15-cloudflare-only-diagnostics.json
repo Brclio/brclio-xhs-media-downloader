@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-11T04:40:54.909101+00:00",
+  "release": "v2.0.15",
+  "scope": "Cloudflare backend diagnostic follow-up; released desktop and Android artifacts were not rebuilt.",
+  "status": "cloudflare_only_deployed_challenge_cause_confirmed_parse_unresolved",
+  "sourceCommit": "76c0b02e59c82c6f63db658bc8d5b3121a451ddf",
+  "production": {
+    "origin": "https://xhs.download.brclio.com",
+    "mainWorker": {
+      "name": "brclio-xhs-downloader",
+      "versionId": "3f03b7ee-7261-4ce4-a4eb-636d94ac2298",
+      "deploymentId": "4d2923cb-2085-4ade-82a2-9b29b5cca8b4",
+      "createdAt": "2026-10-11T04:35:38.966688Z",
+      "trafficPercent": 100
+    },
+    "pythonWorker": {
+      "name": "brclio-xhs-python",
+      "versionId": "ed93abf4-e2a2-4111-b7ca-6eeaf7b81c88",
+      "deploymentId": "23850dae-c0d1-4d41-a5dd-3a5f21162e76",
+      "publishedAt": "2026-10-11T04:37:22Z"
+    },
+    "externalParseFallbackRemoved": true,
+    "newPagesDeploymentRequired": false,
+    "staticAssetsUpdated": 0,
+    "preservation": {
+      "bindingCount": 24,
+      "secretNameCount": 19,
+      "secretNamesUnchanged": true,
+      "secretValuesRead": false,
+      "durableObjectBindingsUnchanged": true,
+      "pythonServiceBindingUnchanged": true,
+      "assetsBindingUnchanged": true,
+      "versionMetadataBindingPreserved": true,
+      "removedConfiguration": "external parse fallback plain-text variable only"
+    },
+    "postPublicationChecks": {
+      "anonymousPassed": 58,
+      "anonymousTotal": 58,
+      "officialDomainNodeHealthStatus": 200,
+      "workerOriginNodeHealthStatus": 200,
+      "healthMainVersionIdMatches": true
+    }
+  },
+  "input": {
+    "kind": "user_supplied_public_video_note",
+    "sameNoteForBothEngines": true,
+    "anonymousRequestsPerEngine": 1,
+    "shareUrlNoteIdTitleAndMediaUrlsPublished": false
+  },
+  "requests": [
+    {
+      "engine": "node",
+      "status": 422,
+      "anonymous": true,
+      "success": false,
+      "responseClass": "json",
+      "imageCount": 0,
+      "videoCount": 0,
+      "originalVideoCount": 0
+    },
+    {
+      "engine": "python",
+      "status": 422,
+      "anonymous": true,
+      "success": false,
+      "responseClass": "json",
+      "imageCount": 0,
+      "videoCount": 0,
+      "originalVideoCount": 0
+    }
+  ],
+  "diagnostics": {
+    "brclio-xhs-downloader": [
+      {
+        "engine": "node",
+        "phase": "parse",
+        "failureClass": "captcha",
+        "upstream": [
+          {
+            "host": "www.xiaohongshu.com",
+            "pathClass": "note",
+            "status": 302
+          },
+          {
+            "host": "www.xiaohongshu.com",
+            "pathClass": "captcha",
+            "status": 200
+          }
+        ],
+        "finalHost": "www.xiaohongshu.com",
+        "finalPathClass": "captcha",
+        "htmlBytes": 10358,
+        "strategy": "not-found",
+        "noteIdPresent": true,
+        "initialStatePresent": false,
+        "currentNotePresent": false,
+        "challengeDetected": true,
+        "loginDetected": false,
+        "imageCount": 0,
+        "videoCount": 0,
+        "originalVideoCount": 0
+      }
+    ],
+    "brclio-xhs-python": [
+      {
+        "engine": "python",
+        "phase": "parse",
+        "failureClass": "captcha",
+        "upstream": [
+          {
+            "host": "www.xiaohongshu.com",
+            "pathClass": "note",
+            "status": 302
+          },
+          {
+            "host": "www.xiaohongshu.com",
+            "pathClass": "captcha",
+            "status": 200
+          }
+        ],
+        "finalHost": "www.xiaohongshu.com",
+        "finalPathClass": "captcha",
+        "htmlBytes": 10358,
+        "strategy": "not-found",
+        "noteIdPresent": true,
+        "initialStatePresent": false,
+        "currentNotePresent": false,
+        "challengeDetected": true,
+        "loginDetected": false,
+        "imageCount": 0,
+        "videoCount": 0,
+        "originalVideoCount": 0
+      }
+    ]
+  },
+  "conclusion": {
+    "observedFailure": "Both native fetches redirected from the note page (302) to a CAPTCHA page (200); neither response contained the current note state or usable media.",
+    "noteIdPresenceInterpretation": "noteIdPresent records only a textual occurrence, not a successfully parsed current-note object.",
+    "nativeParse422CauseConfirmedForThisAttempt": true,
+    "productionParseFixed": false,
+    "normalDynamicRenderingFailureConfirmed": false,
+    "vercelRestorationRequired": false,
+    "browserRunAdopted": false,
+    "humanInTheLoopAdopted": false,
+    "challengeBypassAttempted": false,
+    "scopeLimit": "One anonymous request per engine for the supplied note; this is not a guarantee for every note or a complete business-flow acceptance."
+  },
+  "privacy": {
+    "rawEventsPublished": false,
+    "rawBodiesPublished": false,
+    "privateShareUrlsPublished": false,
+    "credentialsOrCookiesPublished": false,
+    "accountEmailsPublished": false,
+    "absolutePrivatePathsPublished": false,
+    "systemProxyChanged": false
+  },
+  "evidenceProvenance": {
+    "diagnostics": "Sanitized native diagnostic report from the two production tails and anonymous API requests.",
+    "deploymentAndPreservation": "Publication coordinator verified deployment IDs, traffic, binding descriptors and secret names; no secret values were read.",
+    "anonymousSmoke": "Existing 58-check anonymous production smoke report; excludes actual email sending and member writes."
+  },
+  "relatedReports": [
+    "v2.0.15-real-video-verification.json",
+    "v2.0.15-web-verification.json",
+    "v2.0.15-feature-coverage.md",
+    "../cloudflare-deployment.md"
+  ]
+}

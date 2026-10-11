@@ -2,7 +2,7 @@
 
 ## 目录和部署边界
 
-本项目支持 **Vercel、Cloudflare Pages + Workers、独立服务器，以及 Electron**。Vercel / Cloudflare 的业务数据继续放在另一个不关联自动部署的 GitHub 私有仓库，默认行为不变；独立服务器新增 SQLite 自动初始化和 GitHub / SQLite 双向迁移，详见[服务器部署](server-deployment.md)。每套账号服务只使用一个权威存储，不做后台双写或自动同步。不接入支付系统、D1 或 Redis。Cloudflare 的部署、原环境迁移和切换核验见 [Cloudflare 部署说明](cloudflare-deployment.md)；原 Vercel 部署流程保留，笔记解析还可能使用原 Vercel 的同引擎 JSON 回退。
+当前正式托管使用 **Cloudflare Pages + Workers**，账号业务数据继续放在另一个不关联自动部署的 GitHub 私有仓库。仓库另保留旧 Vercel 兼容入口、独立服务器与 Electron；独立服务器新增 SQLite 自动初始化和 GitHub / SQLite 双向迁移，详见[服务器部署](server-deployment.md)。每套账号服务只使用一个权威存储，不做后台双写或自动同步。不接入支付系统、D1 或 Redis。正式部署与最新核验见 [Cloudflare 部署说明](cloudflare-deployment.md)；Cloudflare-only 方案不要求保留或恢复 Vercel，也不把旧平台作为解析或账号回退。
 
 | 文件或目录 | 用途 | 发布到 |
 | --- | --- | --- |
@@ -24,9 +24,11 @@ Cloudflare 使用同一 `dist-web/` 白名单和账号处理器，主 Worker 注
 
 SQLite 类型 Durable Object `AccountRuntime` 已部署，用于账号和完整反馈校验的独立执行环境；主 Worker 通过 `ACCOUNT_RUNTIME` 调用固定对象 `accounts-v1`。代码不读写 Durable Object 存储，账号和反馈仍使用同一 GitHub 权威文件。解析另由 `ParseRuntime` 处理，不与账号接口混用。超过 8 MB、接近 8 MiB 的 64 分片反馈已在真实 workerd 中通过完整校验，GitHub GraphQL 分 4 次查询读取，未缩减日志内容。
 
-本轮主 Worker 版本 `06db7233-a9b9-4f10-baf2-cbc2d4dd8131` 已完成真实验证码发送、收件与管理员登录；同一测试会话在 Cloudflare 和 Vercel 均成功读取账号与后台数据。正式域名已切到 Pages，域名和证书状态为 ACTIVE，HTTPS 健康检查确认该 Cloudflare 版本。正式域名账号同源策略与已安装客户端的切换后验证，继续按 [迁移验收记录](cloudflare-deployment.md#已有验证记录) 标明范围。
+2026 年 9 月 23 日的主 Worker 版本 `06db7233-a9b9-4f10-baf2-cbc2d4dd8131` 曾完成真实验证码发送、收件与管理员登录；同一测试会话当时在 Cloudflare 和 Vercel 均成功读取账号与后台数据。该版本与跨后端读取是历史记录，不表示当前版本或 Vercel 仍是生产依赖。正式域名账号同源策略与已安装客户端的验证范围，继续按 [部署记录](cloudflare-deployment.md) 标明。
 
-笔记解析回退只允许原 Vercel 的 `/api/parse` 和 `/api/python_parse`，**不包含 `/api/account`**，也不转发 Cookie、账号授权头或业务数据。该回退不能作为账号或邮件故障的替代路径；账号迁移必须单独验收。
+历史笔记解析回退从未包含 `/api/account`，也没有转发 Cookie、账号授权头或业务数据。Cloudflare-only 方案移除该外部解析路径；账号和邮件始终需要独立验收，不能用媒体解析成功替代。
+
+10 月 11 日后续两套 Worker 已发布 Cloudflare-only 调整与原生解析诊断；真实视频复验确认两引擎均被上游重定向到验证码页并返回 422，问题已定位但未修复。此前媒体、账号与邮件通过记录只对应各自的验证时间和范围，不能用于宣称新解析故障已修复。部署标识与安全诊断见上述部署记录。
 
 默认 **主页批量下载需要会员及已绑定设备，单篇下载免费**。修改 `lib/membership-policy.js` 后须同步部署后端并重新打包客户端。原下载功能实现保留；权限不通过删除功能来实现。已安装旧版本无法被新代码远程改变。
 
@@ -40,7 +42,9 @@ SQLite 类型 Durable Object `AccountRuntime` 已部署，用于账号和完整�
 
 不能手工回滚数据分支或用旧快照覆盖当前状态，这会重新启用旧会话、已使用激活码或已撤销设备。数据恢复应先暂停服务，审计并合并最新兑换与撤销记录。Git 历史中保留业务数据，删除工作树里的记录不等于删除 Git 历史。
 
-## Vercel 与管理员初始化
+## 旧 Vercel 兼容部署与管理员初始化
+
+本节保留旧平台的维护方法，不是当前正式站点的部署步骤。Cloudflare 的账号配置与初始化边界见 [部署说明](cloudflare-deployment.md#沿用环境变量)；已有生产数据保持原 pepper 与权威存储，不重新初始化空库。
 
 1. 继续使用原 Vercel 项目和当前代码仓库，Node.js 22 或更新版，仓库 `vercel.json` 提供安装、构建、输出目录、函数及安全响应头配置。
 2. 按 `.env.example` 在 Vercel 项目中配置环境变量。Production / Preview 使用不同数据仓库与密钥。不要将实际 Secret 填进示例文件、网页或安装包。

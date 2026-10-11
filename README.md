@@ -72,15 +72,15 @@ v1.8.0 改为桌面五页导航，增加问题反馈与脱敏诊断日志、后�
 
 v1.7.1 修补 Mac 应用包的签名完整性：完整应用使用 ad hoc 签名，发布验证分别检查最终 ZIP 与 DMG 内的应用。ad hoc 不是 Apple Developer ID 签名或公证，具体产物验证以发布工作流和 `build-evidence.json` 为准，详见 [v1.7.1 说明](docs/releases/v1.7.1.md)。
 
-v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理。后端沿用 Vercel，业务状态存入独立 GitHub 私有仓库，详见 [账号系统部署与配置](docs/account-system.md)。软件账号与小红书登录独立；上线需先配置平台 Secrets 与授权地址，再打包正式客户端。默认会员范围为主页批量下载，原单篇功能保留。
+v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理，业务状态存入独立 GitHub 私有仓库，详见 [账号系统部署与配置](docs/account-system.md)。当前正式账号后端运行在 Cloudflare 主 Worker。软件账号与小红书登录独立；上线需先配置平台 Secrets 与授权地址，再打包正式客户端。默认会员范围为主页批量下载，原单篇功能保留。
 
 [项目仓库](https://github.com/Brclio/brclio-xhs-media-downloader) · [下载最新版安装包](https://github.com/Brclio/brclio-xhs-media-downloader/releases/latest)
 
 产品介绍页位于 [`product.html`](product.html)，可从下载工具顶部的「产品介绍」打开，适合录屏介绍功能。该页面与配套资源随网站、Cloudflare Pages 和桌面安装包一同构建。 点击右上角「演示模式」可逐幕讲解，使用左右方向键或空格切换，Esc 退出；也可用 `product.html?present=1` 直接进入。支持可选全屏，1920×1080 画幅下六幕完整展示。页面内界面与素材为功能示意，实际下载请进入下载工具。
 
-已部署 **Cloudflare Pages + Workers 双引擎**，正式入口为 [xhs.download.brclio.com](https://xhs.download.brclio.com)，另有 [Pages 入口](https://brclio-xhs-pages.pages.dev)。正式域名与证书已激活，HTTPS 健康检查确认请求到达 Cloudflare。网页和图片、视频下载由 Cloudflare 承载；账号与解析使用私有 Durable Object 执行环境，账号沿用原 `AUTH_*` 配置和 GitHub 唯一业务存储。真实双引擎解析、图片字节、验证码收件、管理员登录及跨后端会话已验证；各项验收范围和正式域名回归结果见迁移记录。
+已部署 **Cloudflare Pages + Workers 双引擎**，正式入口为 [xhs.download.brclio.com](https://xhs.download.brclio.com)，另有 [Pages 入口](https://brclio-xhs-pages.pages.dev)。正式域名与证书已激活，HTTPS 健康检查确认请求到达 Cloudflare。网页和图片、视频下载由 Cloudflare 承载；账号与解析使用私有 Durable Object 执行环境，账号沿用原 `AUTH_*` 配置和 GitHub 唯一业务存储。双引擎解析、图片字节、验证码收件、管理员登录及跨后端会话各有历史验收证据；本轮结果与限制见部署记录，历史通过不代表新素材均能解析。
 
-笔记解析先使用 Cloudflare；遇上游限制或解析失败时，仅回退到原 Vercel 的同引擎 JSON 解析接口。**目前仍保留这部分 Vercel 依赖，不能停用原项目。** Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。部署版本、核验证据、免费额度和回滚步骤见 [Cloudflare 迁移说明](docs/cloudflare-deployment.md)。已有 Secrets 时，`npm run cloudflare:deploy` 依次发布 Python、主 Worker 与 Pages；仅构建网站使用 `npm run build:cloudflare`。
+正式托管方案仅使用 **Cloudflare Pages、主 Worker 与私有 Python Worker**，笔记解析不再以恢复或保留 Vercel 为部署前提。10 月 11 日两套 Worker 已发布 Cloudflare-only 调整与原生解析诊断；真实视频复验确认两引擎均被上游重定向到验证码页，仍返回 422，问题已定位但未修复。最新状态见 [部署记录](docs/cloudflare-deployment.md)与[安全诊断证据](docs/releases/v2.0.15-cloudflare-only-diagnostics.json)；此前解析失败与旧回退不可用的记录仍保留。Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。已有 Secrets 时，`npm run cloudflare:deploy` 依次发布 Python、主 Worker 与 Pages；仅构建网站使用 `npm run build:cloudflare`。定向更新可只发布实际变更的 Worker，再按公开资源是否变化决定是否发布 Pages。
 
 ## Android 客户端
 
@@ -131,7 +131,7 @@ codesign --verify --deep --strict --verbose=2 "/Applications/Brclio 小红书下
 
 签名完整性通过不代表已公证，也不能替代在受影响的那台 Mac 上实际打开验证；该远端设备仍待用户确认。
 
-这是一个支持 Vercel 和 Cloudflare Workers 部署的小红书公开笔记媒体下载网站。访问者只需要粘贴分享文案或链接，即可解析当前笔记中的：
+这是一个正式部署于 Cloudflare Pages 与 Workers 的小红书公开笔记媒体下载网站；仓库仍保留旧平台兼容配置。访问者只需要粘贴分享文案或链接，即可解析当前笔记中的：
 
 - 无水印原图
 - 实况图片的静态原图与配对动态 MP4
@@ -169,7 +169,7 @@ codesign --verify --deep --strict --verbose=2 "/Applications/Brclio 小红书下
 - 视频有多个流时可在页面选择分辨率和编码。
 - 新增 Node.js 视频分段接口：`/api/video`。
 - 新增 Python 视频分段接口：`/api/python_video`。
-- 每个视频分段小于 Vercel 单次响应限制，最终文件在浏览器中合并。
+- 普通视频按受限大小分段下载，最终文件在浏览器中合并。
 - 只读取当前 `noteId` 对应的视频对象，不会抓取相关推荐中的视频。
 - 原有图片解析、无水印转换、单张下载、复制链接和 ZIP 功能保持不变。
 
@@ -203,9 +203,9 @@ codesign --verify --deep --strict --verbose=2 "/Applications/Brclio 小红书下
 └── .python-version
 ```
 
-## 更新现有 Vercel 部署
+## 旧 Vercel 部署兼容说明
 
-继续使用 Vercel 时，部署方式不变，不需要创建第二个 Vercel 项目，也不需要把 Python 单独部署。迁移 Cloudflare 时使用 [Pages 与双 Worker 部署流程](docs/cloudflare-deployment.md)，不要套用本节 Vercel 设置。当前的笔记解析回退仍需要原 `.vercel.app` 服务；正式域名切换后也应保留其代码、部署和解析接口。
+本节仅供已有 Vercel 部署的兼容维护使用，不是当前正式站点的发布流程或运行依赖。正式站点使用 [Pages 与双 Worker 部署流程](docs/cloudflare-deployment.md)，无需创建、恢复或保留 Vercel 项目来完成 Cloudflare 发布。仓库仍保留旧平台配置；这些文件的存在不表示生产请求会调用该平台。
 
 将新版文件覆盖到原仓库后提交：
 
@@ -232,7 +232,7 @@ Install Command：npm ci --omit=dev --ignore-scripts
 
 Cloudflare 本地运行使用 `npm run cloudflare:dev:python` 与 `npm run cloudflare:dev`。干净检出需先运行 `uv sync --directory cloudflare/python --frozen` 和 `uv run --directory cloudflare/python pywrangler sync`，再执行 Python workerd 测试。Pages 网关联调及完整核验命令见 [Cloudflare 说明](docs/cloudflare-deployment.md#安装与本地核验)。
 
-按原 Vercel 方式运行时，需要安装 Node.js、Python 和 Vercel CLI：
+可选的旧 Vercel 本地兼容方式需要安装 Node.js、Python 和 Vercel CLI；正式 Cloudflare 发布不使用此命令：
 
 ```bash
 npm run dev:vercel
@@ -357,7 +357,7 @@ GET /api/python_video?action=chunk&url=...&start=0&end=3499999
 
 ## 视频与实况动态片段下载方式
 
-视频通常大于 Vercel Function 的单次响应大小，因此项目不会让一个 Function 一次返回整个视频。流程是：
+为控制单次响应和浏览器内存，网页普通视频接口分段传输。流程是：
 
 ```text
 浏览器获取视频总大小

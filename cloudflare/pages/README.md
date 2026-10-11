@@ -13,6 +13,12 @@ responses pass unchanged, preserving JSON bytes, cookies, Origin, client IP,
 redirects and binary Range responses. The main Worker continues to own every
 account Secret and the private Python service binding. Pages needs no Secrets.
 
+The production hosting path uses Cloudflare only: Pages calls the main Worker,
+and Python API requests continue through its private `PYTHON_API` service
+binding. A Vercel project is not a prerequisite for this gateway or its release.
+Earlier migration and failed-fallback observations remain historical evidence
+in the migration record; they are not instructions to restore that backend.
+
 `_routes.json` limits Function invocation to those API and administrator paths.
 Other static requests are served directly by Pages. `deploy/build-pages.mjs`
 first builds the existing public allowlist into `dist-web`, then copies it and
@@ -66,8 +72,10 @@ not deploy or require login. Run it alongside the gateway tests: the general
 Worker schema alone does not catch unsupported Pages fields.
 
 Do not use `wrangler deploy` here: that command targets Workers. Deploy the
-main and Python Workers first, using the repository's existing Cloudflare
-scripts. Run the gateway build again after any public-file changes. Creation
+main and Python Workers first when their code or bindings need updating, using
+the repository's existing Cloudflare scripts. An unchanged Python Worker can
+retain its existing deployment; verify its service binding and API responses.
+Run the gateway build again after any public-file changes. Creation
 via Direct Upload does not enable automatic Git deployments; use this command
 in the release process or a separately configured CI job.
 

@@ -101,7 +101,8 @@
         }
       ]
     },
-    "overallAnonymousNoteToDownloadPassed": false
+    "overallAnonymousNoteToDownloadPassed": false,
+    "evidenceScope": "Historical video verification before the later Cloudflare-only diagnostic rollout; these results do not validate the new deployment."
   },
   "installedMacClient": {
     "version": "2.0.15",
@@ -326,13 +327,16 @@
     "publicError": "DEPLOYMENT_NOT_FOUND",
     "bothParsePathsUnavailable": true,
     "primary422CauseConfirmed": false,
-    "currentManagementAccess": "existing Vercel project metadata requests returned 403; CLI request failed",
     "projectDeletedConfirmed": false,
     "alternativeBackendVerified": false,
-    "requiredRecovery": "Restore existing Vercel production deployment and canonical alias under an authorized project identity, then revalidate both note parses and Cloudflare fallback",
+    "requiredRecovery": "Diagnose and resolve the selected native Node and private Python parsers within the existing Cloudflare deployment, then revalidate the real video note in both engines; restoring Vercel is not a prerequisite.",
     "restorationAloneGuaranteedToResolveCurrentNote": false,
     "inAppBrowserProjectInspection": "two native control requests timed out; project page content and ownership not observed",
-    "unresolvedProductionBehavior": "current real video note still returns 422 in both production parse engines"
+    "unresolvedProductionBehavior": "After the Cloudflare-only rollout, one anonymous request per native engine still returned 422 for the supplied note; diagnostics confirmed a 302 redirect to a CAPTCHA page, without current-note state or media.",
+    "evidenceScope": "Historical external fallback failure; this route is removed in the Cloudflare-only main Worker rollout.",
+    "historicalManagementAccess": "existing Vercel project metadata requests returned 403; CLI request failed",
+    "historicalRecoveryProposal": "Restore existing Vercel production deployment and canonical alias under an authorized project identity, then revalidate both note parses and Cloudflare fallback",
+    "historicalRecoveryProposalSuperseded": true
   },
   "scope": {
     "systemProxyChanged": false,
@@ -347,6 +351,38 @@
     "v2.0.15-feature-coverage-verification.json",
     "v2.0.15-feature-coverage.md",
     "v2.0.15-web-verification.json",
-    "../live-photo-pvt-verification.json"
-  ]
+    "../live-photo-pvt-verification.json",
+    "v2.0.15-cloudflare-only-diagnostics.json"
+  ],
+  "cloudflareOnlyFollowUp": {
+    "status": "cloudflare_only_deployed_challenge_cause_confirmed_parse_unresolved",
+    "mainWorker": {
+      "versionId": "3f03b7ee-7261-4ce4-a4eb-636d94ac2298",
+      "sourceCommit": "76c0b02e59c82c6f63db658bc8d5b3121a451ddf",
+      "deployed": true,
+      "externalParseFallbackRemoved": true,
+      "nativeParseDiagnosticsAdded": true,
+      "deploymentId": "4d2923cb-2085-4ade-82a2-9b29b5cca8b4",
+      "createdAt": "2026-10-11T04:35:38.966688Z",
+      "trafficPercent": 100
+    },
+    "pythonWorker": {
+      "diagnosticSourceChanged": true,
+      "dryRunPassed": true,
+      "publicationStatus": "published",
+      "versionId": "ed93abf4-e2a2-4111-b7ca-6eeaf7b81c88",
+      "deploymentId": "23850dae-c0d1-4d41-a5dd-3a5f21162e76",
+      "publishedAt": "2026-10-11T04:37:22Z"
+    },
+    "realNoteRevalidatedAfterRollout": true,
+    "production422ResolvedConfirmed": false,
+    "vercelRestorationRequired": false,
+    "browserRenderingAdopted": false,
+    "latestDeploymentRecord": "../cloudflare-deployment.md",
+    "revalidationPassed": false,
+    "nativeParse422CauseConfirmedForThisAttempt": true,
+    "observedFailure": "Both native engines redirected to a CAPTCHA page, returned 10358 HTML bytes without current-note state or media, and returned API 422.",
+    "diagnosticReport": "v2.0.15-cloudflare-only-diagnostics.json",
+    "humanInTheLoopAdopted": false
+  }
 }
