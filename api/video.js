@@ -23,15 +23,15 @@ function parseContentRange(value) {
   };
 }
 
-async function fetchVideo(url, range, authorizeOriginal) {
+async function fetchVideo(url, range, authorizeOriginal, fetchImpl, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 18000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     for (let hop = 0; hop < 6; hop += 1) {
     if (!isXhsVideoUrl(url)) throw new XhsError("视频 CDN 地址不受支持。", 502);
     if (isMemberVideoUrl(url)) await authorizeOriginal();
-    const response = await fetch(url, {
+    const response = await fetchImpl(url, {
       method: "GET",
       headers: {
         "user-agent": "Mozilla/5.0",
@@ -99,7 +99,7 @@ function getSourceUrl(req) {
   return sourceUrl;
 }
 
-export function createVideoHandler({ authorizeOriginal = async () => {
+export function createVideoHandler({ fetchImpl = (...args) => globalThis.fetch(...args), onError = error => console.error('video error', error), timeoutMs = 18000, authorizeOriginal = async () => {
   throw new XhsError("原视频需要有效会员，请使用会员原视频下载。", 403);
 } } = {}) {
 return async function handler(req, res) {
@@ -117,7 +117,7 @@ return async function handler(req, res) {
     const action = String(req.query.action ?? "meta");
 
     if (action === "meta") {
-      const response = await fetchVideo(sourceUrl, "bytes=0-0", authorizeOriginal);
+      const response = await fetchVideo(sourceUrl, "bytes=0-0", authorizeOriginal, fetchImpl, timeoutMs);
       if (![200, 206].includes(response.status)) {
         throw new XhsError(`视频服务器返回 HTTP ${response.status}。`, 502);
       }
@@ -152,7 +152,7 @@ return async function handler(req, res) {
       throw new XhsError(`单个视频分段不能超过 ${MAX_CHUNK_BYTES} 字节。`, 413);
     }
 
-    const response = await fetchVideo(sourceUrl, `bytes=${start}-${end}`, authorizeOriginal);
+    const response = await fetchVideo(sourceUrl, `bytes=${start}-${end}`, authorizeOriginal, fetchImpl, timeoutMs);
     if (![200, 206].includes(response.status)) {
       throw new XhsError(`视频服务器返回 HTTP ${response.status}。`, 502);
     }
@@ -190,7 +190,7 @@ return async function handler(req, res) {
   } catch (error) {
     const statusCode = error instanceof XhsError ? error.statusCode : error.status || 500;
     const message = error instanceof XhsError || error.status ? error.message : "Node.js 视频下载失败。";
-    console.error("video error", error);
+    onError(error);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     return res.status(statusCode).json({ success: false, engine: "node", message });
   }

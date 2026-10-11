@@ -20,7 +20,7 @@ const json = (body, status, headers = {}) => Response.json(body, { status, heade
 
 async function candidate(request) {
   const endpoint = new URL(request.url);
-  if (request.method !== 'POST' || !['/api/parse', '/api/python_parse'].includes(endpoint.pathname)
+  if (request.method !== 'POST' || !['/api/parse', '/api/python_parse', '/api/browser_python_source'].includes(endpoint.pathname)
     || request.signal.aborted
     || request.headers.get('sec-fetch-site')?.toLowerCase() === 'cross-site'
     // Native clients do not send Origin and cannot complete a web Live View.
@@ -35,7 +35,8 @@ async function candidate(request) {
   const noteId = extractNoteId(sourceURL);
   if (!SHORT_HOSTS.has(url.hostname) && !(PAGE_HOSTS.has(url.hostname)
     && /^\/(?:explore|discovery\/item)\/[a-f0-9]{24}\/?$/i.test(url.pathname) && noteId)) return null;
-  return { engine: endpoint.pathname === '/api/python_parse' ? 'python' : 'node', sourceURL, noteId };
+  return { engine: endpoint.pathname === '/api/browser_python_source' ? 'browser-python'
+    : endpoint.pathname === '/api/python_parse' ? 'python' : 'node', sourceURL, noteId };
 }
 
 function numericRecord(record) {

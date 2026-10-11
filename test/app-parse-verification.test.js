@@ -79,11 +79,26 @@ function page({ engine = 'node', desktop = false, fetchResult, allowPopup = true
       return fetchResult ? fetchResult(call) : Response.json(success(engine));
     },
   });
+  // The browser Python module has its own worker/source contract tests. This
+  // callable module fixture keeps these tests focused on real submit/popup flow.
+  const imports = [];
+  context.loadBrowserPython = async () => {
+    imports.push('browser-python');
+    return { async parseWithBrowserPython(text, { verify }) {
+      const response = await context.fetch('/api/browser_python_source', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (payload.code === 'VERIFICATION_REQUIRED') return verify(payload);
+      if (!response.ok || !payload.success) throw new Error(payload.message || `解析失败：HTTP ${response.status}`);
+      return payload;
+    } };
+  };
   // Execute the real helper, app event registration, submit handler and parse function together.
   vm.runInContext(verificationSource.replace(/^export /gm, '') + '\n'
-    + appSource.replace(/^import[\s\S]*?;\n/gm, '')
-    + '\nglobalThis.app = { state, parseShareText };', context, { filename: 'app-with-verification.js' });
-  return { calls, windows, intervals, node, ...context.app,
+    + appSource.replace(/^import[\s\S]*?;\n/gm, '').replace('import("./lib/browser-python.js")', 'loadBrowserPython()')
+    + '\nglobalThis.app = { state, parseShareText, proxyUrl, videoApiUrl };', context, { filename: 'app-with-verification.js' });
+  return { calls, windows, intervals, imports, node, ...context.app,
     submit(text = noteURL) {
       node('share-text').value = text; userGesture = true;
       try { return node('parse-form').listeners.get('submit')({ preventDefault() {} }); }
@@ -100,9 +115,11 @@ test('web submit preserves the user gesture by opening before either engine requ
     const env = page({ engine, fetchResult: call => call.url === '/api/parse_verification'
       ? Response.json(success(engine)) : new Promise(resolve => { deliver = resolve; }) });
     const pending = env.submit();
+    await flush();
     assert.deepEqual(env.calls.map(call => call.type), ['open', 'fetch']);
     assert.equal(env.calls[0].userGesture, true); assert.equal(env.calls[0].url, 'about:blank');
-    assert.equal(env.calls[1].url, engine === 'python' ? '/api/python_parse' : '/api/parse');
+    assert.equal(env.calls[1].url, engine === 'python' ? '/api/browser_python_source' : '/api/parse');
+    assert.deepEqual(env.imports, engine === 'python' ? ['browser-python'] : []);
     assert.equal(env.windows.length, 1); assert.equal(env.windows[0].opener, null);
     assert.match(env.windows[0].document.body.children[0].textContent, /正在打开/);
     deliver(Response.json(verification(engine), { status: 422 })); await flush();
@@ -164,9 +181,26 @@ test('empty input and desktop parses never open a verification window', async t 
   });
 });
 
-test('parseShareText callers without a submitted popup retain normal request behavior', async () => {
+test('web Python callers without a submitted popup load only the browser source contract', async () => {
   const env = page({ engine: 'python' });
   assert.equal((await env.parseShareText(noteURL, 'python')).success, true);
   assert.deepEqual(env.calls.map(call => call.type), ['fetch']);
-  assert.equal(env.calls[0].url, '/api/python_parse'); assert.deepEqual(env.calls[0].body, { text: noteURL });
+  assert.equal(env.calls[0].url, '/api/browser_python_source'); assert.deepEqual(env.calls[0].body, { text: noteURL });
+  assert.deepEqual(env.imports, ['browser-python']);
+});
+
+test('desktop Python keeps its native parse and media endpoints without importing browser Python', async () => {
+  const env = page({ engine: 'python', desktop: true });
+  await env.submit();
+  assert.equal(env.calls[0].url, '/api/python_parse');
+  assert.deepEqual(env.imports, []); assert.equal(env.windows.length, 0);
+  assert.match(env.proxyUrl({ token: 'fixture', index: 1 }), /^\/api\/python_image\?/);
+  assert.match(env.videoApiUrl('info', 'https://sns-video-bd.xhscdn.com/stream/fixture.mp4'), /^\/api\/python_video\?/);
+});
+
+test('web Python media uses its proxy-aware image/video routes while member video remains protected', () => {
+  const env = page({ engine: 'python' });
+  assert.match(env.proxyUrl({ token: 'fixture', index: 1 }), /^\/api\/browser_python_image\?/);
+  assert.match(env.videoApiUrl('chunk', 'https://sns-video-bd.xhscdn.com/stream/fixture.mp4', { start: 0, end: 99 }), /^\/api\/browser_python_video\?/);
+  assert.match(env.videoApiUrl('info', 'member-video:ticket'), /^\/api\/member_video\?/);
 });

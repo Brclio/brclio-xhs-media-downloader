@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import worker, { createWorker } from '../cloudflare/worker.js';
 import { invokeHandler, MAX_API_BODY_BYTES, MAX_ACCOUNT_BODY_BYTES } from '../cloudflare/http-adapter.js';
 import { createAccountHandler, ADMIN_COOKIE } from '../api/account.js';
@@ -201,6 +202,20 @@ test('unknown APIs never fall through to assets; admin pages retain security hea
   const publicAsset = await worker.fetch(request('/app.js'), env);
   assert.equal(publicAsset.headers.get('cache-control'), 'public, max-age=60');
   assert.equal(publicAsset.headers.get('content-security-policy'), null);
+});
+
+test('static asset routing sends the private namespace to the Worker before any HTML fallback', async () => {
+  const config = JSON.parse(await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+  assert.deepEqual(config.assets.run_worker_first, ['/api/*', '/admin*', '/__internal/*']);
+  const fail = () => assert.fail('Public internal route reached a private binding or static fallback');
+  const env = { ASSETS: { fetch: fail }, ACCOUNT_RUNTIME: { idFromName: fail }, PARSE_RUNTIME: { idFromName: fail } };
+  for (const method of ['GET', 'HEAD', 'POST']) for (const pathname of ['/__internal/',
+    '/__internal/web-parse-proxy-settings', '/__internal/browser/start?token=fixture']) {
+    const response = await worker.fetch(request(pathname, { method }), env);
+    assert.equal(response.status, 404);
+    if (method === 'HEAD') assert.equal(await response.text(), '');
+    else assert.deepEqual(await response.json(), { success: false, message: '接口不存在。' });
+  }
 });
 
 test('health supports HEAD and unexpected failures never expose internal messages', async () => {

@@ -386,7 +386,7 @@ export class BrowserSessionManager {
       return this.starting.promise;
     }
     const operation = this._lock(async () => {
-      if (engine !== 'node' && engine !== 'python') fail('BROWSER_INPUT_REJECTED');
+      if (!['node', 'python', 'browser-python'].includes(engine)) fail('BROWSER_INPUT_REJECTED');
       if (noteId !== null && noteId !== '' && (typeof noteId !== 'string' || !/^[a-f\d]{24}$/i.test(noteId))) fail('BROWSER_INPUT_REJECTED');
       const source = pageURL(sourceURL);
       const sourceId = noteFromURL(source);

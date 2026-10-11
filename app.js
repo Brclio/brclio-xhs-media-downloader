@@ -376,7 +376,7 @@ async function copyTextAction({ text, trigger, label, successMessage }) {
 }
 
 function engineLabel(engine = state.engine) {
-  return engine === "python" ? "Python" : "Node.js";
+  return engine === "python" ? (window.xhsDesktop ? "Python" : "浏览器 Python") : "Node.js";
 }
 
 function setEngineInputsDisabled(disabled) {
@@ -389,11 +389,18 @@ function updateEngineUI() {
   for (const input of elements.engineInputs) {
     input.checked = input.value === state.engine;
   }
+  const pythonLabel = document.querySelector('[data-python-engine-label]');
+  const pythonDescription = document.querySelector('[data-python-engine-description]');
+  if (pythonLabel) pythonLabel.textContent = engineLabel('python');
+  if (pythonDescription) pythonDescription.textContent = window.xhsDesktop
+    ? '独立解析 · 故障时切换' : '当前浏览器运行 · 首次加载环境';
+  const pickerLabel = document.querySelector('[data-engine-picker-label]');
+  if (pickerLabel) pickerLabel.textContent = window.xhsDesktop ? '后台抓取与下载引擎' : '解析引擎';
 
   elements.engineHint.textContent = window.xhsDesktop
     ? `当前使用内置 ${engineLabel()} 引擎，无需另行安装运行环境。`
     : state.engine === "python"
-    ? "当前使用 Python 完成页面抓取、图片代理和媒体分段下载。"
+    ? "Python 在当前浏览器独立解析，首次使用会加载运行环境；图片与视频通过下载服务获取。"
     : "当前使用 Node.js 完成页面抓取、图片代理和媒体分段下载。";
 }
 
@@ -415,7 +422,7 @@ function proxyUrl(image) {
     name: imageFilename(image)
   });
   const endpoint = state.engine === "python"
-    ? "/api/python_image"
+    ? (window.xhsDesktop ? "/api/python_image" : "/api/browser_python_image")
     : "/api/image";
   return `${endpoint}?${params.toString()}`;
 }
@@ -1194,7 +1201,8 @@ function videoApiUrl(action, sourceUrl, extra = {}) {
     const params = new URLSearchParams({ action, ticket: sourceUrl.slice("member-video:".length), ...extra });
     return `/api/member_video?${params.toString()}`;
   }
-  const endpoint = state.engine === "python" ? "/api/python_video" : "/api/video";
+  const endpoint = state.engine === "python"
+    ? (window.xhsDesktop ? "/api/python_video" : "/api/browser_python_video") : "/api/video";
   const params = new URLSearchParams({ action, url: sourceUrl, ...extra });
   return `${endpoint}?${params.toString()}`;
 }
@@ -1998,6 +2006,10 @@ function renderResults() {
 }
 
 async function parseShareText(text, engine, popup = null) {
+  if (engine === "python" && !window.xhsDesktop) {
+    const { parseWithBrowserPython } = await import("./lib/browser-python.js");
+    return parseWithBrowserPython(text, { verify: payload => waitForNoteVerification(payload, { popup }) });
+  }
   const endpoint = engine === "python"
     ? "/api/python_parse"
     : "/api/parse";
@@ -2208,7 +2220,7 @@ for (const input of elements.engineInputs) {
     localStorage.setItem("xhs-engine", state.engine);
     updateEngineUI();
     updateResultMeta();
-    showToast(`已切换到 ${engineLabel()} 后台`, "success");
+    showToast(`已切换到 ${engineLabel()} 引擎`, "success");
   });
 }
 

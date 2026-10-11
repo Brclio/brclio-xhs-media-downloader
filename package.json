@@ -60,6 +60,7 @@
     "electron-builder": "26.15.3",
     "esbuild": "0.28.1",
     "miniflare": "5.20260921.0-alpha",
+    "pyodide": "314.0.7",
     "wrangler": "4.136.2"
   },
   "main": "desktop/main.js",

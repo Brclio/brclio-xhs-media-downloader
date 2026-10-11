@@ -136,6 +136,7 @@ app.whenReady().then(async () => {
   const calls = [];
   let failNextFeedbackReply = false;
   let failNextProxySave = false;
+  let failNextWebProxySave = false;
   let holdNextFeedbackReply = null;
   let holdNextFeedbackDetail = null;
   const tlsOptions = { key: fs.readFileSync(keyFile), cert: fs.readFileSync(certificateFile) };
@@ -152,6 +153,10 @@ app.whenReady().then(async () => {
           calls.push(req.body);
           res.status = code => { res.statusCode = code; return res; };
           res.json = async body => {
+            if (body.ok && req.body.action === 'admin-save-web-parse-proxy-config' && failNextWebProxySave) {
+              failNextWebProxySave = false; res.statusCode = 503;
+              return res.end(JSON.stringify({ ok: false, error: { message: 'Fixture web settings result unavailable' } }));
+            }
             if (body.ok && req.body.action === 'admin-save-update-proxy-config' && failNextProxySave) {
               failNextProxySave = false; res.statusCode = 503;
               return res.end(JSON.stringify({ ok: false, error: { message: 'Fixture settings result unavailable' } }));
@@ -511,6 +516,46 @@ app.whenReady().then(async () => {
   await click('#show-update-proxy-url');
   assert.equal(await evaluate(`document.querySelector('#update-proxy-url').value`), updateSubscriptions.join('\n'), 'reveal and edit recovers the persisted pool');
   await click('#show-update-proxy-url');
+  await click('#tab-web-parse-proxy');
+  await check(`document.querySelector('#web-parse-proxy-state').textContent === '尚未配置' && !document.querySelector('#save-web-parse-proxy').disabled`, 'web proxy administrator tab loads independently');
+  const webSubscription = 'https://web-subscription.example.test/private-web-fixture?token=fixture-web-network-secret';
+  const priorUpdateConfig = JSON.stringify(state.updateProxyConfig);
+  await evaluate(`document.querySelector('#web-parse-proxy-enabled').checked = true`);
+  assert.equal(await evaluate(`document.querySelector('#web-parse-proxy-url').type`), 'password');
+  await fill('#web-parse-proxy-url', webSubscription);
+  await click('#show-web-parse-proxy-url');
+  assert.equal(await evaluate(`document.querySelector('#web-parse-proxy-url').type`), 'text');
+  await click('#show-web-parse-proxy-url');
+  await fill('#web-parse-proxy-reason', `配置 ${webSubscription}`);
+  failNextWebProxySave = true;
+  await click('#save-web-parse-proxy');
+  await check(`document.querySelector('#notice .notice-actions button')`, 'uncertain web proxy save offers original request retry');
+  await click('#notice .notice-actions button');
+  await check(`document.querySelector('#web-parse-proxy-state').textContent === '网页代理已启用' && document.querySelector('#web-parse-proxy-url').value === ''`, 'web proxy retry confirms masked setting and clears entered credentials');
+  const webProxyAttempts = calls.filter(call => call.action === 'admin-save-web-parse-proxy-config');
+  assert.equal(webProxyAttempts.length, 2); assert.equal(webProxyAttempts[0].input.requestId, webProxyAttempts[1].input.requestId);
+  assert.equal(state.webParseProxyConfig.revision, 1); assert.equal(JSON.stringify(state.updateProxyConfig), priorUpdateConfig, 'web setting cannot modify software update subscription');
+  assert.ok(state.webParseProxyConfig.subscriptionCiphertext); assert.equal(state.webParseProxyConfig.subscriptionUrl, undefined);
+  assert.ok(!JSON.stringify(state.webParseProxyConfig).includes('fixture-web-network-secret')); assert.ok(!JSON.stringify(state.audit).includes('private-web-fixture'));
+  assert.ok(!(await evaluate('document.body.textContent')).includes('fixture-web-network-secret'), 'administrator document does not retain submitted subscription credentials');
+  fs.writeFileSync(path.join(screenshots, 'web-fetch-network.png'), (await win.webContents.capturePage()).toPNG());
+  for (const width of [560, 360]) {
+    win.setContentSize(width, 1000); await pause(80);
+    assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), `web fetch settings fit ${width}px display`);
+    fs.writeFileSync(path.join(screenshots, `web-fetch-network-${width}.png`), (await win.webContents.capturePage()).toPNG());
+  }
+  win.setContentSize(1280, 1000);
+  await evaluate(`document.querySelector('#web-parse-proxy-enabled').checked = false`);
+  await fill('#web-parse-proxy-reason', '暂停网页代理并保留订阅');
+  await click('#save-web-parse-proxy');
+  await check(`document.querySelector('#web-parse-proxy-state').textContent === '网页代理已停用'`, 'blank input disables web proxy without clearing saved subscription');
+  assert.equal(state.webParseProxyConfig.revision, 2); assert.ok(state.webParseProxyConfig.subscriptionCiphertext);
+  await new Promise(resolve => { win.webContents.once('did-finish-load', resolve); win.reload(); });
+  await check(`!document.querySelector('#workspace').hidden`, 'web proxy administration persists across reload');
+  await click('#tab-web-parse-proxy');
+  await check(`document.querySelector('#web-parse-proxy-state').textContent === '网页代理已停用'`, 'stored web proxy state survives reload');
+  assert.equal(await evaluate(`document.querySelector('#web-parse-proxy-url').value`), '', 'stored credentials are never prefilled');
+  await click('#tab-update-proxy');
   await click('#tab-codes');
   if (await evaluate(`!document.querySelector('#generated-panel').hidden`)) {
     await click('#dismiss-codes');
@@ -531,6 +576,7 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#feedback-detail').textContent`), '', 'logout clears retained feedback and logs from the document');
   assert.equal(await evaluate(`document.querySelector('#issue-preview').textContent.includes('student@example.test')`), false, 'logout clears targeted customer details');
   assert.equal(await evaluate(`document.querySelector('#update-proxy-url').value`), '', 'logout clears subscription credentials from the form');
+  assert.equal(await evaluate(`document.querySelector('#web-parse-proxy-url').value`), '', 'logout clears web proxy credentials from the form');
   assert.equal(Object.values(state.sessions).filter(session => session.client === 'admin').every(session => session.revokedAt), true);
   assert.equal((await win.webContents.session.cookies.get({ url: config.siteOrigin, name: ADMIN_COOKIE })).length, 0);
   assert.equal(await evaluate('localStorage.length'), 0, 'no credential localStorage');

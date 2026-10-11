@@ -1,9 +1,10 @@
 import { AccountError, fail } from './errors.js';
 import { validateUpdateProxyConfig } from './update-proxy.js';
+import { validateWebParseProxyConfig } from './web-parse-proxy.js';
 import { validateCommerceState } from './commerce.js';
 
 export function emptyState() {
-  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {}, feedbackCommentRateLimits: {}, updateProxyConfig: null, reviews: {}, orders: {} };
+  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {}, feedbackCommentRateLimits: {}, updateProxyConfig: null, webParseProxyConfig: null, reviews: {}, orders: {} };
 }
 export function validateState(state) {
   if (!state || state.schemaVersion !== 1 || !Array.isArray(state.audit)) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);
@@ -23,6 +24,7 @@ export function validateState(state) {
     if (!Array.isArray(feedback.comments)) fail('STORAGE_INVALID', '反馈评论格式异常，请联系管理员。', 503);
   }
   validateUpdateProxyConfig(state.updateProxyConfig);
+  validateWebParseProxyConfig(state.webParseProxyConfig);
   validateCommerceState(state);
   return state;
 }

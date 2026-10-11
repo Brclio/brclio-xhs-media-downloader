@@ -1,0 +1,744 @@
+{
+  "releaseScope": "web-only browser Python and free subscription transport; no desktop or Android release",
+  "recordedAt": "2026-10-11T13:40:17.985522+00:00",
+  "productionOrigin": "https://xhs.download.brclio.com",
+  "deployment": {
+    "mainWorker": {
+      "name": "brclio-xhs-downloader",
+      "versionId": "7845e346-84a9-41dd-9dcb-a4645dcc53f0"
+    },
+    "subscriptionProxy": {
+      "name": "brclio-xhs-subscription-proxy",
+      "versionId": "159a718d-155d-44a6-8da0-fe215377c855",
+      "privateServiceBindingOnly": true,
+      "workersDev": false,
+      "previewUrls": false,
+      "sqliteDurableObject": true
+    },
+    "pages": {
+      "name": "brclio-xhs-pages",
+      "deploymentPrefix": "2336b302",
+      "url": "https://2336b302.brclio-xhs-pages.pages.dev"
+    },
+    "legacyPython": {
+      "name": "brclio-xhs-python",
+      "versionId": "6d84f091-8d1c-426d-9eb6-5aa53cf06dd3",
+      "redeployed": false
+    },
+    "workersPlan": "Free",
+    "planUpgraded": false,
+    "containerCreated": false,
+    "mihomoRequired": false,
+    "temporaryAuthenticatedProbeDeleted": true
+  },
+  "implementation": {
+    "pythonExecution": "self-hosted Pyodide 314.0.7 in a browser module Web Worker",
+    "sourceTransport": "Cloudflare private Worker implements VLESS/WebSocket and certificate-verified TLS directly",
+    "subscription": "refreshed on every note request; initial value held in Worker Secret; no credential in source or public assets",
+    "selection": "lowest bounded HTTPS probe latency among compatible WSS hostname routes; subscription had 16 entries represented by 5 distinct compatible routes",
+    "preferredIpSelectionPreserved": false,
+    "mediaProbeCacheMaxSeconds": 60,
+    "fallback": "one controlled direct attempt after proxy failure; restricted existing human verification flow only if needed",
+    "admin": "existing administrator UI supports enable/disable and encrypted subscription replacement; original updater proxy settings remain separate",
+    "publicSourceProjection": "only matched note and ordinary public media metadata; no original-video addresses, upstream executable scripts or node credentials",
+    "unchangedClientEntryPoints": [
+      "desktop local Node/Python parsing",
+      "legacy /api/python_*",
+      "Android existing public API paths"
+    ],
+    "verifiedFixes": [
+      "note request headers aligned with existing client fetch strategy",
+      "new media API wraps trusted private response so internal service URL is not mistaken for a media redirect",
+      "free proxy media timeout increased from 15 to 30 seconds after real chunk 6 timeout",
+      "main Worker and Pages route /__internal/* to explicit public 404"
+    ]
+  },
+  "automatedChecks": {
+    "node": {
+      "total": 1537,
+      "passed": 1525,
+      "failed": 0,
+      "skipped": 12
+    },
+    "python": {
+      "total": 47,
+      "passed": 47,
+      "failed": 0
+    },
+    "freeProxyFocused": {
+      "passed": 97,
+      "failed": 0,
+      "note": "subset of root Node coverage; not added twice"
+    },
+    "publicInternalRoutingFocused": {
+      "passed": 16,
+      "failed": 0
+    },
+    "adminRendererIntegration": {
+      "passed": true,
+      "handlerCalls": 94,
+      "stateWrites": 24,
+      "scope": "actual renderer and account service with mocked GitHub HTTP and SMTP; production state was not changed"
+    },
+    "productionSmoke": {
+      "checkedAt": "2026-10-11T13:06:17.425Z",
+      "passed": 58,
+      "total": 58,
+      "ok": true,
+      "realMediaChecks": false
+    },
+    "finalProductionPublicChecks": {
+      "checkedAt": "2026-10-11T13:38:03.753Z",
+      "passed": true,
+      "results": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "asset",
+          "file": "app.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "asset",
+          "file": "lib/browser-python.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "asset",
+          "file": "lib/browser-python-worker.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "asset",
+          "file": "assets/vendor/pyodide/314.0.7/parser_core.py",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "asset",
+          "file": "assets/vendor/pyodide/314.0.7/NOTICE.txt",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "asset",
+          "file": "admin/admin.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "health",
+          "status": 200,
+          "ok": true,
+          "pythonBinding": true,
+          "deploymentId": "7845e346-84a9-41dd-9dcb-a4645dcc53f0",
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "kind": "asset",
+          "file": "app.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "kind": "asset",
+          "file": "lib/browser-python.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "kind": "asset",
+          "file": "lib/browser-python-worker.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "kind": "asset",
+          "file": "assets/vendor/pyodide/314.0.7/parser_core.py",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "kind": "asset",
+          "file": "assets/vendor/pyodide/314.0.7/NOTICE.txt",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "kind": "asset",
+          "file": "admin/admin.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "kind": "health",
+          "status": 200,
+          "ok": true,
+          "pythonBinding": true,
+          "deploymentId": "7845e346-84a9-41dd-9dcb-a4645dcc53f0",
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "kind": "asset",
+          "file": "app.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "kind": "asset",
+          "file": "lib/browser-python.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "kind": "asset",
+          "file": "lib/browser-python-worker.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "kind": "asset",
+          "file": "assets/vendor/pyodide/314.0.7/parser_core.py",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "kind": "asset",
+          "file": "assets/vendor/pyodide/314.0.7/NOTICE.txt",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "kind": "asset",
+          "file": "admin/admin.js",
+          "status": 200,
+          "matches": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "kind": "health",
+          "status": 200,
+          "ok": true,
+          "pythonBinding": true,
+          "deploymentId": "7845e346-84a9-41dd-9dcb-a4645dcc53f0",
+          "matches": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "unauthenticated-admin",
+          "action": "admin-web-parse-proxy-config",
+          "status": 401,
+          "denied": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "unauthenticated-admin",
+          "action": "admin-save-web-parse-proxy-config",
+          "status": 401,
+          "denied": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "cross-origin-source",
+          "status": 403,
+          "denied": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "kind": "private-config-route",
+          "status": 404,
+          "denied": true
+        }
+      ]
+    },
+    "staticBuildAudit": {
+      "checkedAt": "2026-10-11T13:36:16.229Z",
+      "runtimeVersion": "314.0.7",
+      "outputs": [
+        {
+          "directory": "dist-web",
+          "fileCount": 102,
+          "totalBytes": 23294871,
+          "largestFile": {
+            "name": "assets/vendor/pyodide/314.0.7/pyodide.asm.wasm",
+            "bytes": 9598218
+          },
+          "oversizedFiles": [],
+          "symlinks": [],
+          "forbiddenPaths": [],
+          "credentialPatternFiles": [],
+          "credentialPatternReview": [
+            {
+              "name": "assets/vendor/pyodide/314.0.7/pyodide.asm.mjs",
+              "matchCount": 1,
+              "classification": "wss-scheme-substring-false-positive"
+            },
+            {
+              "name": "lib/parse-verification.js",
+              "matchCount": 2,
+              "classification": "wss-scheme-substring-false-positive"
+            }
+          ],
+          "runtime": [
+            {
+              "name": "pyodide.mjs",
+              "bytes": 17931,
+              "sha256": "6f1d60f7bf529beb300f0f47983c921d3982363640ba20af0e38efdddbc66109",
+              "matchesSource": true
+            },
+            {
+              "name": "pyodide.asm.mjs",
+              "bytes": 1250344,
+              "sha256": "f7cdc8ece80678ceb712f8e65ebe6d3a83203a180c399865f49612a051693635",
+              "matchesSource": true
+            },
+            {
+              "name": "pyodide.asm.wasm",
+              "bytes": 9598218,
+              "sha256": "cc36e3cab04fdfc9a63ff13eb52eae2b911bf46c025cc7b281f394bd3de1d5e6",
+              "matchesSource": true
+            },
+            {
+              "name": "python_stdlib.zip",
+              "bytes": 2545637,
+              "sha256": "fa1957e5777068fc4f7437f96d860ae2fbe9c19732ba06c84e004ec16dd7dd7a",
+              "matchesSource": true
+            },
+            {
+              "name": "pyodide-lock.json",
+              "bytes": 119077,
+              "sha256": "5dc2fc119108bc148c7457dc86e7675b5c87e1cafd420b9c34c1eaef7b36c010",
+              "matchesSource": true
+            },
+            {
+              "name": "parser_core.py",
+              "bytes": 47785,
+              "sha256": "58342e886ca7a3a89f57e0b8f3e40d35beef0bf8189af26b309b60f8c175156c",
+              "matchesSource": true
+            }
+          ]
+        },
+        {
+          "directory": "cloudflare/pages/dist",
+          "fileCount": 104,
+          "totalBytes": 23295820,
+          "largestFile": {
+            "name": "assets/vendor/pyodide/314.0.7/pyodide.asm.wasm",
+            "bytes": 9598218
+          },
+          "oversizedFiles": [],
+          "symlinks": [],
+          "forbiddenPaths": [],
+          "credentialPatternFiles": [],
+          "credentialPatternReview": [
+            {
+              "name": "assets/vendor/pyodide/314.0.7/pyodide.asm.mjs",
+              "matchCount": 1,
+              "classification": "wss-scheme-substring-false-positive"
+            },
+            {
+              "name": "lib/parse-verification.js",
+              "matchCount": 2,
+              "classification": "wss-scheme-substring-false-positive"
+            }
+          ],
+          "runtime": [
+            {
+              "name": "pyodide.mjs",
+              "bytes": 17931,
+              "sha256": "6f1d60f7bf529beb300f0f47983c921d3982363640ba20af0e38efdddbc66109",
+              "matchesSource": true
+            },
+            {
+              "name": "pyodide.asm.mjs",
+              "bytes": 1250344,
+              "sha256": "f7cdc8ece80678ceb712f8e65ebe6d3a83203a180c399865f49612a051693635",
+              "matchesSource": true
+            },
+            {
+              "name": "pyodide.asm.wasm",
+              "bytes": 9598218,
+              "sha256": "cc36e3cab04fdfc9a63ff13eb52eae2b911bf46c025cc7b281f394bd3de1d5e6",
+              "matchesSource": true
+            },
+            {
+              "name": "python_stdlib.zip",
+              "bytes": 2545637,
+              "sha256": "fa1957e5777068fc4f7437f96d860ae2fbe9c19732ba06c84e004ec16dd7dd7a",
+              "matchesSource": true
+            },
+            {
+              "name": "pyodide-lock.json",
+              "bytes": 119077,
+              "sha256": "5dc2fc119108bc148c7457dc86e7675b5c87e1cafd420b9c34c1eaef7b36c010",
+              "matchesSource": true
+            },
+            {
+              "name": "parser_core.py",
+              "bytes": 47785,
+              "sha256": "58342e886ca7a3a89f57e0b8f3e40d35beef0bf8189af26b309b60f8c175156c",
+              "matchesSource": true
+            }
+          ]
+        }
+      ],
+      "parserMatchesSource": true,
+      "runtimeMatchesPinnedPackage": true,
+      "applicationRuntimeUsesSameOrigin": true,
+      "applicationDoesNotRequestExternalPackages": true,
+      "vendorContainsUnusedDefaultCdnFallback": true
+    }
+  },
+  "actualBrowserAcceptance": {
+    "checkedAt": "2026-10-11T13:16:11.899Z",
+    "finishedAt": "2026-10-11T13:16:48.863Z",
+    "sandboxEnabled": true,
+    "webSecurityEnabled": true,
+    "nodeIntegrationEnabled": false,
+    "runtimeResources": [
+      {
+        "name": "pyodide.mjs",
+        "status": 200
+      },
+      {
+        "name": "pyodide-lock.json",
+        "status": 200
+      },
+      {
+        "name": "pyodide.asm.mjs",
+        "status": 200
+      },
+      {
+        "name": "python_stdlib.zip",
+        "status": 200
+      },
+      {
+        "name": "pyodide.asm.wasm",
+        "status": 200
+      },
+      {
+        "name": "parser_core.py",
+        "status": 200
+      }
+    ],
+    "checks": [
+      {
+        "kind": "direct-image",
+        "sources": [
+          {
+            "status": 200,
+            "code": null,
+            "success": true,
+            "source": "direct",
+            "kind": "direct-image",
+            "verificationRequired": false,
+            "quotaError": false,
+            "retryAfterSeconds": null
+          }
+        ],
+        "cancels": [],
+        "sourceRequestCount": 1,
+        "workerCreated": 1,
+        "workerTerminated": 1,
+        "handoffReceived": false,
+        "verificationDialogCreated": false,
+        "cancelClicked": false,
+        "preopenedPopup": true,
+        "outcome": "parsed",
+        "engine": "python",
+        "images": 1,
+        "videos": 0,
+        "livePhotos": 0,
+        "originalVideoCount": 0,
+        "originalAddressesExposed": false,
+        "elapsedMs": 7575,
+        "popupClosed": true,
+        "dialogRemoved": true
+      },
+      {
+        "kind": "note-1",
+        "sources": [
+          {
+            "status": 200,
+            "code": null,
+            "success": true,
+            "source": "proxy",
+            "kind": null,
+            "verificationRequired": false,
+            "quotaError": false,
+            "retryAfterSeconds": null
+          }
+        ],
+        "cancels": [],
+        "sourceRequestCount": 1,
+        "workerCreated": 1,
+        "workerTerminated": 1,
+        "handoffReceived": false,
+        "verificationDialogCreated": false,
+        "cancelClicked": false,
+        "preopenedPopup": true,
+        "outcome": "parsed",
+        "engine": "python",
+        "images": 1,
+        "videos": 2,
+        "livePhotos": 0,
+        "originalVideoCount": 1,
+        "originalAddressesExposed": false,
+        "elapsedMs": 9748,
+        "popupClosed": true,
+        "dialogRemoved": true
+      },
+      {
+        "kind": "note-2",
+        "sources": [
+          {
+            "status": 200,
+            "code": null,
+            "success": true,
+            "source": "proxy",
+            "kind": null,
+            "verificationRequired": false,
+            "quotaError": false,
+            "retryAfterSeconds": null
+          }
+        ],
+        "cancels": [],
+        "sourceRequestCount": 1,
+        "workerCreated": 1,
+        "workerTerminated": 1,
+        "handoffReceived": false,
+        "verificationDialogCreated": false,
+        "cancelClicked": false,
+        "preopenedPopup": true,
+        "outcome": "parsed",
+        "engine": "python",
+        "images": 6,
+        "videos": 0,
+        "livePhotos": 0,
+        "originalVideoCount": 0,
+        "originalAddressesExposed": false,
+        "elapsedMs": 9012,
+        "popupClosed": true,
+        "dialogRemoved": true
+      }
+    ],
+    "mediaChunk": {
+      "status": 200,
+      "bytes": 3500000,
+      "success": true,
+      "contentType": "video/mp4",
+      "contentRangeMatches": true,
+      "mp4Header": true
+    },
+    "consoleErrorCount": 0,
+    "profileRemoved": true,
+    "noteSuccessCount": 2,
+    "manualVerificationRequired": false,
+    "note": "isolated development browser against the production origin; existing user browser and installed client were not accessed"
+  },
+  "actualMediaAcceptance": {
+    "postImages": [
+      {
+        "kind": "post-image",
+        "index": 1,
+        "status": 200,
+        "bytes": 310278,
+        "jpeg": true,
+        "valid": true,
+        "sha256": "b8e12fa20b7efc5aac07d34cc5108e949933e25797b728408080968df85c91cf"
+      },
+      {
+        "kind": "post-image",
+        "index": 2,
+        "status": 200,
+        "bytes": 117236,
+        "jpeg": true,
+        "valid": true,
+        "sha256": "dc52cce24ee69e0159c5c1f9f5285c225eb4727cc3eb67fd18494ee93af5ff91"
+      },
+      {
+        "kind": "post-image",
+        "index": 3,
+        "status": 200,
+        "bytes": 118994,
+        "jpeg": true,
+        "valid": true,
+        "sha256": "0a12d48f8ab45055262f96e1edb5445213a89f467f68a830b4460c289867bd29"
+      },
+      {
+        "kind": "post-image",
+        "index": 4,
+        "status": 200,
+        "bytes": 94702,
+        "jpeg": true,
+        "valid": true,
+        "sha256": "336c44e820223f6c927471624b63e1c39e02b457b06b47586ce3aea6ffa2cbf8"
+      },
+      {
+        "kind": "post-image",
+        "index": 5,
+        "status": 200,
+        "bytes": 72768,
+        "jpeg": true,
+        "valid": true,
+        "sha256": "ca2ce75f8999d005b485d670c4c31b0f496c478eec718066718d6e8760c78940"
+      },
+      {
+        "kind": "post-image",
+        "index": 6,
+        "status": 200,
+        "bytes": 120718,
+        "jpeg": true,
+        "valid": true,
+        "sha256": "3fbc894bc40fe886af2a93406b1c5d4fed3df3664b8a9b41b857e7a05b1d9293"
+      }
+    ],
+    "fullVideo": {
+      "checkedAt": "2026-10-11T13:25:23.309Z",
+      "elapsedMs": 128148,
+      "results": [
+        {
+          "kind": "video-part",
+          "part": 1,
+          "status": 200,
+          "bytes": 3500000,
+          "expected": 3500000,
+          "valid": true
+        },
+        {
+          "kind": "video-part",
+          "part": 2,
+          "status": 200,
+          "bytes": 3500000,
+          "expected": 3500000,
+          "valid": true
+        },
+        {
+          "kind": "video-part",
+          "part": 3,
+          "status": 200,
+          "bytes": 3500000,
+          "expected": 3500000,
+          "valid": true
+        },
+        {
+          "kind": "video-part",
+          "part": 4,
+          "status": 200,
+          "bytes": 3500000,
+          "expected": 3500000,
+          "valid": true
+        },
+        {
+          "kind": "video-part",
+          "part": 5,
+          "status": 200,
+          "bytes": 3500000,
+          "expected": 3500000,
+          "valid": true
+        },
+        {
+          "kind": "video-part",
+          "part": 6,
+          "status": 200,
+          "bytes": 3500000,
+          "expected": 3500000,
+          "valid": true
+        },
+        {
+          "kind": "video-part",
+          "part": 7,
+          "status": 200,
+          "bytes": 3500000,
+          "expected": 3500000,
+          "valid": true
+        },
+        {
+          "kind": "video-part",
+          "part": 8,
+          "status": 200,
+          "bytes": 2181111,
+          "expected": 2181111,
+          "valid": true
+        },
+        {
+          "kind": "full-video",
+          "bytes": 26681111,
+          "expected": 26681111,
+          "sha256": "e10851d47dcef9970e84537596a47e86b00019e1558e7723d3bd742910c46cd1",
+          "duration": 468.786213,
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 1280,
+              "height": 720
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            }
+          ],
+          "valid": true
+        }
+      ]
+    },
+    "fullVideoDecode": {
+      "commandScope": "ffmpeg complete video and audio decode to null output",
+      "exitCode": 0,
+      "errorLogBytes": 0
+    },
+    "previousAttempt": {
+      "videoChunk": 6,
+      "status": 504,
+      "proxyMediaTimeoutSeconds": 15,
+      "resolvedBy": "30-second media timeout; complete 8-part retry passed"
+    },
+    "note": "real production APIs fetched all images and video parts; actual browser also verified parsing and a 3.5 MB video chunk; whole-file browser Save dialog was not tested"
+  },
+  "clientReleaseAssets": {
+    "checkedAt": "2026-10-11T13:03:24.850Z",
+    "results": [
+      {
+        "release": "v2.0.15",
+        "assetCount": 11,
+        "unchanged": true
+      },
+      {
+        "release": "android-v1.0.15",
+        "assetCount": 4,
+        "unchanged": true
+      }
+    ]
+  },
+  "limitations": [
+    "Two supplied ordinary notes passed without verification; this does not guarantee every upstream note or future request is allowed.",
+    "Live Photo parser and regression fixtures passed; no new real Live Photo post or Apple-device import acceptance was performed in this release.",
+    "The human verification fallback was not needed by these two samples; successful human completion remains unverified.",
+    "Admin integration passed locally and production anonymous access was denied; no authenticated production subscription replacement was performed.",
+    "The Node engine and native Android upstream parsing were not repaired by this browser-Python release.",
+    "Workers Free and other Cloudflare account quotas still apply; this release does not upgrade a plan or guarantee unlimited capacity.",
+    "The 16 subscription entries collapse to 5 compatible hostname routes; independently choosing each preferred Cloudflare entry IP is not supported by Worker WebSocket transport."
+  ]
+}

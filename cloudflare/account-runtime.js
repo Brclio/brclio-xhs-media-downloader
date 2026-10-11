@@ -1,6 +1,14 @@
 import { createAccountHandler } from '../api/account.js';
 import { createCloudflareMailer } from './mailer.js';
 import { invokeHandler, MAX_ACCOUNT_BODY_BYTES, RequestTooLargeError } from './http-adapter.js';
+import { createGithubStore } from '../server/auth/store.js';
+import { readConfig } from '../server/auth/config.js';
+import { webParseProxyPrivateConfig } from '../server/auth/web-parse-proxy.js';
+
+export async function loadWebParseProxySettings(env, { store = createGithubStore(env) } = {}) {
+  const { state } = await store.read();
+  return webParseProxyPrivateConfig(state, readConfig(env));
+}
 
 /**
  * Private SQLite-backed Durable Object, using its larger CPU allowance for
@@ -14,6 +22,11 @@ export class AccountRuntime {
 
   async fetch(request) {
     try {
+      if (new URL(request.url).pathname === '/__internal/web-parse-proxy-settings') {
+        const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+        if (request.method !== 'GET') return Response.json({ ok: false, error: { code: 'METHOD_NOT_ALLOWED' } }, { status: 405, headers: { ...headers, Allow: 'GET' } });
+        return Response.json({ ok: true, proxyConfig: await loadWebParseProxySettings(this.env) }, { headers });
+      }
       return await invokeHandler(createAccountHandler({
         env: this.env,
         mailerFactory: createCloudflareMailer,

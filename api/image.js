@@ -36,7 +36,8 @@ async function readBufferWithLimit(response) {
   return Buffer.concat(chunks, total);
 }
 
-export default async function handler(req, res) {
+export function createImageHandler({ fetchImpl = (...args) => globalThis.fetch(...args), onError = error => console.error('image error', error), timeoutMs = 15000 } = {}) {
+return async function handler(req, res) {
   res.setHeader("Cache-Control", "private, max-age=300");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-XHS-Engine", "node");
@@ -52,11 +53,11 @@ export default async function handler(req, res) {
 
     const sourceUrl = buildNoWatermarkUrl(token);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     let response;
     try {
-      response = await fetch(sourceUrl, {
+      response = await fetchImpl(sourceUrl, {
         headers: {
           "user-agent": "Mozilla/5.0",
           accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
@@ -92,8 +93,11 @@ export default async function handler(req, res) {
     const statusCode = error instanceof XhsError ? error.statusCode : 500;
     const message = error instanceof XhsError ? error.message : "下载图片失败。";
 
-    console.error("image error", error);
+    onError(error);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     return res.status(statusCode).json({ success: false, message });
   }
 }
+}
+
+export default createImageHandler();

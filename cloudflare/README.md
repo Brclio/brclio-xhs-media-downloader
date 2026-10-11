@@ -1,6 +1,10 @@
 # Cloudflare 托管
 
-正式站点使用 Pages、主 Worker 和私有 Python Worker。Pages 的 `APP` 绑定把 API 与后台请求交给主 Worker；主 Worker 通过 `PYTHON_API` 调用独立 Python 引擎。生产解析不再调用 Vercel。当前来源 `269693b` 已部署，主 Worker 版本为 `ee794110-1464-474e-af10-345cb7ba8334`，`BROWSER` 绑定与人工接管流程已启用；真实笔记解析、人工验证及下载成功仍待验收，不能称为已修复。网页故障提示在真实验收完成前保留。当前结果见[人工验证核验记录](../docs/releases/v2.0.15-cloudflare-manual-verification.json)；完整部署命令、迁移历史和核验范围见[部署说明](../docs/cloudflare-deployment.md)，Pages 配置见[网关说明](pages/README.md)。
+正式站点使用 Pages、主 Worker、私有 Python Worker 和免费私有订阅代理 Worker，不调用 Vercel。网页版选择「浏览器 Python」后，Pyodide 在用户浏览器的独立 Web Worker 中运行 Python；后台只抓取并重建所需的安全来源数据。代理直接实现 VLESS/WebSocket 与严格 TLS，无需 Mihomo 或付费容器。订阅在使用时刷新，对兼容线路测速后选取最低延迟；管理员可在后台维护加密订阅配置。代理失败补一次直连，仍失败才沿用受限人工验证。
+
+新版主 Worker 为 `7845e346-84a9-41dd-9dcb-a4645dcc53f0`，免费私有代理为 `159a718d-155d-44a6-8da0-fe215377c855`，Pages 发布入口为 [2336b302](https://2336b302.brclio-xhs-pages.pages.dev)。旧 `/api/python_*` 接口继续使用原私有 Python Worker，兼容已安装客户端；其版本与安装包没有更换。代理入口和管理配置说明见[免费代理说明](subscription-proxy/README.md)，核验结果见[本次发布记录](../docs/releases/v2.0.15-browser-python-free-proxy-verification.json)。两条实测笔记成功不代表上游永不验证；人工完成及真实实况帖的验收须单独记录。
+
+下方原生接口和人工接管记录保留原流程及历史验收边界，新网页 Python 来源、媒体接口分别为 `/api/browser_python_source`、`/api/browser_python_image`、`/api/browser_python_video`。来源只返回同笔记的安全数据，会员原视频地址、上游执行脚本、订阅凭据均不发送给浏览器。
 
 ## 人工接管流程
 

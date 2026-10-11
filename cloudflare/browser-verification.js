@@ -22,7 +22,7 @@ const BUDGET_KEY = 'browser-parse-budget-v1';
 const RESERVATION_MS = 180_000;
 const DAY_MS = 86_400_000;
 const REASONS = new Set(['captcha', 'login', 'access-error']);
-const ENGINES = new Set(['node', 'python']);
+const ENGINES = new Set(['node', 'python', 'browser-python']);
 const tokenPattern = /^[a-f0-9]{64}$/;
 const json = (body, status) => Response.json(body, { status, headers: {
   'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',

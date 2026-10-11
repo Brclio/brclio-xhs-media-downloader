@@ -80,7 +80,7 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理，�
 
 已部署 **Cloudflare Pages + Workers 双引擎**，正式入口为 [xhs.download.brclio.com](https://xhs.download.brclio.com)，另有 [Pages 入口](https://brclio-xhs-pages.pages.dev)。正式域名与证书已激活，HTTPS 健康检查确认请求到达 Cloudflare。网页和图片、视频下载由 Cloudflare 承载；账号与解析使用私有 Durable Object 执行环境，账号沿用原 `AUTH_*` 配置和 GitHub 唯一业务存储。双引擎解析、图片字节、验证码收件、管理员登录及跨后端会话各有历史验收证据；本轮结果与限制见部署记录，历史通过不代表新素材均能解析。
 
-正式托管方案仅使用 **Cloudflare Pages、主 Worker 与私有 Python Worker**，笔记解析不再以恢复或保留 Vercel 为部署前提。10 月 11 日两套 Worker 已发布 Cloudflare-only 调整与原生解析诊断；真实视频复验确认两引擎均被上游重定向到验证码页，仍返回 422，问题已定位但未修复。最新状态见 [部署记录](docs/cloudflare-deployment.md)与[安全诊断证据](docs/releases/v2.0.15-cloudflare-only-diagnostics.json)；此前解析失败与旧回退不可用的记录仍保留。Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。已有 Secrets 时，`npm run cloudflare:deploy` 依次发布 Python、主 Worker 与 Pages；仅构建网站使用 `npm run build:cloudflare`。定向更新可只发布实际变更的 Worker，再按公开资源是否变化决定是否发布 Pages。
+正式托管仅使用 **Cloudflare**。网页版新增「浏览器 Python」：Pyodide 在浏览器执行解析，来源由免费私有 VLESS/WebSocket 服务抓取，每次读取最新订阅、选择兼容线路中最低延迟的入口，失败补一次直连；管理员可在后台维护加密订阅配置。无需 Mihomo、付费容器或用户开启 VPN。旧 Python API 与已安装客户端保留原入口，本次没有重发客户端。实际验收与边界见[发布记录](docs/releases/v2.0.15-browser-python-free-proxy-verification.json)、[免费代理说明](cloudflare/subscription-proxy/README.md)和[部署记录](docs/cloudflare-deployment.md)。Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。定向更新仅发布实际变更的 Worker 与 Pages，旧私有 Python Worker 不必随每次网页更新重发。
 
 ## Android 客户端
 

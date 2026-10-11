@@ -13,6 +13,7 @@ export function readConfig(env = process.env) {
     otpGlobalHourlyLimit: Number(env.AUTH_GLOBAL_HOURLY_LIMIT || 200),
     deviceCheckWriteMs: 86_400_000,
     siteOrigin: env.AUTH_SITE_ORIGIN || '',
+    webParseProxySubscriptionUrl: env.WEB_PARSE_PROXY_SUBSCRIPTION_URL || '',
   };
   if (Buffer.byteLength(config.pepper) < 32) fail('SERVICE_NOT_CONFIGURED', '授权服务尚未配置。', 503);
   if (!Number.isInteger(config.deviceLimit) || config.deviceLimit < 1 || config.deviceLimit > 20) fail('SERVICE_NOT_CONFIGURED', '设备上限配置错误。', 503);

@@ -4,6 +4,7 @@ import { BrowserSessionManager } from './browser-session.js';
 import { maybeParseWithBrowser } from './browser-parse.js';
 import { BrowserVerificationRegistry, BROWSER_FAILURE_HEADER, BROWSER_PAGE_HEADER, browserFailureCode } from './browser-verification.js';
 import { parsePythonWithSharedPage } from './native-python-parse.js';
+import { browserPythonSource, publicBrowserPythonPage } from './browser-python-source.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
 import { invokeHandler, readBoundedBody, MAX_API_BODY_BYTES, MAX_ACCOUNT_BODY_BYTES, RequestTooLargeError } from './http-adapter.js';
@@ -55,7 +56,9 @@ export class ParseRuntime {
         }, 422);
         let response;
         if (operation === 'cancel') response = json({ success: true, cancelled: true }, 200);
-        else if (result.kind === 'page' && result.engine === 'python') {
+        else if (result.kind === 'page' && result.engine === 'browser-python') {
+          response = json({ success: true, ...publicBrowserPythonPage(result, { source: 'browser' }) }, 200);
+        } else if (result.kind === 'page' && result.engine === 'python') {
           response = await this.env.PYTHON_API.fetch(new Request('https://python.internal/__internal/parse-rendered-note', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ finalUrl: result.finalUrl, html: result.html, noteId: result.noteId }),
@@ -102,7 +105,7 @@ export class ParseRuntime {
         return response;
       }
     }
-    if (path !== '/api/parse' && path !== '/api/member_video' && !python) return json({ success: false, message: '接口不存在。' }, 404);
+    if (path !== '/api/parse' && path !== '/api/member_video' && path !== '/api/browser_python_source' && !python) return json({ success: false, message: '接口不存在。' }, 404);
     try {
       if (path === '/api/member_video') {
         const accountFetch = this.env.ACCOUNT_RUNTIME
@@ -111,6 +114,9 @@ export class ParseRuntime {
         return await invokeHandler(createHostedMemberVideoHandler({ env: this.env, accountFetch }), request);
       }
       const retained = request.clone();
+      if (path === '/api/browser_python_source') {
+        return await maybeParseWithBrowser(retained, await browserPythonSource(request, this.env), { env: this.env, state: this.state });
+      }
       if (!python) return await maybeParseWithBrowser(retained, await invokeHandler(parse, request), { env: this.env, state: this.state });
       if (!this.env.PYTHON_API?.fetch) {
         return json({ success: false, engine: 'python', message: 'Python 服务暂时不可用，请稍后重试。' }, 503);

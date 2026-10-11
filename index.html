@@ -362,10 +362,10 @@
 
         <div id="single-note-panel">
         <aside class="web-service-notice" role="status" aria-labelledby="web-service-notice-title">
-          <span class="web-service-notice-label">修复中</span>
+          <span class="web-service-notice-label">使用提示</span>
           <div class="web-service-notice-copy">
-            <strong id="web-service-notice-title">网页解析暂时异常，建议先使用客户端</strong>
-            <p>网页版 Node.js / Python 解析目前可能失败，我们正在修复。需要下载笔记图片、视频或实况素材，请先使用客户端。</p>
+            <strong id="web-service-notice-title">建议使用浏览器 Python 解析</strong>
+            <p>Python 在浏览器中运行，首次使用会加载环境。若 Node.js 解析失败，可切换 Python；遇到小红书验证时请按提示处理，或使用客户端。</p>
           </div>
           <a class="button button-primary" href="./download.html#downloads">下载客户端 <span aria-hidden="true">↗</span></a>
         </aside>
@@ -399,7 +399,7 @@
             ></textarea>
 
             <fieldset class="engine-picker">
-              <legend>后台抓取与下载引擎</legend>
+              <legend data-engine-picker-label>解析引擎</legend>
               <div class="engine-options">
                 <label class="engine-option">
                   <input type="radio" name="engine" value="node" checked />
@@ -411,8 +411,8 @@
                 <label class="engine-option">
                   <input type="radio" name="engine" value="python" />
                   <span>
-                    <strong>Python</strong>
-                    <small>独立解析 · 故障时切换</small>
+                    <strong data-python-engine-label>Python</strong>
+                    <small data-python-engine-description>独立解析 · 故障时切换</small>
                   </span>
                 </label>
               </div>
@@ -855,9 +855,9 @@
       <footer>
         <div class="footer-brand">
           <span class="footer-mark" aria-hidden="true">↓</span>
-          <strong>媒体只经过你的浏览器。</strong>
+          <strong>下载文件在你的浏览器生成。</strong>
         </div>
-        <p>图片、实况 ZIP 与视频文件都在本地生成，不会上传到本站存储。</p>
+        <p>网页通过下载服务获取媒体，ZIP 打包在本地完成，不在本站长期存储媒体文件。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

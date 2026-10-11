@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -16,8 +16,27 @@ export const PUBLIC_FILES = [
   'membership.html', 'membership.css', 'membership.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'commerce-ui.js', 'commerce-ui.css',
-  'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/review-nicknames.js', 'lib/browser-account.js', 'lib/parse-verification.js', 'assets', 'admin'
+  'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/review-nicknames.js', 'lib/browser-account.js', 'lib/parse-verification.js',
+  'lib/browser-python.js', 'lib/browser-python-worker.js', 'lib/video-policy.js', 'lib/xhs.js', 'assets', 'admin'
 ];
+
+export const PYODIDE_VERSION = '314.0.7';
+export const PYODIDE_FILES = ['pyodide.mjs', 'pyodide.asm.mjs', 'pyodide.asm.wasm', 'python_stdlib.zip', 'pyodide-lock.json'];
+const MAX_PAGES_ASSET_BYTES = 25 * 1024 * 1024;
+
+async function copyBrowserPython(output) {
+  const runtime = fileURLToPath(new URL('../node_modules/pyodide/', import.meta.url));
+  const pkg = JSON.parse(await readFile(path.join(runtime, 'package.json'), 'utf8'));
+  if (pkg.version !== PYODIDE_VERSION) throw new Error('Browser Python requires the pinned Pyodide version');
+  const target = path.join(output, 'assets/vendor/pyodide', PYODIDE_VERSION);
+  await mkdir(target, { recursive: true });
+  for (const name of PYODIDE_FILES) {
+    const source = path.join(runtime, name);
+    if ((await stat(source)).size > MAX_PAGES_ASSET_BYTES) throw new Error(`Pyodide asset exceeds the Pages file limit: ${name}`);
+    await cp(source, path.join(target, name));
+  }
+  await cp(fileURLToPath(new URL('../cloudflare/python/src/parser_core.py', import.meta.url)), path.join(target, 'parser_core.py'));
+}
 
 function promotionWebNavigation(html, homepage, page = 'learn.html') {
   const header = homepage.match(/<header\b[^>]*class="app-header"[^>]*>[\s\S]*?<\/header>/)?.[0];
@@ -72,6 +91,7 @@ export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.u
       });
     }
   }
+  await copyBrowserPython(output);
   return output;
 }
 

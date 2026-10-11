@@ -1,0 +1,16 @@
+Pyodide 314.0.7
+
+The Pyodide runtime files distributed here are unmodified upstream release artifacts.
+Pyodide is licensed under the Mozilla Public License, version 2.0 (MPL-2.0).
+The complete upstream license is reproduced in LICENSE.txt.
+
+Source code for this exact release is available at:
+https://github.com/pyodide/pyodide/tree/314.0.7
+
+The bundled Python runtime and standard library, and other components included by
+upstream Pyodide, retain their own licenses and copyright notices. Their sources
+and licensing information are provided by the upstream release and the component
+sources referenced there; this notice does not relicense them under MPL-2.0.
+
+Brclio's parser_core.py is separate application code, not a modification of the
+Pyodide runtime.

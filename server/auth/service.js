@@ -6,6 +6,7 @@ import { getMembershipPlan } from '../../lib/membership-plans.js';
 import { createFeedbackService } from './feedback.js';
 import { createCommerceService, accountNickname } from './commerce.js';
 import { subscriptionUrlsValue, updateProxyConfigView, updateProxyAuditView, updateProxyAuditReason } from './update-proxy.js';
+import { encryptWebParseSubscription, webParseSubscriptionUrlValue, webParseProxyPrivateConfig, webParseProxyAdminView } from './web-parse-proxy.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -253,6 +254,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     if (request.action === 'update-proxy-config') return { proxyConfig: updateProxyConfigView(state) };
     const { user, session } = authenticate(state, request, time, request.action.startsWith('admin-'));
     if (request.action === 'admin-update-proxy-config') return { proxyConfig: updateProxyConfigView(state) };
+    if (request.action === 'admin-web-parse-proxy-config') return { proxyConfig: webParseProxyAdminView(webParseProxyPrivateConfig(state, config)) };
     if (request.action === 'me') return { account: account(state, user, session, time) };
     if (request.action === 'authorize') {
       const feature = request.input.feature;
@@ -385,6 +387,24 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     const result = await store.transaction(state => {
       const time = now();
       const { user, session } = authenticate(state, request, time, request.action.startsWith('admin-'));
+      if (request.action === 'admin-save-web-parse-proxy-config') {
+        const outcome = operation(state, user, request, () => {
+          reasonValue(request.input.reason);
+          if (typeof request.input.enabled !== 'boolean') fail('INVALID_PROXY_CONFIG', '请选择是否启用网页抓取代理。');
+          if (request.input.subscriptionUrl !== undefined && (typeof request.input.subscriptionUrl !== 'string' || request.input.subscriptionUrl.length > 4096)) fail('INVALID_SUBSCRIPTION_URL', '请输入不超过 4096 字符的 HTTPS 订阅地址。');
+          const before = webParseProxyPrivateConfig(state, config);
+          if (!Number.isSafeInteger(request.input.expectedRevision) || request.input.expectedRevision !== before.revision) fail('PROXY_CONFIG_CONFLICT', '配置已被其他管理员更新，请刷新后重新保存。', 409);
+          const raw = request.input.subscriptionUrl?.trim() || before.subscriptionUrl;
+          const subscriptionUrl = webParseSubscriptionUrlValue(raw, { enabled: request.input.enabled });
+          const after = { enabled: request.input.enabled, subscriptionUrl, revision: before.revision + 1, updatedAt: iso(time) };
+          state.webParseProxyConfig = { enabled: after.enabled, subscriptionCiphertext: encryptWebParseSubscription(subscriptionUrl, config), revision: after.revision, updatedAt: after.updatedAt };
+          // Free-text reasons may themselves contain credentials. Record only
+          // a fixed action and masked hosts for this credential-setting change.
+          audit(state, user, request.action, 'web-parse-proxy-config', '管理员更新网页抓取代理配置', webParseProxyAdminView(before), { ...webParseProxyAdminView(after), subscriptionChanged: before.subscriptionUrl !== after.subscriptionUrl }, time);
+          return { saved: true, appliedRevision: after.revision };
+        });
+        return { ...outcome, value: { ...outcome.value, proxyConfig: webParseProxyAdminView(webParseProxyPrivateConfig(state, config)) } };
+      }
       if (request.action === 'admin-save-update-proxy-config') {
         const outcome = operation(state, user, request, () => {
           const reason = reasonValue(request.input.reason);
@@ -535,7 +555,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       else if (action === 'send-code') result = await sendCode(request);
       else if (action === 'admin-send-activation') result = await sendActivation(request);
       else if (action === 'verify-code') result = await verifyCode(request);
-      else if (['logout', 'redeem', 'admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code', 'admin-save-update-proxy-config'].includes(action)) result = await mutateAction(request);
+      else if (['logout', 'redeem', 'admin-membership', 'admin-unbind', 'admin-restore-device', 'admin-generate-codes', 'admin-void-code', 'admin-save-update-proxy-config', 'admin-save-web-parse-proxy-config'].includes(action)) result = await mutateAction(request);
       else result = await readAction(request);
       return { ...result, serverTime: iso(now()) };
     },

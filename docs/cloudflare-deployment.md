@@ -1,5 +1,13 @@
 # Cloudflare 部署与迁移核验
 
+## 2026-10-11：浏览器 Python 与免费订阅代理
+
+已发布网页专用 Pyodide Python 解析与免费 VLESS/WebSocket 私有抓取服务，不需要 Mihomo、容器或套餐升级。主 Worker 为 `7845e346-84a9-41dd-9dcb-a4645dcc53f0`，私有代理为 `159a718d-155d-44a6-8da0-fe215377c855`，Pages 为 [2336b302](https://2336b302.brclio-xhs-pages.pages.dev)。管理员可在原后台修改加密订阅配置，初始地址由主 Worker Secret 提供，不写入代码或公开构建。完整职责、兼容线路测速限制及免费额度边界见[代理说明](../cloudflare/subscription-proxy/README.md)。
+
+本次修正代理笔记请求头与客户端现有抓取策略的差异，以及私有服务响应地址被普通视频 CDN 守卫误判的问题。后者仅在新接口包装可信私有响应，原 CDN、会员授权与 Range 守卫保留。正式域名两篇样本的来源解析、图片及视频分块已通过，完整浏览器与下载证据见[发布核验](releases/v2.0.15-browser-python-free-proxy-verification.json)。旧私有 Python Worker、桌面本地解析、Android 原公开接口及安装附件保留原版本；本次没有客户端构建、替换或安装。
+
+下方各节为此前发布时的状态与核验记录；新网页 Python 已改用浏览器执行，旧公开 Python API 仍使用服务器解析。
+
 ## Cloudflare-only 维护边界
 
 正式托管方案仅使用 Pages、主 Worker、私有 Python Worker 与现有服务绑定，不依赖 Vercel。当前来源 `269693b` 已部署，主 Worker 版本为 `ee794110-1464-474e-af10-345cb7ba8334`，`BROWSER` 与人工接管流程已启用；真实笔记解析、人工验证及下载成功仍待验收，网页故障提示在验收完成前保留。原生引擎失败后，可信小红书验证码、登录或站内访问错误页可交给用户本人处理，恢复时仍需确认原笔记的有效媒体。不能把部署完成、打开了窗口或自动测试通过当成解析已恢复。当前结果见[人工验证核验记录](releases/v2.0.15-cloudflare-manual-verification.json)。

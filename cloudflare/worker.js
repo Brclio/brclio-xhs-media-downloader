@@ -4,6 +4,7 @@ import video from '../api/video.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
 import packageInfo from '../package.json' with { type: 'json' };
+import { browserPythonMedia } from './browser-python-source.js';
 export { AccountRuntime } from './account-runtime.js';
 export { ParseRuntime } from './parse-runtime.js';
 import { invokeHandler, readBoundedBody, RequestTooLargeError, MAX_API_BODY_BYTES, MAX_ACCOUNT_BODY_BYTES } from './http-adapter.js';
@@ -86,7 +87,9 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
               response = new Response(response.body, { status: response.status, headers });
             }
           }
-        } else if (['/api/parse', '/api/python_parse'].includes(path) && env.PARSE_RUNTIME) {
+        } else if (['/api/browser_python_image', '/api/browser_python_video'].includes(path)) {
+          response = await browserPythonMedia(request, env);
+        } else if (['/api/parse', '/api/python_parse', '/api/browser_python_source'].includes(path) && env.PARSE_RUNTIME) {
           response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName('parsing-v1')).fetch(request);
         } else if (Object.hasOwn(nodeRoutes, path)) {
           response = await invokeHandler(nodeRoutes[path], request);

@@ -45,9 +45,9 @@ test('gateway leaves binary ranges, admin redirects and security headers untouch
   }
 });
 
-test('route manifest invokes only API and admin paths and static fallback never calls APP', async () => {
+test('route manifest guards internal paths alongside API/admin and static fallback never calls APP', async () => {
   const routes = JSON.parse(await readFile(new URL('../cloudflare/pages/_routes.json', import.meta.url), 'utf8'));
-  assert.deepEqual(routes, { version: 1, include: ['/api/*', '/admin*'], exclude: [] });
+  assert.deepEqual(routes, { version: 1, include: ['/api/*', '/admin*', '/__internal/*'], exclude: [] });
   for (const urlPath of ['/', '/app.js', '/style.css', '/changelog', '/download', '/download.html', '/download.css', '/download.js', '/product', '/product.html', '/product.css', '/product.js', '/feedback', '/feedback.html', '/feedback.css', '/feedback.js', '/assets/downloads/hero.webp', '/assets/example.png']) {
     const request = new Request(`https://xhs.example.test${urlPath}`);
     const result = new Response('static');
@@ -55,6 +55,18 @@ test('route manifest invokes only API and admin paths and static fallback never 
       APP: { fetch() { assert.fail('Static fallback called APP'); } },
       ASSETS: { fetch(req) { assert.equal(req, request); return result; } },
     }), result);
+  }
+});
+
+test('public internal namespace returns 404 before either APP or Pages assets can run', async () => {
+  const env = { APP: { fetch() { assert.fail('Public internal route reached the application'); } },
+    ASSETS: { fetch() { assert.fail('Public internal route reached static fallback'); } } };
+  for (const method of ['GET', 'HEAD', 'POST']) for (const pathname of ['/__internal/',
+    '/__internal/web-parse-proxy-settings', '/__internal/browser/start?token=fixture']) {
+    const response = await gateway.fetch(new Request('https://xhs.example.test'+pathname, { method }), env);
+    assert.equal(response.status, 404); assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
+    assert.equal(await response.text(), method === 'HEAD' ? '' : 'Not Found');
   }
 });
 
@@ -93,5 +105,6 @@ test('Pages build uses the public allowlist, removes stale files and includes on
     assert.deepEqual(await readdir(path.join(output, 'assets/downloads')), ['hero.webp'], 'Pages excludes macOS metadata while preserving public assets');
     for (const forbidden of ['.env', 'wrangler.jsonc', 'stale-secret.txt', 'api', 'server', 'desktop']) assert.ok(!entries.includes(forbidden));
     assert.equal(await readFile(path.join(output, '_worker.js'), 'utf8'), await readFile(new URL('../cloudflare/pages/_worker.js', import.meta.url), 'utf8'));
+    assert.equal(await readFile(path.join(output, '_routes.json'), 'utf8'), await readFile(new URL('../cloudflare/pages/_routes.json', import.meta.url), 'utf8'));
   } finally { await rm(root, { recursive: true, force: true }); }
 });

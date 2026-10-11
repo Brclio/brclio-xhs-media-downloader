@@ -17,6 +17,8 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   let updateProxyRequest = 0;
   let updateProxyDraft = '';
   let updateProxyVisible = false;
+  let webParseProxyConfig = null;
+  let webParseProxyRequest = 0;
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -165,6 +167,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
           const result = await mutate(pending.action, pending.input);
           state.loaded.delete('audit');
           if (pending.action === 'admin-save-update-proxy-config') return finishUpdateProxySave(result);
+          if (pending.action === 'admin-save-web-parse-proxy-config') return finishWebParseProxySave(result);
           if (pending.action === 'admin-feedback-reply') return finishFeedbackReply(pending.input, result);
           if (pending.action === 'admin-record-order') return finishOrderRecord(result);
           if (pending.action === 'admin-link-order-code') return finishOrderLink(result);
@@ -223,6 +226,9 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     updateProxyConfig = null; updateProxyRequest += 1; updateProxyDraft = '';
     $('update-proxy-form').reset(); setUpdateProxyVisibility(false, false); $('save-update-proxy').disabled = true;
     $('update-proxy-meta').replaceChildren(); $('update-proxy-state').textContent = '正在加载'; $('update-proxy-save-note').textContent = '请先加载配置。';
+    webParseProxyConfig = null; webParseProxyRequest += 1;
+    $('web-parse-proxy-form').reset(); $('web-parse-proxy-url').type = 'password'; $('show-web-parse-proxy-url').textContent = '显示'; $('show-web-parse-proxy-url').setAttribute('aria-pressed', 'false'); $('save-web-parse-proxy').disabled = true;
+    $('web-parse-proxy-meta').replaceChildren(); $('web-parse-proxy-state').textContent = '正在加载'; $('web-parse-proxy-save-note').textContent = '请先加载配置。';
     $('workspace').hidden = true; $('login-panel').hidden = false; $('logout').hidden = true; $('admin-email').textContent = '';
     ['users-list', 'user-detail', 'codes-list', 'audit-list', 'status-content', 'feedback-list', 'feedback-detail'].forEach((id) => $(id).replaceChildren());
   }
@@ -266,7 +272,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   async function switchTab(name) {
     state.tab = name;
     tabs.forEach((tab) => { const active = tab.dataset.tab === name; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; $(`panel-${tab.dataset.tab}`).hidden = !active; });
-    if (!state.loaded.has(name)) await ({ users: loadUsers, orders: loadCommerce, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback, 'update-proxy': loadUpdateProxyConfig })[name]();
+    if (!state.loaded.has(name)) await ({ users: loadUsers, orders: loadCommerce, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback, 'update-proxy': loadUpdateProxyConfig, 'web-parse-proxy': loadWebParseProxyConfig })[name]();
     if (name === 'codes' && !issue.recipients.length) await findRecipients();
   }
   tabs.forEach((tab, index) => {
@@ -742,7 +748,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   }
   $('feedback-filter-form').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, loadFeedback); });
   $('refresh-feedback').addEventListener('click', () => run($('refresh-feedback'), async () => { await loadFeedback(); if (state.selectedFeedback) await selectFeedback(state.selectedFeedback); }));
-  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态', 'admin-feedback-reply': '回复问题反馈', 'feedback-reply': '用户回复反馈', 'admin-save-update-proxy-config': '更新软件订阅配置', 'admin-record-order': '确认订单实际收款', 'admin-link-order-code': '关联订单激活码' })[action] || action || '操作记录'; }
+  function actionLabel(action) { return ({ 'membership': '修改会员权益', 'membership-change': '修改会员权益', 'admin-membership': '修改会员权益', 'device-unbind': '解绑设备', 'admin-unbind': '解绑设备', 'admin-restore-device': '授权新密钥设备', 'codes-generate': '生成激活码', 'admin-generate-codes': '生成激活码', 'admin-send-activation': '邮件发放激活码', 'admin-send-activation-result': '激活码邮件发送结果', 'code-void': '作废激活码', 'admin-void-code': '作废激活码', 'code-redeem': '兑换激活码', redeem: '兑换激活码', 'admin-feedback-status': '更新反馈处理状态', 'admin-feedback-reply': '回复问题反馈', 'feedback-reply': '用户回复反馈', 'admin-save-update-proxy-config': '更新软件订阅配置', 'admin-save-web-parse-proxy-config': '更新网页抓取订阅', 'admin-record-order': '确认订单实际收款', 'admin-link-order-code': '关联订单激活码' })[action] || action || '操作记录'; }
   function renderUpdateProxyConfig(config) {
     updateProxyConfig = config;
     const unconfigured = config.revision === 0;
@@ -783,6 +789,41 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       if (subscriptionUrls.length > 8) { setUpdateProxyVisibility(true); $('update-proxy-url').focus(); throw new Error('最多保存 8 个不同的订阅地址，每行一个。'); }
       const result = await mutate('admin-save-update-proxy-config', { enabled, subscriptionUrls, expectedRevision: updateProxyConfig.revision, reason: $('update-proxy-reason').value.trim() });
       finishUpdateProxySave(result);
+    });
+  });
+  function renderWebParseProxyConfig(config) {
+    webParseProxyConfig = config;
+    $('web-parse-proxy-enabled').checked = config.enabled;
+    $('web-parse-proxy-url').value = ''; $('web-parse-proxy-url').type = 'password';
+    $('show-web-parse-proxy-url').textContent = '显示'; $('show-web-parse-proxy-url').setAttribute('aria-pressed', 'false');
+    $('web-parse-proxy-state').textContent = !config.configured ? '尚未配置' : config.enabled ? '网页代理已启用' : '网页代理已停用';
+    $('web-parse-proxy-state').className = `badge ${!config.configured || !config.enabled ? 'badge-muted' : ''}`;
+    $('web-parse-proxy-save-note').textContent = '保存后在下一次网页解析时读取。';
+    $('web-parse-proxy-meta').replaceChildren(facts([['订阅来源', config.maskedSubscriptionUrl || '尚未填写'], ['配置版本', config.revision ? `第 ${config.revision} 版` : config.configured ? '初始订阅' : '尚未保存'], ['更新时间', fmt(config.updatedAt)]]));
+    $('save-web-parse-proxy').disabled = false;
+  }
+  async function loadWebParseProxyConfig() {
+    const request = ++webParseProxyRequest, epoch = feedbackSessionEpoch;
+    const data = await api('admin-web-parse-proxy-config');
+    if (request !== webParseProxyRequest || epoch !== feedbackSessionEpoch || !state.admin) return;
+    renderWebParseProxyConfig(data.proxyConfig); state.loaded.add('web-parse-proxy');
+  }
+  function finishWebParseProxySave(result) {
+    renderWebParseProxyConfig(result.proxyConfig); $('web-parse-proxy-reason').value = ''; state.loaded.delete('audit');
+    tell(`网页抓取订阅已保存（第 ${result.proxyConfig.revision} 版），下一次网页解析时生效。`, 'success');
+  }
+  $('show-web-parse-proxy-url').addEventListener('click', () => {
+    const show = $('web-parse-proxy-url').type === 'password';
+    $('web-parse-proxy-url').type = show ? 'text' : 'password';
+    $('show-web-parse-proxy-url').textContent = show ? '隐藏' : '显示'; $('show-web-parse-proxy-url').setAttribute('aria-pressed', String(show));
+  });
+  $('refresh-web-parse-proxy').addEventListener('click', () => run($('refresh-web-parse-proxy'), loadWebParseProxyConfig));
+  $('web-parse-proxy-form').addEventListener('submit', event => {
+    event.preventDefault(); run($('save-web-parse-proxy'), async () => {
+      if (!webParseProxyConfig || !$('web-parse-proxy-form').reportValidity()) return;
+      const enabled = $('web-parse-proxy-enabled').checked, subscriptionUrl = $('web-parse-proxy-url').value.trim();
+      if (enabled && !subscriptionUrl && !webParseProxyConfig.configured) { $('web-parse-proxy-url').focus(); throw new Error('启用网页抓取代理时，请填写一个 HTTPS 订阅地址。'); }
+      finishWebParseProxySave(await mutate('admin-save-web-parse-proxy-config', { enabled, subscriptionUrl, expectedRevision: webParseProxyConfig.revision, reason: $('web-parse-proxy-reason').value.trim() }));
     });
   });
   const paymentMethodLabels = { alipay: '支付宝', wechat: '微信支付', other: '其他', activation_code: '激活码套餐入账' };

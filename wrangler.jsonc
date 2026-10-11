@@ -12,10 +12,11 @@
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none",
-    "run_worker_first": ["/api/*", "/admin*"]
+    "run_worker_first": ["/api/*", "/admin*", "/__internal/*"]
   },
   "services": [
-    { "binding": "PYTHON_API", "service": "brclio-xhs-python" }
+    { "binding": "PYTHON_API", "service": "brclio-xhs-python" },
+    { "binding": "SUBSCRIPTION_PROXY", "service": "brclio-xhs-subscription-proxy" }
   ],
   "browser": { "binding": "BROWSER" },
   "durable_objects": {
