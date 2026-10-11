@@ -194,7 +194,7 @@ test('popup blocking preserves a trusted user-click link and the dialog clearly 
   await rejected;
 });
 
-test('opening again focuses the same popup and expiry closes it and its server session', async t => {
+test('opening again navigates and focuses the same popup and expiry closes it and its server session', async t => {
   const env = environment(t, null, { allowPopup: true });
   const pending = waitForNoteVerification(payload());
   const rejected = assert.rejects(pending, /过期/);
@@ -276,6 +276,71 @@ test('a fresh same-session Live View URL is saved for one manual reopening witho
   await rejected;
   assert.equal(env.openedWindows[1].closed, true);
   assert.deepEqual(env.calls.map(call => call.body.action), ['resume', 'cancel']);
+});
+
+test('manual opening navigates an existing window to its refreshed same-session URL without extending its deadline', async t => {
+  const freshUrl = viewUrl('live.browser.run/api/devtools/browser/fixture-session/page/fixture-target?jwt=fresh-fixture');
+  const env = environment(t, () => Response.json(continuation({ verificationUrl: freshUrl }), { status: 422 }), { allowPopup: true });
+  const pending = waitForNoteVerification(payload());
+  const rejected = assert.rejects(pending, /过期/);
+  const popup = env.openedWindows[0];
+  env.setTime(now + 60_000);
+  env.button('已完成，继续解析').dispatchEvent(new Event('click')); await flush();
+  assert.equal(popup.closed, false);
+  assert.equal(popup.url, viewUrl());
+  const link = env.elements.find(element => element.tagName === 'a');
+  assert.equal(link.href, freshUrl);
+  const click = new Event('click', { cancelable: true });
+  link.dispatchEvent(click);
+  assert.equal(click.defaultPrevented, true);
+  assert.equal(env.openedWindows.length, 1);
+  assert.equal(popup.url, freshUrl);
+  assert.equal(popup.focusCalls, 2);
+  env.tick(now + 180_001);
+  await rejected;
+  assert.equal(popup.closed, true);
+  assert.deepEqual(env.calls.map(call => call.body.action), ['resume', 'cancel']);
+});
+
+test('failed navigation closes the old window and synchronously opens a replacement', async t => {
+  const env = environment(t, null, { allowPopup: true });
+  const pending = waitForNoteVerification(payload());
+  const rejected = assert.rejects(pending, /取消/);
+  const popup = env.openedWindows[0];
+  t.mock.method(popup.location, 'replace', () => { throw new Error('fixture-navigation-failed'); });
+  const link = env.elements.find(element => element.tagName === 'a');
+  const click = new Event('click', { cancelable: true });
+  link.dispatchEvent(click);
+  assert.equal(click.defaultPrevented, true);
+  assert.equal(popup.closed, true);
+  assert.equal(env.openedWindows.length, 2);
+  assert.equal(env.openedWindows[1].url, viewUrl());
+  env.button('取消').dispatchEvent(new Event('click'));
+  await rejected;
+  assert.equal(env.openedWindows[1].closed, true);
+  assert.deepEqual(env.calls.map(call => call.body.action), ['cancel']);
+});
+
+test('failed navigation followed by a blocked replacement preserves the native trusted link', async t => {
+  const env = environment(t, null, { allowPopup: true });
+  const pending = waitForNoteVerification(payload());
+  const rejected = assert.rejects(pending, /取消/);
+  const popup = env.openedWindows[0];
+  t.mock.method(popup.location, 'replace', () => { throw new Error('fixture-navigation-failed'); });
+  const replacement = t.mock.method(env.window, 'open', () => null);
+  const link = env.elements.find(element => element.tagName === 'a');
+  const click = new Event('click', { cancelable: true });
+  link.dispatchEvent(click);
+  assert.equal(click.defaultPrevented, false);
+  assert.equal(popup.closed, true);
+  assert.equal(replacement.mock.callCount(), 1);
+  assert.equal(env.openedWindows.length, 1);
+  assert.equal(link.href, viewUrl());
+  assert.equal(link.target, '_blank');
+  assert.equal(link.rel, 'noopener noreferrer');
+  env.button('取消').dispatchEvent(new Event('click'));
+  await rejected;
+  assert.deepEqual(env.calls.map(call => call.body.action), ['cancel']);
 });
 
 for (const [label, overrides] of [

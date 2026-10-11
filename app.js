@@ -13,7 +13,7 @@ import { inspectVideoBlob } from "./lib/media-tracks.js";
 import { imageDimensionsFromHeader, validateImageDimensions } from "./lib/image-dimensions.js";
 import { getAccountBridge } from "./lib/browser-account.js";
 import { openAccountUI } from "./account-ui.js";
-import { waitForNoteVerification } from "./lib/parse-verification.js";
+import { prepareVerificationPopup, waitForNoteVerification } from "./lib/parse-verification.js";
 
 const state = {
   title: "小红书图片",
@@ -1997,7 +1997,7 @@ function renderResults() {
   });
 }
 
-async function parseShareText(text, engine) {
+async function parseShareText(text, engine, popup = null) {
   const endpoint = engine === "python"
     ? "/api/python_parse"
     : "/api/parse";
@@ -2009,7 +2009,7 @@ async function parseShareText(text, engine) {
   });
 
   const payload = await response.json().catch(() => ({}));
-  if (payload.code === 'VERIFICATION_REQUIRED') return waitForNoteVerification(payload);
+  if (payload.code === 'VERIFICATION_REQUIRED' && !window.xhsDesktop) return waitForNoteVerification(payload, { popup });
   if (!response.ok || !payload.success) {
     throw new Error(payload.message || `解析失败：HTTP ${response.status}`);
   }
@@ -2229,11 +2229,11 @@ elements.form.addEventListener("submit", async (event) => {
   localStorage.setItem("xhs-engine", state.engine);
   updateEngineUI();
 
-  setParsing(true);
-  showToast(`正在使用 ${engineLabel()} 解析公开笔记页面……`);
-
+  const verificationPopup = window.xhsDesktop ? null : prepareVerificationPopup();
   try {
-    const payload = await parseShareText(text, state.engine);
+    setParsing(true);
+    showToast(`正在使用 ${engineLabel()} 解析公开笔记页面……`);
+    const payload = await parseShareText(text, state.engine, verificationPopup);
     state.title = payload.title || "小红书媒体";
     state.content = typeof payload.content === "string" ? payload.content.trim() : "";
     state.noteId = String(payload.noteId || "");
@@ -2261,6 +2261,7 @@ elements.form.addEventListener("submit", async (event) => {
   } catch (error) {
     showToast(error.message, "error");
   } finally {
+    verificationPopup?.close();
     setParsing(false);
   }
 });
