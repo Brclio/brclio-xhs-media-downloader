@@ -1,0 +1,193 @@
+{
+  "checkedAt": "2026-10-11T06:01:54.086Z",
+  "sourceCommit": "25eebf1caba3c577455c08bb6cf6c7985e87d268",
+  "mainVersion": "2aa7499c-1c34-4a81-b745-ab01ab69ae15",
+  "allPassed": true,
+  "results": [
+    {
+      "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+      "asset": "index.html",
+      "status": 200,
+      "bytes": 60136,
+      "sha256": "d6ee0b37ff1d8357edc497c0bbdf40f3a056c725ff4615cb91908b07b49ee36c",
+      "expectedSha256": "d6ee0b37ff1d8357edc497c0bbdf40f3a056c725ff4615cb91908b07b49ee36c",
+      "matches": true,
+      "notice": true,
+      "clientLink": true
+    },
+    {
+      "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+      "asset": "style.css",
+      "status": 200,
+      "bytes": 35159,
+      "sha256": "eac82374f7bdd3a736c5977cfaab88cd688cd329dcb2b72f599ae1ad602047ee",
+      "expectedSha256": "eac82374f7bdd3a736c5977cfaab88cd688cd329dcb2b72f599ae1ad602047ee",
+      "matches": true,
+      "notice": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "asset": "index.html",
+      "status": 200,
+      "bytes": 60136,
+      "sha256": "d6ee0b37ff1d8357edc497c0bbdf40f3a056c725ff4615cb91908b07b49ee36c",
+      "expectedSha256": "d6ee0b37ff1d8357edc497c0bbdf40f3a056c725ff4615cb91908b07b49ee36c",
+      "matches": true,
+      "notice": true,
+      "clientLink": true
+    },
+    {
+      "origin": "https://456425b9.brclio-xhs-pages.pages.dev",
+      "asset": "index.html",
+      "status": 200,
+      "bytes": 60136,
+      "sha256": "d6ee0b37ff1d8357edc497c0bbdf40f3a056c725ff4615cb91908b07b49ee36c",
+      "expectedSha256": "d6ee0b37ff1d8357edc497c0bbdf40f3a056c725ff4615cb91908b07b49ee36c",
+      "matches": true,
+      "notice": true,
+      "clientLink": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "asset": "style.css",
+      "status": 200,
+      "bytes": 35159,
+      "sha256": "eac82374f7bdd3a736c5977cfaab88cd688cd329dcb2b72f599ae1ad602047ee",
+      "expectedSha256": "eac82374f7bdd3a736c5977cfaab88cd688cd329dcb2b72f599ae1ad602047ee",
+      "matches": true,
+      "notice": true
+    },
+    {
+      "origin": "https://456425b9.brclio-xhs-pages.pages.dev",
+      "asset": "style.css",
+      "status": 200,
+      "bytes": 35159,
+      "sha256": "eac82374f7bdd3a736c5977cfaab88cd688cd329dcb2b72f599ae1ad602047ee",
+      "expectedSha256": "eac82374f7bdd3a736c5977cfaab88cd688cd329dcb2b72f599ae1ad602047ee",
+      "matches": true,
+      "notice": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "asset": "index.html",
+      "status": 200,
+      "bytes": 60136,
+      "sha256": "d6ee0b37ff1d8357edc497c0bbdf40f3a056c725ff4615cb91908b07b49ee36c",
+      "expectedSha256": "d6ee0b37ff1d8357edc497c0bbdf40f3a056c725ff4615cb91908b07b49ee36c",
+      "matches": true,
+      "notice": true,
+      "clientLink": true
+    },
+    {
+      "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+      "asset": "download.html",
+      "status": 200,
+      "bytes": 28204,
+      "sha256": "37eac46bf1cda51ceae5703f521eacf7fefe9c4436eae334c01ab0fe3dbb627d",
+      "expectedSha256": "37eac46bf1cda51ceae5703f521eacf7fefe9c4436eae334c01ab0fe3dbb627d",
+      "matches": true,
+      "notice": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "asset": "style.css",
+      "status": 200,
+      "bytes": 35159,
+      "sha256": "eac82374f7bdd3a736c5977cfaab88cd688cd329dcb2b72f599ae1ad602047ee",
+      "expectedSha256": "eac82374f7bdd3a736c5977cfaab88cd688cd329dcb2b72f599ae1ad602047ee",
+      "matches": true,
+      "notice": true
+    },
+    {
+      "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+      "route": "/api/health",
+      "status": 200,
+      "ok": true,
+      "version": "2.0.15",
+      "deploymentId": "2aa7499c-1c34-4a81-b745-ab01ab69ae15",
+      "pythonBinding": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "asset": "download.html",
+      "status": 200,
+      "bytes": 28204,
+      "sha256": "37eac46bf1cda51ceae5703f521eacf7fefe9c4436eae334c01ab0fe3dbb627d",
+      "expectedSha256": "37eac46bf1cda51ceae5703f521eacf7fefe9c4436eae334c01ab0fe3dbb627d",
+      "matches": true,
+      "notice": true
+    },
+    {
+      "origin": "https://456425b9.brclio-xhs-pages.pages.dev",
+      "asset": "download.html",
+      "status": 200,
+      "bytes": 28204,
+      "sha256": "37eac46bf1cda51ceae5703f521eacf7fefe9c4436eae334c01ab0fe3dbb627d",
+      "expectedSha256": "37eac46bf1cda51ceae5703f521eacf7fefe9c4436eae334c01ab0fe3dbb627d",
+      "matches": true,
+      "notice": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "asset": "download.html",
+      "status": 200,
+      "bytes": 28204,
+      "sha256": "37eac46bf1cda51ceae5703f521eacf7fefe9c4436eae334c01ab0fe3dbb627d",
+      "expectedSha256": "37eac46bf1cda51ceae5703f521eacf7fefe9c4436eae334c01ab0fe3dbb627d",
+      "matches": true,
+      "notice": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "route": "/api/health",
+      "status": 200,
+      "ok": true,
+      "version": "2.0.15",
+      "deploymentId": "2aa7499c-1c34-4a81-b745-ab01ab69ae15",
+      "pythonBinding": true
+    },
+    {
+      "origin": "https://456425b9.brclio-xhs-pages.pages.dev",
+      "route": "/api/health",
+      "status": 200,
+      "ok": true,
+      "version": "2.0.15",
+      "deploymentId": "2aa7499c-1c34-4a81-b745-ab01ab69ae15",
+      "pythonBinding": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "route": "/api/health",
+      "status": 200,
+      "ok": true,
+      "version": "2.0.15",
+      "deploymentId": "2aa7499c-1c34-4a81-b745-ab01ab69ae15",
+      "pythonBinding": true
+    }
+  ],
+  "scope": "Web issue notice and client download entry only; not a web parsing recovery claim",
+  "tests": {
+    "passed": 66,
+    "failed": 0,
+    "files": [
+      "test/download-page.test.js",
+      "test/cloudflare-pages.test.js"
+    ]
+  },
+  "release": "v2.0.15",
+  "mainDeployment": {
+    "id": "4e5e0648-ebc8-4722-8ed9-fc7f270b2c04",
+    "createdAt": "2026-10-11T06:00:27.834854Z",
+    "trafficPercent": 100
+  },
+  "pagesDeploymentOrigin": "https://456425b9.brclio-xhs-pages.pages.dev",
+  "changedPublicAssets": [
+    "index.html",
+    "style.css",
+    "download.html"
+  ],
+  "browserBindingEnabled": false,
+  "desktopOrAndroidAssetsReplaced": false,
+  "realBrowserScreenshotVerified": false,
+  "verificationMethod": "Read-only HTTP content hashes, notice/link checks and health responses; browser control timed out."
+}
