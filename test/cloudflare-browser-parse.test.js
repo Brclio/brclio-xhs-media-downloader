@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { maybeParseWithBrowser, BROWSER_BUDGET_STORAGE_KEY as KEY, BROWSER_ATTEMPT_RESERVATION_MS as RESERVE } from '../cloudflare/browser-parse.js';
-import { BROWSER_VERIFICATION_REGISTRY_KEY as REGISTRY_KEY, verificationTokenDigest } from '../cloudflare/browser-verification.js';
+import { BrowserVerificationRegistry, BROWSER_VERIFICATION_REGISTRY_KEY as REGISTRY_KEY, verificationTokenDigest } from '../cloudflare/browser-verification.js';
 
 const NOTE = 'https://www.xiaohongshu.com/explore/1234567890abcdef12345678?xsec_token=private-query-sentinel';
 const request = (text = NOTE, { path = '/api/parse', method = 'POST', headers = {}, ...extra } = {}) => new Request(`https://fixture.example.test${path}`, {
@@ -81,8 +81,88 @@ test('atomic concurrent reservations permit one start per 30 seconds across both
   clock(t); const h = harness();
   const responses = await Promise.all(Array.from({ length: 8 }, (_, index) => maybeParseWithBrowser(request(NOTE, { path: index % 2 ? '/api/python_parse' : '/api/parse' }), native(), h)));
   assert.equal(h.calls.length, 1); assert.equal(responses.filter(response => response.status === 200).length, 1);
-  for (const response of responses.filter(response => response.status !== 200)) { assert.equal(response.status, 503); assert.equal((await response.json()).code, 'BROWSER_BUSY'); }
+  for (const response of responses.filter(response => response.status !== 200)) {
+    assert.equal(response.status, 429); assert.equal(response.headers.get('retry-after'), '30');
+    const body = await response.json(); assert.equal(body.code, 'BROWSER_COOLDOWN'); assert.equal(body.retryAfter, 30);
+  }
   assert.equal(h.store.values.get(KEY).usedMs, RESERVE);
+});
+
+test('cooldown reports its rounded remaining seconds and never changes counters or reads the native error', async t => {
+  const time = clock(t), logs = [], h = harness();
+  t.mock.method(console, 'warn', (...values) => logs.push(values));
+  const before = { day: Math.floor(time.now() / 86400000), usedMs: RESERVE, lastStartMs: time.now() - 29001 };
+  h.store.values.set(KEY, { ...before });
+  const original = native(), response = await maybeParseWithBrowser(request(NOTE, { path: '/api/python_parse' }), original, h);
+  const body = await response.json();
+  assert.equal(response.status, 429); assert.equal(response.headers.get('retry-after'), '1');
+  assert.equal(body.code, 'BROWSER_COOLDOWN'); assert.equal(body.engine, 'python'); assert.equal(body.retryAfter, 1);
+  assert.match(body.message, /1 秒后重试/); assert.match(body.message, /Node\/Python 共用/);
+  assert.equal(body.resetsAt, undefined); assert.equal(original.bodyUsed, false);
+  assert.deepEqual(h.store.values.get(KEY), before); assert.deepEqual(h.store.writes, []); assert.deepEqual(h.names, []);
+  assert.deepEqual(logs, [['CF_BROWSER_RESERVATION_REJECTED', JSON.stringify({ reason: 'cooldown', retryAfter: 1, usedMs: RESERVE })]]);
+  time.advance(1000);
+  assert.equal((await maybeParseWithBrowser(request(), native(), h)).status, 200); assert.equal(h.calls.length, 1);
+  assert.equal(h.store.values.get(KEY).usedMs, RESERVE * 2);
+});
+
+test('daily exhaustion overrides cooldown and exposes the UTC reset with a Beijing time and exact retry header', async t => {
+  const midnight = (Math.floor(1_800_000_000_000 / 86400000) + 1) * 86400000;
+  const time = clock(t, midnight - 1501), h = harness(), logs = [];
+  t.mock.method(console, 'warn', (...values) => logs.push(values));
+  const before = { day: Math.floor(time.now() / 86400000), usedMs: RESERVE * 3, lastStartMs: time.now() - 1 };
+  h.store.values.set(KEY, { ...before });
+  const original = native(), response = await maybeParseWithBrowser(request(), original, h), body = await response.json();
+  assert.equal(response.status, 429); assert.equal(body.code, 'BROWSER_DAILY_LIMIT');
+  assert.equal(body.retryAfter, 2); assert.equal(response.headers.get('retry-after'), '2');
+  assert.equal(body.resetsAt, new Date(midnight).toISOString()); assert.match(body.message, /北京时间 .* 08:00 恢复/);
+  assert.match(body.message, /剩余额度不足以开启新会话/); assert.match(body.message, /桌面客户端/);
+  assert.equal(original.bodyUsed, false); assert.deepEqual(h.store.values.get(KEY), before); assert.deepEqual(h.store.writes, []);
+  assert.equal(h.calls.length, 0);
+  assert.deepEqual(JSON.parse(logs[0][1]), { reason: 'daily-limit', retryAfter: 2, usedMs: RESERVE * 3 });
+  time.advance(1501);
+  const cooldown = await maybeParseWithBrowser(request(), native(), h);
+  assert.equal((await cooldown.json()).code, 'BROWSER_COOLDOWN');
+  assert.equal(cooldown.headers.get('retry-after'), '29'); assert.deepEqual(h.store.values.get(KEY), before);
+  time.advance(28500);
+  assert.equal((await maybeParseWithBrowser(request(), native(), h)).status, 200);
+  assert.equal(h.store.values.get(KEY).day, Math.floor(midnight / 86400000));
+  assert.equal(h.store.values.get(KEY).usedMs, RESERVE); assert.equal(h.calls.length, 1);
+});
+
+test('invalid or unavailable reservation state has an actionable independent error and never resets the budget', async t => {
+  const time = clock(t), logs = [];
+  t.mock.method(console, 'warn', (...values) => logs.push(values));
+  const valid = { day: Math.floor(time.now() / 86400000), usedMs: 540000, lastStartMs: time.now() - 30000 };
+  for (const value of [{ ...valid, usedMs: -1 }, { ...valid, usedMs: 600001 }, { ...valid, usedMs: 'private-query-sentinel' },
+    { ...valid, day: valid.day + 1 }, { ...valid, lastStartMs: time.now() + 1 }]) {
+    const h = harness(), original = native(); h.store.values.set(KEY, value);
+    const response = await maybeParseWithBrowser(request(), original, h), body = await response.json();
+    assert.equal(response.status, 503); assert.equal(body.code, 'BROWSER_STATE_UNAVAILABLE');
+    assert.equal(response.headers.get('retry-after'), '60'); assert.equal(body.retryAfter, 60);
+    assert.match(body.message, /无法确认额度状态/); assert.match(body.message, /桌面客户端/);
+    assert.equal(original.bodyUsed, false); assert.deepEqual(h.store.values.get(KEY), value);
+    assert.deepEqual(h.store.writes, []); assert.deepEqual(h.names, []);
+  }
+  const failed = harness(); failed.store.transaction = async () => { throw new Error('private-storage-error-sentinel'); };
+  const original = native(), response = await maybeParseWithBrowser(request(), original, failed);
+  assert.equal(response.status, 503); assert.equal((await response.json()).code, 'BROWSER_STATE_UNAVAILABLE');
+  assert.equal(original.bodyUsed, false); assert.deepEqual(failed.names, []); assert.deepEqual(failed.store.writes, []);
+  for (const [event, text] of logs) {
+    assert.equal(event, 'CF_BROWSER_RESERVATION_REJECTED');
+    assert.deepEqual(JSON.parse(text), { reason: 'state-unavailable', retryAfter: 60, usedMs: null });
+    assert.equal(text.includes('private'), false); assert.equal(text.includes('token'), false);
+  }
+});
+
+test('exactly the remaining daily reservation is accepted and the next start cannot exceed 600000 milliseconds', async t => {
+  const time = clock(t), h = harness();
+  h.store.values.set(KEY, { day: Math.floor(time.now() / 86400000), usedMs: 420000, lastStartMs: time.now() - 30000 });
+  assert.equal((await maybeParseWithBrowser(request(), native(), h)).status, 200);
+  assert.equal(h.store.values.get(KEY).usedMs, 600000); time.advance(30000);
+  const response = await maybeParseWithBrowser(request(), native(), h);
+  assert.equal((await response.json()).code, 'BROWSER_DAILY_LIMIT');
+  assert.equal(h.store.values.get(KEY).usedMs, 600000); assert.equal(h.calls.length, 1);
 });
 
 test('unclosed attempts retain reservation and the daily budget permits at most three unresolved starts', async t => {
@@ -91,7 +171,7 @@ test('unclosed attempts retain reservation and the daily budget permits at most 
     assert.equal((await maybeParseWithBrowser(request(), native(), h)).status, 200); time.advance(30000);
   }
   const blocked = await maybeParseWithBrowser(request(), native(), h);
-  assert.equal(blocked.status, 503); assert.equal((await blocked.json()).code, 'BROWSER_BUSY');
+  assert.equal(blocked.status, 429); assert.equal((await blocked.json()).code, 'BROWSER_DAILY_LIMIT');
   assert.equal(h.calls.length, 3); assert.equal(h.store.values.get(KEY).usedMs, 540000);
   assert.equal(new Set(h.names).size, 3);
   time.set((Math.floor(time.now() / 86400000) + 1) * 86400000 + 30000);
@@ -111,8 +191,26 @@ test('verified close refunds actual elapsed plus five seconds while verification
   const entries = h.store.values.get(REGISTRY_KEY);
   assert.equal(entries.length, 1); assert.equal(entries[0].digest, await verificationTokenDigest(body.verificationToken));
   assert.equal(entries[0].expiresAt, body.expiresAt); assert.equal(entries[0].engine, 'node');
+  assert.deepEqual(entries[0].reservation, { day: Math.floor(Date.now() / 86400000), startedAt: Date.now() });
   const serialized = JSON.stringify(entries);
   for (const privateValue of [body.verificationToken, 'private-jwt-sentinel', 'arbitrary/path', 'private=value']) assert.equal(serialized.includes(privateValue), false);
+});
+
+test('issued handoff passes its original reservation to lifetime accounting and confirmed cancel refunds only once', async t => {
+  const time = clock(t);
+  const h = harness((payload, req) => req.url.endsWith('/cancel')
+    ? Response.json({ success: true, cancelled: true }, { headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1' } })
+    : Response.json({ success: false, engine: payload.engine, code: 'VERIFICATION_REQUIRED', reason: 'captcha',
+      verificationUrl: liveURL, expiresAt: Date.now() + 180000 }, { status: 422 }));
+  const startedAt = time.now(), response = await maybeParseWithBrowser(request(), native(), h), body = await response.json();
+  assert.equal(response.status, 422);
+  assert.deepEqual(h.store.values.get(REGISTRY_KEY)[0].reservation, { day: Math.floor(startedAt / 86400000), startedAt });
+  time.advance(10000);
+  const registry = new BrowserVerificationRegistry(h.store, h.env.PARSE_RUNTIME);
+  assert.equal((await registry.dispatch({ token: body.verificationToken, action: 'cancel' })).status, 200);
+  assert.equal(h.store.values.get(KEY).usedMs, 15000); assert.deepEqual(h.store.values.get(REGISTRY_KEY), []);
+  assert.equal((await registry.dispatch({ token: body.verificationToken, action: 'cancel' })).status, 410);
+  assert.equal(h.store.values.get(KEY).usedMs, 15000); assert.equal(h.calls.length, 2);
 });
 
 test('a verification registry failure cancels the untracked owner and retains the complete budget', async t => {
@@ -146,7 +244,10 @@ test('invalid close evidence, internal failures and corrupt counters fail safely
   const h = harness(); h.store.values.set(KEY, { day: Math.floor(time.now() / 86400000), usedMs: -10, lastStartMs: 0 });
   assert.equal((await maybeParseWithBrowser(request(), native(), h)).status, 503); assert.equal(h.calls.length, 0);
   const failed = harness(); failed.state.storage.transaction = async () => { throw new Error('private storage error'); };
-  const original = native(); assert.equal(await maybeParseWithBrowser(request(), original, failed), original); assert.equal(failed.calls.length, 0);
+  const original = native();
+  const unavailable = await maybeParseWithBrowser(request(), original, failed);
+  assert.equal(unavailable.status, 503); assert.equal((await unavailable.json()).code, 'BROWSER_STATE_UNAVAILABLE');
+  assert.equal(unavailable.headers.get('retry-after'), '60'); assert.equal(original.bodyUsed, false); assert.equal(failed.calls.length, 0);
 });
 
 test('cancelled request never consumes budget or starts browser', async () => {
@@ -206,7 +307,7 @@ test('a prior-day close cannot refund another day reservation and midnight does 
   while (h.calls.length === 0) await new Promise(resolve => setImmediate(resolve));
   time.set(midnight + 10000);
   const cooldown = await maybeParseWithBrowser(request(), native(), h);
-  assert.equal(cooldown.status, 503); assert.equal(h.calls.length, 1);
+  assert.equal(cooldown.status, 429); assert.equal((await cooldown.json()).code, 'BROWSER_COOLDOWN'); assert.equal(h.calls.length, 1);
   time.set(midnight + 30000);
   // Simulate the same global DO's next UTC-day transaction while the old session closes.
   h.store.values.set(KEY, { day: Math.floor(midnight / 86400000), usedMs: RESERVE, lastStartMs: midnight + 30000 });

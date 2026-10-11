@@ -7,6 +7,10 @@ export const BROWSER_VERIFICATION_DISPATCH_MS = 25_000;
 export const BROWSER_VERIFICATION_RESUME_INTERVAL_MS = 2_000;
 const CLOSED_HEADER = 'X-Browser-Closed';
 const ELAPSED_HEADER = 'X-Browser-Elapsed-Ms';
+// Match browser-parse's reservation contract without a circular module import.
+const BUDGET_KEY = 'browser-parse-budget-v1';
+const RESERVATION_MS = 180_000;
+const DAY_MS = 86_400_000;
 const REASONS = new Set(['captcha', 'login', 'access-error']);
 const ENGINES = new Set(['node', 'python']);
 const tokenPattern = /^[a-f0-9]{64}$/;
@@ -60,14 +64,36 @@ function validEntry(entry) {
     && Number.isFinite(entry.nextResumeAt) && entry.nextResumeAt >= 0
     && Number.isFinite(entry.leaseUntil) && entry.leaseUntil >= 0
     && Number.isFinite(entry.cancelLeaseUntil) && entry.cancelLeaseUntil >= 0
-    && Number.isSafeInteger(entry.sequence) && entry.sequence >= 0 && typeof entry.terminal === 'boolean';
+    && Number.isSafeInteger(entry.sequence) && entry.sequence >= 0 && typeof entry.terminal === 'boolean'
+    && (entry.reservation === undefined || validReservation(entry.reservation));
+}
+function validReservation(reservation) {
+  return reservation && Number.isSafeInteger(reservation.day) && reservation.day >= 0
+    && Number.isSafeInteger(reservation.startedAt) && reservation.startedAt >= 0
+    && Math.floor(reservation.startedAt / DAY_MS) === reservation.day;
 }
 function entriesFrom(value, now) {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > MAX_ACTIVE_BROWSER_VERIFICATIONS || !value.every(validEntry)
     || new Set(value.map(entry => entry.digest)).size !== value.length) throw new Error('verification-registry-invalid');
-  return value.filter(entry => entry.expiresAt > now).map(({ digest, engine, expiresAt, nextResumeAt, leaseUntil, cancelLeaseUntil, sequence, terminal }) =>
-    ({ digest, engine, expiresAt, nextResumeAt, leaseUntil, cancelLeaseUntil, sequence, terminal }));
+  return value.filter(entry => entry.expiresAt > now).map(({ digest, engine, expiresAt, nextResumeAt, leaseUntil, cancelLeaseUntil, sequence, terminal, reservation }) =>
+    ({ digest, engine, expiresAt, nextResumeAt, leaseUntil, cancelLeaseUntil, sequence, terminal,
+      ...(reservation ? { reservation: { day: reservation.day, startedAt: reservation.startedAt } } : {}) }));
+}
+
+async function settleUsage(transaction, entry, now) {
+  const reservation = entry.reservation;
+  if (!validReservation(reservation) || !Number.isSafeInteger(now) || now < reservation.startedAt
+    || Math.floor(now / DAY_MS) !== reservation.day) return;
+  // Charge the whole lifetime, including the manual window; per-operation CDP
+  // elapsed headers are intentionally ignored for this accounting.
+  const charged = Math.min(RESERVATION_MS, Math.ceil(now - reservation.startedAt) + 5000);
+  const refund = RESERVATION_MS - charged;
+  if (refund <= 0) return;
+  const budget = await transaction.get(BUDGET_KEY);
+  if (!budget || budget.day !== reservation.day || !Number.isFinite(budget.usedMs) || budget.usedMs < RESERVATION_MS
+    || !Number.isFinite(budget.lastStartMs) || budget.lastStartMs < -30_000) return;
+  await transaction.put(BUDGET_KEY, { day: budget.day, usedMs: budget.usedMs - refund, lastStartMs: budget.lastStartMs });
 }
 
 async function ownerFetch(stub, token, action, timeoutMs) {
@@ -93,22 +119,27 @@ export class BrowserVerificationRegistry {
       const previous = await transaction.get(BROWSER_VERIFICATION_REGISTRY_KEY);
       const entries = entriesFrom(previous, this.now());
       const before = JSON.stringify(entries);
-      const result = action(entries);
+      const result = await action(entries, transaction);
       if ((previous !== undefined && previous.length !== entries.length) || JSON.stringify(entries) !== before) {
         await transaction.put(BROWSER_VERIFICATION_REGISTRY_KEY, entries);
       }
       return result;
     });
   }
-  async register(token, { expiresAt, engine } = {}) {
+  async register(token, { expiresAt, engine, reservation } = {}) {
     const digest = await verificationTokenDigest(token), now = this.now();
     if (!digest || !ENGINES.has(engine) || !Number.isFinite(expiresAt) || expiresAt <= now
-      || expiresAt > now + BROWSER_VERIFICATION_TTL_MS) return false;
+      || expiresAt > now + BROWSER_VERIFICATION_TTL_MS
+      || (reservation !== undefined && (!validReservation(reservation) || reservation.startedAt > now
+        || now - reservation.startedAt > BROWSER_VERIFICATION_TTL_MS))) return false;
+    const recordedReservation = reservation === undefined ? undefined : { day: reservation.day, startedAt: reservation.startedAt };
     return this._change(entries => {
       const existing = entries.find(entry => entry.digest === digest);
-      if (existing) return existing.engine === engine && existing.expiresAt === expiresAt && !existing.terminal;
+      if (existing) return existing.engine === engine && existing.expiresAt === expiresAt && !existing.terminal
+        && JSON.stringify(existing.reservation) === JSON.stringify(recordedReservation);
       if (entries.length >= MAX_ACTIVE_BROWSER_VERIFICATIONS) return false;
-      entries.push({ digest, engine, expiresAt, nextResumeAt: 0, leaseUntil: 0, cancelLeaseUntil: 0, sequence: 0, terminal: false });
+      entries.push({ digest, engine, expiresAt, nextResumeAt: 0, leaseUntil: 0, cancelLeaseUntil: 0, sequence: 0, terminal: false,
+        ...(recordedReservation ? { reservation: recordedReservation } : {}) });
       return true;
     });
   }
@@ -128,11 +159,16 @@ export class BrowserVerificationRegistry {
       return { kind: 'claimed', entry: { ...entry } };
     });
   }
-  async _settle(claim, { remove = false, terminal = false, timeout = false } = {}) {
-    return this._change(entries => {
+  async _settle(claim, { remove = false, terminal = false, timeout = false, confirmedClosed = false } = {}) {
+    return this._change(async (entries, transaction) => {
       const index = entries.findIndex(entry => entry.digest === claim.digest && entry.sequence === claim.sequence);
       if (index === -1) return false;
-      if (remove) entries.splice(index, 1);
+      if (remove) {
+        if (confirmedClosed) await settleUsage(transaction, entries[index], this.now());
+        // Removal and the accounting write share one transaction. Replayed or
+        // superseded sequences can never refund this reservation a second time.
+        entries.splice(index, 1);
+      }
       else {
         if (!timeout) { entries[index].leaseUntil = 0; entries[index].cancelLeaseUntil = 0; }
         if (terminal) entries[index].terminal = true;
@@ -160,13 +196,13 @@ export class BrowserVerificationRegistry {
           return json({ ...payload, verificationToken: token }, 422);
         }
         const remove = response.headers.get(CLOSED_HEADER) === '1';
-        if (!await this._settle(claim, { remove, terminal: !remove })) return expired();
+        if (!await this._settle(claim, { remove, terminal: !remove, confirmedClosed: remove })) return expired();
         return unavailable();
       }
       // Failures without confirmed closure remain cancelled and retain their original deadline/budget.
       const confirmedClosed = response.headers.get(CLOSED_HEADER) === '1';
       const remove = confirmedClosed || response.ok || response.status === 410;
-      if (!await this._settle(claim, { remove, terminal: !remove })) return expired();
+      if (!await this._settle(claim, { remove, terminal: !remove, confirmedClosed })) return expired();
       return publicBrowserResponse(response);
     } catch {
       // A timeout may leave a private request running. Keep its lease; never declare or refund a close.
