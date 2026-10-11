@@ -19,6 +19,34 @@ const NOTE_HOSTS = new Set(['xiaohongshu.com', 'www.xiaohongshu.com']);
 const LINK_HOSTS = new Set(['xhslink.com', 'www.xhslink.com', 'xhslink.cn', 'www.xhslink.cn']);
 const CAPTCHA_TITLES = new Set(['小红书安全验证', '小红书 - 安全验证', '安全验证 - 小红书']);
 const LOGIN_TITLES = new Set(['小红书登录', '小红书 - 登录', '登录 - 小红书']);
+const DIAGNOSTIC_HOSTS = new Set(['apex', 'www', 'shortlink', 'other']);
+const DIAGNOSTIC_PATHS = new Set(['note', 'captcha', 'login', 'shortlink', 'root', 'error', 'other', 'blank']);
+const brandedTitle = (html, titles) => titles.has(/<title\b[^>]*>([^<]{0,160})<\/title\s*>/i.exec(html)?.[1]?.trim());
+function safeDiagnostic(value) {
+  if (!value || !DIAGNOSTIC_HOSTS.has(value.finalLocation?.hostname)
+    || !DIAGNOSTIC_PATHS.has(value.finalLocation?.pathClass)
+    || !Number.isInteger(value.htmlBytes) || value.htmlBytes < 0 || value.htmlBytes > MAX_WIRE_CHARS * 3
+    || typeof value.brandedCaptcha !== 'boolean' || typeof value.brandedLogin !== 'boolean') return undefined;
+  return { finalLocation: { hostname: value.finalLocation.hostname, pathClass: value.finalLocation.pathClass },
+    htmlBytes: value.htmlBytes, brandedCaptcha: value.brandedCaptcha, brandedLogin: value.brandedLogin };
+}
+function pageDiagnostic(page) {
+  let url;
+  try { url = new URL(page.finalUrl); } catch { /* Invalid locations retain only the fixed other class. */ }
+  const hostname = url?.hostname === 'xiaohongshu.com' ? 'apex' : url?.hostname === 'www.xiaohongshu.com' ? 'www'
+    : LINK_HOSTS.has(url?.hostname) ? 'shortlink' : 'other';
+  const path = url?.pathname || '';
+  const pathClass = page.finalUrl === 'about:blank' ? 'blank'
+    : (url && /^(?:chrome-error:|edge-error:)$/.test(url.protocol)) || /^about:(?:neterror|certerror)/.test(page.finalUrl) ? 'error'
+      : url && noteFromURL(url) ? 'note'
+        : /(?:^|\/)captcha(?:\/|$)/i.test(path) ? 'captcha'
+          : /(?:^|\/)(?:login|signin|website-login)(?:\/|$)/i.test(path) ? 'login'
+            : hostname === 'shortlink' ? 'shortlink' : path === '/' ? 'root'
+              : /(?:^|\/)(?:error|404|403|500)(?:\/|$)/i.test(path) ? 'error' : 'other';
+  const html = typeof page.html === 'string' ? page.html : '';
+  return safeDiagnostic({ finalLocation: { hostname, pathClass }, htmlBytes: new TextEncoder().encode(html).byteLength,
+    brandedCaptcha: brandedTitle(html, CAPTCHA_TITLES), brandedLogin: brandedTitle(html, LOGIN_TITLES) });
+}
 
 const SAFE_CODES = new Set(['BROWSER_OWNER_REQUIRED', 'BROWSER_OWNER_REJECTED', 'BROWSER_PAGE_REJECTED',
   'BROWSER_INPUT_REJECTED', 'BROWSER_NOTE_MISMATCH', 'BROWSER_CANCELLED', 'BROWSER_EXPIRED',
@@ -27,9 +55,11 @@ const SAFE_CODES = new Set(['BROWSER_OWNER_REQUIRED', 'BROWSER_OWNER_REJECTED', 
   'BROWSER_LIVE_VIEW_FAILED', 'BROWSER_LIVE_VIEW_INVALID', 'BROWSER_FAILED', 'BROWSER_NOT_READY',
   'BROWSER_ACQUIRE_FAILED', 'BROWSER_TARGET_FAILED', 'BROWSER_NOT_FOUND']);
 export class BrowserSessionError extends Error {
-  constructor(code, closed = false) {
+  constructor(code, closed = false, diagnostic) {
     code = SAFE_CODES.has(code) ? code : 'BROWSER_FAILED';
     super(code); this.name = 'BrowserSessionError'; this.code = code; this.closed = closed === true;
+    const projected = safeDiagnostic(diagnostic);
+    if (projected) this.diagnostic = projected;
   }
 }
 const fail = code => { throw new BrowserSessionError(code); };
@@ -47,9 +77,9 @@ const noteFromURL = url => NOTE_HOSTS.has(url.hostname)
   ? /^(?:\/explore\/|\/discovery\/item\/)([a-f\d]{24})\/?$/i.exec(url.pathname)?.[1].toLowerCase() || null : null;
 const isCaptcha = (url, html) => NOTE_HOSTS.has(url.hostname) && (
   /(?:^|\/)captcha(?:\/|$)/i.test(url.pathname)
-  || CAPTCHA_TITLES.has(/<title\b[^>]*>([^<]{0,160})<\/title\s*>/i.exec(html)?.[1]?.trim()));
+  || brandedTitle(html, CAPTCHA_TITLES));
 const isLogin = (url, html) => /(?:^|\/)(?:login|signin|website-login)(?:\/|$)/i.test(url.pathname)
-  || LOGIN_TITLES.has(/<title\b[^>]*>([^<]{0,160})<\/title\s*>/i.exec(html)?.[1]?.trim());
+  || brandedTitle(html, LOGIN_TITLES);
 function ready(html, noteId) {
   if (new RegExp(`["']${noteId}["']\\s*:|["'](?:noteId|note_id|itemId|item_id)["']\\s*:\\s*["']${noteId}["']`).test(html)) return true;
   // Generic INITIAL_STATE or recommendations are not evidence of hydration for
@@ -203,7 +233,7 @@ export class BrowserSessionManager {
   }
   async _poll(record, epoch, until) {
     const cdp = await this._connect(record, until, epoch);
-    let lastPage;
+    let lastPage, diagnostic;
     try {
       while (this.now() < until) {
         this._check(record, epoch);
@@ -211,6 +241,7 @@ export class BrowserSessionManager {
         this._check(record, epoch);
         if (result?.exceptionDetails || !result?.result || result.result.type !== 'object') fail('BROWSER_CDP_FAILED');
         const page = result.result.value;
+        if (page && typeof page === 'object') diagnostic = pageDiagnostic(page);
         if (!page || page.html === null) fail('BROWSER_HTML_TOO_LARGE');
         if (typeof page.html !== 'string' || new TextEncoder().encode(page.html).byteLength > MAX_BROWSER_HTML_BYTES) fail('BROWSER_HTML_TOO_LARGE');
         // A new target may still be blank while its already validated navigation starts.
@@ -220,8 +251,8 @@ export class BrowserSessionManager {
         const url = pageURL(page.finalUrl);
         const id = noteFromURL(url);
         if (id && record.noteId && id !== record.noteId) fail('BROWSER_NOTE_MISMATCH');
-        if (isLogin(url, page.html)) fail('BROWSER_PAGE_REJECTED');
         if (isCaptcha(url, page.html)) return { kind: 'gate' };
+        if (isLogin(url, page.html)) fail('BROWSER_PAGE_REJECTED');
         if (id) {
           if (!record.noteId) { record.noteId = id; await this._put(record); }
           lastPage = { kind: 'page', engine: record.engine, noteId: id, finalUrl: url.href, html: page.html };
@@ -232,6 +263,8 @@ export class BrowserSessionManager {
       this._check(record, epoch);
       if (lastPage) return lastPage;
       fail('BROWSER_PAGE_UNAVAILABLE');
+    } catch (error) {
+      throw new BrowserSessionError(error instanceof BrowserSessionError ? error.code : 'BROWSER_FAILED', false, diagnostic);
     } finally { cdp.dispose(); }
   }
   async _verification(record, epoch, until) {
@@ -263,7 +296,8 @@ export class BrowserSessionManager {
       return { ...outcome, closed: await this._close(record) };
     } catch (error) {
       const closed = await this._close(record);
-      throw new BrowserSessionError(error instanceof BrowserSessionError ? error.code : 'BROWSER_FAILED', closed);
+      throw new BrowserSessionError(error instanceof BrowserSessionError ? error.code : 'BROWSER_FAILED', closed,
+        error instanceof BrowserSessionError ? error.diagnostic : undefined);
     }
   }
   async start({ token, engine, noteId = null, sourceURL } = {}) {

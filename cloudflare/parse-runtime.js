@@ -66,13 +66,27 @@ export class ParseRuntime {
           'BROWSER_CDP_PROTOCOL', 'BROWSER_HTML_TOO_LARGE', 'BROWSER_LIVE_VIEW_FAILED', 'BROWSER_LIVE_VIEW_INVALID',
           'BROWSER_PAGE_REJECTED', 'BROWSER_NOTE_MISMATCH', 'BROWSER_PAGE_UNAVAILABLE', 'BROWSER_CANCELLED',
           'BROWSER_STORAGE', 'BROWSER_CLOSE_FAILED', 'BROWSER_INPUT_REJECTED', 'BROWSER_OWNER_REJECTED']);
+        const diagnostic = error?.diagnostic;
+        const location = diagnostic?.finalLocation;
+        const page = location && ['apex', 'www', 'shortlink', 'other'].includes(location.hostname)
+          && ['note', 'captcha', 'login', 'shortlink', 'root', 'error', 'other', 'blank'].includes(location.pathClass)
+          && Number.isInteger(diagnostic.htmlBytes) && diagnostic.htmlBytes >= 0 && diagnostic.htmlBytes <= 6291457
+          ? { finalLocation: { hostname: location.hostname, pathClass: location.pathClass },
+            htmlBytes: diagnostic.htmlBytes, brandedCaptcha: diagnostic.brandedCaptcha === true,
+            brandedLogin: diagnostic.brandedLogin === true } : null;
         console.warn('CF_BROWSER_PARSE_FAILURE', JSON.stringify({
           operation: path.endsWith('/resume') ? 'resume' : path.endsWith('/cancel') ? 'cancel' : 'start',
           code: codes.has(error?.code) ? error.code : 'BROWSER_FAILED', closed: error?.closed === true,
+          ...(page ? { page } : {}),
         }));
         const expired = error?.code === 'BROWSER_EXPIRED';
-        return json({ success: false, code: expired ? 'VERIFICATION_EXPIRED' : 'BROWSER_UNAVAILABLE',
+        const response = json({ success: false, code: expired ? 'VERIFICATION_EXPIRED' : 'BROWSER_UNAVAILABLE',
           message: expired ? '验证已过期，请重新解析。' : '页面读取暂时不可用，请稍后重试。' }, expired ? 410 : 503);
+        if (error?.closed === true) {
+          response.headers.set('X-Browser-Closed', '1');
+          response.headers.set('X-Browser-Elapsed-Ms', String(Math.min(180000, Date.now() - started)));
+        }
+        return response;
       }
     }
     if (path !== '/api/parse' && path !== '/api/member_video' && !python) return json({ success: false, message: '接口不存在。' }, 404);

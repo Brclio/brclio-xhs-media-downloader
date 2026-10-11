@@ -116,6 +116,49 @@ test('CAPTCHA prompts only after an ordinary navigation and persists no HTML or 
   assert.ok(f.calls.sockets.every(socket => socket.closed));
 });
 
+test('trusted nested CAPTCHA takes priority over login path and title without accepting ordinary login', async () => {
+  const f = fixture({ snapshots: [page('https://www.xiaohongshu.com/website-login/captcha?private=SECRET',
+    '<title>小红书登录</title>')] });
+  assert.equal((await f.start()).kind, 'verification');
+  assert.equal(f.calls.liveView.length, 1); assert.equal(f.calls.close.length, 0);
+  const ordinary = fixture({ snapshots: [page('https://www.xiaohongshu.com/website-login', '<title>小红书登录</title>')] });
+  await rejectsCode(ordinary.start(), 'BROWSER_PAGE_REJECTED');
+  assert.equal(ordinary.calls.liveView.length, 0); assert.equal(ordinary.calls.close.length, 1);
+  const untrusted = fixture({ snapshots: [page('https://evil.example/website-login/captcha', '<title>小红书安全验证</title>')] });
+  await rejectsCode(untrusted.start(), 'BROWSER_PAGE_REJECTED');
+  assert.equal(untrusted.calls.liveView.length, 0);
+});
+
+test('failure diagnostics project only fixed location classes, byte count and branded booleans', async () => {
+  const cases = [
+    [page('chrome-error://chromewebdata/?PRIVATE_LOCATION', '<title>PRIVATE_HTML</title>'), 'other', 'error', false, false],
+    [page('https://www.xiaohongshu.com/website-login?PRIVATE_QUERY#PRIVATE_HASH', '<title>小红书登录</title>'), 'www', 'login', false, true],
+    [page('https://xiaohongshu.com/?PRIVATE_QUERY', '<title>PRIVATE_HTML</title>'), 'apex', 'root', false, false],
+    [page('https://xhslink.cn/o/PRIVATE_PATH', '<title>PRIVATE_HTML</title>'), 'shortlink', 'shortlink', false, false],
+    [page('https://evil.example/PRIVATE_PATH?PRIVATE_QUERY', '<title>小红书安全验证</title>PRIVATE_HTML'), 'other', 'other', true, false],
+    [page(`https://www.xiaohongshu.com/explore/${otherId}?PRIVATE_QUERY`, '<title>PRIVATE_HTML</title>'), 'www', 'note', false, false],
+  ];
+  for (const [snapshot, hostname, pathClass, brandedCaptcha, brandedLogin] of cases) {
+    const f = fixture({ snapshots: [snapshot] });
+    await assert.rejects(f.start(), error => {
+      assert.equal(error.closed, true);
+      assert.deepEqual(error.diagnostic, { finalLocation: { hostname, pathClass },
+        htmlBytes: new TextEncoder().encode(snapshot.html).byteLength, brandedCaptcha, brandedLogin });
+      assert.ok(!JSON.stringify(error).includes('PRIVATE_'));
+      assert.ok(!JSON.stringify(error).includes(noteId)); assert.ok(!JSON.stringify(error).includes(otherId));
+      return true;
+    });
+    assert.ok(f.puts.every(saved => !Object.hasOwn(saved, 'diagnostic')));
+    assert.equal(f.data.size, 0);
+  }
+  const projected = new BrowserSessionError('BROWSER_FAILED', false, { finalLocation: { hostname: 'www', pathClass: 'login', url: 'PRIVATE_URL' },
+    htmlBytes: 10, brandedCaptcha: false, brandedLogin: true, html: 'PRIVATE_HTML', token: 'PRIVATE_TOKEN' });
+  assert.ok(!JSON.stringify(projected).includes('PRIVATE_'));
+  assert.equal(new BrowserSessionError('BROWSER_FAILED', false, { ...projected.diagnostic,
+    finalLocation: { hostname: 'PRIVATE_HOST', pathClass: 'login' } }).diagnostic, undefined);
+  assert.equal(new BrowserSessionError('BROWSER_FAILED', false, { ...projected.diagnostic, htmlBytes: Infinity }).diagnostic, undefined);
+});
+
 test('resume after eviction reads the same target, preserves deadline and never navigates or acquires again', async () => {
   const f = fixture({ snapshots: [gate()] });
   const first = await f.start();
