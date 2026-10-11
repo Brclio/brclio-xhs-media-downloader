@@ -8,6 +8,18 @@ const request = (text = NOTE, { path = '/api/parse', method = 'POST', headers = 
   method, headers: { 'Content-Type': 'application/json', ...headers }, ...(method === 'POST' ? { body: JSON.stringify({ text, ignoredCookie: 'private-body-sentinel' }) } : {}), ...extra,
 });
 const native = (status = 422) => Response.json({ success: false, message: 'original native error sentinel' }, { status });
+function assertNativeFallback(response, original, diagnostic) {
+  assert.equal(response.status, original.status); assert.equal(response.statusText, original.statusText);
+  assert.equal(response.body, original.body); assert.equal(original.bodyUsed, false);
+  if (original.status < 400) { assert.equal(response, original); assert.equal(response.headers.get('X-XHS-Browser-Fallback'), null); }
+  else {
+    assert.notEqual(response, original);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    if (diagnostic) assert.equal(response.headers.get('X-XHS-Browser-Fallback'), diagnostic);
+    else assert.match(response.headers.get('X-XHS-Browser-Fallback'), /^[a-z-]+\/[a-z-]+$/);
+    for (const [key, value] of original.headers) if (!['cache-control', 'x-xhs-browser-fallback'].includes(key)) assert.equal(response.headers.get(key), value);
+  }
+}
 const liveURL = `https://live.browser.run/ui/view?mode=tab&wss=${encodeURIComponent('live.browser.run/api/devtools/browser/fixture-session/page/fixture-target?jwt=private-jwt-sentinel')}`;
 function storage() {
   const values = new Map(), writes = [];
@@ -48,7 +60,7 @@ test('native success, absent binding, unrelated errors and invalid inputs never 
   ];
   for (const [req, status] of cases) {
     const h = harness(), original = native(status);
-    assert.equal(await maybeParseWithBrowser(req, original, h), original);
+    assertNativeFallback(await maybeParseWithBrowser(req, original, h), original);
     assert.equal(original.bodyUsed, false); assert.equal(h.calls.length, 0); assert.equal(h.store.writes.length, 0);
   }
   const h = harness(); delete h.env.BROWSER;
@@ -78,7 +90,7 @@ test('failure diagnostics identify the exact fallback phase using only a fixed p
     logs.length = 0;
     const h = harness(item.response), original = native(item.status ?? 422);
     item.setup?.(h);
-    assert.equal(await maybeParseWithBrowser(item.input?.() ?? request(), original, h), original);
+    assertNativeFallback(await maybeParseWithBrowser(item.input?.() ?? request(), original, h), original, `${item.phase}/${item.outcome}`);
     assert.equal(original.bodyUsed, false);
     assert.deepEqual(logs, [['CF_BROWSER_FALLBACK_RESULT', JSON.stringify({ phase: item.phase, outcome: item.outcome,
       nativeStatus: item.status ?? 422, ...(item.presence ?? present) })]]);
@@ -88,7 +100,7 @@ test('failure diagnostics identify the exact fallback phase using only a fixed p
   logs.length = 0;
   const h = harness(); delete h.env.BROWSER;
   const original = native(200);
-  assert.equal(await maybeParseWithBrowser(request(), original, h), original);
+  assertNativeFallback(await maybeParseWithBrowser(request(), original, h), original);
   assert.deepEqual(logs, []);
 });
 
@@ -96,8 +108,22 @@ test('a diagnostic logger failure cannot change the preserved native response or
   t.mock.method(console, 'warn', () => { throw new Error('private-logger-error-sentinel'); });
   const h = harness(); delete h.env.BROWSER;
   const original = native();
-  assert.equal(await maybeParseWithBrowser(request(), original, h), original);
+  assertNativeFallback(await maybeParseWithBrowser(request(), original, h), original, 'eligibility/browser-binding-missing');
   assert.equal(original.bodyUsed, false); assert.deepEqual(h.calls, []); assert.deepEqual(h.store.writes, []);
+});
+
+test('public fallback header preserves native bytes, status text and other headers while preventing caching', async t => {
+  t.mock.method(console, 'warn', () => {});
+  const raw = '{ "success": false, "message": "private-original-body-sentinel" }\n';
+  const original = new Response(raw, { status: 422, statusText: 'Unprocessable Note', headers: {
+    'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=3600', 'X-Native-Marker': 'retained',
+  } });
+  const h = harness(); delete h.env.BROWSER;
+  const response = await maybeParseWithBrowser(request(), original, h);
+  assertNativeFallback(response, original, 'eligibility/browser-binding-missing');
+  assert.deepEqual([...response.headers.keys()].sort(), ['cache-control', 'content-type', 'x-native-marker', 'x-xhs-browser-fallback']);
+  assert.equal(await response.text(), raw);
+  assert.deepEqual(h.calls, []); assert.deepEqual(h.store.writes, []);
 });
 
 test('browser start preserves Python engine and forwards only private validated input to a unique session', async t => {
@@ -116,6 +142,7 @@ test('browser start preserves Python engine and forwards only private validated 
   assert.equal(h.calls[0].payload.engine, 'python'); assert.equal(h.calls[0].payload.token, h.names[0].slice(8));
   assert.equal(h.calls[0].request.headers.get('cookie'), null); assert.equal(h.calls[0].request.headers.get('authorization'), null);
   assert.equal(response.headers.get('X-Browser-Closed'), null); assert.equal(response.headers.get('X-Browser-Elapsed-Ms'), null);
+  assert.equal(response.headers.get('X-XHS-Browser-Fallback'), null);
   assert.equal(response.headers.get('X-XHS-Engine'), 'python'); assert.equal(original.bodyUsed, false);
   assert.deepEqual(logs, []);
   for (const write of h.store.writes) { assert.equal(write.key, KEY); assert.ok(Object.values(write.value).every(value => typeof value === 'number')); }
@@ -141,6 +168,7 @@ test('cooldown reports its rounded remaining seconds and never changes counters 
   const original = native(), response = await maybeParseWithBrowser(request(NOTE, { path: '/api/python_parse' }), original, h);
   const body = await response.json();
   assert.equal(response.status, 429); assert.equal(response.headers.get('retry-after'), '1');
+  assert.equal(response.headers.get('X-XHS-Browser-Fallback'), null);
   assert.equal(body.code, 'BROWSER_COOLDOWN'); assert.equal(body.engine, 'python'); assert.equal(body.retryAfter, 1);
   assert.match(body.message, /1 秒后重试/); assert.match(body.message, /Node\/Python 共用/);
   assert.equal(body.resetsAt, undefined); assert.equal(original.bodyUsed, false);
@@ -233,6 +261,7 @@ test('verified close refunds actual elapsed plus five seconds while verification
   assert.equal(response.status, 422); assert.equal(body.code, 'VERIFICATION_REQUIRED'); assert.equal(body.engine, 'node');
   assert.equal(body.verificationToken, h.calls[0].payload.token); assert.equal(h.calls[0].payload.noteId, null);
   assert.equal(body.verificationUrl, liveURL); assert.equal(body.reason, 'access-error');
+  assert.equal(response.headers.get('X-XHS-Browser-Fallback'), null);
   assert.equal(h.store.values.get(KEY).usedMs, RESERVE); assert.equal(response.headers.get('X-Browser-Closed'), null);
   const entries = h.store.values.get(REGISTRY_KEY);
   assert.equal(entries.length, 1); assert.equal(entries[0].digest, await verificationTokenDigest(body.verificationToken));
@@ -273,7 +302,7 @@ test('a verification registry failure cancels the untracked owner and retains th
     return transaction.put(key, value);
   } }));
   const original = native();
-  assert.equal(await maybeParseWithBrowser(request(), original, h), original);
+  assertNativeFallback(await maybeParseWithBrowser(request(), original, h), original, 'verification/registration-rejected');
   assert.equal(original.bodyUsed, false); assert.equal(h.calls.length, 2);
   assert.equal(h.calls[1].request.url, 'https://browser.internal/__internal/browser/cancel');
   assert.deepEqual(h.calls[1].payload, { token: h.calls[0].payload.token });
@@ -290,7 +319,7 @@ test('invalid close evidence, internal failures and corrupt counters fail safely
   }
   for (const response of [() => { throw new Error('private URL/cookie/token error sentinel'); }, () => Response.json({ success: false }, { status: 503 }), () => new Response('invalid internal JSON', { status: 422 }), () => Response.json({ success: false, code: 'VERIFICATION_REQUIRED', engine: 'python', verificationUrl: 'private', expiresAt: Date.now() }, { status: 422 })]) {
     const h = harness(response), original = native();
-    assert.equal(await maybeParseWithBrowser(request(), original, h), original); assert.equal(original.bodyUsed, false); assert.equal(h.store.values.get(KEY).usedMs, RESERVE);
+    assertNativeFallback(await maybeParseWithBrowser(request(), original, h), original); assert.equal(original.bodyUsed, false); assert.equal(h.store.values.get(KEY).usedMs, RESERVE);
   }
   const h = harness(); h.store.values.set(KEY, { day: Math.floor(time.now() / 86400000), usedMs: -10, lastStartMs: 0 });
   assert.equal((await maybeParseWithBrowser(request(), native(), h)).status, 503); assert.equal(h.calls.length, 0);
@@ -303,7 +332,7 @@ test('invalid close evidence, internal failures and corrupt counters fail safely
 
 test('cancelled request never consumes budget or starts browser', async () => {
   const controller = new AbortController(); controller.abort(); const h = harness(), original = native();
-  assert.equal(await maybeParseWithBrowser(request(NOTE, { signal: controller.signal }), original, h), original);
+  assertNativeFallback(await maybeParseWithBrowser(request(NOTE, { signal: controller.signal }), original, h), original, 'input/not-candidate');
   assert.equal(h.calls.length, 0); assert.equal(h.store.writes.length, 0);
 });
 
@@ -320,7 +349,7 @@ test('start deadline and caller cancellation preserve native error and unconfirm
     const pending = maybeParseWithBrowser(request(NOTE, { signal: controller.signal }), original, h);
     while (h.calls.length === 0) await new Promise(resolve => setImmediate(resolve));
     if (cancel) controller.abort(); else t.mock.timers.tick(20_000);
-    assert.equal(await pending, original);
+    assertNativeFallback(await pending, original, `start/${cancel ? 'caller-cancelled' : 'start-timeout'}`);
     assert.equal(h.calls[0].request.signal.aborted, true);
     assert.equal(h.calls.length, 2); assert.equal(h.calls[1].request.url, 'https://browser.internal/__internal/browser/cancel');
     assert.deepEqual(h.calls[1].payload, { token: h.calls[0].payload.token });
@@ -342,7 +371,7 @@ test('a late handoff result after pending-start cancellation cannot register or 
   while (!finishStart) await new Promise(resolve => setImmediate(resolve));
   controller.abort();
   const response = await pending;
-  assert.equal(response, original); assert.equal(response.bodyUsed, false);
+  assertNativeFallback(response, original, 'start/caller-cancelled'); assert.equal(response.bodyUsed, false);
   assert.equal(h.calls.length, 2); assert.equal(h.calls[1].request.url, 'https://browser.internal/__internal/browser/cancel');
   finishStart(Response.json({ success: false, engine: 'node', code: 'VERIFICATION_REQUIRED', reason: 'captcha',
     verificationUrl: liveURL, expiresAt: Date.now() + 180000 }, { status: 422 }));

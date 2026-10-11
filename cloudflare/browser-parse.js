@@ -134,14 +134,22 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
       console.warn('CF_BROWSER_FALLBACK_RESULT', JSON.stringify({ phase, outcome, nativeStatus: nativeResponse.status, ...presence }));
     } catch {}
   };
-  if (!presence.browserBinding) { failed('browser-binding-missing'); return nativeResponse; }
-  if (!presence.parseRuntimeBinding) { failed('parse-runtime-binding-missing'); return nativeResponse; }
-  if (!presence.transactionalStorage) { failed('transactional-storage-missing'); return nativeResponse; }
-  if (![422, 502, 504].includes(nativeResponse.status)) { failed('native-status-ineligible'); return nativeResponse; }
+  const nativeFallback = outcome => {
+    failed(outcome);
+    if (nativeResponse.status < 400) return nativeResponse;
+    const headers = new Headers(nativeResponse.headers);
+    headers.set('X-XHS-Browser-Fallback', `${phase}/${outcome}`);
+    headers.set('Cache-Control', 'no-store');
+    return new Response(nativeResponse.body, { status: nativeResponse.status, statusText: nativeResponse.statusText, headers });
+  };
+  if (!presence.browserBinding) return nativeFallback('browser-binding-missing');
+  if (!presence.parseRuntimeBinding) return nativeFallback('parse-runtime-binding-missing');
+  if (!presence.transactionalStorage) return nativeFallback('transactional-storage-missing');
+  if (![422, 502, 504].includes(nativeResponse.status)) return nativeFallback('native-status-ineligible');
   try {
     phase = 'input';
     const input = await candidate(request);
-    if (!input) { failed('not-candidate'); return nativeResponse; }
+    if (!input) return nativeFallback('not-candidate');
     phase = 'reservation';
     const reservation = await reserve(state.storage, Date.now());
     if (!reservation.ok) {
@@ -156,14 +164,14 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
     let response;
     try { response = await startSession(stub, { token, ...input }, request.signal); }
     catch (error) {
-      failed(request.signal.aborted ? 'caller-cancelled'
-        : error instanceof Error && error.message === 'browser-start-cancelled' ? 'start-timeout' : 'start-failed');
+      const outcome = request.signal.aborted ? 'caller-cancelled'
+        : error instanceof Error && error.message === 'browser-start-cancelled' ? 'start-timeout' : 'start-failed';
       // Aborting the transport does not prove the owner stopped its acquisition.
       // Explicitly cancel it; a late start result can never reach registration.
       await cancelUnregisteredVerification(stub, token);
-      return nativeResponse;
+      return nativeFallback(outcome);
     }
-    if (!(response instanceof Response)) { failed('invalid-response'); return nativeResponse; }
+    if (!(response instanceof Response)) return nativeFallback('invalid-response');
     let rejection = 'browser-response-rejected';
     if (response.status === 422) {
       phase = 'verification';
@@ -177,8 +185,7 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
               reservation: { day: reservation.day, startedAt: reservation.startedAt } });
         } catch { /* A storage failure must not expose an untracked browser. */ }
         if (!registered) {
-          failed('registration-rejected');
-          await cancelUnregisteredVerification(stub, token); return nativeResponse;
+          await cancelUnregisteredVerification(stub, token); return nativeFallback('registration-rejected');
         }
         // A live verification keeps its complete reservation, even if a bad close header is present.
         return json({ ...payload, verificationToken: token }, 422);
@@ -187,7 +194,6 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
     }
     phase = 'response';
     await refundConfirmedClose(state.storage, reservation, response);
-    if (!response.ok) failed(rejection);
-    return response.ok ? publicBrowserResponse(response) : nativeResponse;
-  } catch { failed('outer-exception'); return nativeResponse; }
+    return response.ok ? publicBrowserResponse(response) : nativeFallback(rejection);
+  } catch { return nativeFallback('outer-exception'); }
 }
