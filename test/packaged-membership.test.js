@@ -93,4 +93,13 @@ test('packaged membership and learning content match the reviewed source bytes',
     await assert.rejects(verify(), /exactly the reviewed application files/);
     await writeFile(destination, original);
   });
+  await t.test('rejects a missing or modified shared navigation script', async () => {
+    const destination = path.join(source, 'site-header.js');
+    const original = await readFile(destination);
+    await rm(destination);
+    await assert.rejects(verify(), /exactly the reviewed application files/);
+    await writeFile(destination, `${original}\n// changed after review\n`);
+    await assert.rejects(verify(), /Packaged source differs.*site-header\.js/);
+    await writeFile(destination, original);
+  });
 });

@@ -5,7 +5,7 @@ import path from 'node:path';
 // Only this allowlist becomes public static content. Vercel builds /api
 // functions separately and traces their server-side imports.
 export const PUBLIC_FILES = [
-  'index.html', 'changelog.html', 'app.js', 'style.css', 'site-header.css', 'changelog.css', 'changelog.js',
+  'index.html', 'changelog.html', 'app.js', 'style.css', 'site-header.css', 'site-header.js', 'changelog.css', 'changelog.js',
   'download.html', 'download.css', 'download.js',
   'feedback.html', 'feedback.css', 'feedback.js',
   'product.html', 'product.css', 'product.js',
@@ -38,12 +38,15 @@ async function copyBrowserPython(output) {
   await cp(fileURLToPath(new URL('../cloudflare/python/src/parser_core.py', import.meta.url)), path.join(target, 'parser_core.py'));
 }
 
-function promotionWebNavigation(html, homepage, page = 'learn.html') {
-  const header = homepage.match(/<header\b[^>]*class="app-header"[^>]*>[\s\S]*?<\/header>/)?.[0];
-  if (!header) throw new Error('The learning page requires the homepage navigation');
-  const webClass = page === 'vip.html' ? 'vip-web' : page === 'membership.html' ? 'membership-web' : 'learning-web';
+const WEB_PAGES = new Set(['index.html', 'download.html', 'changelog.html', 'feedback.html',
+  'product.html', 'live.html', 'learn.html', 'vip.html', 'membership.html']);
+
+function publicWebNavigation(html, homepage, page) {
+  const header = homepage.match(/<header\b[^>]*class="[^"]*\bapp-header\b[^"]*"[^>]*>[\s\S]*?<\/header>/)?.[0];
+  if (!header) throw new Error(`The public ${page} page requires the homepage navigation`);
+  const currentHref = page === 'index.html' ? '/' : `/${page}`;
   let navigation = header.replace(/<a\b[^>]*>/g, tag => {
-    const selected = tag.includes(`href="/${page}"`);
+    const selected = /class="[^"]*\bnav-link\b[^"]*"/.test(tag) && tag.includes(`href="${currentHref}"`);
     let link = tag.replace(/\saria-current="[^"]*"/g, '').replace(/class="([^"]*)"/, (_, value) => {
       const classes = value.split(/\s+/).filter(name => name && name !== 'is-current');
       if (selected) classes.push('is-current');
@@ -52,21 +55,43 @@ function promotionWebNavigation(html, homepage, page = 'learn.html') {
     if (selected) link = link.replace(/>$/, ' aria-current="page">');
     return link.replace('href="#support"', 'href="/#support"');
   });
-  if (page === 'membership.html') navigation = navigation.replace(/<button\b[^>]*id="browser-account-open"[^>]*>[\s\S]*?<\/button>/,
-    '<a class="nav-link" href="./index.html?membership=open">账号与会员</a>');
+  if (page !== 'index.html') navigation = navigation.replace(/<button\b[^>]*id="browser-account-open"[^>]*>[\s\S]*?<\/button>/,
+    '<a class="header-account" href="/?account=open">账号与会员</a>');
+
+  // The product story keeps its existing presentation controls and progress
+  // tracking even though its public navigation follows the rest of the site.
+  if (page === 'product.html') {
+    const productHeader = html.match(/<header\b[^>]*>[\s\S]*?<\/header>/)?.[0] || '';
+    const presentation = productHeader.match(/<button\b[^>]*class="[^"]*\bpresentation-toggle\b[^"]*"[^>]*>[\s\S]*?<\/button>/)?.[0];
+    const progress = productHeader.match(/<div\b[^>]*class="[^"]*\breading-progress\b[^"]*"[^>]*>[\s\S]*?<\/div>/)?.[0];
+    if (presentation) navigation = navigation.replace('</nav>', `  ${presentation}\n          </nav>`);
+    if (progress) navigation = navigation.replace('</header>', `  ${progress}\n    </header>`);
+  }
+
+  const webClass = { 'learn.html': 'learning-web', 'vip.html': 'vip-web', 'membership.html': 'membership-web',
+    'product.html': 'product-web', 'live.html': 'live-web' }[page];
   const fonts = [...homepage.matchAll(/<link\b[^>]*>/g)]
     .map(match => match[0]).filter(link => /href="https:\/\/fonts\.(?:googleapis|gstatic)\.com\//.test(link));
-  return html.replace(/<header\b[^>]*>[\s\S]*?<\/header>/, navigation)
-    .replace(/<body\b([^>]*)>/, (_, attributes) => attributes.includes('class="')
-      ? `<body${attributes.replace(/class="([^"]*)"/, `class="$1 ${webClass}"`)}>`
-      : `<body${attributes} class="${webClass}">`)
-    .replace('</head>', `${fonts.join('\n')}\n  <link rel="stylesheet" href="./site-header.css">\n</head>`);
+  let output = html.replace(/<header\b[^>]*>[\s\S]*?<\/header>/, navigation);
+  if (webClass) output = output.replace(/<body\b([^>]*)>/, (_, attributes) => attributes.includes('class="')
+    ? `<body${attributes.replace(/class="([^"]*)"/, (_, value) => `class="${[...new Set([...value.split(/\s+/).filter(Boolean), webClass])].join(' ')}"`)}>`
+    : `<body${attributes} class="${webClass}">`);
+
+  // Theme styles can define generic nav/summary rules. Always load the shared
+  // header last, and include its deferred behavior exactly once on each page.
+  output = output
+    .replace(/<link\b[^>]*href="(?:\.\/|\/)?site-header\.css"[^>]*>\s*/g, '')
+    .replace(/<script\b[^>]*src="(?:\.\/|\/)?site-header\.js"[^>]*>[\s\S]*?<\/script>\s*/g, '');
+  const missingFonts = fonts.filter(link => !output.includes(link));
+  return output.replace('</head>', `${missingFonts.join('\n')}\n  <link rel="stylesheet" href="./site-header.css">\n  <script src="./site-header.js" defer></script>\n</head>`);
 }
 
 export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.url))) {
   const output = path.join(root, 'dist-web');
   await rm(output, { recursive: true, force: true });
   await mkdir(output, { recursive: true });
+  const homepage = (await readFile(path.join(root, 'index.html'), 'utf8'))
+    .replace(/^[ \t]*<!-- desktop-only:start -->[\s\S]*?<!-- desktop-only:end -->\r?\n?/gm, '');
   for (const name of PUBLIC_FILES) {
     const destination = path.join(output, name);
     await mkdir(path.dirname(destination), { recursive: true });
@@ -76,10 +101,10 @@ export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.u
       let html = (await readFile(path.join(root, name), 'utf8'))
         .replace(/^[ \t]*<!-- desktop-only:start -->[\s\S]*?<!-- desktop-only:end -->\r?\n?/gm, '');
       if (html.includes('<!-- desktop-only:')) throw new Error(`Unmatched desktop-only block in ${name}`);
-      // Native clients retain their compact local navigation. The public
-      // promotion pages receive the same menu and fonts as the downloader home.
-      if (['learn.html', 'vip.html', 'membership.html'].includes(name) && /<header\b/.test(html)) {
-        html = promotionWebNavigation(html, await readFile(path.join(root, 'index.html'), 'utf8'), name);
+      // Native clients retain their local headers. Every public page shares
+      // the downloader's navigation, typography and responsive menu behavior.
+      if (WEB_PAGES.has(name) && /<header\b/.test(html)) {
+        html = publicWebNavigation(html, homepage, name);
       }
       await writeFile(destination, html);
     } else {

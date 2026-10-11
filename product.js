@@ -129,7 +129,8 @@
     } else {
       scenes.forEach(scene => scene.classList.remove('is-current-scene'));
       status.textContent = '已退出演示模式';
-      toggle.focus({ preventScroll: true });
+      const focusTarget = toggle.getClientRects().length ? toggle : document.getElementById('site-menu-toggle');
+      focusTarget?.focus({ preventScroll: true });
       window.scrollTo({ top: scrollBeforePresentation, behavior: 'instant' });
       if (ownedFullscreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
       ownedFullscreen = false;

@@ -18,7 +18,9 @@
   <!-- desktop-only:start -->
   <link rel="stylesheet" href="./ios-shortcut.css">
   <!-- desktop-only:end -->
-</head>
+  <link rel="stylesheet" href="/site-header.css" />
+    <script defer src="/site-header.js"></script>
+  </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
   <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -29,23 +31,43 @@
     <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </svg>
 
-  <header class="app-header">
-    <div class="app-header-inner container">
-      <a class="brand" href="./" aria-label="Brclio 小红书下载器首页">
-        <img src="./aiyc.svg" alt="" width="40" height="40">
-        <span class="brand-copy"><strong>Brclio <span>小红书下载器</span></strong><small>XHS MEDIA SAVER</small></span>
-      </a>
-      <nav class="app-navigation" aria-label="主要导航">
-        <a href="./">下载工具</a>
-        <a class="is-current" href="./download.html" aria-current="page">软件下载</a>
-        <a href="./membership.html">会员权益</a><a href="./vip.html">VIP 交流群</a><a href="./learn.html">编程私教与书籍</a>
-        <a href="./changelog.html">更新记录</a>
-        <a href="https://xhs.download.brclio.com/feedback.html">问题广场</a>
-        <a href="./#support">支持</a>
-      </nav>
-      <a class="header-link" href="https://github.com/Brclio/brclio-xhs-media-downloader" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
-    </div>
-  </header>
+    <header class="app-header">
+      <div class="app-header-inner">
+        <a class="brand" href="/" aria-label="Brclio 小红书下载器首页">
+          <img class="brand-logo" src="/aiyc.svg" alt="" width="38" height="38" />
+          <span class="brand-copy"><strong>Brclio <span>小红书下载器</span></strong><small>XHS MEDIA SAVER</small></span>
+        </a>
+        <div class="app-header-actions">
+          <a class="header-account" href="/?account=open">账号与会员</a>
+          <button id="site-menu-toggle" class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" aria-label="展开导航菜单" hidden><span class="menu-icon" aria-hidden="true"></span><span class="menu-label">菜单</span></button>
+          <nav id="site-navigation" class="app-navigation" aria-label="主要导航">
+            <a class="nav-link" href="/">下载工具</a>
+            <a class="nav-link" href="/live.html">制作实况</a>
+            <a class="nav-link is-current" href="/download.html" aria-current="page">软件下载</a>
+            <details class="nav-group">
+              <summary class="nav-link nav-group-trigger">探索</summary>
+              <div class="nav-dropdown">
+                <a class="nav-link" href="/product.html"><span>产品介绍</span><small>了解功能与使用场景</small></a>
+                <a class="nav-link" href="/membership.html"><span>会员权益</span><small>查看权益与开通方式</small></a>
+                <a class="nav-link" href="/vip.html"><span>VIP 交流群</span><small>加入付费交流社群</small></a>
+                <a class="nav-link" href="/learn.html"><span>编程私教与书籍</span><small>一对一教学与编程启蒙</small></a>
+                <a class="nav-link" href="/#software-reviews"><span>用户评价</span><small>看看大家的使用感受</small></a>
+              </div>
+            </details>
+            <details class="nav-group">
+              <summary class="nav-link nav-group-trigger">帮助</summary>
+              <div class="nav-dropdown">
+                <a class="nav-link" href="/feedback.html"><span>问题广场</span><small>查看反馈与处理进展</small></a>
+                <a class="nav-link" href="/changelog.html"><span>更新记录</span><small>每个版本的改进</small></a>
+                <a class="nav-link" href="/#support"><span>支持项目</span><small>让这个小工具继续成长</small></a>
+                <a class="nav-link" href="https://github.com/Brclio/brclio-xhs-media-downloader" target="_blank" rel="noopener noreferrer"><span>GitHub <span aria-hidden="true">↗</span></span><small>源码与项目说明</small></a>
+              </div>
+            </details>
+          </nav>
+
+        </div>
+      </div>
+    </header>
 
   <main id="main">
     <section class="hero container" aria-labelledby="hero-title">

@@ -22,38 +22,44 @@
     <link rel="stylesheet" href="/account-ui.css" />
     <link rel="stylesheet" href="/commerce-ui.css" />
     <title>Brclio 小红书下载器</title>
+    <link rel="stylesheet" href="/site-header.css" />
+    <script defer src="/site-header.js"></script>
   </head>
   <body>
     <header class="app-header">
       <div class="app-header-inner">
         <a class="brand" href="/" aria-label="Brclio 小红书下载器首页">
-          <img class="brand-logo" src="/aiyc.svg" alt="" width="40" height="40" />
-          <span class="brand-copy">
-            <strong>Brclio <span>小红书下载器</span></strong>
-            <small>XHS MEDIA SAVER</small>
-          </span>
+          <img class="brand-logo" src="/aiyc.svg" alt="" width="38" height="38" />
+          <span class="brand-copy"><strong>Brclio <span>小红书下载器</span></strong><small>XHS MEDIA SAVER</small></span>
         </a>
-
         <div class="app-header-actions">
-          <nav class="app-navigation" aria-label="主要导航">
+          <button id="browser-account-open" class="header-account browser-account-open" type="button" aria-haspopup="dialog" aria-controls="browser-account-dialog">账号与会员</button>
+          <button id="site-menu-toggle" class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" aria-label="展开导航菜单" hidden><span class="menu-icon" aria-hidden="true"></span><span class="menu-label">菜单</span></button>
+          <nav id="site-navigation" class="app-navigation" aria-label="主要导航">
             <a class="nav-link is-current" href="/" aria-current="page">下载工具</a>
             <a class="nav-link" href="/live.html">制作实况</a>
-            <a class="nav-link" href="/product.html">产品介绍</a>
             <a class="nav-link" href="/download.html">软件下载</a>
-            <a class="nav-link" href="/membership.html">会员权益</a>
-            <a class="nav-link" href="/#software-reviews">用户评价</a>
-            <a class="nav-link" href="/vip.html">VIP 交流群</a>
-            <a class="nav-link" href="/learn.html">编程私教与书籍</a>
-            <a class="nav-link" href="/changelog.html">更新记录</a>
-            <button id="browser-account-open" class="nav-link browser-account-open" type="button" aria-haspopup="dialog" aria-controls="browser-account-dialog">账号与会员</button>
-            <a class="nav-link" href="https://xhs.download.brclio.com/feedback.html">问题广场</a>
-            <a class="nav-link" href="#support">支持</a>
+            <details class="nav-group">
+              <summary class="nav-link nav-group-trigger">探索</summary>
+              <div class="nav-dropdown">
+                <a class="nav-link" href="/product.html"><span>产品介绍</span><small>了解功能与使用场景</small></a>
+                <a class="nav-link" href="/membership.html"><span>会员权益</span><small>查看权益与开通方式</small></a>
+                <a class="nav-link" href="/vip.html"><span>VIP 交流群</span><small>加入付费交流社群</small></a>
+                <a class="nav-link" href="/learn.html"><span>编程私教与书籍</span><small>一对一教学与编程启蒙</small></a>
+                <a class="nav-link" href="/#software-reviews"><span>用户评价</span><small>看看大家的使用感受</small></a>
+              </div>
+            </details>
+            <details class="nav-group">
+              <summary class="nav-link nav-group-trigger">帮助</summary>
+              <div class="nav-dropdown">
+                <a class="nav-link" href="/feedback.html"><span>问题广场</span><small>查看反馈与处理进展</small></a>
+                <a class="nav-link" href="/changelog.html"><span>更新记录</span><small>每个版本的改进</small></a>
+                <a class="nav-link" href="/#support"><span>支持项目</span><small>让这个小工具继续成长</small></a>
+                <a class="nav-link" href="https://github.com/Brclio/brclio-xhs-media-downloader" target="_blank" rel="noopener noreferrer"><span>GitHub <span aria-hidden="true">↗</span></span><small>源码与项目说明</small></a>
+              </div>
+            </details>
           </nav>
-
-          <div class="header-status" aria-label="运行状态：文件仅在浏览器本地生成">
-            <span class="status-dot" aria-hidden="true"></span>
-            <span>浏览器本地处理</span>
-          </div>
+          <div class="header-status" aria-label="运行状态：文件仅在浏览器本地生成"><span class="status-dot" aria-hidden="true"></span><span>浏览器本地处理</span></div>
         </div>
       </div>
     </header>

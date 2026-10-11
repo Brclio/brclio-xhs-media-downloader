@@ -44,6 +44,8 @@ test('Docker and Vercel ignore configuration excludes nested private files and p
 test('public build only copies allowed assets, excluding backend, desktop, tests and secrets', async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'xhs-web-build-'));
   t.after(() => rm(root, { recursive: true, force: true }));
+  const webPages = ['index.html', 'download.html', 'changelog.html', 'feedback.html', 'product.html',
+    'live.html', 'learn.html', 'vip.html', 'membership.html'];
   for (const name of PUBLIC_FILES) {
     const target = path.join(root, name);
     if (['admin', 'assets'].includes(name)) {
@@ -51,7 +53,7 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
       await writeFile(path.join(target, 'index.html'), 'public');
     } else {
       await mkdir(path.dirname(target), { recursive: true });
-      await writeFile(target, ['index.html', 'download.html', 'learn.html'].includes(name)
+      await writeFile(target, webPages.includes(name)
         ? await readFile(new URL(`../${name}`, import.meta.url), 'utf8')
         : 'public');
     }
@@ -107,7 +109,7 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   const learningWeb = await readFile(path.join(out, 'learn.html'), 'utf8');
   const homepage = await readFile(path.join(out, 'index.html'), 'utf8');
   const header = html => html.match(/<header\b[^>]*>[\s\S]*?<\/header>/)?.[0];
-  const links = html => [...header(html).matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)]
+  const links = html => [...header(html).matchAll(/<a\b(?![^>]*class="header-account")[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)]
     .map(([, href, label]) => ({ href, label }));
   assert.deepEqual(links(learningWeb), links(homepage).map(link => ({ ...link, href: link.href === '#support' ? '/#support' : link.href })), 'public learning navigation follows the homepage');
   assert.match(learningWeb, /class="learning-web"/);
@@ -115,6 +117,31 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   assert.equal([...header(learningWeb).matchAll(/aria-current="page"/g)].length, 1);
   assert.ok(learningWeb.indexOf('href="./site-header.css"') > learningWeb.indexOf('href="./learn.css"'), 'shared navigation styles load after learning styles');
   assert.ok(files.includes('site-header.css'));
+  assert.ok(files.includes('site-header.js'), 'responsive navigation behavior is deployed');
+  for (const name of webPages) {
+    const published = await readFile(path.join(out, name), 'utf8');
+    const publishedHeader = header(published);
+    assert.match(publishedHeader, /class="app-header"/, `${name} uses shared public navigation`);
+    assert.deepEqual(links(published), links(homepage), `${name} retains every shared navigation destination`);
+    const current = [...publishedHeader.matchAll(/<a\b[^>]*aria-current="page"[^>]*>/g)];
+    assert.equal(current.length, 1, `${name} has one current page link`);
+    assert.match(current[0][0], new RegExp(`href="${name === 'index.html' ? '/' : `/${name.replace('.', '\\.')}`}"`));
+    if (name === 'index.html') {
+      assert.match(publishedHeader, /<button\b[^>]*id="browser-account-open"/, 'homepage keeps its account dialog trigger');
+    } else {
+      assert.match(publishedHeader, /<a class="header-account" href="\/\?account=open">账号与会员<\/a>/, `${name} opens the homepage account dialog`);
+      assert.doesNotMatch(publishedHeader, /id="browser-account-open"/, `${name} has no unbound account button`);
+    }
+    assert.equal((published.match(/<link\b[^>]*href="(?:\.\/|\/)?site-header\.css"[^>]*>/g) || []).length, 1, `${name} loads shared styles once`);
+    assert.equal((published.match(/<script\b[^>]*src="(?:\.\/|\/)?site-header\.js"[^>]*>/g) || []).length, 1, `${name} loads menu behavior once`);
+    assert.match(published, /<script src="\.\/site-header\.js" defer><\/script>/, `${name} defers navigation behavior`);
+    const styles = [...published.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)];
+    assert.match(styles.at(-1)[0], /site-header\.css/, `${name} loads shared styles after its page theme`);
+    assert.equal(await readFile(path.join(root, name), 'utf8'), await readFile(new URL(`../${name}`, import.meta.url), 'utf8'), `${name} source remains unchanged`);
+  }
+  const productWeb = await readFile(path.join(out, 'product.html'), 'utf8');
+  assert.match(header(productWeb), /class="presentation-toggle"/, 'public product navigation preserves presentation mode');
+  assert.match(header(productWeb), /class="reading-progress"/, 'public product navigation preserves reading progress');
   for (const font of homepage.match(/<link\b[^>]*href="https:\/\/fonts\.(?:googleapis|gstatic)\.com\/[^>]*>/g) || []) {
     assert.ok(learningWeb.includes(font), 'public learning page uses the same homepage font resources');
   }

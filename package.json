@@ -86,6 +86,7 @@
       "vip.html",
       "membership.html",
       "*.css",
+      "site-header.js",
       "!feedback.css",
       "*.svg",
       "app.js",

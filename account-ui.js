@@ -305,7 +305,8 @@ if (typeof window !== 'undefined') {
     if (!['/', '/index.html'].includes(current.pathname)) return;
     const purchase = current.searchParams.get('membership') === 'open';
     const showOrders = current.searchParams.get('account') === 'orders';
-    if (!purchase && !showOrders) return;
+    const showAccount = current.searchParams.get('account') === 'open';
+    if (!purchase && !showOrders && !showAccount) return;
     current.searchParams.delete(purchase ? 'membership' : 'account');
     history.replaceState(history.state, '', current.href);
     void openAccountUI({ purchase }).then(() => { if (showOrders) document.getElementById('software-orders')?.scrollIntoView({ block: 'start' }); });
