@@ -247,6 +247,45 @@ test('explicit resume from a login or access error retries the saved source once
   }
 });
 
+test('known first-party root error pages hand off and explicitly resume the original note in the same target', async () => {
+  for (const hostname of ['www.xiaohongshu.com', 'xiaohongshu.com']) {
+    for (const path of ['/error', '/404', '/403', '/500', '/error/', '/404/', '/403/', '/500/']) {
+      const blocked = page(`https://${hostname}${path}?private=PRIVATE_QUERY`, '<title>小红书</title>');
+      const f = fixture({ snapshots: [blocked, blocked, page()] });
+      const first = await f.start();
+      assert.equal(first.kind, 'verification'); assert.equal(first.reason, 'access-error');
+      assert.equal(f.calls.close.length, 0); assert.equal(f.calls.liveView.length, 1);
+      assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 0);
+      const next = new BrowserSessionManager(f.state, f.browser, f.options);
+      f.advance(1_000);
+      const result = await next.resume({ token });
+      assert.equal(result.kind, 'page'); assert.equal(result.noteId, noteId); assert.equal(result.closed, true);
+      assert.deepEqual(f.calls.commands.filter(value => value.method === 'Page.navigate').map(value => value.params), [{ url: sourceURL }]);
+      assert.equal(f.calls.acquire.length, 1); assert.equal(f.calls.newTarget.length, 1);
+      assert.ok(f.calls.connect.every(value => value.sessionId === 'session_1' && value.options.targetId === 'target_1'));
+      assert.ok(f.puts.slice(0, -1).every(value => value.deadline === first.expiresAt));
+      assert.deepEqual(f.calls.close, ['session_1']); assert.equal(f.data.size, 0);
+    }
+  }
+});
+
+test('root error handoff rejects unknown or extended paths and untrusted origins', async () => {
+  for (const url of ['https://www.xiaohongshu.com/unknown', 'https://www.xiaohongshu.com/error/more',
+    'https://www.xiaohongshu.com/404/more', 'https://www.xiaohongshu.com/403/extra',
+    'https://www.xiaohongshu.com/500oops', 'https://www.xiaohongshu.com/errors',
+    'https://www.xiaohongshu.com/error%2Fmore', 'https://www.xiaohongshu.com/ERROR',
+    'http://www.xiaohongshu.com/error', 'https://foo.xiaohongshu.com/error',
+    'https://evil.example/error', 'https://www.xiaohongshu.com.evil.example/404',
+    'https://www.xiaohongshu.com:8443/500', 'https://user@www.xiaohongshu.com/403',
+    'https://xhslink.cn/error']) {
+    const f = fixture({ snapshots: [page(url, '<title>小红书安全验证</title>')] });
+    await rejectsCode(f.start(), 'BROWSER_PAGE_REJECTED');
+    assert.equal(f.calls.liveView.length, 0); assert.deepEqual(f.calls.close, ['session_1']);
+    assert.equal(f.calls.commands.filter(value => value.method === 'Page.navigate').length, 0);
+    assert.equal(f.data.size, 0);
+  }
+});
+
 test('one manual retry that remains gated returns the same deadline and does not loop navigation', async () => {
   const blocked = page('https://www.xiaohongshu.com/website-login/error', '<title>小红书</title>');
   const f = fixture({ snapshots: [blocked] }); const first = await f.start(); f.advance(1_000);

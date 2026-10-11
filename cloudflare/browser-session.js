@@ -82,6 +82,7 @@ function gateReason(url, html) {
   // arbitrary page or recommendation route.
   if (/^\/(?:captcha|website-login\/captcha)(?:\/[a-z\d_-]+)*\/?$/i.test(url.pathname)) return 'captcha';
   if (/^\/website-login\/error\/?$/i.test(url.pathname)) return 'access-error';
+  if (/^\/(?:error|404|403|500)\/?$/.test(url.pathname)) return 'access-error';
   if (/^\/(?:website-login|login|signin)\/?$/i.test(url.pathname)) return 'login';
   if (noteFromURL(url)) {
     if (brandedTitle(html, CAPTCHA_TITLES)) return 'captcha';
