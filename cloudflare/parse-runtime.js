@@ -2,7 +2,7 @@ import parse from './native-parse.js';
 import { createParseHandler } from '../api/parse.js';
 import { BrowserSessionManager } from './browser-session.js';
 import { maybeParseWithBrowser } from './browser-parse.js';
-import { BrowserVerificationRegistry } from './browser-verification.js';
+import { BrowserVerificationRegistry, BROWSER_FAILURE_HEADER, browserFailureCode } from './browser-verification.js';
 import { parsePythonWithSharedPage } from './native-python-parse.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
@@ -76,11 +76,7 @@ export class ParseRuntime {
         }
         return response;
       } catch (error) {
-        const codes = new Set(['BROWSER_EXPIRED', 'BROWSER_NOT_FOUND', 'BROWSER_NOT_READY', 'BROWSER_TIMEOUT',
-          'BROWSER_ACQUIRE_FAILED', 'BROWSER_TARGET_FAILED', 'BROWSER_CONNECT_FAILED', 'BROWSER_CDP_FAILED',
-          'BROWSER_CDP_PROTOCOL', 'BROWSER_HTML_TOO_LARGE', 'BROWSER_LIVE_VIEW_FAILED', 'BROWSER_LIVE_VIEW_INVALID',
-          'BROWSER_PAGE_REJECTED', 'BROWSER_NOTE_MISMATCH', 'BROWSER_PAGE_UNAVAILABLE', 'BROWSER_CANCELLED',
-          'BROWSER_STORAGE', 'BROWSER_CLOSE_FAILED', 'BROWSER_INPUT_REJECTED', 'BROWSER_OWNER_REJECTED']);
+        const failureCode = browserFailureCode(error?.code);
         const diagnostic = error?.diagnostic;
         const location = diagnostic?.finalLocation;
         const page = location && ['apex', 'www', 'shortlink', 'other'].includes(location.hostname)
@@ -91,12 +87,13 @@ export class ParseRuntime {
             brandedLogin: diagnostic.brandedLogin === true } : null;
         console.warn('CF_BROWSER_PARSE_FAILURE', JSON.stringify({
           operation: path.endsWith('/resume') ? 'resume' : path.endsWith('/cancel') ? 'cancel' : 'start',
-          code: codes.has(error?.code) ? error.code : 'BROWSER_FAILED', closed: error?.closed === true,
+          code: failureCode, closed: error?.closed === true,
           ...(page ? { page } : {}),
         }));
         const expired = error?.code === 'BROWSER_EXPIRED';
         const response = json({ success: false, code: expired ? 'VERIFICATION_EXPIRED' : 'BROWSER_UNAVAILABLE',
           message: expired ? '验证已过期，请重新解析。' : '页面读取暂时不可用，请稍后重试。' }, expired ? 410 : 503);
+        response.headers.set(BROWSER_FAILURE_HEADER, failureCode);
         if (error?.closed === true) {
           response.headers.set('X-Browser-Closed', '1');
           response.headers.set('X-Browser-Elapsed-Ms', String(Math.min(180000, Date.now() - started)));

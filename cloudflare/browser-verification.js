@@ -7,6 +7,13 @@ export const BROWSER_VERIFICATION_DISPATCH_MS = 25_000;
 export const BROWSER_VERIFICATION_RESUME_INTERVAL_MS = 2_000;
 const CLOSED_HEADER = 'X-Browser-Closed';
 const ELAPSED_HEADER = 'X-Browser-Elapsed-Ms';
+export const BROWSER_FAILURE_HEADER = 'X-Browser-Failure-Code';
+const FAILURE_CODES = new Set(['BROWSER_EXPIRED', 'BROWSER_NOT_FOUND', 'BROWSER_NOT_READY', 'BROWSER_TIMEOUT',
+  'BROWSER_ACQUIRE_FAILED', 'BROWSER_TARGET_FAILED', 'BROWSER_CONNECT_FAILED', 'BROWSER_CDP_FAILED',
+  'BROWSER_CDP_PROTOCOL', 'BROWSER_HTML_TOO_LARGE', 'BROWSER_LIVE_VIEW_FAILED', 'BROWSER_LIVE_VIEW_INVALID',
+  'BROWSER_PAGE_REJECTED', 'BROWSER_NOTE_MISMATCH', 'BROWSER_PAGE_UNAVAILABLE', 'BROWSER_CANCELLED',
+  'BROWSER_STORAGE', 'BROWSER_CLOSE_FAILED', 'BROWSER_INPUT_REJECTED', 'BROWSER_OWNER_REJECTED', 'BROWSER_FAILED']);
+export const browserFailureCode = value => FAILURE_CODES.has(value) ? value : 'BROWSER_FAILED';
 // Match browser-parse's reservation contract without a circular module import.
 const BUDGET_KEY = 'browser-parse-budget-v1';
 const RESERVATION_MS = 180_000;
@@ -22,7 +29,7 @@ const unavailable = () => json({ success: false, code: 'BROWSER_UNAVAILABLE', me
 
 export function publicBrowserResponse(response) {
   const headers = new Headers(response.headers);
-  headers.delete(CLOSED_HEADER); headers.delete(ELAPSED_HEADER);
+  headers.delete(CLOSED_HEADER); headers.delete(ELAPSED_HEADER); headers.delete(BROWSER_FAILURE_HEADER);
   headers.set('Cache-Control', 'no-store'); headers.set('X-Content-Type-Options', 'nosniff');
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }

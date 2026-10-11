@@ -84,12 +84,13 @@ test('in-flight resumes are rejected across runtime eviction and handoff retains
   const duplicate = await Promise.all(Array.from({ length: 8 }, () => afterEviction.dispatch({ token, action: 'resume' })));
   assert.ok(duplicate.every(response => response.status === 429)); assert.equal(f.calls.length, 1);
   finish(Response.json(handoff(deadline, { reason: 'access-error', private: 'private-cookie-sentinel' }), {
-    status: 422, headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1' },
+    status: 422, headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1', 'X-Browser-Failure-Code': 'private-handoff-sentinel' },
   }));
   const response = await first, body = await response.json();
   assert.equal(response.status, 422); assert.equal(body.reason, 'access-error'); assert.equal(body.verificationToken, token);
   assert.equal(body.expiresAt, deadline); assert.equal(body.private, undefined);
   assert.equal(response.headers.get('X-Browser-Closed'), null); assert.equal(response.headers.get('X-Browser-Elapsed-Ms'), null);
+  assert.equal(response.headers.get('X-Browser-Failure-Code'), null);
   assert.equal(f.entry().leaseUntil, 0); assert.equal(f.entry().expiresAt, deadline);
   assert.equal((await afterEviction.dispatch({ token, action: 'resume' })).status, 429);
   f.advance(2000);
@@ -119,10 +120,11 @@ test('cancellation interrupts one resume, duplicate cancels do not queue, and la
 });
 
 test('unconfirmed failures forbid resume but permit cleanup without refunding or renewing the deadline', async () => {
-  let result = () => Response.json({ success: false }, { status: 503 });
+  let result = () => Response.json({ success: false }, { status: 503, headers: { 'X-Browser-Failure-Code': 'private-failure-sentinel' } });
   const f = fixture(() => result()); await f.register(); const deadline = f.entry().expiresAt;
   f.values.set('browser-parse-budget-v1', { day: 1, usedMs: 180000, lastStartMs: f.now() });
-  assert.equal((await f.registry.dispatch({ token, action: 'resume' })).status, 503);
+  const response = await f.registry.dispatch({ token, action: 'resume' });
+  assert.equal(response.status, 503); assert.equal(response.headers.get('X-Browser-Failure-Code'), null);
   assert.equal(f.entry().terminal, true); assert.equal(f.entry().expiresAt, deadline);
   assert.equal((await f.registry.dispatch({ token, action: 'resume' })).status, 410); assert.equal(f.calls.length, 1);
   result = () => Response.json({ success: true, cancelled: true }, { headers: { 'X-Browser-Closed': '1' } });

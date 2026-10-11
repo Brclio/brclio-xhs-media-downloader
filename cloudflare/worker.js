@@ -24,6 +24,9 @@ export function cloudflareClientIp(req) {
 
 function applySecurityHeaders(response, pathname) {
   const headers = new Headers(response.headers);
+  headers.delete('X-Browser-Failure-Code');
+  headers.delete('X-Browser-Closed');
+  headers.delete('X-Browser-Elapsed-Ms');
   if (pathname.startsWith('/api/') || pathname.startsWith('/admin')) {
     headers.set('Cache-Control', 'no-store');
     headers.set('X-Content-Type-Options', 'nosniff');

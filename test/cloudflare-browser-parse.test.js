@@ -126,11 +126,25 @@ test('public fallback header preserves native bytes, status text and other heade
   assert.deepEqual(h.calls, []); assert.deepEqual(h.store.writes, []);
 });
 
+test('browser failure diagnostics expose only allowlisted codes while preserving the native error body', async t => {
+  t.mock.method(console, 'warn', () => {});
+  for (const code of ['BROWSER_ACQUIRE_FAILED', 'BROWSER_CDP_PROTOCOL', 'private-code-sentinel', 'BROWSER_TIMEOUT,private-url-sentinel', null]) {
+    const h = harness(() => Response.json({ success: false, message: 'private-owner-error-sentinel' }, { status: 503,
+      headers: code === null ? {} : { 'X-Browser-Failure-Code': code } }));
+    const original = native(), response = await maybeParseWithBrowser(request(), original, h);
+    assertNativeFallback(response, original, 'response/browser-response-rejected');
+    assert.equal(response.headers.get('X-Browser-Failure-Code'), null);
+    assert.equal(response.headers.get('X-XHS-Browser-Failure-Code'), ['BROWSER_ACQUIRE_FAILED', 'BROWSER_CDP_PROTOCOL'].includes(code) ? code : 'BROWSER_FAILED');
+    assert.deepEqual(await response.json(), { success: false, message: 'original native error sentinel' });
+    assert.equal(JSON.stringify([...response.headers]).includes('private-'), false);
+  }
+});
+
 test('browser start preserves Python engine and forwards only private validated input to a unique session', async t => {
   const logs = [];
   for (const method of ['log', 'warn', 'error']) t.mock.method(console, method, (...values) => logs.push(values));
   const h = harness(payload => Response.json({ success: true, engine: payload.engine, images: [], videos: [] }, { headers: {
-    'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '2500', 'X-XHS-Engine': 'python',
+    'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '2500', 'X-XHS-Engine': 'python', 'X-Browser-Failure-Code': 'private-success-sentinel',
   } }));
   clock(t);
   const original = native(502);
@@ -142,6 +156,7 @@ test('browser start preserves Python engine and forwards only private validated 
   assert.equal(h.calls[0].payload.engine, 'python'); assert.equal(h.calls[0].payload.token, h.names[0].slice(8));
   assert.equal(h.calls[0].request.headers.get('cookie'), null); assert.equal(h.calls[0].request.headers.get('authorization'), null);
   assert.equal(response.headers.get('X-Browser-Closed'), null); assert.equal(response.headers.get('X-Browser-Elapsed-Ms'), null);
+  assert.equal(response.headers.get('X-Browser-Failure-Code'), null); assert.equal(response.headers.get('X-XHS-Browser-Failure-Code'), null);
   assert.equal(response.headers.get('X-XHS-Browser-Fallback'), null);
   assert.equal(response.headers.get('X-XHS-Engine'), 'python'); assert.equal(original.bodyUsed, false);
   assert.deepEqual(logs, []);
@@ -255,13 +270,14 @@ test('verified close refunds actual elapsed plus five seconds while verification
   const logs = [];
   t.mock.method(console, 'warn', (...values) => logs.push(values));
   clock(t);
-  const h = harness(payload => Response.json({ success: false, engine: payload.engine, code: 'VERIFICATION_REQUIRED', reason: 'access-error', message: 'ignored internal wording', verificationUrl: liveURL, expiresAt: Date.now() + 180000 }, { status: 422, headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1000' } }));
+  const h = harness(payload => Response.json({ success: false, engine: payload.engine, code: 'VERIFICATION_REQUIRED', reason: 'access-error', message: 'ignored internal wording', verificationUrl: liveURL, expiresAt: Date.now() + 180000 }, { status: 422, headers: { 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1000', 'X-Browser-Failure-Code': 'private-handoff-sentinel' } }));
   const response = await maybeParseWithBrowser(request('https://xhslink.cn/arbitrary/path?private=value'), native(504), h);
   const body = await response.json();
   assert.equal(response.status, 422); assert.equal(body.code, 'VERIFICATION_REQUIRED'); assert.equal(body.engine, 'node');
   assert.equal(body.verificationToken, h.calls[0].payload.token); assert.equal(h.calls[0].payload.noteId, null);
   assert.equal(body.verificationUrl, liveURL); assert.equal(body.reason, 'access-error');
   assert.equal(response.headers.get('X-XHS-Browser-Fallback'), null);
+  assert.equal(response.headers.get('X-Browser-Failure-Code'), null); assert.equal(response.headers.get('X-XHS-Browser-Failure-Code'), null);
   assert.equal(h.store.values.get(KEY).usedMs, RESERVE); assert.equal(response.headers.get('X-Browser-Closed'), null);
   const entries = h.store.values.get(REGISTRY_KEY);
   assert.equal(entries.length, 1); assert.equal(entries[0].digest, await verificationTokenDigest(body.verificationToken));

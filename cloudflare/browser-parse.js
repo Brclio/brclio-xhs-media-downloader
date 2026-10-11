@@ -1,6 +1,6 @@
 import { extractInputUrl, extractNoteId, isDirectImageUrl } from '../lib/xhs.js';
 import { MAX_API_BODY_BYTES, readBoundedBody } from './http-adapter.js';
-import { BrowserVerificationRegistry, cancelUnregisteredVerification, publicBrowserResponse, verificationPayload } from './browser-verification.js';
+import { BrowserVerificationRegistry, BROWSER_FAILURE_HEADER, browserFailureCode, cancelUnregisteredVerification, publicBrowserResponse, verificationPayload } from './browser-verification.js';
 
 export const BROWSER_BUDGET_STORAGE_KEY = 'browser-parse-budget-v1';
 export const BROWSER_ATTEMPT_RESERVATION_MS = 180_000;
@@ -134,10 +134,13 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
       console.warn('CF_BROWSER_FALLBACK_RESULT', JSON.stringify({ phase, outcome, nativeStatus: nativeResponse.status, ...presence }));
     } catch {}
   };
-  const nativeFallback = outcome => {
+  const nativeFallback = (outcome, failureCode) => {
     failed(outcome);
     if (nativeResponse.status < 400) return nativeResponse;
     const headers = new Headers(nativeResponse.headers);
+    headers.delete(BROWSER_FAILURE_HEADER);
+    headers.delete('X-XHS-Browser-Failure-Code');
+    if (failureCode !== undefined) headers.set('X-XHS-Browser-Failure-Code', browserFailureCode(failureCode));
     headers.set('X-XHS-Browser-Fallback', `${phase}/${outcome}`);
     headers.set('Cache-Control', 'no-store');
     return new Response(nativeResponse.body, { status: nativeResponse.status, statusText: nativeResponse.statusText, headers });
@@ -169,9 +172,9 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
       // Aborting the transport does not prove the owner stopped its acquisition.
       // Explicitly cancel it; a late start result can never reach registration.
       await cancelUnregisteredVerification(stub, token);
-      return nativeFallback(outcome);
+      return nativeFallback(outcome, 'BROWSER_FAILED');
     }
-    if (!(response instanceof Response)) return nativeFallback('invalid-response');
+    if (!(response instanceof Response)) return nativeFallback('invalid-response', 'BROWSER_FAILED');
     let rejection = 'browser-response-rejected';
     if (response.status === 422) {
       phase = 'verification';
@@ -194,6 +197,6 @@ export async function maybeParseWithBrowser(request, nativeResponse, { env, stat
     }
     phase = 'response';
     await refundConfirmedClose(state.storage, reservation, response);
-    return response.ok ? publicBrowserResponse(response) : nativeFallback(rejection);
-  } catch { return nativeFallback('outer-exception'); }
+    return response.ok ? publicBrowserResponse(response) : nativeFallback(rejection, response.headers.get(BROWSER_FAILURE_HEADER));
+  } catch { return nativeFallback('outer-exception', 'BROWSER_FAILED'); }
 }

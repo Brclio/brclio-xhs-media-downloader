@@ -97,7 +97,7 @@ test('inactive browser verification rejects valid tokens before namespace lookup
 
 test('public bearer requests route only to the global verifier and drop caller headers and override fields', async () => {
   const fixture = namespaceFixture(() => Response.json({ success: true }, { headers: {
-    'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '12',
+    'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '12', 'X-Browser-Failure-Code': 'private-boundary-sentinel',
   } }));
   for (const [currentToken, action] of [[token, 'resume'], [otherToken, 'cancel']]) {
     const response = await worker.fetch(post('/api/parse_verification', {
@@ -107,12 +107,27 @@ test('public bearer requests route only to the global verifier and drop caller h
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('x-browser-closed'), null);
     assert.equal(response.headers.get('x-browser-elapsed-ms'), null);
+    assert.equal(response.headers.get('x-browser-failure-code'), null);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     const forwarded = fixture.calls.at(-1);
     assert.equal(forwarded.id, 'parsing-v1');
     assert.equal(forwarded.url, 'https://browser.internal/__internal/browser-verification');
     assert.deepEqual(forwarded.body, { token: currentToken, action });
     assert.deepEqual(forwarded.headers, { 'content-type': 'application/json' });
+  }
+});
+
+test('public parsing boundaries strip private diagnostics and retain only the fixed public failure code', async () => {
+  for (const path of ['/api/parse', '/api/python_parse']) {
+    const fixture = namespaceFixture(() => Response.json({ success: false }, { status: 422, headers: {
+      'X-Browser-Failure-Code': 'private-boundary-sentinel', 'X-Browser-Closed': '1', 'X-Browser-Elapsed-Ms': '1',
+      'X-XHS-Browser-Failure-Code': 'BROWSER_ACQUIRE_FAILED',
+    } }));
+    const response = await worker.fetch(post(path, { text: noteUrl }), { BROWSER: {}, PARSE_RUNTIME: fixture.binding });
+    assert.equal(response.status, 422); assert.deepEqual(await response.json(), { success: false });
+    for (const header of ['X-Browser-Failure-Code', 'X-Browser-Closed', 'X-Browser-Elapsed-Ms']) assert.equal(response.headers.get(header), null);
+    assert.equal(response.headers.get('X-XHS-Browser-Failure-Code'), 'BROWSER_ACQUIRE_FAILED');
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
   }
 });
 
@@ -181,6 +196,23 @@ function runtimeFixture({ ownerToken = token, record, pythonFetch } = {}) {
   return { runtime: new ParseRuntime(state, env), calls, entries };
 }
 const internal = (operation, data = { token }, headers) => post(`/__internal/browser/${operation}`, data, headers);
+
+test('private browser errors project only known failure codes and map unknown exceptions to BROWSER_FAILED', async t => {
+  const fixture = runtimeFixture(), logs = [];
+  t.mock.method(console, 'warn', (...values) => logs.push(values));
+  let failure;
+  t.mock.method(fixture.runtime.browser, 'start', async () => { throw failure; });
+  for (const code of ['BROWSER_ACQUIRE_FAILED', 'BROWSER_CDP_PROTOCOL', 'private-code-sentinel', undefined]) {
+    failure = Object.assign(new Error('private-error-url-token-sentinel'), { code, closed: true });
+    const response = await fixture.runtime.fetch(internal('start'));
+    const expected = ['BROWSER_ACQUIRE_FAILED', 'BROWSER_CDP_PROTOCOL'].includes(code) ? code : 'BROWSER_FAILED';
+    assert.equal(response.status, 503); assert.equal(response.headers.get('X-Browser-Failure-Code'), expected);
+    assert.equal(response.headers.get('X-Browser-Closed'), '1');
+    assert.deepEqual(await response.json(), { success: false, code: 'BROWSER_UNAVAILABLE', message: '页面读取暂时不可用，请稍后重试。' });
+    assert.equal(JSON.parse(logs.at(-1)[1]).code, expected);
+    assert.equal(JSON.stringify(logs).includes('private-'), false);
+  }
+});
 
 test('rendered Python parsing calls its private independent endpoint with only the trusted HTML contract', async t => {
   let forwarded;
