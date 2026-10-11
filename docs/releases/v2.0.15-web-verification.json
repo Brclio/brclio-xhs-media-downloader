@@ -1141,5 +1141,19 @@
     "pagesSourceCommitMatches": true,
     "pagesAppBindingMatchesSourceConfig": true,
     "pagesAppBindingHasNoNamedEnvironment": true
+  },
+  "supplementalRealVideoVerification": {
+    "report": "v2.0.15-real-video-verification.json",
+    "addedAt": "2026-10-11T04:13:04.916936+00:00",
+    "separateFromOriginalImageNoteAndDeploymentSmokeChecks": true,
+    "productionNoteParsePassed": false,
+    "nodeParseStatus": 422,
+    "pythonParseStatus": 422,
+    "fallbackOriginStatus": 404,
+    "fallbackError": "DEPLOYMENT_NOT_FOUND",
+    "ordinaryPlaybackCompleteOnBothEnginesAfterPythonRetry": true,
+    "newRealVideoLivePhotoEnginePassed": true,
+    "currentInstalledClientUiExportPassed": false,
+    "newIPhoneImportPerformed": false
   }
 }

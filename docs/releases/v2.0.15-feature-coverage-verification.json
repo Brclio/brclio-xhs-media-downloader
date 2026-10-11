@@ -1,0 +1,1056 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-11T03:55:35.972Z",
+  "purpose": "Feature coverage audit after user asked whether Live Photo and other features were verified",
+  "desktop": {
+    "tag": "v2.0.15",
+    "sourceCommit": "5041d0e5df5208e116f17975d5c54462c9970322",
+    "ciRunId": 38065548306,
+    "ciUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38065548306"
+  },
+  "android": {
+    "tag": "android-v1.0.15",
+    "sourceCommit": "4ebf40f544f9a931c73261f74f4c52186f6790b4"
+  },
+  "checkoutCommit": "34232b2dc8f0b5c3a0b09fad7ad55e59ba3574ce",
+  "freshExecution": {
+    "command": "node --test test/live-photo-package.test.js test/live-photo-format.test.js test/live-photo-maker.test.js test/live-photo-heic.test.js test/media-tracks.test.js",
+    "tests": 27,
+    "passed": 27,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 1387.604625,
+    "uiOrAutomationScriptStarted": false,
+    "networkRequestsSentByThisAudit": false,
+    "localVerifierLogPublished": false
+  },
+  "historicalContinuity": {
+    "baselineTag": "v2.0.12",
+    "baselineCommit": "b255f9abf3a5c3703fc2a477edd05582f364e317",
+    "comparedFiles": 37,
+    "allImplementationAssetsVerifiersTestsByteIdentical": true,
+    "allComparedFilesMatchCurrentCheckout": true,
+    "files": [
+      {
+        "path": "assets/vendor/heic/LICENSE-Emscripten.txt",
+        "gitBlob": "70cabe388d27da221bd769c50b427a35354f4f1d",
+        "sha256": "620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/LICENSE-GPL-3.txt",
+        "gitBlob": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/LICENSE-Kvazaar-extras.txt",
+        "gitBlob": "1c272bd5be4a99cfb238d078c953cd2612f3f6d9",
+        "sha256": "9149e720b3a5a4a7fc3ad1b78165e9666aad7185bb1dc30b733063a5e08e2efb",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/LICENSE-compiler-rt.txt",
+        "gitBlob": "5a79a1b9d5cb0af9a779751f07033e44ca3b14d8",
+        "sha256": "1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/LICENSE-kvazaar.txt",
+        "gitBlob": "c65d95b18aea64419736dc11dcbd1a9ac3aa7eeb",
+        "sha256": "3c1dc3d7f8a3d08c14f4fbe9942f45764d8a21a3296e8d83446f33fd65f21c38",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/LICENSE-libcxx.txt",
+        "gitBlob": "e159d283443f92ac78b964d2bccebe8f95d5d445",
+        "sha256": "539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/LICENSE-libcxxabi.txt",
+        "gitBlob": "b75c0441bcd5be32b5a07e2a1ffc7e67b6d99f16",
+        "sha256": "e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/LICENSE-libheif.txt",
+        "gitBlob": "f80407e7d5827a93d97767679d3521991e62d8cb",
+        "sha256": "fa81ce652315b013359d6e8e4744335f31a50c7c192907176d3632f78a3b4596",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/LICENSE-musl.txt",
+        "gitBlob": "c1628e9ac84f927fe791124ec172fb61c760bb9b",
+        "sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/NOTICE.md",
+        "gitBlob": "4e69d58193ac01a926c7f1123f29a842fb1325d7",
+        "sha256": "7d9f4b1fdcb5dc212bf7d0d80d03f264a7a88d0dd4b97e10b6bed212c0710220",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/build/encode.cpp",
+        "gitBlob": "a21c0b095cd262bb3e6008d4844eca9894bc0771",
+        "sha256": "6e90e4939c315a91fc5ebeba9cbf62f75f275c751fb3a83fe4cf10a6bba388d0",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/build/rebuild.sh",
+        "gitBlob": "b51b33d700bb2c25c4d91a7e8e2888385f2521d4",
+        "sha256": "2ebc9880e1fbf7338eb153dd9d3e16da316566c087fcd17c36d923907eef5828",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/heic-encoder.js",
+        "gitBlob": "f35b4d1d9f4ed414a4d1cab790d6a453f0ab6e38",
+        "sha256": "6ab24a00f26b6b877df48444fb344b916571bba5135188beba1134b1cc4b5b80",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/heic-encoder.wasm",
+        "gitBlob": "215a8aec9c182f0aaf00dc4cc6c4ab697721855d",
+        "sha256": "3b3281af4c463fca86f8a2bd956951df16f91256c9ac3514196b947793af02c0",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/provenance.json",
+        "gitBlob": "3e7b045d6352d4045efef810e7ca559e6f366460",
+        "sha256": "17676388ae59fec57a75524af2998fabc1dc1abd9eef7f0e3f19716862bb9143",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/source/kvazaar-2.3.2.tar.gz",
+        "gitBlob": "70b978799e18b14a225d7cd1837f7b21aea4862e",
+        "sha256": "52cfc5f6eefa1ed5fd4e9ac695be696783f969883781b6705742134e9f4baca9",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "assets/vendor/heic/source/libheif-1.23.5.tar.gz",
+        "gitBlob": "3b88e6f94f77c453fa4381a779154c73db42121f",
+        "sha256": "86b2c12a90b0d59db9cbdb7b212d0ee0d6c280ac3937948cb6c8911dc3b52322",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "desktop/protocol.js",
+        "gitBlob": "6e1b769ec1ab814149f560bf2fd1c96255da9138",
+        "sha256": "90c8d4b9c1480a926e1b7a724dcbb9de3dbfde326095f2fb1745f40a62b09d79",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/archive.js",
+        "gitBlob": "43ec5715e90b893de8a7ffb65ea65cb514db81de",
+        "sha256": "afde62f237a971f6554354d64d8b8f146a529f530fbc761ffc29174522ab904b",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/image-dimensions.js",
+        "gitBlob": "f849b741b792e45705398fdc4a57a560143163b0",
+        "sha256": "138c66de524f4bd0722bb7ac1caaa1ab8c538749b891ace9c0530788969c8694",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/live-photo-format.js",
+        "gitBlob": "fc6e6c9823d1561ac3a34082930eb9e88fe8baa5",
+        "sha256": "2e92ed013e11fddbb892781096267c7ac06a7db190448e01c80b6d377c7cbea3",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/live-photo-heic-encoder.js",
+        "gitBlob": "609ecc44cdc0bfac14761defd157e300573add4e",
+        "sha256": "87957c8d170d6c1ed132d30ed7f5ea7012ba8c7eba886b6237e1e381cef59650",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/live-photo-heic-worker.js",
+        "gitBlob": "27b21417e49aa17cd34c96c2eb40e0e3898a46ab",
+        "sha256": "e510265d91f51a4b687fe0a6030365303d488c02674c9ccce19bce7eedccfe34",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/live-photo-heic.js",
+        "gitBlob": "4986ee895f9e7768e636561d7edbfaa777a2ec40",
+        "sha256": "633d21486079a16cddd5bca32b3d1d809a40fdaed53703fdf8ca933674318c4d",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/live-photo-maker.js",
+        "gitBlob": "532511545d3c40ecb6ee9537d3587e750aa6279c",
+        "sha256": "400ae6141fa46637e4a6820c975c436e0e858e975ebf383fe3937fbb69fc8c39",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/live-photo-package.js",
+        "gitBlob": "e015116a69d7f9f45a0fc089de6a661e8c751010",
+        "sha256": "04e7d8a391e9ddef74140b811e6df9269577a3457e207312f886d530f4cad7a3",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "lib/media-tracks.js",
+        "gitBlob": "aa93dd6264776c86c4fd59104d9d8f64c7563969",
+        "sha256": "66b623832d0a6376293ff2e8dd5c2760c9b53e591cd92e09ae352a8b0a4c24dd",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "live.css",
+        "gitBlob": "c00d3860d114798dd8356ec18e732620bc468f4e",
+        "sha256": "2fb94f8e363566c3a8d96938c45f629c9917a2bd10244345fc87d3b873e6660c",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "live.html",
+        "gitBlob": "1ad0800a3d5f02d0456ac4cc991da16b333796ef",
+        "sha256": "82f6af872e9225cca48f759685c500201376127859854d8c05c9c93c5af454d2",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "live.js",
+        "gitBlob": "63fa43a185a988f50bd08bd5dfdc1f6fbe6df8df",
+        "sha256": "ba20a6a9fd4d11ef7cc9d7c0dcb8027f3e1543ea75cca0724c34a356179ea99d",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "scripts/verify-live-photo-codecs.cjs",
+        "gitBlob": "4a6104de0f5bb847f15af7dbe6f75b9bf6309e6c",
+        "sha256": "9331da625ff19444f5e42f5c72adc53d4560288780c410c1b1bcab98eef40c65",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "scripts/verify-live-photo.cjs",
+        "gitBlob": "eaed5d18437540e79a232f4e504073ed8641f502",
+        "sha256": "a0836f4c7e585b824f189c274e835ec274d8a2d389da83509d33e9d599791311",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "test/live-photo-format.test.js",
+        "gitBlob": "b56de81832e15fe8611896469d64dd289233d89f",
+        "sha256": "10593f06e87c4a79f11b842d6c5c498312c3096d2b6043ad238cdbf01f7d5e50",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "test/live-photo-heic.test.js",
+        "gitBlob": "5239ed2df92c33676e5534e7a0762afff041d756",
+        "sha256": "02131df45924e8cfde168ad4b18c6e10288f6c97cb3f56448ebb104709b9db9d",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "test/live-photo-maker.test.js",
+        "gitBlob": "c5dd1af2aa97ad7fea48baf2e2f9b051ac93ce6f",
+        "sha256": "ed5a20e38931ec2897a3e47c4a70f311189830af1d3cfd31874da65c578bba2f",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "test/live-photo-package.test.js",
+        "gitBlob": "1069c832b345b8d987713faeb0d94ca6d6a002a6",
+        "sha256": "8ba2283cac4b746621d151be2a0fddb45044945edf6a0a2ec1f2aa26f1dc4cdc",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      },
+      {
+        "path": "test/media-tracks.test.js",
+        "gitBlob": "e578a5d39a562e0a38f742d7fdfe7ed93a5c5ae0",
+        "sha256": "7e9869b20715b3a69ccdff1be82dc9351296258321b092fb9d5999ff53536c06",
+        "matchesV2_0_12": true,
+        "matchesCurrentCheckout": true
+      }
+    ]
+  },
+  "nativeCodecCi": [
+    {
+      "platform": "mac-intel",
+      "conclusion": "success",
+      "nativeCodecStep": "success"
+    },
+    {
+      "platform": "mac-arm64",
+      "conclusion": "success",
+      "nativeCodecStep": "success"
+    },
+    {
+      "platform": "windows-x64",
+      "conclusion": "success",
+      "nativeCodecStep": "success"
+    }
+  ],
+  "nativeCodecCiIsNotPhoneImport": true,
+  "historicalRealElectron": {
+    "evidence": "../live-photo-pvt-verification.json",
+    "rawEngineAndUiReportsStillPresent": true,
+    "releaseSnapshotEngineCases": [
+      {
+        "name": "single-image",
+        "width": 640,
+        "height": 360,
+        "duration": 1.5,
+        "keyPhotoTime": 0.7666666666666667,
+        "speed": 1,
+        "sourceSpan": 1.5,
+        "hasAudio": false,
+        "decoderAdvances": true,
+        "nativeApplePhotosRecognized": true
+      },
+      {
+        "name": "multi-images",
+        "width": 640,
+        "height": 360,
+        "duration": 3,
+        "keyPhotoTime": 1.5,
+        "speed": 1,
+        "sourceSpan": 3,
+        "hasAudio": false,
+        "decoderAdvances": true,
+        "nativeApplePhotosRecognized": true
+      },
+      {
+        "name": "trimmed-audio-video",
+        "width": 640,
+        "height": 360,
+        "duration": 2,
+        "keyPhotoTime": 0.7,
+        "speed": 1,
+        "sourceSpan": 2,
+        "hasAudio": true,
+        "decoderAdvances": true,
+        "nativeApplePhotosRecognized": true,
+        "decodedPcm": {
+          "duration": 2,
+          "first": {
+            "rms": 0.180777322633129,
+            "frequency": 440
+          },
+          "second": {
+            "rms": 0.1795102549401726,
+            "frequency": 880
+          }
+        }
+      },
+      {
+        "name": "portrait-video",
+        "width": 360,
+        "height": 640,
+        "duration": 1.2,
+        "keyPhotoTime": 0.4,
+        "speed": 1,
+        "sourceSpan": 1.2,
+        "hasAudio": false,
+        "decoderAdvances": true,
+        "nativeApplePhotosRecognized": true
+      },
+      {
+        "name": "silent-video",
+        "width": 640,
+        "height": 360,
+        "duration": 1.4,
+        "keyPhotoTime": 0.8,
+        "speed": 1,
+        "sourceSpan": 1.4,
+        "hasAudio": false,
+        "decoderAdvances": true,
+        "nativeApplePhotosRecognized": true
+      },
+      {
+        "name": "eight-second-images",
+        "width": 640,
+        "height": 360,
+        "duration": 8,
+        "keyPhotoTime": 7.966666666666667,
+        "speed": 1,
+        "sourceSpan": 8,
+        "hasAudio": false,
+        "decoderAdvances": true,
+        "nativeApplePhotosRecognized": true
+      },
+      {
+        "name": "double-speed-video",
+        "width": 640,
+        "height": 360,
+        "duration": 2,
+        "keyPhotoTime": 0.7,
+        "speed": 2,
+        "sourceSpan": 4,
+        "hasAudio": false,
+        "decoderAdvances": true,
+        "nativeApplePhotosRecognized": true
+      },
+      {
+        "name": "fractional-final-cover",
+        "width": 640,
+        "height": 360,
+        "duration": 0.51,
+        "keyPhotoTime": 0.5,
+        "speed": 1,
+        "sourceSpan": 0.51,
+        "hasAudio": false,
+        "decoderAdvances": true,
+        "nativeApplePhotosRecognized": true
+      }
+    ],
+    "uiCheckNames": [
+      "web: speed-aware cover and playback preview, audio choice restoration and source-aware presets",
+      "web: actual ZIP download and native recognition",
+      "web: explicit JPEG choice and format-change cleanup",
+      "web: actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390",
+      "desktop: speed-aware cover and playback preview, audio choice restoration and source-aware presets",
+      "desktop: actual ZIP download and native recognition",
+      "desktop: explicit JPEG choice and format-change cleanup",
+      "desktop: actual File upload/reorder/reset/cancel/retry/result, responsive 1440/768/390",
+      "actual desktop sidebar/iframe with isolated mocked native bridge; selected tab, compact view, no privileged iframe bridge, generated result preserved across tabs"
+    ],
+    "rendererErrors": [],
+    "bridgeScope": "Desktop shell/navigation native bridge isolated/mocked; renderer, upload, encoder, download and Apple native recognition execute.",
+    "privateRuntimeReportPathsPublished": false
+  },
+  "livePhotoCoverage": [
+    {
+      "feature": "Download original Xiaohongshu Live Photo materials",
+      "surface": "Web/desktop/Android",
+      "output": "Image plus paired MP4; selected-media ZIP. This does not itself create an Apple Photos Live Photo.",
+      "currentAutomated": [
+        "Node/Python exact-note live stream mapping, H264/H265 variants, duplicate static-image pairing and missing-stream behavior",
+        "Desktop original/protected-source filtering, native liveMP4 route, profile sequential paired-media save/resume",
+        "Android normalization and download plan emit ordered image/liveMP4; flagged live photo without stream rejected; silent live video valid"
+      ],
+      "evidence": [
+        "test/xhs.test.js",
+        "test/note-state.test.js",
+        "test/test_python_backend.py",
+        "test/profile-browser.test.js",
+        "test/profile-manager.test.js",
+        "test/video-download-progress.test.js",
+        "test/android-client.test.js"
+      ],
+      "currentReleaseCi": "Passed full Node/Python suites; inputs/transports in these cases are deterministic.",
+      "freshRealLivePost": false,
+      "limits": [
+        "Current real image note is not live; new real note is ordinary video. Neither establishes a new end-to-end XHS live-post download/ZIP test.",
+        "No fresh physical Android paired-media save is claimed."
+      ]
+    },
+    {
+      "feature": "Apple maker single image and image group",
+      "surface": "Web/desktop",
+      "currentNode": "Input ordering/type validation, dimensions/orientation and ambiguity rejection.",
+      "currentNativeCi": "Single-image and slideshow H264 playback; genuine HEIC slideshow pairing on all three native runners.",
+      "inheritedActualRuntime": "Web/desktop actual File upload, reorder/reset and generation; single/multi-image FFmpeg-decoded artifacts.",
+      "limits": [
+        "Local generated fixtures cover encoding. Full UI acceptance was recorded on byte-identical v2.0.12 implementation."
+      ]
+    },
+    {
+      "feature": "Apple maker video trimming and key-photo frame",
+      "currentNode": "Clip bounds, start/duration/speed, frame-aligned cover and fractional final frame.",
+      "currentNativeCi": "HEIC trimmed audio-video output/playback; real disk File >2GiB bounded inspection and clip encoding without whole-file ArrayBuffer.",
+      "inheritedActualRuntime": "Landscape, portrait and silent source; eight-second output; 0.51second final-frame cover; native Photos recognition.",
+      "limits": [
+        "The >2GiB input uses a sparse free-box fixture, not arbitrary real large content.",
+        "New user-video GUI creation is owned by root and is not claimed in this snapshot."
+      ]
+    },
+    {
+      "feature": "Apple maker speed and preview",
+      "currentNode": "Source interval mapping for supported speed and image timing; reject trims past source.",
+      "currentNativeCi": "Output decoder advancement and duration; full speed control UI is not part of codec gate.",
+      "inheritedActualRuntime": "Double-speed frame mapping independently decoded by FFmpeg, speed-aware cover/playbackRate, 3/5/8second presets and audio option restored at1x.",
+      "limits": [
+        "Full UI behavior is inherited from byte-identical v2.0.12 evidence rather than newly automated production-browser clicks."
+      ]
+    },
+    {
+      "feature": "Apple maker audio and mute",
+      "currentNode": "AAC packet/edit timing and padding; ordinary video requires audio while silent live clips are valid.",
+      "currentNativeCi": "Native H264/AAC input; trimmed output decoded to audible PCM; audio-stage cleanup.",
+      "inheritedActualRuntime": "Two-tone AAC trimming decoded to PCM; doubled speed intentionally silent; portrait and silent inputs.",
+      "limits": [
+        "Speed above1x intentionally mutes audio.",
+        "Canvas still processing is8-bit and does not preserve source HDR/10-bit fidelity."
+      ]
+    },
+    {
+      "feature": "Apple maker HEIC/JPEG+MOV format and pairing",
+      "currentNode": "HEIC/HEVC containers, extents and property associations, MakerNote17 UUID, MOV content.identifier and timed mebx still-image-time, malformed media, native ImageIO pixel decode.",
+      "currentNativeCi": "Genuine HEIC container and matching UUID checked; actual generated H264/AAC video decodes on all platforms.",
+      "inheritedActualRuntime": "ImageIO still decode and PHLivePhoto.request final non-degraded recognition.",
+      "limits": [
+        "PHLivePhoto.request native recognition does not import into the user Photos library."
+      ]
+    },
+    {
+      "feature": "Apple maker PVT ZIP, loose ZIP and separate media",
+      "currentNode": "PVT contains unmodified HEIC/JPEG+MOV+metadata.plist and adjacent README; safe UUID/format, deterministic ZIP, unzip/plutil/macOS UTI package checks.",
+      "currentNativeCi": "Current codec gate generates media, but does not click all export controls.",
+      "inheritedActualRuntime": "Actual web/desktop ZIP downloads, PVT structure, loose ZIP and direct media bytes equal; format changes clear stale results.",
+      "limits": [
+        "Entire PVT AirDrop is the phone transfer contract; sending still and MOV separately is a different workflow."
+      ]
+    },
+    {
+      "feature": "Apple maker cancellation, retry and cleanup",
+      "currentNode": "Option/package validation and malformed rejection; browser encoding is not claimed from Node-only tests.",
+      "currentNativeCi": "Image/audio/HEIC stage AbortError; object URLs revoked, encoders/audio contexts closed and workers terminated.",
+      "inheritedActualRuntime": "Active generation cancel and immediate retry; reset/format/speed clear all five result URLs; sidebar navigation preserves results.",
+      "limits": [
+        "Historical desktop shell bridge is isolated/mocked while actual renderer, encoding and downloads execute."
+      ]
+    },
+    {
+      "feature": "Apple Photos recognition and physical iPhone transfer",
+      "currentNode": "Current ImageIO and extracted PVT UTI/package checks.",
+      "currentNativeCi": "Encoding/playback only; no iPhone on CI.",
+      "inheritedActualRuntime": "Eight engine cases have final non-degraded PHLivePhoto.request recognition without importing.",
+      "physicalIPhone": {
+        "date": "2026-10-10",
+        "testedVersion": "2.0.12",
+        "formats": [
+          "heic",
+          "jpeg"
+        ],
+        "sampleDurationSeconds": [
+          2,
+          3
+        ],
+        "wholePvtAirDrop": true,
+        "receivedInPhotos": true,
+        "longPressPlayback": true,
+        "evidenceType": "Direct user confirmation recorded in docs/live-photo-pvt-verification.json",
+        "sameImplementationAsV2_0_15": true
+      },
+      "freshV2_0_15IPhoneImportRepeated": false,
+      "limits": [
+        "Prior two samples are inherited proof, not all devices/iOS versions, speeds/durations, third-party apps, iCloud sync or the new real video note."
+      ]
+    }
+  ],
+  "otherFeatureCoverage": [
+    {
+      "feature": "Account and secure storage",
+      "coverage": "Installed v2.0.15 account restored in native UI and explicit refresh returnedHTTP200 with successful IPC. Native CI encryption across separate processes plus deterministic HTTP/account/UI regressions.",
+      "evidence": [
+        "v2.0.15-installed-client-verification.json",
+        "v2.0.15-installed-client-verification.json",
+        "test/desktop-account.test.js",
+        "test/account-http.test.js"
+      ],
+      "limits": [
+        "CI membership login/redeem/payment renderers use fake account bridges. Real mail/payment/device revoke/full mutation paths were not rerun by this audit."
+      ]
+    },
+    {
+      "feature": "Membership and original video",
+      "coverage": "CI real renderer fixtures cover guest/nonmember/member/browser authorization and authorization loss. Runtime tests cover encrypted tickets/expiry/stream revocation; production guest originals denied.",
+      "evidence": [
+        "scripts/verify-membership-ui.cjs",
+        "scripts/verify-member-video-ui.cjs",
+        "test/member-video.test.js",
+        "test/member-video-runtime.test.js",
+        "test/native-video-download.test.js"
+      ],
+      "limits": [
+        "Real renderer does not imply live paid account/media service. No new live member-original download is established by current release evidence."
+      ]
+    },
+    {
+      "feature": "Author profile batch",
+      "coverage": "Current Node CI covers exact-author discovery/end evidence, pacing, paired media/originals, pause/resume/cancel, retries, deduplication, checksum recovery, atomic writes and traversal protections. Electron smoke covers profile IPC/UI and state preservation.",
+      "evidence": [
+        "test/profile-source.test.js",
+        "test/profile-browser.test.js",
+        "test/profile-manager.test.js",
+        "scripts/verify-desktop.mjs"
+      ],
+      "limits": [
+        "No fresh complete real-author crawl/download proof was found in the targeted v2.0.15 evidence. Existence of verify-profile.mjs is not execution proof.",
+        "Android does not implement profile batch."
+      ]
+    },
+    {
+      "feature": "Image parse/download",
+      "coverage": "Fresh production public note yields6images in Node and Python. First image through both routes has JPEG signature, proper attachment/engine headers,310278bytes and identical SHA256.",
+      "evidence": [
+        "v2.0.15-web-verification.json"
+      ],
+      "limits": [
+        "Not a new all-six file-save or ZIP UI test."
+      ]
+    },
+    {
+      "feature": "Ordinary video",
+      "coverage": "Current tests cover meta/ranges/exact lengths/progress/fallback, native streamed save/audio validation/cancel/staging/security. CI actual main/preload native-video bridge uses controlled local bytes.",
+      "evidence": [
+        "test/video-download-progress.test.js",
+        "test/native-video-download.test.js",
+        "test/media-download.test.js",
+        "scripts/verify-desktop.mjs"
+      ],
+      "freshUserVideo": "See v2.0.15-real-video-verification.json for the separate real-video and new PVT GUI results. This coverage audit does not assert those results.",
+      "limits": [
+        "Six-image note has no video. HTTP video proof and GUI save/play/PVT creation are distinct."
+      ]
+    },
+    {
+      "feature": "Update check and retry",
+      "coverage": "Installed2.0.15 direct manual check succeeds in982ms without internal core/subscription. Released-source tests cover network-only fallback, HTTP/certificate terminal errors, exact controller readiness, retries/cancel/cleanup.",
+      "evidence": [
+        "v2.0.15-installed-client-verification.json",
+        "v2.0.15-local-verification.json",
+        "v2.0.14-readiness-race-verification.json"
+      ],
+      "limits": [
+        "Earlier forced direct-failure fixture correctly retains source2.0.14; final production implementation differs only by version metadata and scoped test keepalive."
+      ]
+    },
+    {
+      "feature": "Mac install/reopen",
+      "coverage": "User GUI2.0.7→2.0.15 actual download/in-place replace/old exit/automatic relaunch/About version/cleanup/profile preserved. Both Mac native runners package/start/update pass.",
+      "evidence": [
+        "v2.0.15-installed-client-verification.json",
+        "v2.0.15-ci-verification.json",
+        "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/build-evidence.json"
+      ],
+      "limits": [
+        "Adhoc signature, no Apple notarization. No separate physical user Intel Mac installation."
+      ]
+    },
+    {
+      "feature": "Windows x64",
+      "coverage": "Native CI builds/source237/runtime/checksums/codecs pass; real published1.8.17 installers upgrade2.0.15 in place/reopen, setup+portable preserve DPAPI/task/renderer storage.",
+      "evidence": [
+        "https://github.com/Brclio/brclio-xhs-media-downloader/releases/download/v2.0.15/build-evidence.json",
+        "v2.0.15-ci-verification.json"
+      ],
+      "limits": [
+        "Disposable GitHub runner, not user machine. Standalone portable migration, machine-wide UAC, power-loss recovery and rollback not established; publisher code signing absent."
+      ]
+    },
+    {
+      "feature": "Android1.0.15",
+      "coverage": "Official stable-signed APK,81Java tests/lint/package proxy. CI x86_64API35 adb upgrade1.0.2→1.0.15 and local arm64API35 adb upgrade1.0.0→1.0.15 launch/update UI/cleanup.",
+      "evidence": [
+        "android-v1.0.15-final-verification.json",
+        "test/android-client.test.js"
+      ],
+      "limits": [
+        "No physical Android phone. Full in-app APK download plus system Package Installer confirmation untested. Live direct success not claimed; fallback occurred.",
+        "Android original XHS media is image+MP4; Apple maker belongs to web/desktop."
+      ]
+    },
+    {
+      "feature": "Feedback, reviews/orders, learning/VIP pages",
+      "coverage": "Current native CI real renderer fixture gates cover conversations, history, navigation and QR saving. Production58anonymous/static contract checks pass.",
+      "evidence": [
+        "v2.0.15-ci-verification.json",
+        "v2.0.15-web-verification.json"
+      ],
+      "limits": [
+        "No new real mail/payment/order/admin write guarantee. Windows admin-commerce UI gate intentionally skipped; Mac gates pass."
+      ]
+    }
+  ],
+  "generalNativeCiSteps": [
+    {
+      "platform": "mac-intel",
+      "steps": [
+        {
+          "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Exercise real Electron main process, bridge, and both download engines",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify native image clipboard and multi-file paste",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify responsive startup and credential access recovery",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify retry and update controls in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify updater retries through the real manager, IPC and original preload",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify membership purchase and redemption in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify member original videos and browser account authorization in the real renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify public feedback, browser login and private owner conversations",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify reviews and personal order history in real web and desktop renderers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify confirmed revenue and order administration in a real browser",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify native credential encryption across two app processes",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "platform": "mac-arm64",
+      "steps": [
+        {
+          "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Exercise real Electron main process, bridge, and both download engines",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify native image clipboard and multi-file paste",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify responsive startup and credential access recovery",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify retry and update controls in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify updater retries through the real manager, IPC and original preload",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify membership purchase and redemption in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify member original videos and browser account authorization in the real renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify public feedback, browser login and private owner conversations",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify reviews and personal order history in real web and desktop renderers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify confirmed revenue and order administration in a real browser",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify native credential encryption across two app processes",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "platform": "windows-x64",
+      "steps": [
+        {
+          "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+          "conclusion": "success"
+        },
+        {
+          "name": "Exercise real Electron main process, bridge, and both download engines",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify native image clipboard and multi-file paste",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify responsive startup and credential access recovery",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify retry and update controls in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify updater retries through the real manager, IPC and original preload",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify membership purchase and redemption in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify member original videos and browser account authorization in the real renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify public feedback, browser login and private owner conversations",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify reviews and personal order history in real web and desktop renderers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify confirmed revenue and order administration in a real browser",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify native credential encryption across two app processes",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "officialPackages": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+      "comparedSources": 237,
+      "bundledPythonVerified": true,
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedWindowsUpdateVerified": null
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+      "comparedSources": 237,
+      "bundledPythonVerified": true,
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedWindowsUpdateVerified": null
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "sourceSha": "5041d0e5df5208e116f17975d5c54462c9970322",
+      "comparedSources": 237,
+      "bundledPythonVerified": true,
+      "packagedMacLaunchVerified": null,
+      "packagedMacUpdateVerified": null,
+      "packagedWindowsUpdateVerified": true
+    }
+  ],
+  "currentProductionWeb": {
+    "anonymousChecks": 58,
+    "publicFilesPerOrigin": 89,
+    "byteComparisonsMatched": 178,
+    "criticalHtmlMatches": 6,
+    "healthIdentitiesMatched": 4
+  },
+  "currentInstalledClientObservations": {
+    "manualDirectCheckDurationMs": 982,
+    "manualDirectCheckRoute": "direct",
+    "manualDirectCheckStartedInternalProxy": false,
+    "accountRefreshHttpStatus": 200,
+    "accountRefreshSuccessfulIpcReply": true,
+    "accountAndUiObservationScope": "Existing safe diagnostics and root CUA observations; this audit did not access account credentials or operate UI."
+  },
+  "manualGuiSuggestion": {
+    "performedByThisAudit": false,
+    "steps": [
+      "Open 制作实况 in the existing official client.",
+      "Choose the new ordinary video through the native file picker.",
+      "Use1x,3seconds or source-limited duration, HEIC and retain audio; select trim start and cover.",
+      "Preview, create Live Photo, download 实况包ZIP.",
+      "Inspect extracted PVT HEIC/MOV/metadata.plist and pairing/timed metadata."
+    ],
+    "noIPhoneTransferOrPhotosImport": true
+  },
+  "overallConclusion": "Substantial current automated/native runtime coverage plus inherited byte-identical UI/native/iPhone sample proof. No unconditional all-features or all-devices guarantee.",
+  "privacy": {
+    "privateShareUrlsIncluded": false,
+    "tokensOrCredentialsIncluded": false,
+    "personalAccountIdentifiersIncluded": false,
+    "privateFilesystemPathsIncluded": false,
+    "responseBodiesIncluded": false,
+    "publicSourcePathsAndDeploymentIdsIncluded": true
+  },
+  "trackedFilesModified": false,
+  "deploymentPerformed": false,
+  "recordType": "public-sanitized-feature-coverage",
+  "additionalCurrentVerification": {
+    "report": "v2.0.15-real-video-verification.json",
+    "status": "separate-report-not-assessed-here",
+    "passedClaimedByThisReport": false,
+    "newIPhoneImportClaimed": false
+  },
+  "cloudflareArchitecture": {
+    "evidence": [
+      "docs/cloudflare-deployment.md",
+      "wrangler.jsonc",
+      "cloudflare/pages/_routes.json",
+      "cloudflare/pages/_worker.js",
+      "cloudflare/python/wrangler.jsonc"
+    ],
+    "pages": {
+      "name": "brclio-xhs-pages",
+      "officialOrigin": "https://xhs.download.brclio.com",
+      "canonicalOrigin": "https://brclio-xhs-pages.pages.dev",
+      "deploymentOrigin": "https://04eb6ac5.brclio-xhs-pages.pages.dev",
+      "deploymentId": "04eb6ac5-a09c-4620-ad3e-751ac7ac211e",
+      "sourceCommit": "4bc023484c39b365c122d92b450d9c04a18f62e6",
+      "staticFiles": "Served directly by Pages",
+      "gatewayIncludes": [
+        "/api/*",
+        "/admin*"
+      ],
+      "gatewayServiceBinding": "APP"
+    },
+    "mainWorker": {
+      "name": "brclio-xhs-downloader",
+      "versionId": "3259261c-bdbd-41e7-914a-3eb6c333fd87",
+      "sourceCommit": "217efb27344ce34b98b03bc2f4d0d1dec441b3fd",
+      "workersDevEnabled": true,
+      "role": "Node parsing, image/video download, account/admin/health and dispatch to the Python engine.",
+      "incomingFromPages": "APP service binding",
+      "pythonServiceBinding": "PYTHON_API"
+    },
+    "pythonWorker": {
+      "name": "brclio-xhs-python",
+      "workersDevEnabled": false,
+      "previewUrlsEnabled": false,
+      "role": "Existing separate Python parsing/image/video runtime, reached through the private PYTHON_API service binding.",
+      "publicApiPaths": [
+        "/api/python_parse",
+        "/api/python_image",
+        "/api/python_video"
+      ],
+      "versionIds": [
+        "3bafdcc7-0ab2-4d98-a012-416f8d500a82"
+      ],
+      "deploymentId": "869a8211-e651-44b6-8017-4fb2081e61c2",
+      "redeployedThisRelease": false,
+      "deploymentUnchangedFromPreflight": true,
+      "serviceBindingPreserved": true,
+      "whyNotRedeployed": "Its runtime source did not change. The already deployed version is retained and was exercised by real production Python parsing and image download.",
+      "whyKeep": "Deleting it would break the Python engine paths used by the website and clients. Lack of a public zone route is intentional for this internal service."
+    },
+    "requestFlow": [
+      "Official domain reaches the Pages custom-domain entry.",
+      "Pages serves static files; /api/* and /admin* invoke its gateway.",
+      "Gateway calls the main Worker through APP.",
+      "Python API requests call the existing Python Worker through PYTHON_API."
+    ],
+    "zoneRoutes": {
+      "declaredInTrackedWorkerConfigs": false,
+      "meaning": "No zone-route entry does not mean the Worker is unused. This deployment receives requests through Pages/service bindings; the private Python Worker intentionally has no public workers.dev endpoint.",
+      "auditBoundary": "This coverage audit reads tracked configuration and the separate verified deployment/binding metadata; it did not perform an additional zone-routes API query."
+    },
+    "preservation": {
+      "pagesAppBinding": true,
+      "pythonServiceBinding": true,
+      "pythonDeployment": true
+    },
+    "limits": [
+      "Service availability and binding preservation do not guarantee every business flow or future upstream response."
+    ]
+  },
+  "publicEvidence": [
+    {
+      "report": "v2.0.15-ci-verification.json",
+      "type": "Current source native CI step outcomes"
+    },
+    {
+      "report": "v2.0.15-local-verification.json",
+      "type": "Local full regression and scoped update readiness/routing observations"
+    },
+    {
+      "report": "v2.0.15-public-arm64-verification.json",
+      "type": "Official downloaded macOS package/source/runtime acceptance"
+    },
+    {
+      "report": "v2.0.15-installed-client-verification.json",
+      "type": "Existing user app replacement/relaunch/direct check/account observations"
+    },
+    {
+      "report": "v2.0.15-web-verification.json",
+      "type": "Final production HTTP/static bytes/real image note and resource preservation"
+    },
+    {
+      "report": "android-v1.0.15-final-verification.json",
+      "type": "Signed APK/native CI/emulator acceptance and limitations"
+    },
+    {
+      "report": "../live-photo-pvt-verification.json",
+      "type": "Historical PVT/native recognition/user iPhone sample confirmation"
+    },
+    {
+      "report": "v2.0.15-real-video-verification.json",
+      "type": "Separate current real-video/PVT GUI acceptance; evaluated independently rather than marked passed by this audit."
+    }
+  ],
+  "referenceConventions": {
+    "sourceEvidencePaths": "Repository-root relative source paths.",
+    "releaseReportPaths": "Relative to docs/releases unless prefixed ../ or an absolute public HTTPS URL."
+  }
+}

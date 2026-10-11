@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-11T04:13:04.916936+00:00",
+  "release": "v2.0.15",
+  "sourceCommit": "5041d0e5df5208e116f17975d5c54462c9970322",
+  "status": "partial_verification_with_production_parse_failure",
+  "input": {
+    "kind": "user_supplied_public_video_note",
+    "shareUrlTokenTitleAndMediaUrlsPublished": false
+  },
+  "production": {
+    "origin": "https://xhs.download.brclio.com",
+    "workerVersionId": "3259261c-bdbd-41e7-914a-3eb6c333fd87",
+    "anonymousNoteParse": {
+      "nodeStatus": 422,
+      "pythonStatus": 422,
+      "attemptsPerEngine": 2,
+      "passed": false
+    },
+    "ordinaryPlaybackSource": {
+      "obtainedBy": "ordinary source page GET and local exact-initial-state parser",
+      "productionNoteParsePassed": false,
+      "memberOriginalRequested": false
+    },
+    "metadata": [
+      {
+        "engine": "node",
+        "status": 200,
+        "success": true,
+        "bytes": 26681111,
+        "chunkSize": 3500000,
+        "acceptRanges": true,
+        "mime": "video/mp4"
+      },
+      {
+        "engine": "python",
+        "status": 200,
+        "success": true,
+        "bytes": 26681111,
+        "chunkSize": 3500000,
+        "acceptRanges": true,
+        "mime": "video/mp4"
+      }
+    ],
+    "range4096": [
+      {
+        "engine": "node",
+        "status": 200,
+        "success": true,
+        "bytes": 4096,
+        "sha256": "5a884eb5135167b9d6e59cfebc4614a03924326d872ae11c39691607f567c6cd",
+        "mime": "video/mp4",
+        "mp4Signature": true,
+        "contentRangeMatches": true,
+        "contentLengthMatches": true,
+        "engineHeaderMatches": true,
+        "attachmentHeaderPresent": false,
+        "attachmentRequirementNotApplicable": true
+      },
+      {
+        "engine": "python",
+        "status": 200,
+        "success": true,
+        "bytes": 4096,
+        "sha256": "5a884eb5135167b9d6e59cfebc4614a03924326d872ae11c39691607f567c6cd",
+        "mime": "video/mp4",
+        "mp4Signature": true,
+        "contentRangeMatches": true,
+        "contentLengthMatches": true,
+        "engineHeaderMatches": true,
+        "attachmentHeaderPresent": false,
+        "attachmentRequirementNotApplicable": true
+      }
+    ],
+    "fullPlaybackDownload": {
+      "nodePassed": true,
+      "pythonFirstAttemptInterruptedAfterBytes": 14000000,
+      "pythonRetryPassed": true,
+      "chunksPerCompleteDownload": 8,
+      "bytesPerEngine": 26681111,
+      "sha256": "e10851d47dcef9970e84537596a47e86b00019e1558e7723d3bd742910c46cd1",
+      "sha256MatchedAcrossEngines": true,
+      "nativeSaveDialogSuccessClaimed": false
+    },
+    "mediaProbe": {
+      "container": "mov,mp4,m4a,3gp,3g2,mj2",
+      "durationSeconds": 468.786213,
+      "bytes": 26681111,
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "44100",
+          "channels": 2
+        }
+      ]
+    },
+    "overallAnonymousNoteToDownloadPassed": false
+  },
+  "installedMacClient": {
+    "version": "2.0.15",
+    "localNodeParsePassed": true,
+    "parserStrategy": "exact-initial-state",
+    "imageCoverCount": 1,
+    "videoQualityCount": 2,
+    "nativeUiDownloadAndLivePhotoExport": "incomplete_due_to_native_dialog_control_block",
+    "nativeDialogObservation": "Save and Open remained disabled during CUA control; coordinate retry returned noWindowsAvailable; both dialogs cancelled",
+    "productDefectConfirmed": false,
+    "currentUiExportPassed": false
+  },
+  "livePhotoEngine": {
+    "status": "passed",
+    "isCurrentInstalledUiProof": false,
+    "newIPhoneImportPerformed": false,
+    "verification": {
+      "schema": 1,
+      "startedAt": "2026-10-11T04:11:20.921Z",
+      "scope": "isolated-public-module-engine-only",
+      "actualProductUiLoaded": false,
+      "productUiOrDomControlsAutomated": false,
+      "installedClientInjected": false,
+      "installedClientUiExportPassed": false,
+      "photosLibraryModified": false,
+      "deviceImportVerified": false,
+      "network": "loopback-module-source-server-only",
+      "sourceIsOrdinaryPlayback": true,
+      "source": {
+        "bytes": 26681111,
+        "sha256": "e10851d47dcef9970e84537596a47e86b00019e1558e7723d3bd742910c46cd1",
+        "audioFirstThreeSeconds": {
+          "samples": 144000,
+          "durationSeconds": 3,
+          "rms": 0.1989330514250216,
+          "peak": 1.3644815683364868
+        }
+      },
+      "parameters": {
+        "start": 0,
+        "duration": 3,
+        "keyPhotoTime": 1.5,
+        "speed": 1,
+        "includeAudio": true
+      },
+      "cases": [
+        {
+          "format": "heic",
+          "encodingElapsedMs": 7042,
+          "photo": {
+            "bytes": 197096,
+            "sha256": "732e96d903e52e3bab3f9963a5ec151f85a1bcc6a0a58f20e70cdd522da7ba66"
+          },
+          "mov": {
+            "bytes": 485715,
+            "sha256": "4f4e187b99b52104de5d3d72578b2942a5321edca58ca875c915575074dc2817"
+          },
+          "zip": {
+            "bytes": 684558,
+            "sha256": "d770625ca9683d4b4aebc350e1db5426288f8c436b55a7fa24bf6304ec531864"
+          },
+          "dimensions": {
+            "width": 1280,
+            "height": 720
+          },
+          "duration": 3,
+          "keyPhotoTime": 1.5,
+          "speed": 1,
+          "sourceSpan": 3,
+          "hasAudio": true,
+          "progressCallbackCount": 95,
+          "result": "passed",
+          "media": {
+            "videoCodec": "h264",
+            "width": 1280,
+            "height": 720,
+            "audioCodec": "aac",
+            "audioSampleRate": 48000,
+            "audioChannels": 2,
+            "durationSeconds": 3,
+            "timedMetadataCodecTag": "mebx"
+          },
+          "sharedIdentifierMatches": true,
+          "timedMetadata": {
+            "packetCount": 1,
+            "ptsSeconds": [
+              1.5
+            ],
+            "matchesKeyPhotoTime": true
+          },
+          "fullVideoDecoderPassed": true,
+          "audio": {
+            "samples": 144000,
+            "durationSeconds": 3,
+            "rms": 0.19599716403489792,
+            "peak": 1.3887704610824585,
+            "nonSilentSource": true,
+            "rmsRelativeToSource": 0.9852418320178926
+          },
+          "package": {
+            "entryCount": 4,
+            "onePvtDirectory": true,
+            "photoMovAndMetadataPresent": true,
+            "adjacentReadmePresent": true,
+            "metadataVersion": 1,
+            "photoBytesPreserved": true,
+            "movBytesPreserved": true
+          },
+          "nativeRecognition": {
+            "exitCode": 0,
+            "stillDecoded": true,
+            "pairingIdentifierMatched": true,
+            "nonDegradedPhoto": true,
+            "recognized": true,
+            "safeCallbacks": [
+              "callback degraded=true photo=true errorPresent=false cancelled=false",
+              "callback degraded=false photo=true errorPresent=false cancelled=false"
+            ]
+          }
+        },
+        {
+          "format": "jpeg",
+          "encodingElapsedMs": 6180,
+          "photo": {
+            "bytes": 145739,
+            "sha256": "2edb864c5807461b25178bce6498956c7e5bf301052caa3b1cb5230da47aaed0"
+          },
+          "mov": {
+            "bytes": 485609,
+            "sha256": "2a0d24f58c681589c3c11afde649fc0cfb57ab8f1e804d5bfaf9813671724b17"
+          },
+          "zip": {
+            "bytes": 633092,
+            "sha256": "67a3c7c2198c29193d9cb933f8916414dfdb743cbb41268ad8796838c17373a5"
+          },
+          "dimensions": {
+            "width": 1280,
+            "height": 720
+          },
+          "duration": 3,
+          "keyPhotoTime": 1.5,
+          "speed": 1,
+          "sourceSpan": 3,
+          "hasAudio": true,
+          "progressCallbackCount": 94,
+          "result": "passed",
+          "media": {
+            "videoCodec": "h264",
+            "width": 1280,
+            "height": 720,
+            "audioCodec": "aac",
+            "audioSampleRate": 48000,
+            "audioChannels": 2,
+            "durationSeconds": 3,
+            "timedMetadataCodecTag": "mebx"
+          },
+          "sharedIdentifierMatches": true,
+          "timedMetadata": {
+            "packetCount": 1,
+            "ptsSeconds": [
+              1.5
+            ],
+            "matchesKeyPhotoTime": true
+          },
+          "fullVideoDecoderPassed": true,
+          "audio": {
+            "samples": 144000,
+            "durationSeconds": 3,
+            "rms": 0.19840316770219213,
+            "peak": 1.3848097324371338,
+            "nonSilentSource": true,
+            "rmsRelativeToSource": 0.9973363716132954
+          },
+          "package": {
+            "entryCount": 4,
+            "onePvtDirectory": true,
+            "photoMovAndMetadataPresent": true,
+            "adjacentReadmePresent": true,
+            "metadataVersion": 1,
+            "photoBytesPreserved": true,
+            "movBytesPreserved": true
+          },
+          "nativeRecognition": {
+            "exitCode": 0,
+            "stillDecoded": true,
+            "pairingIdentifierMatched": true,
+            "nonDegradedPhoto": true,
+            "recognized": true,
+            "safeCallbacks": [
+              "callback degraded=true photo=true errorPresent=false cancelled=false",
+              "callback degraded=false photo=true errorPresent=false cancelled=false"
+            ]
+          }
+        }
+      ],
+      "result": "passed",
+      "sourceClosure": {
+        "releaseTag": "v2.0.15",
+        "moduleCount": 9,
+        "allCurrentModulesMatchReleaseTag": true,
+        "actualRunningInstalledApplicationIdentified": true,
+        "installedVersion": "2.0.15",
+        "allInstalledModulesMatchReleaseTag": true
+      },
+      "externalNetworkRequestsBlocked": 0,
+      "rendererErrorCount": 0,
+      "support": {
+        "supported": true,
+        "audioSupported": true,
+        "heicSupported": true,
+        "message": "本地制作已就绪。"
+      },
+      "outputsRetainedIgnoredOnly": true,
+      "sourceRetainedIgnoredOnly": true,
+      "finishedAt": "2026-10-11T04:11:35.969Z",
+      "disposableProfileRemoved": true
+    }
+  },
+  "fallback": {
+    "configuredOriginMatchesAllowlist": true,
+    "publicGetStatus": 404,
+    "publicError": "DEPLOYMENT_NOT_FOUND",
+    "bothParsePathsUnavailable": true,
+    "primary422CauseConfirmed": false,
+    "currentManagementAccess": "existing Vercel project metadata requests returned 403; CLI request failed",
+    "projectDeletedConfirmed": false,
+    "alternativeBackendVerified": false,
+    "requiredRecovery": "Restore existing Vercel production deployment and canonical alias under an authorized project identity, then revalidate both note parses and Cloudflare fallback",
+    "restorationAloneGuaranteedToResolveCurrentNote": false,
+    "inAppBrowserProjectInspection": "two native control requests timed out; project page content and ownership not observed",
+    "unresolvedProductionBehavior": "current real video note still returns 422 in both production parse engines"
+  },
+  "scope": {
+    "systemProxyChanged": false,
+    "verifierUsedExistingOsProxy": true,
+    "notUpdaterDirectRoutingEvidence": true,
+    "accountWrites": false,
+    "challengeBypass": false,
+    "fullUserMediaPublished": false,
+    "testMediaRetainedLocallyOnly": true
+  },
+  "relatedReports": [
+    "v2.0.15-feature-coverage-verification.json",
+    "v2.0.15-feature-coverage.md",
+    "v2.0.15-web-verification.json",
+    "../live-photo-pvt-verification.json"
+  ]
+}
