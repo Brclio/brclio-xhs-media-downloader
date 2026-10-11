@@ -135,6 +135,34 @@ input:focus-visible + span {
   pointer-events: none;
 }
 
+.web-service-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  margin-top: clamp(20px, 3vw, 36px);
+  padding: clamp(18px, 2.5vw, 26px);
+  border: 1.5px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--cream-deep);
+}
+
+.web-service-notice-label {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--yellow);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.web-service-notice-copy { flex: 1 1 420px; min-width: 0; }
+.web-service-notice-copy strong { font-size: 1rem; }
+.web-service-notice-copy p { margin-top: 6px; color: var(--ink-light); font-size: .85rem; }
+.web-service-notice > .button { flex: 0 0 auto; }
+body.is-desktop .web-service-notice { display: none; }
+
 .hero {
   display: grid;
   grid-template-columns: minmax(310px, 0.84fr) minmax(0, 1.16fr);
