@@ -27,10 +27,19 @@ process.env.XHS_ACCOUNT_ENDPOINT = 'https://account-fixture.invalid/api/account'
 let networkAttempts = 0;
 let blockedBrowserRequests = 0;
 let publicReviewRequests = 0;
+let publicGoogleConfigRequests = 0;
 globalThis.fetch = async (url, options = {}) => {
-  // Public reviews are deliberately independent of credential storage. Keep
-  // them local while retaining the no-network guard for every private action.
+  // Public account configuration and reviews are independent of credential
+  // storage. Keep them local while rejecting every unexpected/private action.
   const body = JSON.parse(options.body || '{}');
+  if (url === process.env.XHS_ACCOUNT_ENDPOINT && body.action === 'google-config') {
+    assert.equal(options.headers?.Authorization, undefined, 'Google configuration must not send an account token');
+    assert.equal(body.proof, undefined, 'Google configuration must not access a signing key');
+    assert.deepEqual(body.input, { client: 'desktop' });
+    publicGoogleConfigRequests++;
+    return new Response(JSON.stringify({ ok: true, enabled: true }),
+      { status: 200, headers: { 'content-type': 'application/json' } });
+  }
   if (url === process.env.XHS_ACCOUNT_ENDPOINT && body.action === 'reviews-public') {
     assert.equal(options.headers?.Authorization, undefined, 'Public reviews must not send an account token');
     assert.equal(body.proof, undefined, 'Public reviews must not access a signing key');
@@ -87,24 +96,45 @@ async function until(check, label, timeout = 10000) {
 }
 
 async function snapshot(win) {
-  return win.webContents.executeJavaScript(`(async () => ({
-    state: await window.xhsDesktop.getAccountState(),
-    ready: document.body.dataset.desktopReady === 'true',
-    // Account operations must wait for secure storage. The membership dialog
-    // only browses prices or navigates to login; its controls have separate guards.
-    buttons: [...document.querySelectorAll('#software-account button')]
+  return win.webContents.executeJavaScript(`(async () => {
+    const state = await window.xhsDesktop.getAccountState();
+    // The account tab may be inactive. Check operations regardless of parent
+    // visibility, and check contextual Google controls by their own sections.
+    const buttons = [...document.querySelectorAll('#software-account button')]
       .filter(button => !button.closest('#membership-dialog') && button.id !== 'account-open-membership')
-      .map(button => ({ id: button.id, disabled: button.disabled })),
-    membership: {
-      browseDisabled: document.querySelector('#account-open-membership')?.disabled,
-      paymentHidden: document.querySelector('#membership-payment')?.hidden,
-      emailHidden: document.querySelector('#membership-email-row')?.hidden,
-      copyDisabled: document.querySelector('#membership-copy-email')?.disabled,
-      loginGuidanceHidden: document.querySelector('#membership-login-guidance')?.hidden
-    },
-    retryLabel: document.querySelector('#account-refresh')?.textContent,
-    nodeAvailable: typeof require === 'function'
-  }))()`);
+      .map(button => ({ id: button.id, disabled: button.disabled }));
+    return {
+      state,
+      ready: document.body.dataset.desktopReady === 'true',
+      // Account operations must wait for secure storage. The membership dialog
+      // only browses prices or navigates to login; its controls have separate guards.
+      buttons,
+      operationButtons: buttons.filter(button => !['account-google-confirm', 'account-google-decline', 'account-google-cancel'].includes(button.id)),
+      google: {
+        loginRowHidden: document.querySelector('#account-google-login-row')?.hidden,
+        confirmationHidden: document.querySelector('#account-google-confirmation')?.hidden,
+        cancelHidden: document.querySelector('#account-google-cancel')?.hidden,
+      },
+      membership: {
+        browseDisabled: document.querySelector('#account-open-membership')?.disabled,
+        paymentHidden: document.querySelector('#membership-payment')?.hidden,
+        emailHidden: document.querySelector('#membership-email-row')?.hidden,
+        copyDisabled: document.querySelector('#membership-copy-email')?.disabled,
+        loginGuidanceHidden: document.querySelector('#membership-login-guidance')?.hidden
+      },
+      retryLabel: document.querySelector('#account-refresh')?.textContent,
+      nodeAvailable: typeof require === 'function'
+    };
+  })()`);
+}
+
+function assertIdleGoogleControls(value, loginDisabled) {
+  assert.deepEqual(value.google, { loginRowHidden: false, confirmationHidden: true, cancelHidden: true },
+    'Google login stays available while confirmation and cancellation controls remain contextual');
+  assert.deepEqual(value.buttons.filter(button => !value.operationButtons.some(operation => operation.id === button.id))
+    .map(button => button.id).sort(), ['account-google-cancel', 'account-google-confirm', 'account-google-decline']);
+  assert.equal(value.operationButtons.find(button => button.id === 'account-google-login')?.disabled, loginDisabled,
+    'Google login follows the secure storage guard');
 }
 
 function assertSignedOutMembershipGuard(value) {
@@ -174,13 +204,15 @@ app.on('browser-window-created', (_event, win) => {
       assert.ok(rendererReadyDelayMs > 10000);
       const loading = await until(async () => {
         const value = await snapshot(win);
-        return value.ready && value.buttons.length && value.state.status === 'initializing' ? value : null;
+        return value.ready && value.operationButtons.length && value.google.loginRowHidden === false
+          && value.state.status === 'initializing' ? value : null;
       }, 'ready renderer with pending secure storage');
       assert.equal(loading.nodeAvailable, false);
-      assert.deepEqual(loading.buttons.map(button => button.id).sort(), [
-        'account-login', 'account-logout', 'account-redeem', 'account-refresh', 'account-send-code', 'orders-refresh',
+      assert.deepEqual(loading.operationButtons.map(button => button.id).sort(), [
+        'account-google-login', 'account-login', 'account-logout', 'account-redeem', 'account-refresh', 'account-send-code', 'orders-refresh',
       ], 'The guard covers every existing account operation');
-      assert.ok(loading.buttons.every(button => button.disabled), 'Every account operation is disabled during startup');
+      assert.ok(loading.operationButtons.every(button => button.disabled), 'Every account operation is disabled during startup');
+      assertIdleGoogleControls(loading, true);
       assertSignedOutMembershipGuard(loading);
       await singleNoteCheck(win);
       assert.equal(loadCalls, 1, 'Using free features must not repeat the storage prompt');
@@ -191,8 +223,9 @@ app.on('browser-window-created', (_event, win) => {
         return value.state.status === 'secure_storage_unavailable' ? value : null;
       }, 'nonblocking denied storage state');
       assert.equal(denied.retryLabel, '重试安全存储');
-      assert.equal(denied.buttons.find(button => button.id === 'account-refresh')?.disabled, false);
-      assert.ok(denied.buttons.filter(button => button.id !== 'account-refresh').every(button => button.disabled));
+      assert.equal(denied.operationButtons.find(button => button.id === 'account-refresh')?.disabled, false);
+      assert.ok(denied.operationButtons.filter(button => button.id !== 'account-refresh').every(button => button.disabled));
+      assertIdleGoogleControls(denied, true);
       assertSignedOutMembershipGuard(denied);
       await singleNoteCheck(win);
       await delay(200);
@@ -202,7 +235,8 @@ app.on('browser-window-created', (_event, win) => {
       await until(() => loadCalls === 2, 'explicit storage retry');
       const retrying = await snapshot(win);
       assert.equal(retrying.state.status, 'initializing');
-      assert.ok(retrying.buttons.every(button => button.disabled));
+      assert.ok(retrying.operationButtons.every(button => button.disabled));
+      assertIdleGoogleControls(retrying, true);
       assertSignedOutMembershipGuard(retrying);
       // Exercise rapid IPC retries too; AccountClient must share one pending load.
       await win.webContents.executeJavaScript(`window.__storageRetry = Promise.all([
@@ -220,20 +254,22 @@ app.on('browser-window-created', (_event, win) => {
       assert.ok(replies.every(reply => reply.ok && reply.state.status === 'signed_out'));
       const recovered = await until(async () => {
         const value = await snapshot(win);
-        return value.state.status === 'signed_out' && value.buttons.every(button => !button.disabled) ? value : null;
+        return value.state.status === 'signed_out' && value.operationButtons.every(button => !button.disabled) ? value : null;
       }, 'recovered account controls');
       assert.equal(recovered.state.error, null);
+      assertIdleGoogleControls(recovered, false);
       assertSignedOutMembershipGuard(recovered);
       await win.webContents.executeJavaScript('window.xhsDesktop.refreshAccount()');
       assert.equal(loadCalls, 2, 'Ordinary refresh must reuse loaded credentials');
       assert.ok(publicReviewRequests > 0, 'Anonymous reviews remain available while credential storage initializes');
+      assert.ok(publicGoogleConfigRequests > 0, 'Google configuration remains available while credential storage initializes');
       assert.equal(networkAttempts, 0, 'The test must not contact external services');
       finished = true;
       clearTimeout(watchdog);
       console.log(JSON.stringify({ smoke: 'startup-storage-passed', visibleBeforeStorage: true,
         responsiveWhilePending: true, controlsGuarded: true, deniedStateRecoverable: true,
         signedOutMembershipGuarded: true,
-        explicitRetryDeduplicated: true, singleNoteEngines: ['node', 'python'], loadCalls, networkAttempts, blockedBrowserRequests, publicReviewRequests,
+        explicitRetryDeduplicated: true, singleNoteEngines: ['node', 'python'], loadCalls, networkAttempts, blockedBrowserRequests, publicReviewRequests, publicGoogleConfigRequests,
         rendererReadyDelayMs, lateRendererConfirmed: true, reloadRecovered: true, readinessCancelled: true,
         nativeKeychainTested: false }));
       app.quit();
