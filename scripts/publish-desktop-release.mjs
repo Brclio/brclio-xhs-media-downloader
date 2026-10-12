@@ -31,6 +31,7 @@ export async function validateArtifacts(directory, { version, sourceSha }) {
     const proof = JSON.parse(await readFile(proofPath, 'utf8'));
     assert.equal(proof.version, version);
     assert.equal(proof.sourceSha, sourceSha, 'Builds must come from the release commit');
+    assert.equal(proof.sourceDirty, false, `Build source must be clean before release: ${target.label}`);
     assert.equal(proof.platform, target.platform);
     assert.equal(proof.arch, target.arch);
     assert.equal(proof.bundledPythonVerified, true);

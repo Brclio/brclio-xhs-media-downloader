@@ -123,7 +123,7 @@ async function fixture(t) {
       files.push({ name, bytes: data.length, sha256: createHash('sha256').update(data).digest('hex') });
     }
     await writeFile(path.join(directory, `release-proof-${label}.json`), JSON.stringify({
-      version, sourceSha, platform, arch, comparedSources: 27, bundledPythonVerified: true, bundledUpdateProxyVerified: true,
+      version, sourceSha, sourceDirty: false, platform, arch, comparedSources: 27, bundledPythonVerified: true, bundledUpdateProxyVerified: true,
       bundledUpdateProxy: { bundledSubscriptionsAbsent: true, configurationSource: 'management-api' },
       ...(platform === 'darwin' ? { macCodeSignatureVerified: true, macCodeSigning: 'adhoc', packagedMacUpdateVerified: true, packagedUpdateHistoryVerified: true }
         : { packagedWindowsUpdateVerified: true, packagedWindowsPortableVerified: true, windowsUpdate: {
@@ -215,6 +215,20 @@ test('release rejects modified installer bytes before upload', async t => {
 test('release rejects a build from a different source revision', async t => {
   const directory = await fixture(t);
   await assert.rejects(validateArtifacts(directory, { version, sourceSha: 'b'.repeat(40) }), /release commit/);
+});
+
+test('release rejects dirty or missing clean-source proofs on every platform before publication', async t => {
+  for (const label of ['mac-arm64', 'mac-x64', 'windows-x64']) {
+    for (const value of [true, undefined, 'false', null]) {
+      const directory = await fixture(t);
+      const file = path.join(directory, `release-proof-${label}.json`);
+      const proof = JSON.parse(await readFile(file, 'utf8'));
+      if (value === undefined) delete proof.sourceDirty;
+      else proof.sourceDirty = value;
+      await writeFile(file, JSON.stringify(proof));
+      await assert.rejects(validateArtifacts(directory, { version, sourceSha }), /Build source must be clean before release/);
+    }
+  }
 });
 
 test('release rejects incomplete and unexpected platform assets', async t => {

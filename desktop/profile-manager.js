@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { extractNoteId } from "../lib/xhs.js";
 import { makeNoteTextFileData } from "../lib/archive.js";
 import { parseProfileUrl } from "./profile-source.js";
+import { ENTITLEMENT_SYNC_INTERVAL_MS } from "../lib/entitlement.js";
 import {
   atomicWrite, ensureNoteDirectory, verifyFile, downloadMedia, assertSafeDirectory,
   noteDirectoryName, isSafeDirectoryName, renameNoteDirectory,
@@ -48,7 +49,7 @@ function initialState(now) {
   return {
     version: 1, status: "idle", phase: "idle", profileUrl: "", profileName: "", directory: "",
     intervalSeconds: 10, jitterSeconds: 3, discoveryComplete: false, currentTitle: "",
-    nextRequestAt: null, message: "选择保存目录并输入小红书主页链接。", items: [], updatedAt: now
+    nextRequestAt: null, pauseReason: "", message: "选择保存目录并输入小红书主页链接。", items: [], updatedAt: now
   };
 }
 
@@ -94,7 +95,8 @@ function fileRecord(name, bytes) {
 
 /** One persistent, sequential queue. No network request is made by initialize(). */
 export class ProfileManager {
-  constructor({ stateDirectory, browser, fetchImpl = globalThis.fetch, onUpdate = () => {}, onDiagnostic = () => {}, now = Date.now, sleep = defaultSleep, random = Math.random, mediaOptions = {}, authorize, authorizationIntervalMs = 30_000 }) {
+  constructor({ stateDirectory, browser, fetchImpl = globalThis.fetch, onUpdate = () => {}, onDiagnostic = () => {}, now = Date.now, sleep = defaultSleep, random = Math.random, mediaOptions = {}, authorize, checkAuthorization,
+    authorizationIntervalMs = 30_000, entitlementSyncIntervalMs = ENTITLEMENT_SYNC_INTERVAL_MS, localAuthorizationIntervalMs = 1000 }) {
     if (!stateDirectory || !browser) throw new Error("ProfileManager requires stateDirectory and browser.");
     this.stateDirectory = path.resolve(stateDirectory);
     this.browser = browser;
@@ -106,7 +108,11 @@ export class ProfileManager {
     this.random = random;
     this.mediaOptions = mediaOptions;
     this.authorize = authorize || (async () => { throw new Error('软件账号授权服务不可用。'); });
+    this.checkAuthorization = checkAuthorization;
     this.authorizationIntervalMs = authorizationIntervalMs;
+    this.entitlementSyncIntervalMs = entitlementSyncIntervalMs;
+    this.localAuthorizationIntervalMs = localAuthorizationIntervalMs;
+    this._lastRemoteCheckAt = null;
     this.state = initialState(this.now());
     this._lastRequestAt = null;
     this._saveChain = Promise.resolve();
@@ -163,7 +169,7 @@ export class ProfileManager {
 
   start(options = {}) {
     return this._command(async () => {
-      await this._authorize();
+      await this._authorize({ forceRemote: true });
       const parsed = parseProfileUrl(options.profileUrl);
       const profileUrl = typeof parsed === "string" ? parsed : parsed.url || parsed.profileUrl;
       if (!profileUrl) throw new Error("小红书主页链接无效。");
@@ -207,6 +213,7 @@ export class ProfileManager {
     }
     if (this.state.profileUrl && (this.state.status !== "completed" || status === "cancelled")) {
       this.state.status = status;
+      this.state.pauseReason = "";
       this.state.message = message;
       this.state.nextRequestAt = null;
       this.state.currentTitle = "";
@@ -220,11 +227,12 @@ export class ProfileManager {
   resume() { return this._command(() => this._resume()); }
 
   async _resume(retryIds = null) {
-    await this._authorize();
+    await this._authorize({ forceRemote: true });
     if (this._runTask) return this.snapshot();
     if (!this.state.profileUrl || !this.state.directory) throw new Error("没有可以继续的主页下载任务。");
     await fs.access(this.state.directory);
     this.state.status = retryIds || this.state.discoveryComplete ? "downloading" : "discovering";
+    this.state.pauseReason = "";
     this.state.message = retryIds ? `正在重试 ${retryIds.size} 篇失败的帖子…`
       : this.state.discoveryComplete ? "正在验证文件并继续下载…" : "正在重新读取主页并合并已发现的帖子…";
     await this._save();
@@ -237,7 +245,7 @@ export class ProfileManager {
       if (this._runTask) throw new Error("请先暂停任务，再重试失败的帖子。");
       const failed = this.state.items.filter(item => item.status === "failed");
       if (!failed.length) return this.snapshot();
-      await this._authorize();
+      await this._authorize({ forceRemote: true });
       for (const item of failed) { item.status = "pending"; item.error = ""; }
       return this._resume(new Set(failed.map(item => item.id)));
     });
@@ -250,7 +258,7 @@ export class ProfileManager {
       const item = this.state.items.find(item => item.id === noteId);
       if (!item) throw new Error("未找到这篇帖子。");
       if (item.status !== "failed") throw new Error("只有失败的帖子可以单项重试。");
-      await this._authorize();
+      await this._authorize({ forceRemote: true });
       item.status = "pending";
       item.error = "";
       return this._resume(new Set([noteId]));
@@ -263,12 +271,26 @@ export class ProfileManager {
     const controller = this._controller;
     const signal = controller.signal;
     let authorizationError = null, checkingAuthorization = false;
-    // A revoked device stops even during a long download/discovery request.
+    const deny = error => { authorizationError = error; controller.abort(error); };
+    // A signed grant is checked locally while media is in flight. Legacy
+    // servers retain their remote heartbeat until they issue signed grants.
+    const localAuthorizationTimer = this.checkAuthorization ? setInterval(() => {
+      if (signal.aborted) return;
+      try { this._checkLocalAuthorization(); }
+      catch (error) { deny(error); }
+    }, this.localAuthorizationIntervalMs) : null;
+    localAuthorizationTimer?.unref?.();
     const authorizationTimer = setInterval(async () => {
       if (checkingAuthorization || signal.aborted) return;
       checkingAuthorization = true;
-      try { await this._authorize(); }
-      catch (error) { authorizationError = error; controller.abort(error); }
+      try {
+        const local = this._checkLocalAuthorization();
+        const elapsed = this.now() - this._lastRemoteCheckAt;
+        if (!local || this._lastRemoteCheckAt === null || elapsed < 0 || elapsed >= this.entitlementSyncIntervalMs) {
+          await this._authorize({ forceRemote: true });
+        }
+      }
+      catch (error) { deny(error); }
       finally { checkingAuthorization = false; }
     }, this.authorizationIntervalMs);
     authorizationTimer.unref?.();
@@ -277,8 +299,11 @@ export class ProfileManager {
       if (authorizationError) error = authorizationError;
       else if (signal.aborted || error.name === "AbortError") return;
       this.state.status = PAUSE_CODES.has(error.code) ? "paused" : "error";
+      this.state.pauseReason = error.code || 'TASK_FAILED';
       this.state.message = error.message || "主页下载中断，请重试。";
       this.state.nextRequestAt = null;
+      this._diagnostic('task.interrupted', { code: error.code || 'TASK_FAILED', causeCode: error.cause?.code,
+        status: this.state.status, completed: this.snapshot().completed, skipped: this.snapshot().skipped });
       for (const item of this.state.items) if (item.status === "downloading") item.status = "pending";
       await this._save();
       this._emit();
@@ -287,11 +312,21 @@ export class ProfileManager {
       this.state.message = `无法保存任务记录：${error.message}。请检查磁盘空间及目录权限。`;
       this.state.nextRequestAt = null;
       this._emit();
-    }).finally(() => { clearInterval(authorizationTimer); this._runTask = null; this._controller = null; });
+    }).finally(() => { clearInterval(authorizationTimer); clearInterval(localAuthorizationTimer); this._runTask = null; this._controller = null; });
   }
 
-  async _authorize() {
-    try { await this.authorize('profile-download'); }
+  _checkLocalAuthorization() {
+    try { return this.checkAuthorization?.('profile-download'); }
+    catch (error) {
+      throw Object.assign(new Error(error.message || '会员授权已失效，任务已暂停。'), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED', cause: error });
+    }
+  }
+
+  async _authorize({ forceRemote = false } = {}) {
+    try {
+      await this.authorize('profile-download', { forceRemote });
+      if (forceRemote) this._lastRemoteCheckAt = this.now();
+    }
     catch (error) {
       throw Object.assign(new Error(error.message || '软件账号授权不可用，任务已暂停。'), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED', cause: error });
     }
@@ -383,8 +418,9 @@ export class ProfileManager {
       }
     }
     throwIfAborted(signal);
-    await this._authorize();
-    throwIfAborted(signal);
+    // Checking a signed grant is local; a CDN request never triggers a new
+    // remote membership lookup merely because it is another image/retry.
+    this._checkLocalAuthorization();
     this._lastRequestAt = this.now();
     this.state.status = "downloading";
     this.state.nextRequestAt = null;
@@ -552,6 +588,7 @@ export class ProfileManager {
       await this._save();
     }
     const noteText = Buffer.from(makeNoteTextFileData({ title: item.title, content: note.content, sourceUrl: item.url, engine: "desktop", generatedAt: new Date(this.now()) }));
+    this._checkLocalAuthorization();
     const metadata = Buffer.from(JSON.stringify({
       id: item.id, title: item.title, content: note.content || "", sourceUrl: item.url,
       profileUrl: this.state.profileUrl, strategy: item.strategy, downloadedAt: new Date(this.now()).toISOString(),

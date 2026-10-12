@@ -174,6 +174,23 @@ test('ordinary desktop stream metadata stays free and a redirect to an original 
   assert.deepEqual(fetched, [stream, stream]);
 });
 
+test('direct Node and Python original-video admissions request fresh remote authorization', async t => {
+  const original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  t.mock.method(globalThis, 'fetch', async () => assert.fail('Denied originals must not fetch media'));
+  t.mock.method(console, 'error', () => {});
+  const admissions = [];
+  const handle = createProtocolHandler({ rootDirectory,
+    authorize: async (feature, options) => {
+      if (feature === 'single-download') return { authorized: true, free: true };
+      admissions.push({ feature, options });
+      throw Object.assign(new Error('Remote authorization denied'), { status: 403 });
+    }, pythonBackend: { available: true, request: async () => assert.fail('Denied originals must not enter Python') } });
+  for (const route of ['/api/video', '/api/video.js', '/api/python_video', '/api/python_video.py']) {
+    assert.equal((await handle(new Request(`xhs-app://local${route}?url=${encodeURIComponent(original)}&action=meta`))).status, 403);
+  }
+  assert.deepEqual(admissions, Array.from({ length: 4 }, () => ({ feature: 'watermark-free-video', options: { forceRemote: true } })));
+});
+
 test('desktop member gateway resolves original-only pages to account-bound tickets and checks every read', async t => {
   const id = '1234567890abcdef12345678';
   const noteUrl = `https://www.xiaohongshu.com/explore/${id}`;

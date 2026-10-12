@@ -42,7 +42,7 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js', 'lib/live-photo-package.js',
     'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js', 'assets/vendor/heic/heic-encoder.js',
     'learn.html', 'learn.css', 'learn.js', 'vip.html', 'vip.css', 'vip.js', 'membership.html', 'membership.css', 'membership.js', 'site-header.css', 'site-header.js', 'desktop/account-client.js',
-    'desktop/account-storage.js', 'lib/membership-policy.js', 'desktop/diagnostic-log.js',
+    'desktop/account-storage.js', 'lib/membership-policy.js', 'lib/entitlement.js', 'desktop/diagnostic-log.js',
     'desktop/feedback-client.js', 'desktop/mac-update.js', 'desktop/mac-architecture.js', 'desktop/mac-install-progress.js',
     'desktop/windows-update.js', 'desktop/install-confirmation.js', 'desktop/mac-update-cleanup.js',
     'desktop/startup-ready.js', 'desktop/mac-update-history.js', 'desktop/image-clipboard.js',

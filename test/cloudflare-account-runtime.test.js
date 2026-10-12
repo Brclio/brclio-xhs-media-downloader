@@ -6,6 +6,7 @@ import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { build } from 'esbuild';
 import { emptyState } from '../server/auth/store.js';
 import { digest } from '../server/auth/crypto.js';
+import { verifyEntitlement } from '../lib/entitlement.js';
 
 test('real SQLite Durable Object preserves auth, full feedback and targeted activation email delivery', async t => {
   const origin = 'https://account.example.test';
@@ -18,6 +19,7 @@ test('real SQLite Durable Object preserves auth, full feedback and targeted acti
   const chunks = Array(64).fill(chunk);
   const sha256 = value => createHash('sha256').update(value).digest('hex');
   const { privateKey, publicKey } = generateKeyPairSync('ed25519');
+  const signing = generateKeyPairSync('ed25519');
   let state = emptyState(), version = 1;
   state.users.admin = { id: 'admin', email: 'admin@example.test', createdAt, membership: { type: 'permanent' } };
   state.users.desktop = { id: 'desktop', email: 'user@example.test', createdAt, membership: { type: 'none' } };
@@ -44,7 +46,8 @@ test('real SQLite Durable Object preserves auth, full feedback and targeted acti
     modules: true, script: bundle.outputFiles[0].text,
     compatibilityDate: '2026-09-22', compatibilityFlags: ['nodejs_compat'],
     durableObjects: { ACCOUNT_RUNTIME: { className: 'AccountRuntime', useSQLite: true } },
-    bindings: { AUTH_SITE_ORIGIN: origin, AUTH_SECRET_PEPPER: pepper, AUTH_ADMIN_EMAILS: 'admin@example.test', AUTH_GITHUB_OWNER: 'fixture', AUTH_GITHUB_REPO: 'fixture', AUTH_GITHUB_TOKEN: 'fixture-token', AUTH_MAIL_PROVIDER: 'webhook', AUTH_MAIL_WEBHOOK_URL: 'https://mail.example.test/send', AUTH_MAIL_WEBHOOK_SECRET: 'fixture-mail-secret' },
+    bindings: { AUTH_SITE_ORIGIN: origin, AUTH_SECRET_PEPPER: pepper, AUTH_ADMIN_EMAILS: 'admin@example.test', AUTH_GITHUB_OWNER: 'fixture', AUTH_GITHUB_REPO: 'fixture', AUTH_GITHUB_TOKEN: 'fixture-token', AUTH_MAIL_PROVIDER: 'webhook', AUTH_MAIL_WEBHOOK_URL: 'https://mail.example.test/send', AUTH_MAIL_WEBHOOK_SECRET: 'fixture-mail-secret',
+      AUTH_ENTITLEMENT_PRIVATE_KEY: signing.privateKey.export({ type: 'pkcs8', format: 'pem' }), AUTH_ENTITLEMENT_KEY_ID: 'runtime-v1' },
     outboundService: async request => {
       const url = new URL(request.url);
       calls.push({ path: url.pathname, method: request.method });
@@ -171,4 +174,27 @@ test('real SQLite Durable Object preserves auth, full feedback and targeted acti
   assert.equal(logout.status, 200);
   assert.match(logout.headers.get('set-cookie'), /Max-Age=0/);
   assert.ok(state.sessions[digest(pepper, 'session', token)].revokedAt);
+
+  // Seed the same canonical keys, UUID-like identifiers and ISO membership
+  // dates used by existing production records. Runtime Secrets must reach the
+  // real account handler and signer, not just an isolated crypto helper.
+  const memberExpiresAt = Date.now() + 60_000;
+  state.users.desktop.membership = { type: 'duration', startsAt: createdAt, expiresAt: new Date(memberExpiresAt).toISOString() };
+  state.devices['desktop-device'] = { id: 'desktop-device', userId: 'desktop', publicKey: publicKey.export({ format: 'pem', type: 'spki' }),
+    status: 'active', boundAt: createdAt, lastCheckedAt: createdAt };
+  state.sessions[digest(pepper, 'session', desktopToken)].deviceId = 'desktop-device';
+  const authorized = await desktopCall('authorize', { feature: 'profile-download' });
+  assert.equal(authorized.status, 200, JSON.stringify(await authorized.clone().json()));
+  const grant = (await authorized.json()).entitlement;
+  const claims = verifyEntitlement(grant, { publicKeys: { 'runtime-v1': signing.publicKey }, now: Date.now(),
+    token: desktopToken, publicKey, userId: 'desktop', feature: 'profile-download' });
+  assert.equal(claims.expiresAt, memberExpiresAt);
+  assert.equal(claims.deviceId, 'desktop-device');
+  assert.match(claims.requestNonce, /^[a-zA-Z0-9_-]{16,100}$/);
+  state.devices['desktop-device'].status = 'revoked';
+  const revoked = await desktopCall('authorize', { feature: 'profile-download' });
+  assert.equal(revoked.status, 403);
+  const revokedResult = await revoked.json();
+  assert.equal(revokedResult.error.code, 'DEVICE_REVOKED');
+  assert.equal(revokedResult.entitlement, undefined);
 });

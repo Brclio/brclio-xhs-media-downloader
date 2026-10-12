@@ -21,6 +21,15 @@ const ITEM_LABELS = {
   failed: "下载失败"
 };
 
+export function profileRecoveryHint(state) {
+  if (state.status !== "paused") return "";
+  if (state.pauseReason === "AUTH_REQUIRED") return "请打开上方小红书窗口完成登录或验证，再继续任务。";
+  if (state.pauseReason === "RATE_LIMITED") return "小红书暂时限制访问，请稍后完成验证或延长请求间隔，再继续任务。";
+  if (state.pauseReason === "ACCOUNT_AUTHORIZATION_REQUIRED") return "请检查软件账号的会员和设备授权；本地授权到期时需联网刷新，再继续任务。已下载文件会保留。";
+  if (state.pauseReason === "DISCOVERY_INCOMPLETE") return "主页列表尚未读取完整，继续任务会重新扫描并合并已有记录。";
+  return "下载进度已保留，点击继续任务可接着处理。";
+}
+
 function count(value) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(0, Math.trunc(number)) : 0;
@@ -1291,6 +1300,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     }
     ui.openDirectory.disabled = operationPending || !snapshot.directory;
     ui.openDirectory.title = snapshot.directory || "完成文件夹选择并开始任务后可打开";
+    ui.resumeHint.textContent = profileRecoveryHint(snapshot);
     ui.resumeHint.hidden = !paused;
   }
 

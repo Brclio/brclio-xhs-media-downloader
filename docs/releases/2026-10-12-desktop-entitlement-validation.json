@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "scope": "Signed local desktop entitlements and long download task resilience",
+  "feedback": {
+    "clientVersion": "2.0.7",
+    "platform": "Windows x64",
+    "savedMediaBeforeStorageFailure": 1268,
+    "remoteAuthorizationRequestsBeforeStorageFailure": 1780,
+    "confirmedFailure": "HTTP 503 STORAGE_UNAVAILABLE at 06:53:22; no authorization retry; manual resume at 09:40 recovered",
+    "upstreamGithubStatusKnown": false
+  },
+  "policy": {
+    "signatureAlgorithm": "Ed25519",
+    "remoteOnMemberAction": true,
+    "backgroundSyncSeconds": 300,
+    "maxGrantLifetimeSeconds": 86400,
+    "grantClippedToMembershipExpiry": true,
+    "bindings": [
+      "account",
+      "session",
+      "device public key",
+      "feature",
+      "issuance request nonce"
+    ],
+    "temporaryServiceFailureRequiresValidSignedGrant": true,
+    "authoritativeRevocationInvalidatesAllGrants": true
+  },
+  "validation": {
+    "npmTest": {
+      "nodePassed": 1595,
+      "nodeSkipped": 12,
+      "nodeFailed": 0,
+      "nodeCommand": "node --test --test-concurrency=1",
+      "pythonPassed": 47
+    },
+    "cloudflareDeployDryRun": "passed",
+    "workerdSigningAndVerification": "passed",
+    "profileIntegration": {
+      "scenariosPassed": 3,
+      "notes": 130,
+      "images": 390,
+      "storageFailureAfterNote": 101
+    },
+    "memberVideoIntegration": {
+      "testsPassedIncludingSubtests": 10,
+      "chunksWithNoAdditionalRemoteAuthorization": 40
+    },
+    "clockAndBindingChecks": [
+      "runtime monotonic expiry",
+      "restart before persisted receipt time denied",
+      "clock skew recovery",
+      "old response nonce replay denied",
+      "copied session or device denied",
+      "response flight time cannot extend expiry",
+      "encrypted persistence latency cannot extend expiry"
+    ],
+    "credentialsAndNetwork": "isolated fixture transports and credential stores; original encrypted-store regressions also pass",
+    "nativeEncryptedStore": {
+      "platform": "darwin",
+      "realSafeStorage": true,
+      "twoProcessSignedGrantPersistence": true,
+      "legacyCredentialUpgrade": true,
+      "offlineRestore": true,
+      "authoritativeInvalidationPersisted": true,
+      "transport": "isolated-fixture"
+    }
+  },
+  "delivery": {
+    "sourceVersion": "2.0.16",
+    "publicKeyPinned": true,
+    "privateKeyPreparedLocallyOutsideGit": true,
+    "productionSecretConfigured": false,
+    "productionDeployed": false,
+    "newDesktopInstallerPublished": false,
+    "installedWindowsClientVerified": false
+  }
+}

@@ -1,3 +1,6 @@
 {
-  "endpoint": "https://xhs.download.brclio.com/api/account"
+  "endpoint": "https://xhs.download.brclio.com/api/account",
+  "entitlementPublicKeys": {
+    "v1": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAL2g90CactqdsgtRCDg/S2pLiJMVWkMIcUwCmQ9YhyaA=\n-----END PUBLIC KEY-----\n"
+  }
 }

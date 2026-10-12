@@ -345,6 +345,7 @@ async function boot() {
   accountClient = new AccountClient({
     store: new SecureAccountStore({ directory: path.join(app.getPath('userData'), 'account'), safeStorage }),
     endpoint: !app.isPackaged && process.env.XHS_ACCOUNT_ENDPOINT !== undefined ? process.env.XHS_ACCOUNT_ENDPOINT : accountConfig.endpoint,
+    entitlementPublicKeys: accountConfig.entitlementPublicKeys || {},
     allowInsecureDevelopment: !app.isPackaged,
     onDiagnostic: diagnostic,
     onUpdate(state) {
@@ -360,7 +361,7 @@ async function boot() {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:clipboard-progress', progress);
     }
   });
-  const memberVideoTicketService = createDesktopMemberVideoTicketService(feature => accountClient.authorize(feature));
+  const memberVideoTicketService = createDesktopMemberVideoTicketService((feature, options) => accountClient.authorize(feature, options));
   videoDownload = new NativeVideoDownload({
     showSaveDialog: options => dialog.showSaveDialog(mainWindow, options),
     fetchImpl: createElectronUpdateFetch(net), authorize: feature => accountClient.authorize(feature),
@@ -371,7 +372,7 @@ async function boot() {
   });
   protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend, memberVideoTicketService,
     onDiagnostic: diagnostic,
-    authorize: feature => accountClient.authorize(feature) }));
+    authorize: (feature, options) => accountClient.authorize(feature, options) }));
   const permissions = new Set(['clipboard-read', 'clipboard-sanitized-write']);
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
     callback(contents === mainWindow?.webContents && isAppUrl(details.requestingUrl || contents.getURL()) && permissions.has(permission));
@@ -383,7 +384,8 @@ async function boot() {
   } });
   manager = new ProfileManager({ stateDirectory: path.join(app.getPath('userData'), 'profile-jobs'), browser, onUpdate: sendUpdate,
     onDiagnostic: diagnostic,
-    authorize: feature => accountClient.authorize(feature) });
+    authorize: (feature, options) => accountClient.authorize(feature, options),
+    checkAuthorization: feature => accountClient.checkLocalAuthorization(feature) });
   loginReset = new XhsLoginReset({ manager, confirm: async () => {
     const result = await dialog.showMessageBox(mainWindow, {
       type: 'question', title: '清除小红书登录记录', message: '清除后需要重新登录小红书。',
@@ -477,7 +479,9 @@ async function boot() {
   void accountClient.initialize().then(() => {
     if (quitting) return;
     void accountClient.refresh().catch(() => {});
-    accountRefreshTimer = setInterval(() => { void accountClient.refresh().catch(() => {}); }, 60_000);
+    accountRefreshTimer = setInterval(() => {
+      void accountClient.refresh().catch(() => {}).then(() => accountClient.syncEntitlements()).catch(() => {});
+    }, 300_000);
     accountRefreshTimer.unref();
   }).catch(error => diagnostic('account.initialize_failed', { error }, 'warn'));
   if (quitting || !mainWindow || mainWindow.isDestroyed()) return;

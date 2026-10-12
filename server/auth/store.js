@@ -3,6 +3,9 @@ import { validateUpdateProxyConfig } from './update-proxy.js';
 import { validateWebParseProxyConfig } from './web-parse-proxy.js';
 import { validateCommerceState } from './commerce.js';
 
+const ACCOUNT_UNAVAILABLE = '账号服务暂时不可用，请稍后重试。';
+const ACCOUNT_RATE_LIMITED = '账号服务请求较多，请稍后重试。';
+
 export function emptyState() {
   return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {}, feedbackCommentRateLimits: {}, updateProxyConfig: null, webParseProxyConfig: null, reviews: {}, orders: {} };
 }
@@ -32,7 +35,7 @@ export function validateState(state) {
 /** One authoritative file is the transaction boundary. Conflicts rerun validation on the new SHA. */
 export class GithubStateStore {
   constructor({ owner, repo, token, branch = 'main', path = 'state/accounts.json', allowInitialize = false, fetchImpl = (...args) => fetch(...args), maxAttempts = 6, maxBytes = 900_000, timeoutMs = 10_000, delay = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
-    if (!owner || !repo || !token || !/^[\w.-]+$/.test(owner) || !/^[\w.-]+$/.test(repo)) fail('SERVICE_NOT_CONFIGURED', 'GitHub 数据存储尚未配置。', 503);
+    if (!owner || !repo || !token || !/^[\w.-]+$/.test(owner) || !/^[\w.-]+$/.test(repo)) fail('SERVICE_NOT_CONFIGURED', '账号数据服务尚未配置。', 503);
     if (!path || path.startsWith('/') || path.split('/').includes('..')) fail('SERVICE_NOT_CONFIGURED', '业务数据路径配置错误。', 503);
     Object.assign(this, { owner, repo, token, branch, path, allowInitialize, fetchImpl, maxAttempts, maxBytes, timeoutMs, delay });
     this.base = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
@@ -48,19 +51,29 @@ export class GithubStateStore {
         ...(body ? { body: JSON.stringify(body) } : {}), cache: 'no-store', signal: AbortSignal.timeout(this.timeoutMs), redirect: 'manual',
       });
     } catch {
-      fail(method === 'PUT' ? 'STORAGE_WRITE_UNCERTAIN' : 'STORAGE_UNAVAILABLE', method === 'PUT' ? '存储响应中断，操作结果尚未确认。请保留本次请求并刷新重试。' : 'GitHub 存储暂时不可用，请稍后重试。', 503);
+      fail(method === 'PUT' ? 'STORAGE_WRITE_UNCERTAIN' : 'STORAGE_UNAVAILABLE', method === 'PUT' ? '账号服务响应中断，操作结果尚未确认。请保留本次请求并刷新重试。' : ACCOUNT_UNAVAILABLE, 503);
     }
   }
-  checkFailure(response) {
-    if (response.status === 429 || (response.status === 403 && response.headers.get('x-ratelimit-remaining') === '0') || response.headers.get('retry-after')) fail('STORAGE_RATE_LIMITED', 'GitHub 存储请求受限，请稍后重试。', 503);
-    if (!response.ok) fail('STORAGE_UNAVAILABLE', 'GitHub 存储访问失败，请联系管理员。', 503);
+  async checkFailure(response) {
+    if (response.ok) return;
+    let limited = response.status === 429 || (response.status === 403 && (response.headers.get('x-ratelimit-remaining') === '0' || Boolean(response.headers.get('retry-after'))));
+    if (!limited && response.status === 403) {
+      // Secondary limits can retain primary quota and omit Retry-After. Inspect
+      // a clone so callers retain the original response body; never expose it.
+      try {
+        const body = await response.clone().json();
+        limited = typeof body?.message === 'string' && /\b(?:secondary rate limit|API rate limit exceeded|abuse detection)\b/i.test(body.message);
+      } catch { /* A malformed/empty denial remains unavailable, never success. */ }
+    }
+    if (limited) fail('STORAGE_RATE_LIMITED', ACCOUNT_RATE_LIMITED, 503);
+    fail('STORAGE_UNAVAILABLE', ACCOUNT_UNAVAILABLE, 503);
   }
   async assertPrivate() {
     if (Date.now() - this.privateCheckedAt < 60_000) return;
     const response = await this.request(this.base);
-    this.checkFailure(response);
+    await this.checkFailure(response);
     let repo;
-    try { repo = await response.json(); } catch { fail('STORAGE_UNAVAILABLE', 'GitHub 仓库状态读取失败。', 503); }
+    try { repo = await response.json(); } catch { fail('STORAGE_UNAVAILABLE', ACCOUNT_UNAVAILABLE, 503); }
     if (repo.private !== true) fail('STORAGE_NOT_PRIVATE', '业务数据仓库必须为私有仓库。', 503);
     this.privateCheckedAt = Date.now();
   }
@@ -68,7 +81,7 @@ export class GithubStateStore {
     await this.assertPrivate();
     const response = await this.request(`${this.contentUrl}?ref=${encodeURIComponent(this.branch)}`);
     if (response.status === 404 && this.allowInitialize) return { state: emptyState(), sha: null };
-    this.checkFailure(response);
+    await this.checkFailure(response);
     try {
       const file = await response.json();
       if (!file.sha || file.encoding !== 'base64' || typeof file.content !== 'string') fail('STORAGE_INVALID', '业务数据文件不可读取或过大。', 503);
@@ -92,14 +105,14 @@ export class GithubStateStore {
         await this.delay(Math.min(40 * 2 ** attempt, 500) + Math.floor(Math.random() * 25));
         continue;
       }
-      this.checkFailure(response);
-      if (![200, 201].includes(response.status)) fail('STORAGE_WRITE_UNCERTAIN', 'GitHub 写入尚未确认，请使用相同请求重试。', 503);
+      await this.checkFailure(response);
+      if (![200, 201].includes(response.status)) fail('STORAGE_WRITE_UNCERTAIN', '账号操作尚未确认，请使用相同请求重试。', 503);
       try {
         const confirmation = await response.json();
-        if (!confirmation.content?.sha) fail('STORAGE_WRITE_UNCERTAIN', 'GitHub 写入确认不完整，请使用相同请求重试。', 503);
+        if (!confirmation.content?.sha) fail('STORAGE_WRITE_UNCERTAIN', '账号操作确认不完整，请使用相同请求重试。', 503);
       } catch (error) {
         if (error instanceof AccountError) throw error;
-        fail('STORAGE_WRITE_UNCERTAIN', 'GitHub 写入确认中断，请使用相同请求重试。', 503);
+        fail('STORAGE_WRITE_UNCERTAIN', '账号操作确认中断，请使用相同请求重试。', 503);
       }
       // An uncertain write is an error. The caller retries its durable operation ID to recover safely.
       return result?.value;
@@ -117,7 +130,7 @@ export class GithubStateStore {
     const response = await this.request(`${this.feedbackPartUrl(feedbackId, index)}?ref=${encodeURIComponent(this.branch)}`);
     if (response.status === 404 && allowMissing) return null;
     if (response.status === 404) fail('FEEDBACK_LOG_INCOMPLETE', '日志尚未全部上传，请使用原反馈重试。', 409);
-    this.checkFailure(response);
+    await this.checkFailure(response);
     try {
       const file = await response.json();
       if (!file.sha || file.encoding !== 'base64' || typeof file.content !== 'string') fail('STORAGE_INVALID', '反馈日志文件格式异常。', 503);
@@ -150,13 +163,13 @@ export class GithubStateStore {
       }
       const query = `query FeedbackParts(${declarations.join(', ')}) { repository(owner: $owner, name: $repo) { isPrivate ${fields.join(' ')} } }`;
       const response = await this.request('https://api.github.com/graphql', 'POST', { query, variables });
-      this.checkFailure(response);
+      await this.checkFailure(response);
       let result;
       try { result = await response.json(); }
       catch { fail('STORAGE_UNAVAILABLE', '反馈日志读取失败。', 503); }
       if (result?.errors?.length) {
         const limited = result.errors.some(error => error?.type === 'RATE_LIMITED');
-        fail(limited ? 'STORAGE_RATE_LIMITED' : 'STORAGE_UNAVAILABLE', limited ? 'GitHub 存储请求受限，请稍后重试。' : '反馈日志读取失败。', 503);
+        fail(limited ? 'STORAGE_RATE_LIMITED' : 'STORAGE_UNAVAILABLE', limited ? ACCOUNT_RATE_LIMITED : '反馈日志读取失败。', 503);
       }
       const repository = result?.data?.repository;
       if (!repository) fail('STORAGE_UNAVAILABLE', '反馈日志读取失败。', 503);
@@ -185,7 +198,7 @@ export class GithubStateStore {
       }
       const response = await this.request(url, 'PUT', { message: 'Store private feedback log [skip ci]', branch: this.branch, content: Buffer.from(content).toString('base64') });
       if ([409, 422].includes(response.status)) { await this.delay(Math.min(40 * 2 ** attempt, 500)); continue; }
-      this.checkFailure(response);
+      await this.checkFailure(response);
       if (![200, 201].includes(response.status)) fail('STORAGE_WRITE_UNCERTAIN', '日志写入尚未确认，请重试原分块。', 503);
       try {
         const confirmation = await response.json();

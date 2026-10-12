@@ -95,7 +95,7 @@ export class GithubMigrationStore extends GithubStateStore {
       throw error;
     }
     if (response.status === 409 || response.status === 422) fail('STORAGE_CONFLICT', 'GitHub 分支已变更或拒绝更新。请停止服务写入并重新预览；本次未强制覆盖。', 409);
-    this.checkFailure(response);
+    await this.checkFailure(response);
     try { return await response.json(); }
     catch {
       fail(method === 'PATCH' ? 'MIGRATION_WRITE_UNCERTAIN' : 'STORAGE_INVALID', method === 'PATCH' ? 'GitHub 分支更新确认中断，请核对分支提交记录。' : 'GitHub 迁移响应格式无效。', 503);

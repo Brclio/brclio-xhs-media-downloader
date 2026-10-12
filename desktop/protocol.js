@@ -82,14 +82,14 @@ async function defaultAuthorization(feature) {
 }
 
 export function createDesktopMemberVideoTicketService(authorize) {
-  return createMemberVideoTicketService({ authorize: () => authorize('watermark-free-video') });
+  return createMemberVideoTicketService({ authorize: (_request, options) => authorize('watermark-free-video', options) });
 }
 
 export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandlers, authorize = defaultAuthorization,
   memberVideoTicketService = createDesktopMemberVideoTicketService(authorize), onDiagnostic = () => {} }) {
   const handlers = nodeHandlers ?? {
     ...NODE_HANDLERS,
-    '/api/video': createVideoHandler({ authorizeOriginal: () => authorize('watermark-free-video') }),
+    '/api/video': createVideoHandler({ authorizeOriginal: () => authorize('watermark-free-video', { forceRemote: true }) }),
     '/api/member_video': createMemberVideoHandler({ ticketService: memberVideoTicketService })
   };
   return async (request) => {
@@ -108,7 +108,7 @@ export function createProtocolHandler({ rootDirectory, pythonBackend, nodeHandle
       }
       if (PYTHON_ROUTES.has(route)) {
         await authorize('single-download');
-        if (route === '/api/python_video' && isMemberVideoUrl(url.searchParams.get('url'))) await authorize('watermark-free-video');
+        if (route === '/api/python_video' && isMemberVideoUrl(url.searchParams.get('url'))) await authorize('watermark-free-video', { forceRemote: true });
         if (!pythonBackend?.available) return jsonError('Python 后台不可用，请使用完整安装包。', 503);
         const response = await pythonBackend.request({ path: `${route}${url.search}`, method: request.method,
           headers: Object.fromEntries(request.headers), body: await readBody(request) }, request.signal);

@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, readFile, writeFile, rm, stat, chmod } from 'node:fs/promises';
+import { createPrivateKey, createPublicKey } from 'node:crypto';
+import os from 'node:os';
+import path from 'node:path';
+import { provisionEntitlementKey } from '../scripts/provision-entitlement-key.mjs';
+
+test('key provisioning pins only a public key, keeps the private PEM private and reuses it safely', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'entitlement-key-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(path.join(root, 'desktop'));
+  const configFile = path.join(root, 'desktop/account-config.json');
+  await writeFile(configFile, JSON.stringify({ endpoint: 'https://accounts.example.test/api/account' }));
+  const first = await provisionEntitlementKey({ root });
+  const pem = await readFile(first.privateFile, 'utf8');
+  assert.equal((await stat(first.privateFile)).mode & 0o777, 0o600);
+  const config = await readFile(configFile, 'utf8');
+  assert.equal(config.includes('PRIVATE KEY'), false);
+  assert.equal(JSON.stringify(first).includes(pem), false);
+  const publicKey = createPublicKey(createPrivateKey(pem)).export({ type: 'spki', format: 'pem' });
+  assert.equal(JSON.parse(config).entitlementPublicKeys.v1, publicKey);
+  assert.equal((await provisionEntitlementKey({ root })).created, false);
+  assert.equal(await readFile(first.privateFile, 'utf8'), pem);
+  await chmod(first.privateFile, 0o644);
+  await assert.rejects(provisionEntitlementKey({ root }), /mode 600/);
+  await chmod(first.privateFile, 0o600);
+  await writeFile(configFile, JSON.stringify({ entitlementPublicKeys: { v1: 'different key' } }));
+  await assert.rejects(provisionEntitlementKey({ root }), /different public key/);
+  assert.equal(await readFile(first.privateFile, 'utf8'), pem);
+});

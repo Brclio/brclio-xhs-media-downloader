@@ -1,9 +1,42 @@
 import { createHash, randomUUID, sign } from 'node:crypto';
 import { accountError } from './account-storage.js';
 import { KNOWN_FEATURES, PROTECTED_FEATURES } from '../lib/membership-policy.js';
+import { verifyEntitlement } from '../lib/entitlement.js';
 
 const EXPIRED_SESSION_CODES = new Set(['SESSION_REVOKED', 'INVALID_SESSION', 'SESSION_INVALID', 'UNAUTHENTICATED']);
 const SKEW_CODES = new Set(['PROOF_EXPIRED', 'PROOF_TIMESTAMP_INVALID', 'TIMESTAMP_INVALID']);
+const TEMPORARY_STORAGE_CODES = new Set(['STORAGE_UNAVAILABLE', 'STORAGE_RATE_LIMITED', 'STORAGE_CONFLICT', 'STORAGE_WRITE_UNCERTAIN']);
+const TEMPORARY_AUTHORIZATION_CODES = new Set(['SERVICE_UNAVAILABLE', 'NETWORK_ERROR', 'RATE_LIMITED', 'TOO_MANY_REQUESTS', 'BAD_GATEWAY', 'GATEWAY_TIMEOUT']);
+const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+const REQUEST_CONTEXT = Symbol('accountRequestContext');
+
+function accountServiceMessage(code, message) {
+  if (!code?.startsWith('STORAGE_')) return message;
+  if (code === 'STORAGE_WRITE_UNCERTAIN') return '软件账号服务暂时无法确认本次操作结果，请保留原内容并稍后重试。';
+  if (TEMPORARY_STORAGE_CODES.has(code)) return '软件账号服务暂时繁忙，请稍后重试；已下载文件会保留。';
+  return '软件账号服务暂时不可用，请联系软件管理员；已下载文件会保留。';
+}
+
+function retryableAuthorizationError(error) {
+  const code = error.code || '';
+  // A storage/configuration fault or an explicit access denial is never made
+  // retryable merely because the service happened to use HTTP 503.
+  if (code.startsWith('STORAGE_')) return TEMPORARY_STORAGE_CODES.has(code);
+  if (/^(?:ACCOUNT_|AUTHORIZATION_|CONFIGURATION_|DEVICE_|ENTITLEMENT_|FEATURE_|INVALID_|MEMBERSHIP_|PROOF_|SECURE_|SESSION_|TIMESTAMP_|USER_)/.test(code)
+    || ['FORBIDDEN', 'DESKTOP_REQUIRED', 'UNKNOWN_FEATURE'].includes(code) || EXPIRED_SESSION_CODES.has(code)) return false;
+  return TEMPORARY_AUTHORIZATION_CODES.has(code) || [429, 502, 503, 504].includes(error.status);
+}
+
+function authoritativeAuthorizationError(error) {
+  return EXPIRED_SESSION_CODES.has(error.code)
+    || /^(?:ACCOUNT_|AUTHORIZATION_|DEVICE_|MEMBERSHIP_|SESSION_|ENTITLEMENT_)/.test(error.code || '');
+}
+
+function entitlementError(error) {
+  return accountError(error.code === 'ENTITLEMENT_EXPIRED' ? 'ENTITLEMENT_EXPIRED' : 'ENTITLEMENT_INVALID',
+    error.code === 'ENTITLEMENT_EXPIRED' ? '本机会员授权已到期，请联网刷新授权后继续；已下载文件会保留。'
+      : '本机会员授权无效，请联网重新确认软件账号授权；已下载文件会保留。', 403);
+}
 
 export function validateAccountEndpoint(value, allowInsecureDevelopment = false) {
   if (!value) return '';
@@ -17,13 +50,18 @@ export function validateAccountEndpoint(value, allowInsecureDevelopment = false)
 }
 
 export class AccountClient {
-  constructor({ store, endpoint, fetchImpl = globalThis.fetch, now = Date.now, onUpdate = () => {}, onDiagnostic = () => {}, allowInsecureDevelopment = false }) {
+  constructor({ store, endpoint, fetchImpl = globalThis.fetch, now = Date.now, monotonicNow = () => performance.now(), sleep = wait,
+    entitlementPublicKeys = {}, onUpdate = () => {}, onDiagnostic = () => {}, allowInsecureDevelopment = false }) {
     this.store = store; this.endpoint = validateAccountEndpoint(endpoint, allowInsecureDevelopment);
     this.fetchImpl = fetchImpl; this.now = now; this.onUpdate = onUpdate;
     this.credentials = null; this.account = null; this.error = null;
     this.status = this.endpoint ? 'initializing' : 'configuration_required';
     this.serverOffset = 0; this._commands = Promise.resolve();
     this.onDiagnostic = onDiagnostic;
+    this.sleep = sleep; this._sessionGeneration = 0; this._authorizationRevision = 0; this._authorizations = new Map();
+    this.entitlementPublicKeys = entitlementPublicKeys; this.monotonicNow = monotonicNow;
+    this._hasEntitlementKeys = entitlementPublicKeys instanceof Map ? entitlementPublicKeys.size > 0 : Object.keys(entitlementPublicKeys || {}).length > 0;
+    this._entitlementAnchors = new Map(); this._signedAuthorizationUsed = new Set();
     this._nicknameRevision = 0; this._nicknameRequest = 0; this._nicknameApplied = 0;
   }
   snapshot() {
@@ -49,6 +87,7 @@ export class AccountClient {
     this._initialization = (async () => {
       try {
         this.credentials = await this.store.load();
+        this._restoreEntitlements();
         this.status = !this.endpoint ? 'configuration_required' : this.credentials.token ? 'checking' : 'signed_out';
       } catch (error) { this.status = 'secure_storage_unavailable'; this.error = { code: error.code || 'SECURE_STORAGE_UNAVAILABLE', message: error.message }; }
       this._emit(); return this.snapshot();
@@ -58,8 +97,89 @@ export class AccountClient {
   _requireStorage() {
     if (!this.credentials) throw accountError(this.error?.code || 'SECURE_STORAGE_UNAVAILABLE', this.error?.message || '系统安全存储不可用。');
   }
-  async _request(action, input = {}, { token = this.credentials?.token || '', unsigned = false, allowClockRetry = true } = {}) {
+  _restoreEntitlements() {
+    for (const feature of Array.isArray(this.credentials.signedAuthorizationUsed) ? this.credentials.signedAuthorizationUsed : []) {
+      if (PROTECTED_FEATURES.includes(feature)) this._signedAuthorizationUsed.add(feature);
+    }
+    for (const [feature, receipt] of Object.entries(this.credentials.entitlements || {})) {
+      if (!PROTECTED_FEATURES.includes(feature)) continue;
+      this._signedAuthorizationUsed.add(feature);
+      const localNow = this.now();
+      if (!Number.isFinite(receipt?.receivedAt) || !Number.isFinite(receipt?.trustedAt) || localNow < receipt.receivedAt) continue;
+      this._entitlementAnchors.set(feature, { receivedAt: localNow, receivedMono: this.monotonicNow(),
+        trustedAt: receipt.trustedAt + localNow - receipt.receivedAt });
+    }
+  }
+  _entitlementNow(feature) {
+    const localNow = this.now(), anchor = this._entitlementAnchors.get(feature);
+    if (!anchor) return Math.floor(localNow);
+    const trustedNow = anchor.trustedAt + Math.max(0, localNow - anchor.receivedAt, this.monotonicNow() - anchor.receivedMono);
+    anchor.lastTrustedAt = Math.floor(Math.max(anchor.lastTrustedAt || anchor.trustedAt, trustedNow));
+    return anchor.lastTrustedAt;
+  }
+  checkLocalAuthorization(feature) {
+    if (!this._signedAuthorizationUsed.has(feature)) return null;
+    const receipt = this.credentials?.entitlements?.[feature];
+    if (!this.credentials?.token) throw accountError('ACCOUNT_AUTHORIZATION_REQUIRED', '软件账号已退出，请重新登录后继续。', 401);
+    if (!receipt || !this._entitlementAnchors.has(feature)) throw entitlementError({ code: 'ENTITLEMENT_INVALID' });
+    if (this._accountDeniesAuthorization(this.account)) throw accountError('ACCOUNT_AUTHORIZATION_REQUIRED', '当前账号或设备的会员授权已失效，请重新确认授权。', 403);
+    try {
+      const claims = verifyEntitlement(receipt.entitlement, { publicKeys: this.entitlementPublicKeys, now: this._entitlementNow(feature),
+        token: this.credentials.token, publicKey: this.credentials.publicKey, feature, ...(this.account?.user?.id ? { userId: this.account.user.id } : {}) });
+      if (this.account?.device?.id && claims.deviceId !== this.account.device.id) throw entitlementError({ code: 'ENTITLEMENT_INVALID' });
+      return { authorized: true, userId: claims.userId };
+    } catch (error) { throw entitlementError(error); }
+  }
+  _forgetEntitlements() {
+    if (!this.credentials) return;
+    this.credentials = { ...this.credentials, entitlements: {}, signedAuthorizationUsed: [...this._signedAuthorizationUsed] };
+    this._entitlementAnchors.clear();
+    this._authorizationRevision++;
+  }
+  _accountDeniesAuthorization(account) {
+    return account?.membership?.active === false
+      || (account?.device?.status && account.device.status !== 'authorized')
+      || PROTECTED_FEATURES.some(feature => account?.features?.[feature]?.allowed === false);
+  }
+  async _rememberEntitlement(feature, entitlement, session, account, requestContext) {
+    if (typeof requestContext?.nonce !== 'string' || !Number.isFinite(requestContext.startedAt) || !Number.isFinite(requestContext.startedMono)) {
+      throw entitlementError({ code: 'ENTITLEMENT_INVALID' });
+    }
+    // issuedAt becomes a clock anchor only after the pinned signature verifies.
+    let issuedAt;
+    try { issuedAt = JSON.parse(Buffer.from(entitlement.payload, 'base64url').toString('utf8')).issuedAt; } catch {}
+    const localNow = this.now();
+    const receivedMono = this.monotonicNow();
+    // Count the complete request flight conservatively. Anchoring issuedAt at
+    // receipt would otherwise extend a grant that expired during a slow reply.
+    const elapsed = Math.max(0, localNow - requestContext.startedAt, receivedMono - requestContext.startedMono);
+    const trustedAt = issuedAt + Math.ceil(elapsed);
+    try {
+      const claims = verifyEntitlement(entitlement, { publicKeys: this.entitlementPublicKeys, now: trustedAt, token: session.token,
+        publicKey: this.credentials.publicKey, feature, requestNonce: requestContext.nonce,
+        ...((account?.user?.id || session.userId) ? { userId: account?.user?.id || session.userId } : {}) });
+      if (account?.device?.id && claims.deviceId !== account.device.id) throw entitlementError({ code: 'ENTITLEMENT_INVALID' });
+    } catch (error) { throw entitlementError(error); }
+    await this._command(async () => {
+      this._assertAuthorizationSession(session);
+      const signedAuthorizationUsed = [...new Set([...this._signedAuthorizationUsed, feature])];
+      const next = { ...this.credentials, signedAuthorizationUsed,
+        entitlements: { ...this.credentials.entitlements, [feature]: { entitlement, receivedAt: localNow, trustedAt } } };
+      await this.store.save(next);
+      this._assertAuthorizationSession(session);
+      this.credentials = next; this._signedAuthorizationUsed.add(feature);
+      this._entitlementAnchors.set(feature, { receivedAt: localNow, trustedAt, receivedMono });
+    });
+  }
+  async syncEntitlements() {
+    if (!this.credentials?.token) return [];
+    const features = PROTECTED_FEATURES.filter(feature => this.credentials.entitlements?.[feature]);
+    return Promise.allSettled(features.map(feature => this.authorize(feature, { forceRemote: true })));
+  }
+  async _request(action, input = {}, { token = this.credentials?.token || '', unsigned = false, allowClockRetry = true, assertSession } = {}) {
+    assertSession?.();
     const started = this.now();
+    const startedMono = this.monotonicNow();
     const nicknameRevision = this._nicknameRevision;
     if (!this.endpoint) throw accountError('CONFIGURATION_REQUIRED', '授权服务尚未配置，会员功能暂不可用。');
     const body = { action, input };
@@ -76,22 +196,26 @@ export class AccountClient {
         body: JSON.stringify(body), signal: AbortSignal.timeout(action === 'feedback-finalize' ? 60_000 : 15_000) });
       result = await response.json();
     } catch {
+      assertSession?.();
       this.onDiagnostic('account.request_failed', { action, durationMs: this.now() - started, code: 'NETWORK_ERROR' }, 'warn');
       throw accountError('SERVICE_UNAVAILABLE', '软件账号服务暂时不可用，请检查网络后重试；已下载文件会保留。');
     }
+    assertSession?.();
     this.onDiagnostic('account.response', { action, status: response.status, code: result?.error?.code, durationMs: this.now() - started });
     const serverTime = Date.parse(result?.serverTime || result?.account?.serverTime);
     if (Number.isFinite(serverTime)) this.serverOffset = serverTime - this.now();
     if (!response.ok || result?.ok !== true) {
       if (allowClockRetry && Number.isFinite(serverTime) && SKEW_CODES.has(result?.error?.code)) {
-        return this._request(action, input, { token, unsigned, allowClockRetry: false });
+        return this._request(action, input, { token, unsigned, allowClockRetry: false, assertSession });
       }
-      throw accountError(result?.error?.code || 'SERVICE_UNAVAILABLE', result?.error?.message || '软件账号服务暂时不可用。', response.status || 503);
+      const code = result?.error?.code || 'SERVICE_UNAVAILABLE';
+      throw accountError(code, accountServiceMessage(code, result?.error?.message || '软件账号服务暂时不可用。'), response.status || 503);
     }
     if (nicknameRevision !== this._nicknameRevision && this.credentials?.token === token
       && result.account?.user?.id === this.account?.user?.id && this.account?.user?.nickname) {
       result.account.user.nickname = this.account.user.nickname;
     }
+    if (body.proof) Object.defineProperty(result, REQUEST_CONTEXT, { value: { nonce: body.proof.nonce, startedAt: started, startedMono } });
     return result;
   }
   async _flushPendingLogout() {
@@ -109,10 +233,15 @@ export class AccountClient {
       if (!this.credentials.token) { this.status = this.endpoint ? 'signed_out' : 'configuration_required'; this._emit(); return this.snapshot(); }
       try {
         const result = await this._request('me');
+        if (this._accountDeniesAuthorization(result.account)) {
+          this._forgetEntitlements(); await this.store.save(this.credentials);
+        }
         this.account = result.account; this.status = 'ready'; this.error = null; this._emit(); return this.snapshot();
       } catch (error) {
         if (EXPIRED_SESSION_CODES.has(error.code)) {
+          this._forgetEntitlements();
           const next = { ...this.credentials, token: null }; await this.store.save(next);
+          this._sessionGeneration++;
           this.credentials = next; this.account = null; this.status = 'signed_out';
         }
         this._recordError(error); throw error;
@@ -137,15 +266,18 @@ export class AccountClient {
         const result = await this._request('verify-code', { email: String(email).trim(), code: String(code).trim(), client: 'desktop', device: this.store.device(this.credentials) }, { token: '' });
         if (typeof result.token !== 'string' || !result.token || !result.account) throw accountError('SERVICE_UNAVAILABLE', '登录服务返回无效结果，请重试。');
         const oldToken = this.credentials.token;
-        const next = { ...this.credentials, token: result.token, pendingLogoutTokens: oldToken && oldToken !== result.token ? [...this.credentials.pendingLogoutTokens, oldToken] : this.credentials.pendingLogoutTokens };
+        const next = { ...this.credentials, token: result.token, entitlements: {}, signedAuthorizationUsed: [...this._signedAuthorizationUsed],
+          pendingLogoutTokens: oldToken && oldToken !== result.token ? [...this.credentials.pendingLogoutTokens, oldToken] : this.credentials.pendingLogoutTokens };
         try { await this.store.save(next); }
         catch (error) { try { await this._request('logout', {}, { token: result.token }); } catch {} throw error; }
+        this._sessionGeneration++;
+        this._entitlementAnchors.clear();
         this.credentials = next; this.account = result.account; this.status = 'ready'; this.error = null;
         await this._flushPendingLogout(); this._emit(); return this.snapshot();
       } catch (error) { this._recordError(error); throw error; }
     });
   }
-  async authorize(feature) {
+  async authorize(feature, { forceRemote = false } = {}) {
     if (!KNOWN_FEATURES.includes(feature)) throw accountError('FEATURE_UNKNOWN', '未知的授权功能。', 403);
     if (!PROTECTED_FEATURES.includes(feature)) return { authorized: true, free: true };
     this._requireStorage();
@@ -153,15 +285,72 @@ export class AccountClient {
     if (!this.credentials.token) throw accountError('ACCOUNT_REQUIRED', feature === 'watermark-free-video'
       ? '请先登录软件账号，再下载会员专享无水印视频。'
       : '请先登录软件账号，再使用主页批量下载。', 401);
-    const token = this.credentials.token;
+    if (!forceRemote) {
+      try { const local = this.checkLocalAuthorization(feature); if (local) return local; }
+      catch { /* A missing or expired signed grant needs a fresh server grant. */ }
+    }
+    const session = { token: this.credentials.token, generation: this._sessionGeneration, revision: this._authorizationRevision, userId: this.account?.user?.id || '' };
+    const pending = this._authorizations.get(feature);
+    if (pending && pending.session.token === session.token && pending.session.generation === session.generation && pending.session.revision === session.revision
+      && pending.session.userId === session.userId) return pending.promise;
+    const entry = { session };
+    entry.promise = this._authorize(feature, session).finally(() => {
+      if (this._authorizations.get(feature) === entry) this._authorizations.delete(feature);
+    });
+    this._authorizations.set(feature, entry);
+    return entry.promise;
+  }
+  _assertAuthorizationSession(session, { allowInvalidated = false } = {}) {
+    if (this.credentials?.token !== session.token || this._sessionGeneration !== session.generation
+      || (!allowInvalidated && this._authorizationRevision !== session.revision)
+      || (session.userId && this.account?.user?.id !== session.userId)) {
+      throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请重新确认授权。', 401);
+    }
+  }
+  async _authorize(feature, session) {
+    const assertSession = () => this._assertAuthorizationSession(session);
     try {
-      const result = await this._request('authorize', { feature }, { token });
-      if (this.credentials.token !== token) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请重新确认授权。', 401);
+      let result;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        assertSession();
+        try { result = await this._request('authorize', { feature }, { token: session.token, assertSession }); break; }
+        catch (error) {
+          assertSession();
+          if (attempt === 2 || !retryableAuthorizationError(error)) throw error;
+          const delayMs = (attempt + 1) * 1000;
+          this.onDiagnostic('account.authorization_retry', { feature, attempt: attempt + 2, delayMs, code: error.code, status: error.status }, 'warn');
+          await this.sleep(delayMs);
+        }
+      }
+      assertSession();
       if (result.authorized !== true) throw accountError('AUTHORIZATION_DENIED', '当前账号或设备没有此功能的授权。', 403);
+      if (result.entitlement && this._hasEntitlementKeys) await this._rememberEntitlement(feature, result.entitlement, session, result.account, result[REQUEST_CONTEXT]);
+      else if (this._signedAuthorizationUsed.has(feature)) throw entitlementError({ code: 'ENTITLEMENT_INVALID' });
+      assertSession();
       if (result.account) this.account = result.account;
+      // Disk encryption or a queued account refresh can take time after the
+      // HTTP reply. Never return authority that expired while it was saved.
+      if (this._signedAuthorizationUsed.has(feature)) this.checkLocalAuthorization(feature);
       this.status = 'ready'; this.error = null; this._emit();
       return { authorized: true, ...(this.account?.user?.id ? { userId: this.account.user.id } : {}) };
-    } catch (error) { this.status = 'authorization_denied'; this._recordError(error); throw error; }
+    } catch (error) {
+      // A delayed response must not overwrite the status of a replacement login.
+      assertSession();
+      if (retryableAuthorizationError(error)) {
+        try {
+          const local = this.checkLocalAuthorization(feature);
+          if (local) {
+            this.onDiagnostic('account.entitlement_fallback', { feature, code: error.code, status: error.status }, 'warn');
+            this.status = 'ready'; this.error = null; this._emit(); return local;
+          }
+        } catch { /* Expired, revoked, or untrusted local grants never authorize. */ }
+      } else if (authoritativeAuthorizationError(error)) {
+        this._forgetEntitlements();
+        await this._command(async () => { this._assertAuthorizationSession(session, { allowInvalidated: true }); await this.store.save(this.credentials); });
+        this._assertAuthorizationSession(session, { allowInvalidated: true });
+      }
+      this.status = 'authorization_denied'; this._recordError(error); throw error;
+    }
   }
   async feedbackRequest(action, input, expectedUserId) {
     if (!['feedback-begin', 'feedback-upload-part', 'feedback-finalize', 'feedback-mine', 'feedback-detail', 'feedback-reply'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效反馈操作。', 400);
@@ -194,6 +383,10 @@ export class AccountClient {
           // A delayed revoked response must never clear a replacement login.
           if (this.credentials?.token !== token || this.account?.user?.id !== expectedUserId) return false;
           const next = { ...this.credentials, token: null };
+          this._sessionGeneration++;
+          this._forgetEntitlements();
+          next.entitlements = {};
+          next.signedAuthorizationUsed = [...this._signedAuthorizationUsed];
           this.credentials = next; this.account = null; this.status = 'signed_out';
           this.error = { code: error.code, message: error.message }; this._emit();
           try { await this.store.save(next); }
@@ -229,8 +422,11 @@ export class AccountClient {
   logout() {
     return this._command(async () => {
       this._requireStorage();
-      const next = { ...this.credentials, token: null, pendingLogoutTokens: [...new Set([...this.credentials.pendingLogoutTokens, this.credentials.token].filter(Boolean))] };
+      const next = { ...this.credentials, token: null, entitlements: {}, signedAuthorizationUsed: [...this._signedAuthorizationUsed],
+        pendingLogoutTokens: [...new Set([...this.credentials.pendingLogoutTokens, this.credentials.token].filter(Boolean))] };
       await this.store.save(next); this.credentials = next;
+      this._sessionGeneration++;
+      this._entitlementAnchors.clear();
       this.account = null; this.status = 'signed_out'; this.error = null; this._emit();
       await this._flushPendingLogout(); this._emit();
       return { state: this.snapshot(), message: this.credentials.pendingLogoutTokens.length

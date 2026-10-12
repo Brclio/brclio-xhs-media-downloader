@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "2.0.15",
+  "version": "2.0.16",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页、Mac、Windows 与 Android 客户端；桌面版支持主页批量下载和自定义间隔",
@@ -32,6 +32,7 @@
     "desktop:prepare:mac": "python3 scripts/build-mac-python.py",
     "build:web": "node deploy/build-web.mjs",
     "desktop:verify:account": "node scripts/verify-account-storage.mjs",
+    "desktop:verify:entitlement": "node scripts/verify-profile-entitlement.mjs",
     "desktop:verify:vip": "electron scripts/verify-vip-ui.cjs",
     "desktop:verify:membership": "electron scripts/verify-membership-ui.cjs",
     "desktop:verify:live-photo": "electron scripts/verify-live-photo.cjs",

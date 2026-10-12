@@ -16,7 +16,7 @@ function fakeGithub(initial = emptyState()) {
     }
     const fault = faults.shift();
     if (fault?.throw) throw Error('simulated transport timeout');
-    if (fault?.status) return Response.json({}, { status: fault.status, headers: fault.headers });
+    if (fault?.status) return Response.json(fault.body || {}, { status: fault.status, headers: fault.headers });
     const body = JSON.parse(options.body);
     if (exists ? body.sha !== String(version) : Boolean(body.sha)) return Response.json({}, { status: 409 });
     state = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8'));
@@ -62,6 +62,8 @@ test('conflicts have a bounded retry count', async () => {
 for (const scenario of [
   { fault: { status: 403 }, error: 'STORAGE_UNAVAILABLE' },
   { fault: { status: 403, headers: { 'x-ratelimit-remaining': '0' } }, error: 'STORAGE_RATE_LIMITED' },
+  { fault: { status: 403, body: { message: 'You have exceeded a secondary rate limit.' }, headers: { 'x-ratelimit-remaining': '4999' } }, error: 'STORAGE_RATE_LIMITED' },
+  { fault: { status: 403, headers: { 'retry-after': '60' } }, error: 'STORAGE_RATE_LIMITED' },
   { fault: { status: 429 }, error: 'STORAGE_RATE_LIMITED' },
   { fault: { status: 500 }, error: 'STORAGE_UNAVAILABLE' },
   { fault: { status: 422 }, error: 'STORAGE_UNAVAILABLE' },
@@ -109,6 +111,37 @@ test('invalid state and capacity failures cannot reset or silently overwrite dat
 test('network read failure is an explicit unavailable error', async () => {
   const store = new GithubStateStore({ owner: 'owner', repo: 'data', token: 'test', fetchImpl: async () => { throw Error('offline'); } });
   await assert.rejects(store.read(), { code: 'STORAGE_UNAVAILABLE' });
+});
+
+test('account reads classify provider throttling without leaking provider internals or treating denials as success', async () => {
+  for (const [status, body, headers, code] of [
+    [403, { message: 'You have exceeded a secondary rate limit. private-error-sentinel' }, { 'x-ratelimit-remaining': '4999' }, 'STORAGE_RATE_LIMITED'],
+    [403, { message: 'You have triggered an abuse detection mechanism. private-error-sentinel' }, {}, 'STORAGE_RATE_LIMITED'],
+    [403, { message: 'API rate limit exceeded for private-error-sentinel' }, {}, 'STORAGE_RATE_LIMITED'],
+    [403, { message: 'Resource not accessible by personal access token. private-error-sentinel' }, {}, 'STORAGE_UNAVAILABLE'],
+    [503, { message: 'private-error-sentinel' }, { 'retry-after': '60' }, 'STORAGE_UNAVAILABLE'],
+  ]) {
+    const store = new GithubStateStore({ owner: 'owner', repo: 'data', token: 'test', fetchImpl: async (url) => url.includes('/contents/')
+      ? Response.json(body, { status, headers }) : Response.json({ private: true }) });
+    await assert.rejects(store.read(), error => {
+      assert.equal(error.code, code);
+      assert.equal(error.status, 503);
+      assert.match(error.message, /账号服务/);
+      assert.doesNotMatch(error.message, /GitHub|private-error-sentinel|personal access token/i);
+      return true;
+    });
+  }
+  for (const body of ['{', '']) {
+    const store = new GithubStateStore({ owner: 'owner', repo: 'data', token: 'test', fetchImpl: async () => new Response(body, { status: 403 }) });
+    await assert.rejects(store.read(), { code: 'STORAGE_UNAVAILABLE' });
+  }
+});
+
+test('an allowed final quota response remains readable despite throttle headers', async () => {
+  const store = new GithubStateStore({ owner: 'owner', repo: 'data', token: 'test', fetchImpl: async (url) => Response.json(url.includes('/contents/')
+    ? { sha: 'final-quota', encoding: 'base64', content: Buffer.from(JSON.stringify(emptyState())).toString('base64') }
+    : { private: true }, { headers: { 'x-ratelimit-remaining': '0', 'retry-after': '60' } }) });
+  assert.equal((await store.read()).sha, 'final-quota');
 });
 
 test('default fetch does not receive the store as its native function receiver', async t => {

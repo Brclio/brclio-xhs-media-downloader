@@ -7,6 +7,7 @@ import { createFeedbackService } from './feedback.js';
 import { createCommerceService, accountNickname } from './commerce.js';
 import { subscriptionUrlsValue, updateProxyConfigView, updateProxyAuditView, updateProxyAuditReason } from './update-proxy.js';
 import { encryptWebParseSubscription, webParseSubscriptionUrlValue, webParseProxyPrivateConfig, webParseProxyAdminView } from './web-parse-proxy.js';
+import { issueEntitlement } from '../../lib/entitlement.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -260,7 +261,16 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       const feature = request.input.feature;
       if (!KNOWN_FEATURES.includes(feature)) fail('UNKNOWN_FEATURE', '未知功能。');
       if (session.client !== 'desktop' && !(feature === 'watermark-free-video' && session.client === 'browser')) fail('DESKTOP_REQUIRED', '此权限仅适用于桌面客户端。', 403);
-      if (feature === 'watermark-free-video' || config.protectedFeatures.includes(feature)) {
+      const protectedFeature = feature === 'watermark-free-video' || config.protectedFeatures.includes(feature);
+      const authorization = (currentState, currentUser, currentSession, checkedTime) => {
+        const currentAccount = account(currentState, currentUser, currentSession, checkedTime);
+        const entitlement = protectedFeature && currentSession.client === 'desktop' && config.entitlementPrivateKey
+          ? issueEntitlement({ privateKey: config.entitlementPrivateKey, keyId: config.entitlementKeyId,
+            token: request.token, publicKey: currentSession.publicKey, userId: currentUser.id, deviceId: currentSession.deviceId, requestNonce: request.proof.nonce,
+            feature, membershipExpiresAt: currentAccount.membership.type === 'duration' ? Date.parse(currentAccount.membership.expiresAt) : null, now: checkedTime }) : null;
+        return { authorized: true, feature, account: currentAccount, ...(entitlement ? { entitlement } : {}) };
+      };
+      if (protectedFeature) {
         if (session.client === 'desktop') {
           const device = deviceView(state, session);
           if (device.status !== 'authorized') fail(device.status === 'revoked' ? 'DEVICE_REVOKED' : 'DEVICE_LIMIT', device.status === 'revoked' ? '此设备授权已被管理员撤销，请联系管理员。' : '账号已绑定其他设备，请联系管理员解绑', 403);
@@ -276,11 +286,11 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
             if (!membership(current.user, checkedTime).active) fail('MEMBERSHIP_EXPIRED', '会员授权已失效。', 403);
             const changed = checkedTime - Date.parse(liveDevice.lastCheckedAt) >= config.deviceCheckWriteMs;
             if (changed) liveDevice.lastCheckedAt = iso(checkedTime);
-            return { changed, value: { authorized: true, feature, account: account(latest, current.user, current.session, checkedTime) } };
+            return { changed, value: authorization(latest, current.user, current.session, checkedTime) };
           });
         }
       }
-      return { authorized: true, feature, account: account(state, user, session, time) };
+      return authorization(state, user, session, time);
     }
     if (request.action === 'admin-users') {
       const query = String(request.input.query || '').trim().toLowerCase();
