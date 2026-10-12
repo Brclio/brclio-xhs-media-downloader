@@ -1,0 +1,1155 @@
+{
+  "date": "2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "origin": "https://xhs.download.brclio.com",
+  "sourceCommit": "e5bf96c",
+  "deployment": {
+    "platform": "Cloudflare Pages",
+    "project": "brclio-xhs-pages",
+    "environment": "Production",
+    "branch": "main",
+    "Id": "292ac4ab-2f5a-4844-b564-8a3b3e0c45c0",
+    "Environment": "Production",
+    "Branch": "main",
+    "Source": "e5bf96c",
+    "Deployment": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+    "Status": "3 minutes ago",
+    "Build": "https://dash.cloudflare.com/c8b059429c868f6d0e528f9e10325f46/pages/view/brclio-xhs-pages/292ac4ab-2f5a-4844-b564-8a3b3e0c45c0",
+    "previousProduction": "79e63e97-8c07-4dde-b25e-fbd5cb4dfe47"
+  },
+  "scope": "Publish the public site navigation and shared page script compatibility changes through Pages only. No main Worker or private Python deployment; no native installer builds or release changes.",
+  "localVerification": {
+    "node": {
+      "passed": 1526,
+      "skipped": 12,
+      "failed": 0
+    },
+    "python": {
+      "passed": 47,
+      "failed": 0
+    },
+    "chromiumFixture": {
+      "motionModes": [
+        "reduce",
+        "no-preference"
+      ],
+      "checkGroupsPerMode": 12,
+      "passed": true,
+      "viewTransitions": {
+        "reduce": 0,
+        "normal": 33
+      }
+    }
+  },
+  "assets": {
+    "checkedAt": "2026-10-12T02:47:25.274Z",
+    "source": "e5bf96c",
+    "results": [
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "index.html",
+        "status": 200,
+        "bytes": 65109,
+        "sha256": "7cb2ad45a8489003808f4a862741fe9f0fd2816a2124f17890b84ec2a8b4ffe7",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "live.html",
+        "status": 200,
+        "bytes": 18971,
+        "sha256": "ba3548ace0d9cc6254636a76b7fcc1ab4e4cb3d5b8aaf8ac4493ba955252e6a5",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "download.html",
+        "status": 200,
+        "bytes": 33964,
+        "sha256": "416bb614436b14b7cf9dfd44cfe52a0d0bc59b56c63d942dffee67ba23490aa9",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "product.html",
+        "status": 200,
+        "bytes": 26294,
+        "sha256": "2fc5692b4c6252b976bccf8a44be0ab4956a78b2cf57595c4690702bb1cdfac3",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "membership.html",
+        "status": 200,
+        "bytes": 19771,
+        "sha256": "f43a91922e86d90fc6b3324ac40fbe7346eeb4841a3b06890986ec37f37c90d4",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "vip.html",
+        "status": 200,
+        "bytes": 10661,
+        "sha256": "8242b1c04f8be3be650a20263368cca30cf0e9c800b38291fe312afad40c0ed9",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "learn.html",
+        "status": 200,
+        "bytes": 16287,
+        "sha256": "8a72867721c55344594c31a0568dda8d9a9037549cd74a0734107974a2d2a3c1",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "changelog.html",
+        "status": 200,
+        "bytes": 174570,
+        "sha256": "09ba0a4f6f8b92444411a587b51fcd10f96773bf6f3a174da5fd0e7d11a39864",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "feedback.html",
+        "status": 200,
+        "bytes": 16066,
+        "sha256": "2a6074c8362c27b7bc3d2f3a4b86d8734b4794a69cd3d93e7e90a9bf290a9fa4",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "site-navigation.js",
+        "status": 200,
+        "bytes": 20673,
+        "sha256": "e096b5856d7d67146cbbf834fc53c2c6beb83bb2294835abd6470db541de0972",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "site-navigation.css",
+        "status": 200,
+        "bytes": 1742,
+        "sha256": "e71897e446213e916427975970172d30af53872ec718608e289aab292f231847",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "site-header.js",
+        "status": 200,
+        "bytes": 2748,
+        "sha256": "47b1b8dd315bb28447bbc08365c699b5097cd60245d5745057dc79b9ee7d396d",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "app.js",
+        "status": 200,
+        "bytes": 88914,
+        "sha256": "d923ee655e91be214903c084c1a46b124af82bc98610a399a70339fffdc34be2",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "account-ui.js",
+        "status": 200,
+        "bytes": 26954,
+        "sha256": "40fa3f2a2046e4a31ef003d05910119f6115c4fafff24bc99de4cde530f82dbf",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "commerce-ui.js",
+        "status": 200,
+        "bytes": 17545,
+        "sha256": "3731a2acceccf1a124d77e88f9e40d77cacc3282d7bedd2790c239836e5f0b62",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "live.js",
+        "status": 200,
+        "bytes": 30314,
+        "sha256": "b5c9a3ab718f907d0c36cee9031db5687a26c4d9f16e09d7bbe68b641a256e34",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "product.js",
+        "status": 200,
+        "bytes": 10942,
+        "sha256": "5f62a7337659be53c4df69b726edab3dcd22403c8eb8d08515f30e2aefb4d634",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "learn.js",
+        "status": 200,
+        "bytes": 3259,
+        "sha256": "423ebb5fcdf7a8b38d56e0eea8ceadf7adca2fa3f1b4e3ca7507cff83cd05398",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "vip.js",
+        "status": 200,
+        "bytes": 3259,
+        "sha256": "423ebb5fcdf7a8b38d56e0eea8ceadf7adca2fa3f1b4e3ca7507cff83cd05398",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "membership.js",
+        "status": 200,
+        "bytes": 883,
+        "sha256": "517c426cfa7a9c981852d045139b8943e8aa384cd313b817cf88e4ed839d3f7d",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "download.js",
+        "status": 200,
+        "bytes": 9943,
+        "sha256": "679038c9e1c15a76e41478e31600de47e0aeadeb1aea46183859eac5620cb3d7",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "changelog.js",
+        "status": 200,
+        "bytes": 5075,
+        "sha256": "4049fab35b9fde8c5cdef4f65f237aa2723e8176f471b9559fa61bf15b0a910a",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "feedback.js",
+        "status": 200,
+        "bytes": 29740,
+        "sha256": "8a6fe6c7bb21aa24c4cfa6cc51b6de613f8fdf757ac80cfe29b95f3aeddf53b6",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "visit-counter.js",
+        "status": 200,
+        "bytes": 5865,
+        "sha256": "0377bb7bc76695feb5370adf3b4ebbfbaac7301a232493a0e17670f4bd1705e2",
+        "matches": true
+      },
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "path": "lib/parse-verification.js",
+        "status": 200,
+        "bytes": 11898,
+        "sha256": "d12e987377ba824a2e66e9920be391629cf25eac2cf01d2c0676f783cc1c6ffd",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "index.html",
+        "status": 200,
+        "bytes": 65109,
+        "sha256": "7cb2ad45a8489003808f4a862741fe9f0fd2816a2124f17890b84ec2a8b4ffe7",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "live.html",
+        "status": 200,
+        "bytes": 18971,
+        "sha256": "ba3548ace0d9cc6254636a76b7fcc1ab4e4cb3d5b8aaf8ac4493ba955252e6a5",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "download.html",
+        "status": 200,
+        "bytes": 33964,
+        "sha256": "416bb614436b14b7cf9dfd44cfe52a0d0bc59b56c63d942dffee67ba23490aa9",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "product.html",
+        "status": 200,
+        "bytes": 26294,
+        "sha256": "2fc5692b4c6252b976bccf8a44be0ab4956a78b2cf57595c4690702bb1cdfac3",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "membership.html",
+        "status": 200,
+        "bytes": 19771,
+        "sha256": "f43a91922e86d90fc6b3324ac40fbe7346eeb4841a3b06890986ec37f37c90d4",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "vip.html",
+        "status": 200,
+        "bytes": 10661,
+        "sha256": "8242b1c04f8be3be650a20263368cca30cf0e9c800b38291fe312afad40c0ed9",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "learn.html",
+        "status": 200,
+        "bytes": 16287,
+        "sha256": "8a72867721c55344594c31a0568dda8d9a9037549cd74a0734107974a2d2a3c1",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "changelog.html",
+        "status": 200,
+        "bytes": 174570,
+        "sha256": "09ba0a4f6f8b92444411a587b51fcd10f96773bf6f3a174da5fd0e7d11a39864",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "feedback.html",
+        "status": 200,
+        "bytes": 16066,
+        "sha256": "2a6074c8362c27b7bc3d2f3a4b86d8734b4794a69cd3d93e7e90a9bf290a9fa4",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "site-navigation.js",
+        "status": 200,
+        "bytes": 20673,
+        "sha256": "e096b5856d7d67146cbbf834fc53c2c6beb83bb2294835abd6470db541de0972",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "site-navigation.css",
+        "status": 200,
+        "bytes": 1742,
+        "sha256": "e71897e446213e916427975970172d30af53872ec718608e289aab292f231847",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "site-header.js",
+        "status": 200,
+        "bytes": 2748,
+        "sha256": "47b1b8dd315bb28447bbc08365c699b5097cd60245d5745057dc79b9ee7d396d",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "app.js",
+        "status": 200,
+        "bytes": 88914,
+        "sha256": "d923ee655e91be214903c084c1a46b124af82bc98610a399a70339fffdc34be2",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "account-ui.js",
+        "status": 200,
+        "bytes": 26954,
+        "sha256": "40fa3f2a2046e4a31ef003d05910119f6115c4fafff24bc99de4cde530f82dbf",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "commerce-ui.js",
+        "status": 200,
+        "bytes": 17545,
+        "sha256": "3731a2acceccf1a124d77e88f9e40d77cacc3282d7bedd2790c239836e5f0b62",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "live.js",
+        "status": 200,
+        "bytes": 30314,
+        "sha256": "b5c9a3ab718f907d0c36cee9031db5687a26c4d9f16e09d7bbe68b641a256e34",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "product.js",
+        "status": 200,
+        "bytes": 10942,
+        "sha256": "5f62a7337659be53c4df69b726edab3dcd22403c8eb8d08515f30e2aefb4d634",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "learn.js",
+        "status": 200,
+        "bytes": 3259,
+        "sha256": "423ebb5fcdf7a8b38d56e0eea8ceadf7adca2fa3f1b4e3ca7507cff83cd05398",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "vip.js",
+        "status": 200,
+        "bytes": 3259,
+        "sha256": "423ebb5fcdf7a8b38d56e0eea8ceadf7adca2fa3f1b4e3ca7507cff83cd05398",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "membership.js",
+        "status": 200,
+        "bytes": 883,
+        "sha256": "517c426cfa7a9c981852d045139b8943e8aa384cd313b817cf88e4ed839d3f7d",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "download.js",
+        "status": 200,
+        "bytes": 9943,
+        "sha256": "679038c9e1c15a76e41478e31600de47e0aeadeb1aea46183859eac5620cb3d7",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "changelog.js",
+        "status": 200,
+        "bytes": 5075,
+        "sha256": "4049fab35b9fde8c5cdef4f65f237aa2723e8176f471b9559fa61bf15b0a910a",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "feedback.js",
+        "status": 200,
+        "bytes": 29740,
+        "sha256": "8a6fe6c7bb21aa24c4cfa6cc51b6de613f8fdf757ac80cfe29b95f3aeddf53b6",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "visit-counter.js",
+        "status": 200,
+        "bytes": 5865,
+        "sha256": "0377bb7bc76695feb5370adf3b4ebbfbaac7301a232493a0e17670f4bd1705e2",
+        "matches": true
+      },
+      {
+        "origin": "https://292ac4ab.brclio-xhs-pages.pages.dev",
+        "path": "lib/parse-verification.js",
+        "status": 200,
+        "bytes": 11898,
+        "sha256": "d12e987377ba824a2e66e9920be391629cf25eac2cf01d2c0676f783cc1c6ffd",
+        "matches": true
+      }
+    ],
+    "health": {
+      "status": 200,
+      "ok": true,
+      "platform": "cloudflare",
+      "version": "2.0.15",
+      "pythonBinding": true,
+      "deploymentId": "7845e346-84a9-41dd-9dcb-a4645dcc53f0"
+    }
+  },
+  "anonymousSmoke": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-10-12T02:47:24.836Z",
+    "passed": 58,
+    "total": 58,
+    "ok": true,
+    "realMediaChecks": false,
+    "results": [
+      {
+        "name": "static/home",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1560
+      },
+      {
+        "name": "static/changelog",
+        "ok": true,
+        "status": 200,
+        "durationMs": 872
+      },
+      {
+        "name": "static/feedback-board",
+        "ok": true,
+        "status": 200,
+        "durationMs": 740
+      },
+      {
+        "name": "static/feedback-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 1141
+      },
+      {
+        "name": "static/feedback-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 287
+      },
+      {
+        "name": "static/main-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 523
+      },
+      {
+        "name": "static/main-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 261
+      },
+      {
+        "name": "static/account-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 398
+      },
+      {
+        "name": "static/reviews-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 355
+      },
+      {
+        "name": "static/reviews-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 219
+      },
+      {
+        "name": "static/review-nicknames-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 264
+      },
+      {
+        "name": "static/browser-account-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 216
+      },
+      {
+        "name": "static/archive-module",
+        "ok": true,
+        "status": 200,
+        "durationMs": 307
+      },
+      {
+        "name": "static/favicon",
+        "ok": true,
+        "status": 200,
+        "durationMs": 201
+      },
+      {
+        "name": "static/admin",
+        "ok": true,
+        "status": 200,
+        "durationMs": 590
+      },
+      {
+        "name": "static/admin-trailing-slash",
+        "ok": true,
+        "status": 200,
+        "durationMs": 270
+      },
+      {
+        "name": "static/admin-script",
+        "ok": true,
+        "status": 200,
+        "durationMs": 510
+      },
+      {
+        "name": "static/admin-style",
+        "ok": true,
+        "status": 200,
+        "durationMs": 704
+      },
+      {
+        "name": "node/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 570
+      },
+      {
+        "name": "node/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 340
+      },
+      {
+        "name": "node/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 326
+      },
+      {
+        "name": "node/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 470
+      },
+      {
+        "name": "node/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 323
+      },
+      {
+        "name": "node/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 414
+      },
+      {
+        "name": "node/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 198
+      },
+      {
+        "name": "node/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 327
+      },
+      {
+        "name": "node/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 201
+      },
+      {
+        "name": "node/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 321
+      },
+      {
+        "name": "node/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 201
+      },
+      {
+        "name": "node/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 323
+      },
+      {
+        "name": "node/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 198
+      },
+      {
+        "name": "node/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 326
+      },
+      {
+        "name": "node/video/original-meta-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 201
+      },
+      {
+        "name": "node/video/original-chunk-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 333
+      },
+      {
+        "name": "python/parse/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 827
+      },
+      {
+        "name": "python/parse/empty",
+        "ok": true,
+        "status": 400,
+        "durationMs": 333
+      },
+      {
+        "name": "python/parse/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 404
+      },
+      {
+        "name": "python/parse/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 332
+      },
+      {
+        "name": "python/parse/input-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 336
+      },
+      {
+        "name": "python/parse/direct-image",
+        "ok": true,
+        "status": 200,
+        "durationMs": 384
+      },
+      {
+        "name": "python/image/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 786
+      },
+      {
+        "name": "python/image/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 259
+      },
+      {
+        "name": "python/video/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 211
+      },
+      {
+        "name": "python/video/missing-input",
+        "ok": true,
+        "status": 400,
+        "durationMs": 313
+      },
+      {
+        "name": "python/image/invalid-token",
+        "ok": true,
+        "status": 400,
+        "durationMs": 212
+      },
+      {
+        "name": "python/video/untrusted-url",
+        "ok": true,
+        "status": 400,
+        "durationMs": 313
+      },
+      {
+        "name": "python/video/invalid-range",
+        "ok": true,
+        "status": 400,
+        "durationMs": 206
+      },
+      {
+        "name": "python/video/oversize-range",
+        "ok": true,
+        "status": 413,
+        "durationMs": 318
+      },
+      {
+        "name": "python/video/original-meta-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 205
+      },
+      {
+        "name": "python/video/original-chunk-denied",
+        "ok": true,
+        "status": 403,
+        "durationMs": 545
+      },
+      {
+        "name": "member-video/guest-resolve",
+        "ok": true,
+        "status": 401,
+        "durationMs": 357
+      },
+      {
+        "name": "member-video/guest-ticket-meta",
+        "ok": true,
+        "status": 401,
+        "durationMs": 466
+      },
+      {
+        "name": "member-video/guest-ticket-chunk",
+        "ok": true,
+        "status": 401,
+        "durationMs": 343
+      },
+      {
+        "name": "account/method",
+        "ok": true,
+        "status": 405,
+        "durationMs": 320
+      },
+      {
+        "name": "account/content-type",
+        "ok": true,
+        "status": 415,
+        "durationMs": 387
+      },
+      {
+        "name": "account/malformed",
+        "ok": true,
+        "status": 400,
+        "durationMs": 322
+      },
+      {
+        "name": "account/invalid-shape",
+        "ok": true,
+        "status": 400,
+        "durationMs": 327
+      },
+      {
+        "name": "account/body-size",
+        "ok": true,
+        "status": 413,
+        "durationMs": 1010
+      }
+    ]
+  },
+  "browser": {
+    "result": "PASS",
+    "startedAt": "2026-10-12T02:53:15.038Z",
+    "finishedAt": "2026-10-12T02:53:34.634Z",
+    "checks": [
+      "Desktop home → live → learn → download → product → membership → changelog → home retains document, window, timeOrigin, input DOM and draft; menu, URLs, styles, overflow verified",
+      "Browser Back and Forward retain same document and restore page URL/current menu",
+      "Normal motion invokes native ViewTransition and each route waits for its animation to settle",
+      "390px menu click and Escape, route closes menu, learning QR open/Escape/button close, home draft, overflow verified",
+      "No parse or mutation requested; no application console errors or uncaught exceptions"
+    ],
+    "pages": [
+      {
+        "label": "desktop initial",
+        "current": [
+          "/"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "index",
+        "scrollWidth": 1440,
+        "styles": [
+          "/account-ui.css",
+          "/commerce-ui.css",
+          "/desktop-ui.css",
+          "/site-header.css",
+          "/site-navigation.css",
+          "/style.css",
+          "/support.css",
+          "/visit-counter.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop live",
+        "current": [
+          "/live.html"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "live",
+        "scrollWidth": 1440,
+        "styles": [
+          "/live.css",
+          "/site-header.css",
+          "/site-navigation.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/live.html",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop learn",
+        "current": [
+          "/learn.html"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "learn",
+        "scrollWidth": 1440,
+        "styles": [
+          "/learn.css",
+          "/site-header.css",
+          "/site-navigation.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/learn.html",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop download",
+        "current": [
+          "/download.html"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "download",
+        "scrollWidth": 1440,
+        "styles": [
+          "/download.css",
+          "/site-header.css",
+          "/site-navigation.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/download.html",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop product",
+        "current": [
+          "/product.html"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "product",
+        "scrollWidth": 1440,
+        "styles": [
+          "/product.css",
+          "/site-header.css",
+          "/site-navigation.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/product.html",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop membership",
+        "current": [
+          "/membership.html"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "membership",
+        "scrollWidth": 1440,
+        "styles": [
+          "/membership.css",
+          "/site-header.css",
+          "/site-navigation.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/membership.html",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop changelog",
+        "current": [
+          "/changelog.html"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "changelog",
+        "scrollWidth": 1440,
+        "styles": [
+          "/changelog.css",
+          "/site-header.css",
+          "/site-navigation.css",
+          "/style.css",
+          "/visit-counter.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/changelog.html",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop home returned",
+        "current": [
+          "/"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "index",
+        "scrollWidth": 1440,
+        "styles": [
+          "/account-ui.css",
+          "/commerce-ui.css",
+          "/desktop-ui.css",
+          "/site-header.css",
+          "/site-navigation.css",
+          "/style.css",
+          "/support.css",
+          "/visit-counter.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop history back",
+        "current": [
+          "/changelog.html"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "changelog",
+        "scrollWidth": 1440,
+        "styles": [
+          "/changelog.css",
+          "/site-header.css",
+          "/site-navigation.css",
+          "/style.css",
+          "/visit-counter.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/changelog.html",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "desktop history forward",
+        "current": [
+          "/"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "index",
+        "scrollWidth": 1440,
+        "styles": [
+          "/account-ui.css",
+          "/commerce-ui.css",
+          "/desktop-ui.css",
+          "/site-header.css",
+          "/site-navigation.css",
+          "/style.css",
+          "/support.css",
+          "/visit-counter.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/",
+        "width": 1440,
+        "windowStable": true
+      },
+      {
+        "label": "mobile initial",
+        "current": [
+          "/"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "index",
+        "scrollWidth": 390,
+        "styles": [
+          "/account-ui.css",
+          "/commerce-ui.css",
+          "/desktop-ui.css",
+          "/site-header.css",
+          "/site-navigation.css",
+          "/style.css",
+          "/support.css",
+          "/visit-counter.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/",
+        "width": 390,
+        "windowStable": true
+      },
+      {
+        "label": "mobile learning",
+        "current": [
+          "/learn.html"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "learn",
+        "scrollWidth": 390,
+        "styles": [
+          "/learn.css",
+          "/site-header.css",
+          "/site-navigation.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/learn.html",
+        "width": 390,
+        "windowStable": true
+      },
+      {
+        "label": "mobile home returned",
+        "current": [
+          "/"
+        ],
+        "documentStable": true,
+        "errors": [],
+        "headers": 1,
+        "navigationEntriesStable": true,
+        "page": "index",
+        "scrollWidth": 390,
+        "styles": [
+          "/account-ui.css",
+          "/commerce-ui.css",
+          "/desktop-ui.css",
+          "/site-header.css",
+          "/site-navigation.css",
+          "/style.css",
+          "/support.css",
+          "/visit-counter.css"
+        ],
+        "timeOriginStable": true,
+        "url": "https://xhs.download.brclio.com/",
+        "width": 390,
+        "windowStable": true
+      }
+    ],
+    "navigationScript": {
+      "deployedSHA256": "e096b5856d7d67146cbbf834fc53c2c6beb83bb2294835abd6470db541de0972",
+      "localSHA256": "e096b5856d7d67146cbbf834fc53c2c6beb83bb2294835abd6470db541de0972"
+    },
+    "viewTransitions": 11,
+    "uncaught": [],
+    "applicationConsoleErrors": [],
+    "apiActions": [
+      "reviews-public",
+      "me"
+    ],
+    "optionalResourceHostsBlocked": [
+      "fonts.googleapis.com",
+      "fonts.gstatic.com",
+      "counter.bornforthis.cn"
+    ],
+    "screenshotCount": 10,
+    "localReport": "/tmp/brclio-navigation-production-cYHwWX/report.json"
+  },
+  "limitations": [
+    "The production browser check blocks optional font and visit-counter services and uses system fonts.",
+    "The 58 anonymous API checks use invalid input and fixture direct-image metadata; real note parsing, actual media downloads, authentication, mail and payments are not retested for this navigation-only release.",
+    "The main Worker retains its prior version and its separate workers.dev static assets. The custom production domain and Pages host serve this release."
+  ]
+}
