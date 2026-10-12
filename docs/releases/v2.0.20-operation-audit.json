@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "version": "2.0.20",
-  "status": "prepublication-audit",
+  "status": "superseded-unpublished-desktop-candidate",
   "before": {
     "sourceSha": "c9dd2a30e0f8c24ec585a273fd6727c8704d2c7a",
     "cloudflareDeploymentId": "a8f7466f-9e87-430c-92ca-7177e90abf5c",
@@ -40,7 +40,7 @@
     "unrelatedChangesFound": false,
     "generatedOriginalsIgnoredByGit": true,
     "privateCredentialsInChanges": false,
-    "reviewedFiles": 156,
+    "reviewedFiles": 162,
     "secretMarkerMatches": 0,
     "r2AndAvatarStorageBindingResiduals": 0,
     "additionalChanges": [
@@ -48,7 +48,8 @@
       "Canonical admin route in read-only production verifier",
       "Complete startup fixture control states",
       "Software rendering only in isolated Google/admin verification fixtures"
-    ]
+    ],
+    "finalIndependentRangeAudit": "PASS: 100 compressed WebP files and 62 related text files; Android, Python/proxy services, updater and core download logic have no changes"
   },
   "assets": {
     "builtinCount": 100,
@@ -135,27 +136,83 @@
     "privateDataRepoHeadUnchanged": true,
     "privateDataRepoHead": "818d8a275f103a36e87704def9c13f81d81983db",
     "pagesDeploymentUrl": "https://6e539557.brclio-xhs-pages.pages.dev",
-    "accountWrites": false
+    "accountWrites": false,
+    "untouchedServiceDeployments": [
+      {
+        "service": "brclio-xhs-python",
+        "deploymentId": "5f44d093-a020-4d60-96c4-f915a9a9bfb3",
+        "versionId": "6d84f091-8d1c-426d-9eb6-5aa53cf06dd3",
+        "createdAt": "2026-10-11T05:13:12.262729Z",
+        "predatesTask": true
+      },
+      {
+        "service": "brclio-xhs-subscription-proxy",
+        "deploymentId": "d7df0fa2-7c45-4ae2-b7d1-c172d8e5a8a7",
+        "versionId": "159a718d-155d-44a6-8da0-fe215377c855",
+        "createdAt": "2026-10-11T13:22:32.56204Z",
+        "predatesTask": true
+      }
+    ]
   },
   "verificationNotes": [
     "Initial static verification ran while Pages rollout was unfinished; rerun after deployment succeeded.",
     "Read-only verifier now probes canonical /admin/ route because Pages redirects /admin/index.html.",
     "No authenticated production upload performed; full 100MiB transfer is verified in real local Workerd with a GitHub HTTP contract fixture."
   ],
-  "desktopStatus": "pending",
+  "desktopStatus": "not-published",
   "ciObservations": [
     {
       "platform": "mac-intel",
       "jobId": 115050855231,
       "step": "Real renderer Google login verification",
       "failure": "UnknownVizError after EGL/GPU process initialization failures during capturePage; no preceding functional assertion failure",
-      "action": "Rerun full failed job on a fresh runner with unchanged source; gates retained"
+      "action": "Full-job rerun was attempted while the workflow remained active and was rejected without changing the run; v2.0.20 uses software rendering in the isolated Google/admin screenshot fixtures with all assertions retained"
     },
     {
       "platform": "mac-arm64 and windows-x64",
       "step": "Verify responsive startup and credential access recovery",
-      "failure": "Fixed expected account-operation button list omitted four new avatar controls; actual startup guard included and disabled them",
+      "failure": "Startup fixture omitted four new avatar controls and assumed every control shared one disabled state; open/upload require login, while local close/retry remain safe and enabled",
       "action": "Update fixture list with all controls; keep assertions and run complete fresh v2.0.20 pipeline"
+    },
+    {
+      "version": "2.0.20",
+      "runId": 38322896553,
+      "attempt": 1,
+      "platform": "mac-arm64",
+      "jobId": 115054829301,
+      "step": "Run node --test --test-concurrency=1",
+      "failure": "Existing profile-entitlement timer fixture expected 3 media requests but observed 4; no fourth media file was saved",
+      "sourceUnchanged": true,
+      "diagnosis": "Advancing the simulated clock at media.saved skips _pace sleep, so the fixture synchronization barrier is not reached before the background revocation reply",
+      "verification": {
+        "naturalOriginalPassed": 20,
+        "naturalDeterministicCopyPassed": 20,
+        "controlledOriginalReproductions": 10,
+        "controlledDeterministicCopyPassed": 10,
+        "assertionsRetained": 13,
+        "productionSourceChanged": false,
+        "trackedTestChanged": false,
+        "controlledReportSha256": "c3b96482b469c5bd877545a2a1b8cb285507bd80f505052f628836104ecbf450"
+      },
+      "action": "Both complete ARM attempts reproduced the same pre-existing fixture timing failure. v2.0.21 moves only the simulated clock advance into the awaited pacing barrier; every safety assertion and all platform gates are retained.",
+      "attempts": [
+        {
+          "attempt": 1,
+          "jobId": 115054829301,
+          "nodePassed": 1697,
+          "nodeFailed": 1,
+          "nodeSkipped": 14,
+          "publish": "skipped"
+        },
+        {
+          "attempt": 2,
+          "jobId": 115059856851,
+          "nodePassed": 1697,
+          "nodeFailed": 1,
+          "nodeSkipped": 14,
+          "publish": "skipped"
+        }
+      ]
     }
   ],
   "previousCandidate": {
@@ -168,5 +225,28 @@
       "Complete startup fixture button inventory",
       "Software rendering for isolated Google login UI screenshots"
     ]
-  }
+  },
+  "sourceSha": "303bb2d011a1464f2d8aac563dfbbcf814502025",
+  "webVersion": "2.0.19",
+  "ciRunId": 38322896553,
+  "ciConclusion": "failure",
+  "ciSuccessfulPlatforms": [
+    {
+      "platform": "windows-x64",
+      "nodeTotal": 1712,
+      "nodePassed": 1643,
+      "nodeFailed": 0,
+      "nodeSkipped": 69,
+      "allNativeAndFunctionalGatesPassed": true
+    },
+    {
+      "platform": "mac-intel",
+      "nodeTotal": 1712,
+      "nodePassed": 1698,
+      "nodeFailed": 0,
+      "nodeSkipped": 14,
+      "allNativeAndFunctionalGatesPassed": true
+    }
+  ],
+  "supersededBy": "2.0.21"
 }

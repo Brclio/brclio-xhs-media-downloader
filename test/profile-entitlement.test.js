@@ -179,13 +179,14 @@ test('authoritative background device revocation invalidates a valid grant and p
     onSaved(f) {
       if (f.saved === 3) {
         f.setMode('revoked');
-        f.advance(ENTITLEMENT_SYNC_INTERVAL_MS + 1);
         pollWindow = true;
       }
     },
     async onSleep(f) {
       if (pollWindow) {
         pollWindow = false;
+        // Advance inside the pacing barrier so _pace cannot skip the revocation wait.
+        f.advance(ENTITLEMENT_SYNC_INTERVAL_MS + 1);
         await waitFor(() => {
           try { f.client.checkLocalAuthorization('profile-download'); return false; }
           catch { return true; }

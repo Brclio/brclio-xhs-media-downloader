@@ -136,12 +136,12 @@
       "jobId": 115050855231,
       "step": "Real renderer Google login verification",
       "failure": "UnknownVizError after EGL/GPU process initialization failures during capturePage; no preceding functional assertion failure",
-      "action": "Rerun full failed job on a fresh runner with unchanged source; gates retained"
+      "action": "Full-job rerun was attempted while the workflow remained active and was rejected without changing the run; v2.0.20 uses software rendering in the isolated Google/admin screenshot fixtures with all assertions retained"
     },
     {
       "platform": "mac-arm64 and windows-x64",
       "step": "Verify responsive startup and credential access recovery",
-      "failure": "Fixed expected account-operation button list omitted four new avatar controls; actual startup guard included and disabled them",
+      "failure": "Startup fixture omitted four new avatar controls and assumed every control shared one disabled state; open/upload require login, while local close/retry remain safe and enabled",
       "action": "Update fixture list with all controls; keep assertions and run complete fresh v2.0.20 pipeline"
     }
   ],
