@@ -1,6 +1,7 @@
 // Static links remain usable without JavaScript or when GitHub is unavailable.
 (() => {
   'use strict';
+  const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
 
   const repository = 'Brclio/brclio-xhs-media-downloader';
   const releaseBase = `https://github.com/${repository}/releases`;
@@ -42,6 +43,7 @@
   }
   openLinkedQuestion();
   window.addEventListener('hashchange', openLinkedQuestion);
+  window.addEventListener('brclio-page-enter', openLinkedQuestion);
 
   function setStatus(message) {
     const link = document.createElement('a');

@@ -3,6 +3,8 @@ import { MEMBERSHIP_PLANS, getMembershipPlan } from './lib/membership-plans.js';
 import { getAccountBridge } from './lib/browser-account.js';
 import { initializeCommerceUI } from './commerce-ui.js';
 
+const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
+
 const PAYMENT_METHODS = Object.freeze({
   wechat: { name: '微信支付', image: './assets/membership/wechat-pay.png' },
   alipay: { name: '支付宝', image: './assets/membership/alipay.png' },
@@ -287,6 +289,7 @@ export async function initializeAccountUI() {
 
 export async function openAccountUI({ purchase = false } = {}) {
   await initializeAccountUI();
+  if (document.body.isConnected === false) return;
   const desktopTab = document.getElementById('account-tab');
   if (window.xhsDesktop?.getAccountState && desktopTab) desktopTab.click();
   else {
@@ -300,8 +303,17 @@ export async function openAccountUI({ purchase = false } = {}) {
 }
 
 if (typeof window !== 'undefined') {
-  void initializeAccountUI().then(() => {
+  let entryRevision = 0;
+  async function applyAccountEntry(url = window.location.href) {
+    const revision = ++entryRevision;
+    await initializeAccountUI();
+    if (revision !== entryRevision || document.body.isConnected === false) return;
+    const requested = new URL(url);
     const current = new URL(window.location.href);
+    // Other homepage entry hooks may already have consumed a signed note URL.
+    // Read the live query so consuming account intent never restores old data.
+    if (requested.pathname !== current.pathname || requested.searchParams.get('account') !== current.searchParams.get('account')
+      || requested.searchParams.get('membership') !== current.searchParams.get('membership')) return;
     if (!['/', '/index.html'].includes(current.pathname)) return;
     const purchase = current.searchParams.get('membership') === 'open';
     const showOrders = current.searchParams.get('account') === 'orders';
@@ -309,6 +321,12 @@ if (typeof window !== 'undefined') {
     if (!purchase && !showOrders && !showAccount) return;
     current.searchParams.delete(purchase ? 'membership' : 'account');
     history.replaceState(history.state, '', current.href);
-    void openAccountUI({ purchase }).then(() => { if (showOrders) document.getElementById('software-orders')?.scrollIntoView({ block: 'start' }); });
-  });
+    await openAccountUI({ purchase });
+    if (showOrders && revision === entryRevision && document.body.isConnected !== false) {
+      document.getElementById('software-orders')?.scrollIntoView({ block: 'start' });
+    }
+  }
+  window.addEventListener('brclio-page-leave', () => { entryRevision += 1; });
+  void applyAccountEntry();
+  window.addEventListener('brclio-page-enter', event => void applyAccountEntry(event.detail.url));
 }

@@ -1,5 +1,6 @@
 // Keep visit reporting independent from the media parsing and download flow.
 (() => {
+  const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
   const container = document.querySelector('[data-visit-counter]');
   if (!container || container.dataset.initialized) return;
   container.dataset.initialized = 'true';

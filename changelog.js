@@ -1,4 +1,5 @@
 (() => {
+  const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
   const controls = document.querySelector('.release-controls');
   const query = document.getElementById('release-query');
   const reset = document.getElementById('release-reset');
@@ -15,6 +16,7 @@
   }));
   if (!controls || !entries.length) return;
   let scope = 'all';
+  let historyHashURL = '';
 
   function syncURL() {
     // Filtering also works in a packaged client or a local file preview.
@@ -29,7 +31,7 @@
       const target = document.getElementById(decodeURIComponent(url.hash.slice(1)));
       if (target?.closest('.release-entry')?.hidden) url.hash = '';
     } catch { /* Malformed anchors do not affect filtering. */ }
-    history.replaceState(null, '', url);
+    history.replaceState(history.state, '', url);
   }
 
   function matches(text, term) {
@@ -62,7 +64,7 @@
     if (updateURL) syncURL();
   }
 
-  function revealHash() {
+  function revealHash({ scroll = true } = {}) {
     let id;
     try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
     const target = document.getElementById(id);
@@ -73,15 +75,22 @@
       query.value = '';
       render();
     }
-    requestAnimationFrame(() => target.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    if (scroll) {
+      const targetURL = location.href;
+      requestAnimationFrame(() => {
+        if (document.body.isConnected !== false && location.href === targetURL) {
+          target.scrollIntoView({ block: 'start', behavior: 'instant' });
+        }
+      });
+    }
   }
 
-  function readURL() {
+  function readURL({ scroll = true } = {}) {
     const params = new URLSearchParams(location.search);
     scope = ['web', 'desktop'].includes(params.get('scope')) ? params.get('scope') : 'all';
     query.value = params.get('q') || '';
     render(false);
-    revealHash();
+    revealHash({ scroll });
   }
 
   for (const button of filters) {
@@ -97,13 +106,24 @@
     render();
     query.focus();
   });
-  window.addEventListener('hashchange', revealHash);
+  window.addEventListener('hashchange', () => {
+    const restoringHistory = historyHashURL === location.href;
+    historyHashURL = '';
+    revealHash({ scroll: !restoringHistory });
+  });
   document.addEventListener('click', event => {
     // Reopening the same anchor does not fire hashchange in packaged pages.
     const link = event.target.closest('a[href^="#"]');
     if (link?.getAttribute('href') === location.hash) revealHash();
   });
-  window.addEventListener('popstate', readURL);
+  window.addEventListener('popstate', () => {
+    historyHashURL = location.href;
+    readURL({ scroll: false });
+  });
+  window.addEventListener('brclio-page-enter', event => {
+    historyHashURL = event.detail.history ? location.href : '';
+    readURL({ scroll: !event.detail.history });
+  });
   controls.hidden = false;
   readURL();
 })();

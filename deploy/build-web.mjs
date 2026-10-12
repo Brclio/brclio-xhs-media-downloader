@@ -5,7 +5,7 @@ import path from 'node:path';
 // Only this allowlist becomes public static content. Vercel builds /api
 // functions separately and traces their server-side imports.
 export const PUBLIC_FILES = [
-  'index.html', 'changelog.html', 'app.js', 'style.css', 'site-header.css', 'site-header.js', 'changelog.css', 'changelog.js',
+  'index.html', 'changelog.html', 'app.js', 'style.css', 'site-header.css', 'site-header.js', 'site-navigation.css', 'site-navigation.js', 'changelog.css', 'changelog.js',
   'download.html', 'download.css', 'download.js',
   'feedback.html', 'feedback.css', 'feedback.js',
   'product.html', 'product.css', 'product.js',
@@ -83,7 +83,9 @@ function publicWebNavigation(html, homepage, page) {
     .replace(/<link\b[^>]*href="(?:\.\/|\/)?site-header\.css"[^>]*>\s*/g, '')
     .replace(/<script\b[^>]*src="(?:\.\/|\/)?site-header\.js"[^>]*>[\s\S]*?<\/script>\s*/g, '');
   const missingFonts = fonts.filter(link => !output.includes(link));
-  return output.replace('</head>', `${missingFonts.join('\n')}\n  <link rel="stylesheet" href="./site-header.css">\n  <script src="./site-header.js" defer></script>\n</head>`);
+  // Install the page context before deferred scripts and module imports run.
+  output = output.replace(/<head\b[^>]*>/, '$&\n  <script src="/site-navigation.js"></script>');
+  return output.replace('</head>', `${missingFonts.join('\n')}\n  <link rel="stylesheet" href="./site-navigation.css">\n  <link rel="stylesheet" href="./site-header.css">\n  <script src="./site-header.js" defer></script>\n</head>`);
 }
 
 export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.url))) {

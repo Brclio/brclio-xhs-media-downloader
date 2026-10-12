@@ -1,4 +1,5 @@
 (() => {
+  const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
   'use strict';
   const dialog = document.getElementById('qr-dialog');
   const openButton = document.getElementById('qr-open');

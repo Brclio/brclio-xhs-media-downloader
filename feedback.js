@@ -1,6 +1,7 @@
 // Public feedback board. Session credentials stay in the server's HttpOnly cookie.
 (() => {
   'use strict';
+  const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
   const $ = id => document.getElementById(id);
   const PAGE_SIZE = 20;
   const categories = { download: '下载与任务', audio: '视频声音', account: '账号与会员', update: '安装与更新', other: '建议 / 其他' };
@@ -130,7 +131,7 @@
     $('feedback-login-email').disabled = state.authBusy || state.codeBusy; $('feedback-login-code').disabled = state.authBusy;
   }
   function badge(text, status) { const value = node('span', 'badge', text); if (status) value.dataset.status = status; return value; }
-  function issueUrl(id) { const url = new URL(location.href); url.search = ''; url.hash = ''; url.searchParams.set('issue', id); return url; }
+  function issueUrl(id) { const url = new URL('/feedback.html', location.href); url.searchParams.set('issue', id); return url; }
   function renderList(rows) {
     const fragment = document.createDocumentFragment();
     for (const issue of rows) {
@@ -346,11 +347,15 @@
     catch { if (view === state.viewEpoch) { $('feedback-share-url').value = url; $('feedback-share-url').hidden = false; $('feedback-share-url').select(); tell('feedback-detail-status', '已选中问题链接，可手动复制。'); } }
   });
   const locationIssue = () => new URL(location.href).searchParams.get('issue') || '';
-  window.addEventListener('popstate', () => {
+  function readIssueURL() {
     const issue = locationIssue();
+    if (issue === state.issue) return;
     if (issue) void selectIssue(issue, { historyMode: 'none' });
     else { saveDrafts(); state.viewEpoch += 1; state.issue = ''; state.detail = null; clearOwner(); restoreDrafts(); $('feedback-detail').hidden = true; $('feedback-detail-empty').hidden = false; renderControls(); }
-  });
+  }
+  window.addEventListener('popstate', readIssueURL);
+  window.addEventListener('brclio-page-enter', () => { readIssueURL(); void syncSession(); });
+  window.addEventListener('brclio-page-leave', saveDrafts);
   window.addEventListener('pagehide', () => clearInterval(codeTimer), { once: true });
   window.addEventListener('focus', () => void syncSession());
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void syncSession(); });

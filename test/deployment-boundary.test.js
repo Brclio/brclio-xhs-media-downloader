@@ -138,6 +138,9 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
     assert.equal((published.match(/<link\b[^>]*href="(?:\.\/|\/)?site-header\.css"[^>]*>/g) || []).length, 1, `${name} loads shared styles once`);
     assert.equal((published.match(/<script\b[^>]*src="(?:\.\/|\/)?site-header\.js"[^>]*>/g) || []).length, 1, `${name} loads menu behavior once`);
     assert.match(published, /<script src="\.\/site-header\.js" defer><\/script>/, `${name} defers navigation behavior`);
+    assert.equal((published.match(/<script src="\/site-navigation\.js"><\/script>/g) || []).length, 1, `${name} installs soft navigation exactly once`);
+    assert.match(published, /<head\b[^>]*>\s*<script src="\/site-navigation\.js"><\/script>/, `${name} installs page contexts before module execution`);
+    assert.match(published, /href="\.\/site-navigation\.css"/, `${name} includes reduced-motion-aware transitions`);
     const styles = [...published.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)];
     assert.match(styles.at(-1)[0], /site-header\.css/, `${name} loads shared styles after its page theme`);
     assert.equal(await readFile(path.join(root, name), 'utf8'), await readFile(new URL(`../${name}`, import.meta.url), 'utf8'), `${name} source remains unchanged`);
@@ -152,6 +155,7 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   assert.match(learningSource, /id="back-to-tool"/);
   assert.doesNotMatch(learningSource, /learning-web|site-header\.css|class="app-header"/, 'native learning navigation remains in the source');
   assert.equal(await readFile(path.join(root, 'learn.html'), 'utf8'), learningSource, 'public build never overwrites native source');
+  assert.doesNotMatch(await readFile(path.join(out, 'admin/index.html'), 'utf8'), /site-navigation\.js/, 'admin keeps its independent navigation and security boundary');
 });
 
 test('Vercel and Cloudflare import graphs remain independent of standalone SQLite and migration tools', async () => {

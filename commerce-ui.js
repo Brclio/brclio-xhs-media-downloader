@@ -2,6 +2,8 @@
 import { getAccountBridge } from './lib/browser-account.js';
 import { defaultReviewNickname, randomReviewNickname, normalizeReviewNickname } from './lib/review-nicknames.js';
 
+const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
+
 const money = cents => cents == null ? '待核实' : `¥${(cents / 100).toFixed(2)}`;
 const date = value => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—';
 const statuses = { pending: '付款待核实', confirmed: '已确认收款', legacy_unverified: '历史发码 · 收款待核实' };

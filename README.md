@@ -244,6 +244,12 @@ npm run dev:vercel
 `package.json` 中的 `dev`，如果该脚本再次调用 `vercel dev`，就会形成递归。
 `dev:vercel` 只用于本地运行，不影响 Git push 后的 Vercel 自动部署，发布前无需修改或撤回。
 
+公共构建会注入 `site-navigation.js` 与 `site-navigation.css`。站内页面通过 History API 切换并缓存原 DOM，保留下载草稿、解析结果、实况素材和筛选状态；支持前进后退、锚点、悬停预取、减少动态效果，以及加载失败后保留当前页面并重试。样式表始终留在 head 中，仅切换 media，避免往返时重新加载样式而闪屏。原生客户端与管理后台继续使用各自的导航。
+
+维护页面脚本时，在模块顶部或现有 IIFE 内使用 `const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;` 捕获所属页面，保证后台异步结果写回原页面；通过 `brclio-page-leave` 暂停预览，通过 `brclio-page-enter` 恢复 URL 入口。新增公共页面需同步 `deploy/build-web.mjs` 的 `WEB_PAGES` 和路由的页面白名单。
+
+无刷新切换的 Chromium 验证使用本地 API / 文件夹具，不请求真实账号服务：`npm run build:web && npm run web:verify:navigation`；正常过渡动画使用 `WEB_NAVIGATION_REDUCED_MOTION=0 npm run web:verify:navigation`。覆盖页面首次初始化、缓存恢复、真实 File、异步解析、历史滚动、手机键盘导航、快速切换和失败重试。
+
 ## 网站访问统计
 
 首页和更新记录页已接入 [domain-visit-counter](https://github.com/AndersonHJB/domain-visit-counter)，使用已部署的 HTTPS 服务：`https://counter.bornforthis.cn`。

@@ -1,5 +1,6 @@
 /* Progressive enhancement for the shared Brclio web navigation. */
 (() => {
+  const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
   const header = document.querySelector('.app-header');
   const toggle = header?.querySelector('#site-menu-toggle');
   const navigation = header?.querySelector('#site-navigation');
@@ -54,4 +55,5 @@
     }
   });
   compact.addEventListener('change', () => setMenu(false));
+  window.addEventListener('brclio-page-leave', () => setMenu(false));
 })();

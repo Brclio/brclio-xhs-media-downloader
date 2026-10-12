@@ -2,6 +2,8 @@ import { inspectLivePhotoFiles, checkLivePhotoSupport, createLivePhoto, livePhot
 import { makeZipBlob } from './lib/archive.js';
 import { makeLivePhotoPackage } from './lib/live-photo-package.js';
 
+const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
+
 const byId = id => document.getElementById(id);
 const ui = Object.fromEntries([
   'support-note', 'file-input', 'choose-files', 'drop-zone', 'source-count', 'source-details',
@@ -591,6 +593,15 @@ window.addEventListener('pageshow', event => {
     resetSelection();
     setStatus('重新打开页面后，请再次选择本地素材。');
   }
+});
+window.addEventListener('brclio-page-leave', () => {
+  stopPreview();
+  ui['result-video'].pause();
+  ui['drop-zone'].classList.remove('is-dragging');
+});
+window.addEventListener('brclio-page-enter', () => {
+  updateControls();
+  document.documentElement.dataset.liveReady = 'true';
 });
 
 async function initialize() {

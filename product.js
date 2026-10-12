@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const scenes = [...document.querySelectorAll('.story-scene')];
   const toggle = document.querySelector('.presentation-toggle');
@@ -150,7 +151,13 @@
         await document.exitFullscreen();
         ownedFullscreen = false;
       } else {
-        await document.documentElement.requestFullscreen();
+        const fullscreenTarget = document.documentElement;
+        await fullscreenTarget.requestFullscreen();
+        if (document.body.isConnected === false) {
+          if (document.fullscreenElement === fullscreenTarget) await document.exitFullscreen();
+          ownedFullscreen = false;
+          return;
+        }
         ownedFullscreen = true;
       }
     } catch {
@@ -178,4 +185,9 @@
     }
   });
   if (new URLSearchParams(window.location.search).get('present') === '1') setPresentation(true);
+  window.addEventListener('brclio-page-leave', () => setPresentation(false));
+  window.addEventListener('brclio-page-enter', () => {
+    updateProgress();
+    if (new URLSearchParams(window.location.search).get('present') === '1') setPresentation(true);
+  });
 })();

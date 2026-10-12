@@ -1,5 +1,7 @@
 import { MEMBERSHIP_PLANS } from './lib/membership-plans.js';
 
+const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
+
 // Keep introduction prices aligned with the account purchase dialog.
 // HTML provides readable prices and working navigation without JavaScript.
 for (const plan of MEMBERSHIP_PLANS) {

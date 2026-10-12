@@ -15,6 +15,8 @@ import { getAccountBridge } from "./lib/browser-account.js";
 import { openAccountUI } from "./account-ui.js";
 import { prepareVerificationPopup, waitForNoteVerification } from "./lib/parse-verification.js";
 
+const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
+
 const state = {
   title: "小红书图片",
   content: "",
@@ -296,6 +298,7 @@ function noteTextFileData() {
 }
 
 function fallbackCopyText(text) {
+  if (document.body.isConnected === false) throw new Error("请返回下载页面后重试复制。");
   const activeElement = document.activeElement;
   const textarea = document.createElement("textarea");
   textarea.value = text;
@@ -544,7 +547,8 @@ function triggerBlobDownload(blob, filename) {
   const anchor = document.createElement("a");
   anchor.href = href;
   anchor.download = filename;
-  document.body.append(anchor);
+  // A completed background download still needs a connected anchor on Safari.
+  globalThis.document.body.append(anchor);
   anchor.click();
   anchor.remove();
   setTimeout(() => URL.revokeObjectURL(href), 1500);
@@ -2359,8 +2363,8 @@ elements.downloadZipButton.addEventListener("click", downloadSelectedZip);
 
 // Android opens this ordinary website entry so its account remains in the
 // external browser's same-origin HttpOnly cookie. Prefill never starts a paid action.
-if (typeof location !== "undefined") {
-  const entryUrl = new URL(location.href);
+function applyEntryURL(url = window.location.href) {
+  const entryUrl = new URL(url);
   const note = entryUrl.searchParams.get("note") || "";
   if (note && note.length <= 3000) {
     try {
@@ -2373,9 +2377,16 @@ if (typeof location !== "undefined") {
         if (hint) hint.hidden = entryUrl.searchParams.get("memberVideo") !== "1";
         // Do not retain the signed note link in navigation URLs after prefill.
         entryUrl.searchParams.delete("note"); entryUrl.searchParams.delete("memberVideo");
-        history.replaceState(null, "", `${entryUrl.pathname}${entryUrl.search}${entryUrl.hash}`);
+        history.replaceState(history.state, "", `${entryUrl.pathname}${entryUrl.search}${entryUrl.hash}`);
       }
     } catch { /* Invalid external entry leaves the normal paste form available. */ }
+  }
+}
+if (typeof window !== "undefined") {
+  if (typeof location !== "undefined") applyEntryURL();
+  if (globalThis.brclioPageContext) {
+    window.addEventListener("brclio-page-enter", event => applyEntryURL(event.detail.url));
+    window.addEventListener("brclio-page-leave", () => elements.videoPlayer.pause());
   }
 }
 

@@ -1,5 +1,6 @@
 // Shared iPhone benefit actions for the website and packaged desktop pages.
 (() => {
+  const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
   for (const card of document.querySelectorAll('[data-ios-shortcut]')) {
     const link = card.querySelector('[data-shortcut-link]');
     const button = card.querySelector('[data-shortcut-copy]');
