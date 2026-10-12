@@ -119,8 +119,9 @@ window.fetch = async (input, options = {}) => {
   const url = new URL(typeof input === 'string' ? input : input.url, location.href);
   if (!url.pathname.startsWith('/api/')) return realFetch(input, options);
   const body = options.body ? JSON.parse(options.body) : {};
-  window.fixtureRequests.push({ path: url.pathname, query: url.search, body, credentials: options.credentials });
+  window.fixtureRequests.push({ path: url.pathname, query: url.search, body, credentials: options.credentials, headers: Object.fromEntries(new Headers(options.headers)) });
   if (url.pathname === '/api/account') {
+    if (body.action === 'google-config') return reply({ ok: true, enabled: true });
     if (body.action === 'me') await pause(++window.fixtureAccountChecks === 1 ? 'account' : 'final-account');
     if (body.action === 'logout') { window.fixtureRole = 'guest'; return reply({ ok: true }); }
     if (body.action === 'send-code') return reply({ ok: true, retryAfter: 60 });
@@ -182,6 +183,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   const state = () => ({ configured: true, authenticated: window.fixtureRole !== 'guest', verified: window.fixtureRole !== 'guest', status: window.fixtureRole === 'guest' ? 'logged_out' : 'ready', account: window.fixtureRole === 'guest' ? null : fixtureAccount() });
   window.xhsDesktop = {
     getAccountState: async () => { await pause(++window.fixtureAccountChecks === 1 ? 'account' : 'final-account'); return state(); }, onAccountUpdate: callback => { window.fixtureDesktopUpdate = callback; return () => {}; },
+    getAccountGoogleConfig: async () => ({ ok: true, state: state(), result: { enabled: true } }),
     refreshAccount: async () => { window.fixtureDesktopUpdate?.(state()); return { ok: true, state: state(), result: {} }; },
     sendAccountCode: async () => ({ ok: true, state: state(), result: { retryAfter: 60 } }),
     verifyAccountCode: async () => { window.fixtureRole = 'member'; return { ok: true, state: state(), result: {} }; },
@@ -329,6 +331,12 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.match(await evaluate(`document.getElementById('download-video-button').textContent`), /免费/);
   await click('download-original-video-button');
   await until(`document.getElementById('browser-account-dialog').open`);
+  await until(`!document.getElementById('account-google-login-row').hidden`);
+  const googleConfig = await evaluate(`window.fixtureRequests.find(request => request.body.action === 'google-config')`);
+  assert.deepEqual(googleConfig.body, { action: 'google-config', input: { client: 'browser' } }, 'Provider availability is a public browser request without device proof');
+  assert.equal(googleConfig.credentials, 'same-origin');
+  assert.equal(googleConfig.headers.authorization, undefined, 'Browser provider discovery never sends a bearer credential');
+  assert.equal(await evaluate(`document.getElementById('account-login-form').hidden`), false, 'Google and email login coexist');
   assert.equal(await evaluate(`document.activeElement.id`), 'account-email');
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/member_video').length`), 0);
   await evaluate(`document.getElementById('account-email').value = 'member@example.test'; document.getElementById('account-otp').value = '123456'; document.getElementById('account-login-form').requestSubmit()`);

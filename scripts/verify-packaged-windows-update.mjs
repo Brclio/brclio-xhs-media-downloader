@@ -4,8 +4,8 @@
 import assert from 'node:assert/strict';
 import { spawn, execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdtemp, mkdir, readFile, writeFile, lstat, realpath, rm } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { mkdtemp, mkdir, open, readFile, writeFile, lstat, realpath, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -27,6 +27,64 @@ const digest = async file => {
   for await (const bytes of createReadStream(file)) hash.update(bytes);
   return hash.digest('hex');
 };
+const retryableGithubStatuses = new Set([429, 502, 503, 504]);
+const retryableNetworkCodes = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ENETUNREACH',
+  'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT', 'UND_ERR_SOCKET', 'ERR_STREAM_PREMATURE_CLOSE']);
+function isTransportFailure(error, signal) {
+  if (signal.aborted && ['AbortError', 'TimeoutError'].includes(error.name)) return true;
+  if (error instanceof TypeError && /fetch failed|terminated|network request failed/i.test(error.message)) return true;
+  for (let cause = error; cause; cause = cause.cause) if (retryableNetworkCodes.has(cause.code)) return true;
+  return false;
+}
+// A single absolute deadline covers HTTP headers, body consumption and backoff.
+// Invalid JSON, unexpected statuses and failed integrity checks remain terminal.
+export async function fetchGithubWithRetry(url, { headers, timeoutMs = 30000, attemptTimeoutMs = timeoutMs,
+  maxAttempts = 4, fetchImpl = fetch, now = Date.now, sleep = delay,
+  onRetry = evidence => console.log(JSON.stringify({ windowsGithubRetry: evidence })) } = {}, consume = response => response.json()) {
+  const deadline = now() + timeoutMs;
+  for (let attempt = 1; ; attempt++) {
+    const remaining = deadline - now();
+    assert.ok(remaining > 0, 'GitHub request deadline exceeded');
+    const signal = AbortSignal.timeout(Math.max(1, Math.min(remaining, attemptTimeoutMs)));
+    try {
+      const response = await fetchImpl(url, { headers, signal });
+      if (retryableGithubStatuses.has(response.status)) {
+        const error = new Error(`GitHub request returned HTTP ${response.status}`);
+        error.githubStatus = response.status;
+        const retryAfter = response.headers.get('retry-after');
+        const numericRetryAfter = retryAfter !== null && /^\d+(?:\.\d+)?$/.test(retryAfter);
+        error.retryAfterMs = numericRetryAfter ? Number(retryAfter) * 1000 : Math.max(0, Date.parse(retryAfter) - now()) || 0;
+        await response.body?.cancel();
+        throw error;
+      }
+      assert.equal(response.status, 200, 'GitHub public release request must succeed');
+      return await consume(response, { signal, attempt });
+    } catch (error) {
+      if ((!retryableGithubStatuses.has(error.githubStatus) && !isTransportFailure(error, signal)) || attempt >= maxAttempts) throw error;
+      const retryDelay = Math.max(1000 * 2 ** (attempt - 1), error.retryAfterMs || 0);
+      if (retryDelay >= deadline - now()) throw error;
+      onRetry({ attempt, status: error.githubStatus, code: error.code || error.cause?.code, delayMs: retryDelay });
+      await sleep(retryDelay);
+    }
+  }
+}
+export async function downloadGithubAsset(asset, destination, options = {}) {
+  return fetchGithubWithRetry(asset.browser_download_url, { timeoutMs: 180000, ...options }, async (response, { signal }) => {
+    // Exclusive creation also prevents retry cleanup from touching a pre-existing
+    // package. A failed transport removes only the file opened by this attempt.
+    const handle = await open(destination, 'wx');
+    try {
+      await pipeline(Readable.fromWeb(response.body), handle.createWriteStream(), { signal });
+      assert.equal((await lstat(destination)).size, asset.size, 'Downloaded asset size must match public release metadata');
+      assert.equal(await digest(destination), asset.digest.slice(7), 'Downloaded asset SHA-256 must match public release metadata');
+      return destination;
+    } catch (error) {
+      await handle.close().catch(() => {});
+      await rm(destination, { force: true });
+      throw error;
+    }
+  });
+}
 async function until(check, label, timeout = 90000) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) { const result = await check(); if (result) return result; await delay(250); }
@@ -278,20 +336,16 @@ export async function verifyPackagedWindowsUpdate(root = process.cwd()) {
     return child;
   }
   async function oldAsset(kind) {
-    const metadata = await fetch(`https://api.github.com/repos/${repository}/releases/tags/v${previousVersion}`, {
-      headers: { Accept: 'application/vnd.github+json', ...(process.env.GH_TOKEN ? { Authorization: `Bearer ${process.env.GH_TOKEN}` } : {}) }, signal: AbortSignal.timeout(30000)
-    }).then(response => { assert.equal(response.status, 200); return response.json(); });
+    const metadata = await fetchGithubWithRetry(`https://api.github.com/repos/${repository}/releases/tags/v${previousVersion}`, {
+      headers: { Accept: 'application/vnd.github+json', ...(process.env.GH_TOKEN ? { Authorization: `Bearer ${process.env.GH_TOKEN}` } : {}) }
+    });
     assert.equal(metadata.draft, false); assert.equal(metadata.prerelease, false);
     const name = `Brclio-XHS-${previousVersion}-windows-x64-${kind}.exe`;
     const matches = metadata.assets.filter(asset => asset.name === name); assert.equal(matches.length, 1);
     const asset = matches[0]; assert.match(asset.digest || '', /^sha256:[a-f0-9]{64}$/);
     assert.equal(asset.browser_download_url, `https://github.com/${repository}/releases/download/v${previousVersion}/${name}`);
-    const response = await fetch(asset.browser_download_url, { signal: AbortSignal.timeout(180000) });
-    assert.equal(response.status, 200);
     const destination = path.join(temporary, name);
-    await pipeline(Readable.fromWeb(response.body), createWriteStream(destination, { flags: 'wx' }));
-    assert.equal((await lstat(destination)).size, asset.size);
-    assert.equal(await digest(destination), asset.digest.slice(7));
+    await downloadGithubAsset(asset, destination);
     assetEvidence.push({ name, bytes: asset.size, sha256: asset.digest.slice(7) });
     return destination;
   }

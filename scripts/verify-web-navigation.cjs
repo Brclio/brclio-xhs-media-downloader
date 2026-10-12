@@ -42,8 +42,14 @@ const issues = [
   { id: '12345678-1234-1234-1234-000000000002', title: '导航验证：已解决下载', description: '第二条本地反馈。', category: 'download', status: 'resolved', createdAt: at, updatedAt: at, commentCount: 0 },
 ];
 const success = value => ({ status: 200, body: { ok: true, ...value, serverTime: at } });
-function apiFixture({ action, input = {} }) {
+function apiFixture({ action, input = {}, proof }, headers) {
   apiCalls.push({ action, input });
+  if (action === 'google-config') {
+    assert.equal(headers.authorization, undefined, 'Public Google configuration must not send an account token');
+    assert.equal(proof, undefined, 'Public Google configuration must not send a device proof');
+    assert.deepEqual(input, { client: 'browser' });
+    return success({ enabled: true });
+  }
   if (action === 'me') return { status: 401, body: { ok: false, error: { code: 'ACCOUNT_REQUIRED', message: '请先登录。' }, serverTime: at } };
   if (action === 'reviews-public') return success({ reviews: [], summary: { count: 0, averageRating: 0 }, page: 1, pageSize: 6, total: 0, totalPages: 1 });
   if (action === 'feedback-public-list') {
@@ -174,7 +180,7 @@ app.whenReady().then(async () => {
       let body = '';
       request.on('data', chunk => { body += chunk; });
       request.on('end', () => {
-        try { const reply = apiFixture(JSON.parse(body)); response.writeHead(reply.status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); response.end(JSON.stringify(reply.body)); }
+        try { const reply = apiFixture(JSON.parse(body), request.headers); response.writeHead(reply.status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); response.end(JSON.stringify(reply.body)); }
         catch (error) { rendererErrors.push(error.message); response.writeHead(500, { 'Content-Type': 'application/json' }); response.end(JSON.stringify({ ok: false, error: { message: error.message } })); }
       });
       return;
@@ -343,6 +349,7 @@ app.whenReady().then(async () => {
   await clickNav('/?account=open');
   await assertPage('index');
   await check(`document.querySelector('#browser-account-dialog').open`, 'cached homepage account entry query opens account UI');
+  await check(`document.querySelector('#account-google-login-row').hidden === false && !document.querySelector('#account-google-login').disabled`, 'Google sign-in remains available in the cached homepage account dialog');
   await click('#browser-account-close');
   assert.equal(await evaluate('document.querySelector("#share-text").value'), homeDraft);
   checks.push('anonymous feedback filters/detail/draft; account query opens cached homepage dialog');
@@ -411,7 +418,8 @@ app.whenReady().then(async () => {
 
   assert.deepEqual(rendererErrors, [], 'no application console errors');
   assert.ok(apiCalls.some(call => call.action === 'me'), 'anonymous account fixture exercised');
-  assert.ok(apiCalls.every(call => ['me', 'reviews-public', 'feedback-public-list', 'feedback-public-detail'].includes(call.action)), 'only read-only local API operations occur');
+  assert.ok(apiCalls.some(call => call.action === 'google-config'), 'public Google configuration fixture exercised');
+  assert.ok(apiCalls.every(call => ['me', 'google-config', 'reviews-public', 'feedback-public-list', 'feedback-public-detail'].includes(call.action)), 'only read-only local API operations occur');
   console.log(JSON.stringify({ result: 'PASS', scope: 'real Chromium, dist-web via local HTTP fixture; external network blocked; disposable profile', reducedMotion, viewTransitions, checks, screenshots, blockedRequestCount: blockedRequests.length, apiActions: [...new Set(apiCalls.map(call => call.action))] }));
   await finish(0);
 }).catch(error => finish(1, error));

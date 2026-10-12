@@ -1,0 +1,116 @@
+{
+  "recordedAt": "2026-10-12T11:42:38.102Z",
+  "implementationCommit": "25c8215d467d35475262a19c0914d98675ead1b6",
+  "web": {
+    "origin": "https://xhs.download.brclio.com",
+    "workerVersion": "aa72e203-1d5d-44b0-b263-2086ec980009",
+    "pagesDeployment": "9432cca2.brclio-xhs-pages.pages.dev",
+    "googleConfigurationEnabled": true,
+    "productionAccountAssetsMatchSource": [
+      "account-ui.js",
+      "account-ui.css",
+      "lib/browser-account.js"
+    ],
+    "googleAccountChooserObserved": true,
+    "completedLogin": {
+      "verified": true,
+      "evidence": "User confirmed successful return to the account page showing their email. Automated browser control timed out after Google account selection."
+    },
+    "credentials": "Google client secret configured only as a Cloudflare Worker Secret; temporary downloaded JSON removed after successful upload."
+  },
+  "localChecks": {
+    "node": {
+      "total": 1678,
+      "passed": 1665,
+      "failed": 0,
+      "skipped": 13
+    },
+    "python": {
+      "passed": 47,
+      "failed": 0
+    },
+    "googleRenderer": {
+      "scenarios": 5,
+      "minimumViewportWidth": 320,
+      "overflow": false
+    },
+    "macPreview": {
+      "version": "2.0.17",
+      "architecture": "arm64",
+      "comparedPackagedSources": 242,
+      "codeSignature": "adhoc",
+      "notarized": false,
+      "bundledPythonParserVerified": true,
+      "bundledProxyVerified": true,
+      "launched": true,
+      "productionGoogleLogin": {
+        "passed": true,
+        "systemBrowserConfirmationObserved": true,
+        "nativeSuccessMessageObserved": true,
+        "existingMembershipPreserved": true,
+        "existingDeviceAuthorizationPreserved": true,
+        "restartedSessionVerified": true,
+        "existingDownloadJobsPreserved": true
+      }
+    },
+    "integration": {
+      "startupStorage": true,
+      "startupQuit": true,
+      "genuineStartupFailure": true,
+      "googleRenderer": true,
+      "commerceRenderer": true,
+      "membershipRenderer": true,
+      "memberVideoRenderer": true,
+      "desktopFeedbackRenderer": true,
+      "browserFeedbackRenderer": true,
+      "adminCommerceRenderer": true,
+      "webNavigationBothMotionModes": true,
+      "desktopWorkspaceRenderer": true,
+      "learningRenderer": true,
+      "vipRenderer": true,
+      "nativeSecureStorageAcrossProcesses": true
+    },
+    "finalMacPreview": {
+      "version": "2.0.18",
+      "architecture": "arm64",
+      "codeSignature": "adhoc",
+      "notarized": false,
+      "comparedPackagedSources": 242,
+      "bundledProxyVerified": true,
+      "bundledPythonParserVerified": true,
+      "launched": false
+    }
+  },
+  "nativeRelease": {
+    "targetVersion": "2.0.18",
+    "status": "prepared-awaiting-canonical-ci",
+    "releaseTag": "v2.0.18",
+    "firstBuildRun": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38242719832",
+    "firstBuildFinding": "Startup verifier expected the old account button list; updating fixtures and repeating the native release gates.",
+    "previousFailedCandidate": {
+      "version": "2.0.17",
+      "status": "failed-no-public-release",
+      "releaseTag": "v2.0.17",
+      "releaseCommit": "810cc21c1924ee9a1c5b79c986832749be993d8f",
+      "run": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38245299557",
+      "findings": [
+        "Mac commerce fixture did not handle google-config; optional provider configuration error cleared verified browser state.",
+        "Windows upgrade verifier received HTTP 504 while reading a previously published installer release; adding bounded transport retries without changing integrity checks."
+      ]
+    },
+    "startupStorageRecoveryVerified": true,
+    "startupQuitVerified": true,
+    "startupFailureErrorVerified": true
+  },
+  "installedClient": {
+    "originalBundleVersion": "2.0.15",
+    "originalBundleReplaced": false,
+    "runningPreviewVersion": "2.0.17",
+    "googleLoginAndRestartVerified": true
+  },
+  "android": {
+    "version": "1.0.15",
+    "accountLogin": "Existing software account links use the system browser and share the website Google login.",
+    "nativeAccountSessionAdded": false
+  }
+}

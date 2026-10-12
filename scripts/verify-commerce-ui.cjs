@@ -19,6 +19,7 @@ const result = data => ({ ok: true, ...data, serverTime: at });
 const state = () => ({ configured: true, authenticated: Boolean(user), verified: Boolean(user), status: user ? 'ready' : 'logged_out', account: user ? account() : null });
 function route(action, input = {}) {
   calls.push({ action, input: structuredClone(input) });
+  if (action === 'google-config') return result({ enabled: true });
   if (action === 'me' || action === 'verify-code') return result({ account: account() });
   if (action === 'send-code') return result({ retryAfterSeconds: 60 });
   if (action === 'logout') { user = null; return result({}); }
@@ -73,8 +74,12 @@ app.whenReady().then(async () => {
       const url = new URL(req.url, 'http://fixture.invalid');
       if (url.pathname === '/api/account') {
         const parts = []; for await (const part of req) parts.push(part);
-        const { action, input } = JSON.parse(Buffer.concat(parts));
+        const { action, input, proof } = JSON.parse(Buffer.concat(parts));
         assert.equal(input.client, 'browser');
+        if (action === 'google-config') {
+          assert.equal(req.headers.authorization, undefined, 'Public Google configuration must not send an account token');
+          assert.equal(proof, undefined, 'Public Google configuration must not send a device proof');
+        }
         const body = await route(action, input);
         res.writeHead(body.ok ? 200 : 503, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); return;
       }
@@ -220,6 +225,7 @@ window.fixtureState=${JSON.stringify(state())};`;
   await evaluate(`window.fixtureUpdate({configured:true,authenticated:false,verified:false,status:'logged_out',account:null})`);
   assert.equal(await evaluate(`document.getElementById('orders-list').children.length`), 0);
   assert.equal(await evaluate(`document.getElementById('review-form').hidden`), true);
+  assert.ok(calls.some(call => call.action === 'google-config'), 'The browser fixture must exercise public Google configuration');
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ ok: true, checks: ['public pagination and rating', 'XSS rendered as text', '1000 built-in random nicknames and custom nickname', 'uncertain nickname save retries same requestId', 'nickname change updates existing review without another comment', 'review body preserves phone URL order and whitespace with email masked', 'web account nickname link closes dialog and focuses visible form', 'desktop account nickname link switches real reviews tab and focuses visible form', 'all personal order pages', 'payment report creates pending order', 'uncertain evaluation retries same requestId', 'single evaluation locks composer', '375px and 900px layout', 'late private response and nickname save after logout discarded', 'desktop bridge and account switching', 'private evaluation read failure retains retry', 'old payment result after re-login cannot overwrite new request'], screenshots: directory }, null, 2));
   await finish(0);

@@ -101,3 +101,46 @@ test('invalidated sessions and malformed refresh data cannot preserve verified m
     assert.equal(result.state.verified, false);
   }
 });
+
+test('public Google configuration failures preserve the verified account and private commerce access', async () => {
+  const updates = [], failures = [
+    () => Response.json({ ok: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Configuration unavailable' } }, { status: 503 }),
+    () => Response.json({ ok: false, error: { code: 'UNAUTHENTICATED', message: 'Unexpected public endpoint rejection' } }, { status: 401 }),
+    () => Response.json({ ok: false }, { status: 200 }),
+    () => new Response('<html>Upstream unavailable</html>', { status: 502 }),
+    () => { throw new Error('connection reset'); },
+  ];
+  let configurationRequests = 0;
+  const bridge = createBrowserAccountBridge({ fetchImpl: async (_url, options) => {
+    const { action, input, proof } = JSON.parse(options.body);
+    if (action === 'me') return success('member-a');
+    if (action === 'google-config') {
+      assert.deepEqual(input, { client: 'browser' });
+      assert.equal(options.headers.Authorization, undefined);
+      assert.equal(proof, undefined);
+      assert.equal(options.credentials, 'same-origin');
+      return failures[configurationRequests++]();
+    }
+    assert.equal(action, 'orders-mine');
+    assert.equal(input.expectedUserId, 'member-a');
+    return Response.json({ ok: true, orders: [{ id: 'member-a-order' }] });
+  } });
+  bridge.onAccountUpdate(value => updates.push(value));
+  const verified = await bridge.getAccountState();
+  assert.equal(verified.authenticated, true);
+  assert.equal(verified.verified, true);
+  for (const _failure of failures) {
+    const updatesBeforeConfiguration = updates.length;
+    const reply = await bridge.getAccountGoogleConfig();
+    assert.equal(reply.ok, false);
+    assert.equal(reply.result.enabled, false);
+    assert.ok(reply.error);
+    assert.deepEqual(reply.state, verified, 'Discovery failures must not change account, membership or account error state');
+    assert.equal(updates.length, updatesBeforeConfiguration, 'Discovery failures must not emit an account change');
+    const orders = await bridge.commerceRequest('orders-mine', { expectedUserId: 'member-a' });
+    assert.equal(orders.ok, true);
+    assert.deepEqual(orders.result.orders, [{ id: 'member-a-order' }]);
+    assert.deepEqual(orders.state, verified);
+  }
+  assert.equal(configurationRequests, failures.length);
+});
