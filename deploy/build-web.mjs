@@ -55,8 +55,8 @@ function publicWebNavigation(html, homepage, page) {
     if (selected) link = link.replace(/>$/, ' aria-current="page">');
     return link.replace('href="#support"', 'href="/#support"');
   });
-  if (page !== 'index.html') navigation = navigation.replace(/<button\b[^>]*id="browser-account-open"[^>]*>[\s\S]*?<\/button>/,
-    '<a class="header-account" href="/?account=open">账号与会员</a>');
+  if (page !== 'index.html') navigation = navigation.replace(/<button\b[^>]*id="browser-account-open"[^>]*>([\s\S]*?)<\/button>/,
+    (_, content) => `<a class="header-account" href="/?account=open">${content}</a>`);
 
   // The product story keeps its existing presentation controls and progress
   // tracking even though its public navigation follows the rest of the site.

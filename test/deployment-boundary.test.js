@@ -129,7 +129,10 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
     if (name === 'index.html') {
       assert.match(publishedHeader, /<button\b[^>]*id="browser-account-open"/, 'homepage keeps its account dialog trigger');
     } else {
-      assert.match(publishedHeader, /<a class="header-account" href="\/\?account=open">账号与会员<\/a>/, `${name} opens the homepage account dialog`);
+      const accountLink = publishedHeader.match(/<a class="header-account" href="\/\?account=open">([\s\S]*?)<\/a>/);
+      assert.ok(accountLink, `${name} opens the homepage account dialog`);
+      const accountButton = header(homepage).match(/<button\b[^>]*id="browser-account-open"[^>]*>([\s\S]*?)<\/button>/);
+      assert.equal(accountLink[1], accountButton[1], `${name} preserves the account icon and label`);
       assert.doesNotMatch(publishedHeader, /id="browser-account-open"/, `${name} has no unbound account button`);
     }
     assert.equal((published.match(/<link\b[^>]*href="(?:\.\/|\/)?site-header\.css"[^>]*>/g) || []).length, 1, `${name} loads shared styles once`);
