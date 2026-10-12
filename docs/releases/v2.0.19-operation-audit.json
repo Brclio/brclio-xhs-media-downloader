@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "version": "2.0.19",
-  "status": "prepublication-audit",
+  "status": "superseded-unpublished-desktop-candidate",
   "before": {
     "sourceSha": "c9dd2a30e0f8c24ec585a273fd6727c8704d2c7a",
     "cloudflareDeploymentId": "a8f7466f-9e87-430c-92ca-7177e90abf5c",
@@ -98,6 +98,52 @@
     },
     "realRendererAdminCollection": "PASS: paginated compressed previews, exact original attachment, responsive view, logout isolation",
     "cloudflareDryRun": "PASS: only existing bindings",
-    "pagesBuild": "PASS"
-  }
+    "pagesBuild": "PASS",
+    "webProduction": {
+      "assets": 112,
+      "builtinCount": 100,
+      "passed": true,
+      "permissionBoundariesPassed": true
+    },
+    "pagesProduction": {
+      "assets": 112,
+      "passed": true,
+      "canonicalOriginRestrictionsPreserved": true
+    }
+  },
+  "releaseSourceSha": "2193fc9d181a6b90e3cdfefd829981981e4a0cb2",
+  "after": {
+    "cloudflareDeploymentId": "99d16ea7-4801-47b9-80e1-7a2b3f36edef",
+    "cloudflareDeploymentsAdded": 1,
+    "secretNamesUnchanged": true,
+    "r2Enabled": false,
+    "r2ReadOnlyProbeCode": 10042,
+    "privateDataRepoHeadUnchanged": true,
+    "privateDataRepoHead": "818d8a275f103a36e87704def9c13f81d81983db",
+    "pagesDeploymentUrl": "https://6e539557.brclio-xhs-pages.pages.dev",
+    "accountWrites": false
+  },
+  "verificationNotes": [
+    "Initial static verification ran while Pages rollout was unfinished; rerun after deployment succeeded.",
+    "Read-only verifier now probes canonical /admin/ route because Pages redirects /admin/index.html.",
+    "No authenticated production upload performed; full 100MiB transfer is verified in real local Workerd with a GitHub HTTP contract fixture."
+  ],
+  "desktopRunId": 38321642485,
+  "desktopStatus": "failure; publishing skipped",
+  "ciObservations": [
+    {
+      "platform": "mac-intel",
+      "jobId": 115050855231,
+      "step": "Real renderer Google login verification",
+      "failure": "UnknownVizError after EGL/GPU process initialization failures during capturePage; no preceding functional assertion failure",
+      "action": "Rerun full failed job on a fresh runner with unchanged source; gates retained"
+    },
+    {
+      "platform": "mac-arm64 and windows-x64",
+      "step": "Verify responsive startup and credential access recovery",
+      "failure": "Fixed expected account-operation button list omitted four new avatar controls; actual startup guard included and disabled them",
+      "action": "Update fixture list with all controls; keep assertions and run complete fresh v2.0.20 pipeline"
+    }
+  ],
+  "supersededBy": "2.0.20"
 }

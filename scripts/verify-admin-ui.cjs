@@ -20,6 +20,10 @@ const keyFile = path.join(temporary, 'fixture-key.pem');
 const certificateFile = path.join(temporary, 'fixture-cert.pem');
 fs.mkdirSync(screenshots);
 app.setPath('userData', profile);
+// Preserve real screenshots on hosted Intel runners without a working EGL
+// display, using the same software compositor as the commerce admin fixture.
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-background-networking');
 let win;
 let server;
 let finishing = false;

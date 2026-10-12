@@ -69,10 +69,13 @@ function deferred() {
 const initialLoad = deferred(), retryLoad = deferred();
 const coreReady = deferred();
 let coreRequests = 0;
+let avatarRequests = 0;
 const registerHandle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = (channel, callback) => registerHandle(channel, channel === 'desktop:get-profile-state'
   ? async (...args) => { const result = await callback(...args); coreRequests++; await coreReady.promise; return result; }
-  : callback);
+  : channel.startsWith('desktop:avatar-')
+    ? (...args) => { avatarRequests++; return callback(...args); }
+    : callback);
 let loadCalls = 0;
 SecureAccountStore.prototype.load = async function () {
   assert.equal(this.filename, path.join(temporary, 'account', 'account-v1.enc'));
@@ -106,10 +109,16 @@ async function snapshot(win) {
     return {
       state,
       ready: document.body.dataset.desktopReady === 'true',
-      // Account operations must wait for secure storage. The membership dialog
-      // only browses prices or navigates to login; its controls have separate guards.
+      // Credential operations wait for secure storage. Avatar controls also
+      // require a verified login; local dialog controls have separate guards.
       buttons,
       operationButtons: buttons.filter(button => !['account-google-confirm', 'account-google-decline', 'account-google-cancel'].includes(button.id)),
+      avatar: {
+        detailsHidden: document.querySelector('#account-details')?.hidden,
+        dialogOpen: document.querySelector('#account-avatar-dialog')?.open,
+        retryHidden: document.querySelector('#account-avatar-retry')?.hidden,
+        fileDisabled: document.querySelector('#account-avatar-file')?.disabled,
+      },
       google: {
         loginRowHidden: document.querySelector('#account-google-login-row')?.hidden,
         confirmationHidden: document.querySelector('#account-google-confirmation')?.hidden,
@@ -142,6 +151,25 @@ function assertSignedOutMembershipGuard(value) {
     browseDisabled: false, paymentHidden: true, emailHidden: true,
     copyDisabled: true, loginGuidanceHidden: false,
   }, 'Users can view plans and login guidance, but payment codes and email copying require their verified account');
+}
+
+function assertSignedOutOperationGuards(value, blocked, refreshBlocked = blocked) {
+  assert.deepEqual(Object.fromEntries(value.operationButtons.map(button => [button.id, button.disabled])), {
+    'account-avatar-close': false,
+    'account-avatar-open': true,
+    'account-avatar-retry': false,
+    'account-avatar-upload': true,
+    'account-google-login': blocked,
+    'account-login': blocked,
+    'account-logout': blocked,
+    'account-redeem': blocked,
+    'account-refresh': refreshBlocked,
+    'account-send-code': blocked,
+    'orders-refresh': blocked,
+  }, 'Every account control follows its secure storage, verified login, or local dialog guard');
+  assert.deepEqual(value.avatar, {
+    detailsHidden: true, dialogOpen: false, retryHidden: true, fileDisabled: true,
+  }, 'Avatar changes remain unavailable without a verified login, and their local dialog stays closed');
 }
 
 async function singleNoteCheck(win) {
@@ -209,9 +237,10 @@ app.on('browser-window-created', (_event, win) => {
       }, 'ready renderer with pending secure storage');
       assert.equal(loading.nodeAvailable, false);
       assert.deepEqual(loading.operationButtons.map(button => button.id).sort(), [
+        'account-avatar-close', 'account-avatar-open', 'account-avatar-retry', 'account-avatar-upload',
         'account-google-login', 'account-login', 'account-logout', 'account-redeem', 'account-refresh', 'account-send-code', 'orders-refresh',
       ], 'The guard covers every existing account operation');
-      assert.ok(loading.operationButtons.every(button => button.disabled), 'Every account operation is disabled during startup');
+      assertSignedOutOperationGuards(loading, true);
       assertIdleGoogleControls(loading, true);
       assertSignedOutMembershipGuard(loading);
       await singleNoteCheck(win);
@@ -223,8 +252,7 @@ app.on('browser-window-created', (_event, win) => {
         return value.state.status === 'secure_storage_unavailable' ? value : null;
       }, 'nonblocking denied storage state');
       assert.equal(denied.retryLabel, '重试安全存储');
-      assert.equal(denied.operationButtons.find(button => button.id === 'account-refresh')?.disabled, false);
-      assert.ok(denied.operationButtons.filter(button => button.id !== 'account-refresh').every(button => button.disabled));
+      assertSignedOutOperationGuards(denied, true, false);
       assertIdleGoogleControls(denied, true);
       assertSignedOutMembershipGuard(denied);
       await singleNoteCheck(win);
@@ -235,7 +263,7 @@ app.on('browser-window-created', (_event, win) => {
       await until(() => loadCalls === 2, 'explicit storage retry');
       const retrying = await snapshot(win);
       assert.equal(retrying.state.status, 'initializing');
-      assert.ok(retrying.operationButtons.every(button => button.disabled));
+      assertSignedOutOperationGuards(retrying, true);
       assertIdleGoogleControls(retrying, true);
       assertSignedOutMembershipGuard(retrying);
       // Exercise rapid IPC retries too; AccountClient must share one pending load.
@@ -254,13 +282,29 @@ app.on('browser-window-created', (_event, win) => {
       assert.ok(replies.every(reply => reply.ok && reply.state.status === 'signed_out'));
       const recovered = await until(async () => {
         const value = await snapshot(win);
-        return value.state.status === 'signed_out' && value.operationButtons.every(button => !button.disabled) ? value : null;
+        return value.state.status === 'signed_out' && value.operationButtons.find(button => button.id === 'account-google-login')?.disabled === false ? value : null;
       }, 'recovered account controls');
+      assertSignedOutOperationGuards(recovered, false);
       assert.equal(recovered.state.error, null);
       assertIdleGoogleControls(recovered, false);
       assertSignedOutMembershipGuard(recovered);
       await win.webContents.executeJavaScript('window.xhsDesktop.refreshAccount()');
       assert.equal(loadCalls, 2, 'Ordinary refresh must reuse loaded credentials');
+      await win.webContents.executeJavaScript(`document.querySelector('#account-avatar-close').click();
+        document.querySelector('#account-avatar-retry').click();`);
+      const localAvatars = await until(() => win.webContents.executeJavaScript(`(() => {
+        const options = [...document.querySelectorAll('#account-avatar-grid button')];
+        return options.length === 100 ? {
+          dialogOpen: document.querySelector('#account-avatar-dialog').open,
+          allChoicesDisabled: options.every(button => button.disabled),
+          openDisabled: document.querySelector('#account-avatar-open').disabled,
+          uploadDisabled: document.querySelector('#account-avatar-upload').disabled,
+        } : null;
+      })()`), 'local avatar catalog without an account');
+      assert.deepEqual(localAvatars, {
+        dialogOpen: false, allChoicesDisabled: true, openDisabled: true, uploadDisabled: true,
+      }, 'Local avatar controls cannot open the picker or enable signed-out avatar changes');
+      assert.equal(avatarRequests, 0, 'Local close/retry controls must never call avatar account or upload bridges');
       assert.ok(publicReviewRequests > 0, 'Anonymous reviews remain available while credential storage initializes');
       assert.ok(publicGoogleConfigRequests > 0, 'Google configuration remains available while credential storage initializes');
       assert.equal(networkAttempts, 0, 'The test must not contact external services');
@@ -269,6 +313,7 @@ app.on('browser-window-created', (_event, win) => {
       console.log(JSON.stringify({ smoke: 'startup-storage-passed', visibleBeforeStorage: true,
         responsiveWhilePending: true, controlsGuarded: true, deniedStateRecoverable: true,
         signedOutMembershipGuarded: true,
+        signedOutAvatarsGuarded: true, localAvatarControlsWithoutAccountRequests: true,
         explicitRetryDeduplicated: true, singleNoteEngines: ['node', 'python'], loadCalls, networkAttempts, blockedBrowserRequests, publicReviewRequests, publicGoogleConfigRequests,
         rendererReadyDelayMs, lateRendererConfirmed: true, reloadRecovered: true, readinessCancelled: true,
         nativeKeychainTested: false }));

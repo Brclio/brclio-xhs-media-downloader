@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.20",
+  "status": "prepublication-audit",
+  "before": {
+    "sourceSha": "c9dd2a30e0f8c24ec585a273fd6727c8704d2c7a",
+    "cloudflareDeploymentId": "a8f7466f-9e87-430c-92ca-7177e90abf5c",
+    "cloudflareDeployedAt": "2026-10-12T13:02:44.721671Z",
+    "secretNamesCount": 24,
+    "secretNamesSha256": "a81530073a6a6ce8fa9a3d6d6b796308bc126a81f43190e308e142f6ddb60c1c",
+    "secretNamesUnchanged": true,
+    "secretValuesRead": false,
+    "r2Enabled": false,
+    "r2ReadOnlyProbeCode": 10042,
+    "privateDataRepo": true,
+    "privateDataRepoHead": "818d8a275f103a36e87704def9c13f81d81983db",
+    "publishedDesktopVersion": "2.0.18"
+  },
+  "scope": {
+    "storageProvider": "existing-private-github-repository",
+    "newStorageResources": false,
+    "newDurableObjectClasses": false,
+    "bindingsAndMigrationsUnchanged": true,
+    "newSchedule": "Hourly cleanup of expired unfinished avatar uploads; cursor also in GitHub",
+    "deployTargets": [
+      "existing main Cloudflare Worker",
+      "existing Cloudflare Pages project",
+      "desktop release v2.0.20"
+    ],
+    "untouchedTargets": [
+      "Python Worker",
+      "subscription proxy Worker",
+      "Android release"
+    ],
+    "accountBusinessFileUsedForTests": false
+  },
+  "sourceReview": {
+    "trackedDiffReviewed": true,
+    "untrackedFilesReviewed": true,
+    "unrelatedChangesFound": false,
+    "generatedOriginalsIgnoredByGit": true,
+    "privateCredentialsInChanges": false,
+    "reviewedFiles": 156,
+    "secretMarkerMatches": 0,
+    "r2AndAvatarStorageBindingResiduals": 0,
+    "additionalChanges": [
+      "Release version/documentation 2.0.20",
+      "Canonical admin route in read-only production verifier",
+      "Complete startup fixture control states",
+      "Software rendering only in isolated Google/admin verification fixtures"
+    ]
+  },
+  "assets": {
+    "builtinCount": 100,
+    "generationTool": "builtin image_gen.imagegen",
+    "independentGenerationCalls": 100,
+    "compressedFormat": "WebP",
+    "dimensions": [
+      256,
+      256
+    ],
+    "compressedBytes": 905308,
+    "distinctCompressedHashes": 100,
+    "generatedOriginalBytes": 219763892,
+    "originalArchiveCopiesHashMatch": true
+  },
+  "validation": {
+    "python": {
+      "passed": 47,
+      "failed": 0
+    },
+    "packagedSourcesAndAvatarAssets": {
+      "passed": 11,
+      "failed": 0
+    },
+    "realRendererAvatarCatalog": {
+      "decoded": 100,
+      "widthsChecked": [
+        1280,
+        760,
+        390,
+        320
+      ]
+    },
+    "workerdGithub100MiB": {
+      "bytes": 104857600,
+      "parts": 34,
+      "sha256": "ffd74a1b748b760f82f94525f8808766d0f05eb5bca98756f8afc358cf543b19",
+      "maxGithubRequestsPerHttpRequest": 47,
+      "downloadGithubRequests": 36,
+      "collectionRecoveryAfterPointerWriteFailure": true
+    },
+    "productionAuthenticatedUpload": false,
+    "node": {
+      "total": 1712,
+      "passed": 1699,
+      "failed": 0,
+      "skipped": 13,
+      "skipReason": "Platform-specific native tests; formal platform builds run their own native acceptance gates",
+      "sourceVersion": "2.0.19 implementation; complete v2.0.20 formal pipeline required"
+    },
+    "adapterIndependentReview": {
+      "passed": 13,
+      "failed": 0
+    },
+    "realRendererAdminCollection": "PASS: paginated compressed previews, exact original attachment, responsive view, logout isolation",
+    "cloudflareDryRun": "PASS: only existing bindings",
+    "pagesBuild": "PASS",
+    "webProduction": {
+      "assets": 112,
+      "builtinCount": 100,
+      "passed": true,
+      "permissionBoundariesPassed": true
+    },
+    "pagesProduction": {
+      "assets": 112,
+      "passed": true,
+      "canonicalOriginRestrictionsPreserved": true
+    },
+    "startupSecureStorage": "PASS: real renderer, complete 11-control ID/state map, storage denial/retry/recovery, avatar login guard, both media engines and delayed readiness",
+    "googleLoginSoftwareRenderer": "PASS: all five scenarios and nonempty screenshots",
+    "releaseVersionAndPackageChecks": {
+      "passed": 72,
+      "failed": 0
+    },
+    "adminSoftwareRenderer": "PASS: complete admin flow and 15 nonempty screenshots",
+    "startupLocalAvatarControls": "PASS: all 100 local entries remain disabled while signed out; close/retry invoke zero account/upload bridge calls"
+  },
+  "after": {
+    "cloudflareDeploymentId": "99d16ea7-4801-47b9-80e1-7a2b3f36edef",
+    "cloudflareDeploymentsAdded": 1,
+    "secretNamesUnchanged": true,
+    "r2Enabled": false,
+    "r2ReadOnlyProbeCode": 10042,
+    "privateDataRepoHeadUnchanged": true,
+    "privateDataRepoHead": "818d8a275f103a36e87704def9c13f81d81983db",
+    "pagesDeploymentUrl": "https://6e539557.brclio-xhs-pages.pages.dev",
+    "accountWrites": false
+  },
+  "verificationNotes": [
+    "Initial static verification ran while Pages rollout was unfinished; rerun after deployment succeeded.",
+    "Read-only verifier now probes canonical /admin/ route because Pages redirects /admin/index.html.",
+    "No authenticated production upload performed; full 100MiB transfer is verified in real local Workerd with a GitHub HTTP contract fixture."
+  ],
+  "desktopStatus": "pending",
+  "ciObservations": [
+    {
+      "platform": "mac-intel",
+      "jobId": 115050855231,
+      "step": "Real renderer Google login verification",
+      "failure": "UnknownVizError after EGL/GPU process initialization failures during capturePage; no preceding functional assertion failure",
+      "action": "Rerun full failed job on a fresh runner with unchanged source; gates retained"
+    },
+    {
+      "platform": "mac-arm64 and windows-x64",
+      "step": "Verify responsive startup and credential access recovery",
+      "failure": "Fixed expected account-operation button list omitted four new avatar controls; actual startup guard included and disabled them",
+      "action": "Update fixture list with all controls; keep assertions and run complete fresh v2.0.20 pipeline"
+    }
+  ],
+  "previousCandidate": {
+    "version": "2.0.19",
+    "sourceSha": "2193fc9d181a6b90e3cdfefd829981981e4a0cb2",
+    "runId": 38321642485,
+    "desktopPublished": false,
+    "webVerified": true,
+    "corrections": [
+      "Complete startup fixture button inventory",
+      "Software rendering for isolated Google login UI screenshots"
+    ]
+  }
+}

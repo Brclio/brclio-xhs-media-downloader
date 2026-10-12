@@ -30,10 +30,14 @@ const assets = new Array(names.length); let next = 0;
 await Promise.all(Array.from({ length: 8 }, async () => {
   for (;;) {
     const index = next++; if (index >= names.length) return;
-    const name = names[index]; const response = await request(`/${name}`); assert.equal(response.status, 200, name);
+    const name = names[index];
+    // Pages canonicalizes /admin/index.html to /admin/. Probe the public
+    // canonical route directly while comparing its exact source file bytes.
+    const publicPath = name === 'admin/index.html' ? '/admin/' : `/${name}`;
+    const response = await request(publicPath); assert.equal(response.status, 200, name);
     const bytes = Buffer.from(await response.arrayBuffer()); const local = await readFile(path.join(root, 'dist-web', name));
     assert.equal(hash(bytes), hash(local), name);
-    assets[index] = { path: name, status: response.status, bytes: bytes.length, sha256: hash(bytes), matchesBuild: true };
+    assets[index] = { path: name, publicPath, status: response.status, bytes: bytes.length, sha256: hash(bytes), matchesBuild: true };
   }
 }));
 assert.equal(new Set(assets.filter(asset => asset.path.endsWith('.webp')).map(asset => asset.sha256)).size, 100);

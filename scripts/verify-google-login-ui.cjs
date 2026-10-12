@@ -9,6 +9,10 @@ const { pathToFileURL } = require('node:url');
 const root = path.resolve(__dirname, '..');
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'brclio-google-login-ui-'));
 app.setPath('userData', path.join(temporary, 'profile'));
+// Hosted Intel runners may lack an EGL display. Keep real rendering and all
+// screenshot checks while using Chromium's software compositor.
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-background-networking');
 protocol.registerSchemesAsPrivileged([{ scheme: 'xhs-app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }]);
 let win, finished = false;
 const timeout = setTimeout(() => finish(1, new Error('GOOGLE_LOGIN_UI_TIMEOUT')), 45_000);
@@ -76,7 +80,10 @@ app.whenReady().then(async () => {
     }, 20);
   })`);
   const click = id => evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
-  const capture = async name => fs.writeFileSync(path.join(temporary, `${name}.png`), (await win.webContents.capturePage()).toPNG());
+  const capture = async name => {
+    await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+    fs.writeFileSync(path.join(temporary, `${name}.png`), (await win.webContents.capturePage()).toPNG());
+  };
   await win.loadURL('xhs-app://local/?mode=desktop');
   await until("document.getElementById('account-google-login-row')?.hidden === false");
   assert.equal(await evaluate("document.querySelectorAll('#account-google-login svg').length"), 1);
@@ -124,6 +131,6 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate("fixtureCalls.some(item => item.action === 'google-confirm')"), false);
   assert.equal(await evaluate("document.getElementById('account-google-confirmation').hidden"), true);
   assert.deepEqual(rendererErrors, []);
-  console.log(JSON.stringify({ ok: true, scenarios: ['desktop-login-cancel', 'browser-denied', 'browser-cookie-login', 'explicit-device-confirmation', 'device-declined'], screenshots: temporary }));
+  console.log(JSON.stringify({ ok: true, softwareRendering: true, scenarios: ['desktop-login-cancel', 'browser-denied', 'browser-cookie-login', 'explicit-device-confirmation', 'device-declined'], screenshots: temporary }));
   finish(0);
 }).catch(error => finish(1, error));

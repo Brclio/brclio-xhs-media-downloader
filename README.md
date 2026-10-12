@@ -1,6 +1,6 @@
 # Brclio 小红书下载器
 
-桌面 v2.0.19 整理为三项主要工具与右上角个人菜单，并支持 100 张内置头像、100MB 以内原图上传和压缩头像显示。原图、缩略图及收藏信息保存至现有 GitHub 私有数据仓库，管理员可按页下载原图；现有登录、会员、下载和更新流程继续保留。详见[版本说明](docs/releases/v2.0.19.md)。
+桌面 v2.0.20 整理为三项主要工具与右上角个人菜单，并支持 100 张内置头像、100MB 以内原图上传和压缩头像显示。原图、缩略图及收藏信息保存至现有 GitHub 私有数据仓库，管理员可按页下载原图；现有登录、会员、下载和更新流程继续保留。详见[版本说明](docs/releases/v2.0.20.md)。
 
 [v2.0.16 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.16)，修复主页长任务因账号服务短暂故障而暂停的问题：启动会员操作时联网确认，过程中使用绑定账号、会话和设备的签名凭证本地校验，后台每 5 分钟同步；有效凭证下断网或存储故障可继续下载。Mac / Windows 更新至 2.0.16，Android 保持 [1.0.15](docs/releases/android-v1.0.15.md)。三平台原生 CI、11 个公开附件及新旧更新器入口已核验，详见[版本说明](docs/releases/v2.0.16.md)、[公开发布核验](docs/releases/v2.0.16-publication-verification.json)与[生产部署核验](docs/releases/v2.0.16-production-verification.json)。版本检测优先直连、断点续传和安装替换仍沿用现有流程。
 
