@@ -75,15 +75,67 @@
       "offlineRestore": true,
       "authoritativeInvalidationPersisted": true,
       "transport": "isolated-fixture"
+    },
+    "nativeCI": {
+      "runId": 38224724376,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38224724376",
+      "sourceSha": "2af161603f0df19c26ec3ffed51a915284baf280",
+      "workflow": ".github/workflows/desktop-build.yml",
+      "event": "push",
+      "runAttempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-10-12T08:51:30Z",
+      "jobs": [
+        {
+          "name": "mac-arm64",
+          "id": 114729307960,
+          "status": "completed",
+          "conclusion": "success",
+          "packagedSourceAndRuntimeVerified": true,
+          "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+        },
+        {
+          "name": "windows-x64",
+          "id": 114729308122,
+          "status": "completed",
+          "conclusion": "success",
+          "packagedSourceAndRuntimeVerified": true,
+          "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+        },
+        {
+          "name": "mac-intel",
+          "id": 114729308190,
+          "status": "completed",
+          "conclusion": "success",
+          "packagedSourceAndRuntimeVerified": true,
+          "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+        },
+        {
+          "name": "Publish verified installers",
+          "id": 114733867859,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
     }
   },
   "delivery": {
     "sourceVersion": "2.0.16",
     "publicKeyPinned": true,
     "privateKeyPreparedLocallyOutsideGit": true,
-    "productionSecretConfigured": false,
-    "productionDeployed": false,
-    "newDesktopInstallerPublished": false,
-    "installedWindowsClientVerified": false
+    "productionSecretConfigured": true,
+    "productionDeployed": true,
+    "newDesktopInstallerPublished": true,
+    "installedWindowsClientVerified": false,
+    "sourceSha": "2af161603f0df19c26ec3ffed51a915284baf280",
+    "actualFeedbackUserWindowsDeviceVerified": false,
+    "liveProductionGrantIssuanceVerified": false,
+    "nativeWindowsCiAcceptancePassed": true,
+    "productionWorkerVersionId": "46da9491-0a7d-4c67-acda-2018e60ac33e",
+    "pagesDeploymentUrl": "https://fb7fcda1.brclio-xhs-pages.pages.dev",
+    "nativeCI": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38224724376",
+    "publicationVerification": "v2.0.16-publication-verification.json",
+    "productionVerification": "v2.0.16-production-verification.json"
   }
 }

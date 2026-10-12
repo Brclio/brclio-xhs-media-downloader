@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.16",
+  "sourceSha": "2af161603f0df19c26ec3ffed51a915284baf280",
+  "status": "production-deployed-and-verified",
+  "verifiedAt": "2026-10-12T08:56:39.437Z",
+  "timezone": "Asia/Shanghai",
+  "deployments": {
+    "mainWorker": {
+      "name": "brclio-xhs-downloader",
+      "initialSignedVersionId": "a42c7a98-4cd1-4286-bc59-ee4ee8291e3f",
+      "versionId": "46da9491-0a7d-4c67-acda-2018e60ac33e",
+      "keepVars": true
+    },
+    "pages": {
+      "name": "brclio-xhs-pages",
+      "branch": "main",
+      "canonicalOrigin": "https://brclio-xhs-pages.pages.dev",
+      "deploymentOrigin": "https://fb7fcda1.brclio-xhs-pages.pages.dev"
+    },
+    "pythonWorker": {
+      "name": "brclio-xhs-python",
+      "redeployed": false
+    },
+    "subscriptionProxy": {
+      "name": "brclio-xhs-subscription-proxy",
+      "redeployed": false
+    }
+  },
+  "signingConfiguration": {
+    "secretConfigured": true,
+    "keyId": "v1",
+    "privateKeyRegenerated": false,
+    "existingSecretsPreserved": true,
+    "configParsedByAccountRuntime": true,
+    "configurationProbe": {
+      "request": "POST /api/account with JSON object missing action",
+      "status": 400,
+      "errorCode": "INVALID_REQUEST",
+      "accountStorageRead": false,
+      "accountWrite": false
+    },
+    "liveGrantIssuanceVerified": false,
+    "secretPresenceVerification": {
+      "checkedAt": "2026-10-12T08:59:03.025Z",
+      "signerSecretPresent": true,
+      "originalCriticalSecretsPresent": true,
+      "secretCount": 21,
+      "secretValuesRead": false
+    },
+    "keyRotation": false
+  },
+  "publicOrigins": {
+    "checkedAt": "2026-10-12T08:56:25.884Z",
+    "count": 4,
+    "healthAndSignerConfiguration": [
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "health": {
+          "ok": true,
+          "platform": "cloudflare",
+          "version": "2.0.16",
+          "pythonBinding": true,
+          "deploymentId": "46da9491-0a7d-4c67-acda-2018e60ac33e"
+        },
+        "signerConfig": {
+          "status": 400,
+          "errorCode": "INVALID_REQUEST",
+          "liveGrantIssuanceVerified": false
+        }
+      },
+      {
+        "origin": "https://brclio-xhs-pages.pages.dev",
+        "health": {
+          "ok": true,
+          "platform": "cloudflare",
+          "version": "2.0.16",
+          "pythonBinding": true,
+          "deploymentId": "46da9491-0a7d-4c67-acda-2018e60ac33e"
+        },
+        "signerConfig": {
+          "status": 400,
+          "errorCode": "INVALID_REQUEST",
+          "liveGrantIssuanceVerified": false
+        }
+      },
+      {
+        "origin": "https://fb7fcda1.brclio-xhs-pages.pages.dev",
+        "health": {
+          "ok": true,
+          "platform": "cloudflare",
+          "version": "2.0.16",
+          "pythonBinding": true,
+          "deploymentId": "46da9491-0a7d-4c67-acda-2018e60ac33e"
+        },
+        "signerConfig": {
+          "status": 400,
+          "errorCode": "INVALID_REQUEST",
+          "liveGrantIssuanceVerified": false
+        }
+      },
+      {
+        "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+        "health": {
+          "ok": true,
+          "platform": "cloudflare",
+          "version": "2.0.16",
+          "pythonBinding": true,
+          "deploymentId": "46da9491-0a7d-4c67-acda-2018e60ac33e"
+        },
+        "signerConfig": {
+          "status": 400,
+          "errorCode": "INVALID_REQUEST",
+          "liveGrantIssuanceVerified": false
+        }
+      }
+    ],
+    "staticAssetsMatchDeployedSource": true,
+    "totalStaticAssetComparisons": 16,
+    "assets": [
+      {
+        "name": "download.html",
+        "sha256": "64bf06ed3223da68866a1376bab9d17de4d6c565129a845ea0f6e045939e8c87"
+      },
+      {
+        "name": "changelog.html",
+        "sha256": "296249b2b99dcbc4a53e77d1c3251997b837bfa115315f6f04984deab5ba2fc4"
+      },
+      {
+        "name": "account-ui.js",
+        "sha256": "40fa3f2a2046e4a31ef003d05910119f6115c4fafff24bc99de4cde530f82dbf"
+      },
+      {
+        "name": "app.js",
+        "sha256": "d923ee655e91be214903c084c1a46b124af82bc98610a399a70339fffdc34be2"
+      }
+    ]
+  },
+  "anonymousSmoke": {
+    "origin": "https://xhs.download.brclio.com",
+    "checkedAt": "2026-10-12T08:56:39.437Z",
+    "passed": 58,
+    "total": 58,
+    "ok": true,
+    "realMediaChecks": false,
+    "groups": [
+      {
+        "name": "static",
+        "passed": 18,
+        "total": 18
+      },
+      {
+        "name": "node",
+        "passed": 16,
+        "total": 16
+      },
+      {
+        "name": "python",
+        "passed": 16,
+        "total": 16
+      },
+      {
+        "name": "member-video",
+        "passed": 3,
+        "total": 3
+      },
+      {
+        "name": "account",
+        "passed": 5,
+        "total": 5
+      }
+    ]
+  },
+  "nativeCI": {
+    "runId": 38224724376,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38224724376",
+    "sourceSha": "2af161603f0df19c26ec3ffed51a915284baf280",
+    "workflow": ".github/workflows/desktop-build.yml",
+    "event": "push",
+    "runAttempt": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "completedAt": "2026-10-12T08:51:30Z",
+    "jobs": [
+      {
+        "name": "mac-arm64",
+        "id": 114729307960,
+        "status": "completed",
+        "conclusion": "success",
+        "packagedSourceAndRuntimeVerified": true,
+        "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+      },
+      {
+        "name": "windows-x64",
+        "id": 114729308122,
+        "status": "completed",
+        "conclusion": "success",
+        "packagedSourceAndRuntimeVerified": true,
+        "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+      },
+      {
+        "name": "mac-intel",
+        "id": 114729308190,
+        "status": "completed",
+        "conclusion": "success",
+        "packagedSourceAndRuntimeVerified": true,
+        "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+      },
+      {
+        "name": "Publish verified installers",
+        "id": 114733867859,
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "desktopPublication": {
+    "tag": "v2.0.16",
+    "sourceSha": "2af161603f0df19c26ec3ffed51a915284baf280",
+    "publishedAt": "2026-10-12T08:51:27Z",
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.16",
+    "publicLatestVerified": true,
+    "assetCount": 11,
+    "remoteDigestsVerified": true,
+    "publicManifestsVerified": true,
+    "anonymousUpdaterVisible": true,
+    "publicInstallerLinksVerified": 9,
+    "updaterVersionsVerified": [
+      "2.0.7",
+      "1.8.13"
+    ],
+    "verificationReport": "v2.0.16-publication-verification.json"
+  },
+  "limitations": {
+    "liveProductionGrantIssuanceVerified": false,
+    "actualFeedbackUserWindowsDeviceVerified": false,
+    "realUpstreamMediaCheckedByAnonymousSmoke": false,
+    "noProductionUserCredentialsAccessed": true,
+    "noMailSent": true,
+    "noAccountMutationByVerification": true,
+    "macDeveloperIdSigned": false,
+    "macNotarized": false,
+    "windowsPublisherSigned": false,
+    "androidVersionUnchanged": "1.0.15"
+  },
+  "sourceDescription": "Immutable product release commit; later documentation-only commits do not change this tag or deployed source."
+}

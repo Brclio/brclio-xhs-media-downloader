@@ -1,5 +1,11 @@
 # Cloudflare 部署与迁移核验
 
+## 2026-10-12：v2.0.16 桌面本地会员授权
+
+主 Worker 已原子部署签名配置与账号代码，首次签名版本为 `a42c7a98-4cd1-4286-bc59-ee4ee8291e3f`；安装包公开后，主 Worker 静态资源更新至 `46da9491-0a7d-4c67-acda-2018e60ac33e`，Pages 更新至 [fb7fcda1](https://fb7fcda1.brclio-xhs-pages.pages.dev)。部署保留原平台变量与 Secret，复用已准备的签名密钥；私有 Python Worker 和订阅代理未重发。Mac / Windows [v2.0.16](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.16) 已通过三平台原生构建和发布门禁，Android 保持 1.0.15。
+
+正式域名、Pages 主入口、此次 Pages 部署入口及 Worker 入口均确认健康版本 2.0.16、最终 Worker 版本 ID 与签名配置可解析，四份静态资源在四个入口均与发布来源字节一致；正式域名 58 项匿名检查通过。11 个公开附件及新旧更新器入口另经[发布核验](releases/v2.0.16-publication-verification.json)。签名配置检查未签发真实会员凭证，本轮未读取生产用户凭据、发送邮件或修改账号，也未验收反馈用户的 Windows 设备。完整结果与边界见[生产部署核验](releases/v2.0.16-production-verification.json)和[桌面授权说明](desktop-entitlements.md)。
+
 ## 2026-10-11：浏览器 Python 与免费订阅代理
 
 已发布网页专用 Pyodide Python 解析与免费 VLESS/WebSocket 私有抓取服务，不需要 Mihomo、容器或套餐升级。主 Worker 为 `7845e346-84a9-41dd-9dcb-a4645dcc53f0`，私有代理为 `159a718d-155d-44a6-8da0-fe215377c855`，Pages 为 [2336b302](https://2336b302.brclio-xhs-pages.pages.dev)。管理员可在原后台修改加密订阅配置，初始地址由主 Worker Secret 提供，不写入代码或公开构建。完整职责、兼容线路测速限制及免费额度边界见[代理说明](../cloudflare/subscription-proxy/README.md)。

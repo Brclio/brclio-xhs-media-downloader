@@ -1,6 +1,6 @@
 {
   "releaseVersion": "2.0.16",
-  "scope": "First build-only desktop CI failure audit; this report does not establish installer or publication success.",
+  "scope": "Historical failed desktop CI runs with final successful build and publication resolution; per-run failure fields remain unchanged.",
   "auditedAt": "2026-10-12T05:35:12Z",
   "run": {
     "id": 38207564038,
@@ -307,6 +307,69 @@
       "productionAccountAccess": false
     },
     "releaseGate": "Repeat the full native workflow on the corrected clean source; the local passes do not establish Windows DPAPI or published installer success."
+  },
+  "finalResolution": {
+    "verifiedAt": "2026-10-12T08:52:30.287Z",
+    "sourceSha": "2af161603f0df19c26ec3ffed51a915284baf280",
+    "historicalFailedRunsRetained": true,
+    "successfulBuildOnlyRun": {
+      "id": 38212703809,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38212703809",
+      "conclusion": "success",
+      "allThreeNativeJobsPassed": true,
+      "publisher": "skipped-build-only"
+    },
+    "formalPublicationRun": {
+      "runId": 38224724376,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38224724376",
+      "sourceSha": "2af161603f0df19c26ec3ffed51a915284baf280",
+      "workflow": ".github/workflows/desktop-build.yml",
+      "event": "push",
+      "runAttempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-10-12T08:51:30Z",
+      "jobs": [
+        {
+          "name": "mac-arm64",
+          "id": 114729307960,
+          "status": "completed",
+          "conclusion": "success",
+          "packagedSourceAndRuntimeVerified": true,
+          "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+        },
+        {
+          "name": "windows-x64",
+          "id": 114729308122,
+          "status": "completed",
+          "conclusion": "success",
+          "packagedSourceAndRuntimeVerified": true,
+          "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+        },
+        {
+          "name": "mac-intel",
+          "id": 114729308190,
+          "status": "completed",
+          "conclusion": "success",
+          "packagedSourceAndRuntimeVerified": true,
+          "nativeEncryptedStoreAcrossTwoProcessesPassed": true
+        },
+        {
+          "name": "Publish verified installers",
+          "id": 114733867859,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "published": true,
+    "publicLatestVerified": true,
+    "assetCount": 11,
+    "publicInstallerLinksVerified": 9,
+    "publicationVerification": "v2.0.16-publication-verification.json",
+    "productionVerification": "v2.0.16-production-verification.json",
+    "liveProductionGrantIssuanceVerified": false,
+    "actualFeedbackUserWindowsDeviceVerified": false
   },
   "privacy": "No full logs, personal account identifiers, note URLs, subscription values, or signing secrets are included."
 }

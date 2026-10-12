@@ -1,6 +1,6 @@
 # Brclio 小红书下载器
 
-[v2.0.16](docs/releases/v2.0.16.md) 修复主页长任务因账号服务短暂故障而暂停的问题：启动会员操作时联网确认，过程中使用绑定账号、会话和设备的签名凭证本地校验，后台每 5 分钟同步；有效凭证下断网或存储故障可继续下载。Mac / Windows 更新至 2.0.16，Android 保持 [1.0.15](docs/releases/android-v1.0.15.md)。版本检测优先直连、断点续传和安装替换仍沿用现有流程。
+[v2.0.16 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.16)，修复主页长任务因账号服务短暂故障而暂停的问题：启动会员操作时联网确认，过程中使用绑定账号、会话和设备的签名凭证本地校验，后台每 5 分钟同步；有效凭证下断网或存储故障可继续下载。Mac / Windows 更新至 2.0.16，Android 保持 [1.0.15](docs/releases/android-v1.0.15.md)。三平台原生 CI、11 个公开附件及新旧更新器入口已核验，详见[版本说明](docs/releases/v2.0.16.md)、[公开发布核验](docs/releases/v2.0.16-publication-verification.json)与[生产部署核验](docs/releases/v2.0.16-production-verification.json)。版本检测优先直连、断点续传和安装替换仍沿用现有流程。
 
 [v2.0.12 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.12)，改进实况整包导出：网页与 Mac / Windows「制作实况」默认导出含完整 `.pvt` 实况包的 ZIP。在 Mac 解压后，通过 Finder 隔空投送整个 `.pvt` 到 iPhone；本次用户实机确认 HEIC 2 秒、JPEG 3 秒两种样本均可在「照片」作为实况接收并长按播放。支持 0.5–8 秒成片、视频 1 / 1.5 / 2 / 3 倍速，以及与成片一致的片段和封面预览；1 倍速可保留声音或静音，其他倍速成片统一静音。8 秒是本工具的成片范围，本轮优先保留已验证的手机交接方式。Android 沿用 v1.0.13。三平台构建与升级门禁、公开附件、正式 Mac 包生成和[线上网站核验](docs/releases/v2.0.12-web-verification.json)通过，详见[本次版本说明](docs/releases/v2.0.12.md)与[实况包和实机验证记录](docs/live-photo-pvt-verification.json)。
 
@@ -74,7 +74,7 @@ v1.7.1 修补 Mac 应用包的签名完整性：完整应用使用 ad hoc 签名
 
 v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理，业务状态存入独立 GitHub 私有仓库，详见 [账号系统部署与配置](docs/account-system.md)。当前正式账号后端运行在 Cloudflare 主 Worker。软件账号与小红书登录独立；上线需先配置平台 Secrets 与授权地址，再打包正式客户端。默认会员范围为主页批量下载，原单篇功能保留。
 
-桌面长任务支持[服务器签发、本地验签的会员凭证](docs/desktop-entitlements.md)：启动会员操作时远程确认，后台每 5 分钟同步，媒体下载过程中在本机检查签名、设备/会话绑定和到期时间。短暂账号存储故障不再中断已有有效凭证下的下载；上线须配置服务器签名私钥并发布内置对应公钥的新客户端。
+桌面长任务支持[服务器签发、本地验签的会员凭证](docs/desktop-entitlements.md)：启动会员操作时远程确认，后台每 5 分钟同步，媒体下载过程中在本机检查签名、设备/会话绑定和到期时间。短暂账号存储故障不再中断已有有效凭证下的下载；生产签名配置已部署，内置对应公钥的 Mac / Windows v2.0.16 已发布。旧版客户端需升级后才具有本地验签能力。
 
 [项目仓库](https://github.com/Brclio/brclio-xhs-media-downloader) · [下载最新版安装包](https://github.com/Brclio/brclio-xhs-media-downloader/releases/latest)
 
@@ -82,7 +82,7 @@ v1.7.0 新增软件账号、会员授权、设备绑定和人工发码管理，�
 
 已部署 **Cloudflare Pages + Workers 双引擎**，正式入口为 [xhs.download.brclio.com](https://xhs.download.brclio.com)，另有 [Pages 入口](https://brclio-xhs-pages.pages.dev)。正式域名与证书已激活，HTTPS 健康检查确认请求到达 Cloudflare。网页和图片、视频下载由 Cloudflare 承载；账号与解析使用私有 Durable Object 执行环境，账号沿用原 `AUTH_*` 配置和 GitHub 唯一业务存储。双引擎解析、图片字节、验证码收件、管理员登录及跨后端会话各有历史验收证据；本轮结果与限制见部署记录，历史通过不代表新素材均能解析。
 
-正式托管仅使用 **Cloudflare**。网页版新增「浏览器 Python」：Pyodide 在浏览器执行解析，来源由免费私有 VLESS/WebSocket 服务抓取，每次读取最新订阅、选择兼容线路中最低延迟的入口，失败补一次直连；管理员可在后台维护加密订阅配置。无需 Mihomo、付费容器或用户开启 VPN。旧 Python API 与已安装客户端保留原入口，本次没有重发客户端。实际验收与边界见[发布记录](docs/releases/v2.0.15-browser-python-free-proxy-verification.json)、[免费代理说明](cloudflare/subscription-proxy/README.md)和[部署记录](docs/cloudflare-deployment.md)。Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。定向更新仅发布实际变更的 Worker 与 Pages，旧私有 Python Worker 不必随每次网页更新重发。
+正式托管仅使用 **Cloudflare**。2026-10-11 的 v2.0.15 网页变更新增「浏览器 Python」：Pyodide 在浏览器执行解析，来源由免费私有 VLESS/WebSocket 服务抓取，每次读取最新订阅、选择兼容线路中最低延迟的入口，失败补一次直连；管理员可在后台维护加密订阅配置。无需 Mihomo、付费容器或用户开启 VPN。该轮保留旧 Python API 与已安装客户端的原入口，没有重发客户端。实际验收与边界见[发布记录](docs/releases/v2.0.15-browser-python-free-proxy-verification.json)、[免费代理说明](cloudflare/subscription-proxy/README.md)和[部署记录](docs/cloudflare-deployment.md)。Pages 支持外部 DNS 子域名，无需迁移整个根域 DNS。定向更新仅发布实际变更的 Worker 与 Pages，旧私有 Python Worker 不必随每次网页更新重发。
 
 ## Android 客户端
 
