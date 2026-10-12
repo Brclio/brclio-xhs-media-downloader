@@ -277,5 +277,36 @@
     "publishedByThisRun": false,
     "releaseGate": "Failed. Windows and Intel installers were built and checked on their runners, but no installer or native-proof artifacts were uploaded. Later UI/account/feedback/order/credential gates were skipped. Repeat the complete native workflow on corrected clean source before publication."
   },
+  "thirdNativeRunAudit": {
+    "id": 38210753155,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38210753155",
+    "sourceSha": "e5aac2a1023b22df2a71d1c47cff8cadac331ca9",
+    "attempt": 1,
+    "conclusion": "failure",
+    "allPlatformNodeSuitesPassed": true,
+    "failureGate": "Verify member original videos and browser account authorization in the real renderer",
+    "affectedJobs": ["mac-arm64", "mac-intel", "windows-x64"],
+    "failure": {
+      "file": "scripts/verify-member-video-ui.cjs:400",
+      "expectedWindowOpenCalls": 0,
+      "actualWindowOpenCalls": 1,
+      "cause": "The verifier counted the legitimate blank verification popup preopened during web parsing as a forbidden video window. Its mock returned no popup handle and could not observe normal closure.",
+      "fix": "Model the exact blank parse popup and require its closure, cleared opener and absence of navigation. Continue rejecting all unexpected windows, raw-video opening and protected download fallback. Assert the exact web parse popup count and zero desktop parse popups."
+    },
+    "artifactCount": 0,
+    "publisherConclusion": "skipped",
+    "publishedByThisRun": false,
+    "nativeEncryptedStoreGatePassed": false,
+    "localRemainingGateVerification": {
+      "memberVideoRenderer": "passed after fixture correction",
+      "desktopFeedback": "passed",
+      "publicFeedback": "passed",
+      "webAndDesktopCommerce": "passed",
+      "commerceAdministration": "passed",
+      "macosEncryptedStoreAcrossTwoProcesses": "passed",
+      "productionAccountAccess": false
+    },
+    "releaseGate": "Repeat the full native workflow on the corrected clean source; the local passes do not establish Windows DPAPI or published installer success."
+  },
   "privacy": "No full logs, personal account identifiers, note URLs, subscription values, or signing secrets are included."
 }

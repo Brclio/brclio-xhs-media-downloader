@@ -50,7 +50,7 @@ app.whenReady().then(async () => {
   const fixture = `
 window.fixtureRole = 'guest'; window.fixtureOriginalAvailable = true;
 window.fixtureRequests = []; window.fixtureDownloads = []; window.fixtureBlobs = new Map();
-window.fixtureDenyChunks = false; window.fixtureDenyFinalMeta = false; window.fixtureCorruptMp4 = false; window.fixtureChangeDuringFinalMeta = ''; window.fixtureMetaCalls = 0; window.fixtureOpened = [];
+window.fixtureDenyChunks = false; window.fixtureDenyFinalMeta = false; window.fixtureCorruptMp4 = false; window.fixtureChangeDuringFinalMeta = ''; window.fixtureMetaCalls = 0; window.fixtureOpened = []; window.fixtureParsePopups = [];
 window.fixtureSlow = false; window.fixturePending = []; window.fixtureDeliveredBytes = 0; window.fixtureAccountChecks = 0; window.fixtureInspectionCalls = 0;
 window.fixtureScrollAudit = [];
 window.fixtureAnimationFrames = 0;
@@ -86,7 +86,21 @@ window.fixtureRelease = stage => {
   window.fixturePending.splice(window.fixturePending.indexOf(pending), 1); pending.release();
 };
 const pause = stage => window.fixtureSlow ? new Promise(release => window.fixturePending.push({ stage, release })) : Promise.resolve();
-window.open = (...args) => { window.fixtureOpened.push(args); };
+window.open = (...args) => {
+  if (args[0] === 'about:blank' && args[1] === '_blank' && args[2] === 'popup,width=1080,height=760') {
+    const record = { args, closed: false, navigations: [], openerCleared: false };
+    window.fixtureParsePopups.push(record);
+    return {
+      document: document.implementation.createHTMLDocument(''),
+      set opener(value) { record.openerCleared = value === null; },
+      get closed() { return record.closed; },
+      location: { replace(url) { record.navigations.push(url); } },
+      close() { record.closed = true; }, focus() {},
+    };
+  }
+  window.fixtureOpened.push(args);
+  return null;
+};
 const realFetch = window.fetch.bind(window);
 const fixtureAccount = () => ({ user: { id: 'fixture-user', email: 'member@example.test' },
   membership: { type: window.fixtureRole === 'member' ? 'duration' : 'none', active: window.fixtureRole === 'member', startsAt: '2026-09-01T00:00:00Z', expiresAt: '2026-11-01T00:00:00Z' },
@@ -208,6 +222,13 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     if (details.level === 'error' && !details.message.includes('ERR_BLOCKED_BY_CLIENT') && !details.message.includes('playback.mp4')) rendererErrors.push(details.message);
   });
   const evaluate = script => win.webContents.executeJavaScript(script, true);
+  const assertNoUnexpectedWindows = async (parsePopups = 1) => {
+    assert.deepEqual(await evaluate('window.fixtureOpened'), [], 'Video downloads never open raw media or unexpected windows');
+    assert.deepEqual(await evaluate('window.fixtureParsePopups'), Array.from({ length: parsePopups }, () => ({
+      args: ['about:blank', '_blank', 'popup,width=1080,height=760'],
+      closed: true, navigations: [], openerCleared: true,
+    })), 'Successful parsing closes every preopened verification window without navigating it');
+  };
   readDiagnostics = () => evaluate(`({ audit: window.fixtureScrollAudit, scrollY, active: document.activeElement?.id,
     pending: window.fixturePending?.map(item => item.stage), phase: document.getElementById('video-download-progress')?.dataset.phase,
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, animationFrames: window.fixtureAnimationFrames,
@@ -397,7 +418,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(requests[0].body.text, 'https://www.xiaohongshu.com/explore/aaaaaaaaaaaaaaaaaaaaaaaa');
   assert.ok(requests.slice(1).every(request => request.query.includes('ticket=fixture-ticket') && !request.query.includes('url=')));
   assert.equal(requests.filter(request => request.query.includes('action=meta')).length, 2, 'Member download rechecks authorization after MP4 inspection and before saving');
-  assert.equal(await evaluate('window.fixtureOpened.length'), 0);
+  await assertNoUnexpectedWindows();
   await evaluate('window.fixtureDenyChunks = true');
   await click('download-original-video-button');
   await until(`document.getElementById('alert-toast').textContent.includes('会员已到期') && !document.getElementById('download-original-video-button').disabled`);
@@ -405,7 +426,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.match(`${chunkFailure.stage} ${chunkFailure.detail}`, /会员已到期/, 'Failure explanation must remain beside the controls');
   await capture('progress-error');
   assert.equal(await evaluate('window.fixtureDownloads.length'), 1);
-  assert.equal(await evaluate('window.fixtureOpened.length'), 0);
+  await assertNoUnexpectedWindows();
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0);
   await click('membership-close'); await click('browser-account-close');
   await evaluate('window.fixtureDenyChunks = false; window.fixtureDenyFinalMeta = true');
@@ -418,7 +439,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(preSaveRequests.filter(request => request.query.includes('action=chunk')).length, Math.ceil(bytes.length / 50), 'Final rejection must occur after every chunk completed');
   assert.equal(preSaveRequests.filter(request => request.query.includes('action=meta')).length, 2);
   assert.equal(await evaluate('window.fixtureDownloads.length'), 1, 'A rejected final authorization must not save a combined MP4');
-  assert.equal(await evaluate('window.fixtureOpened.length'), 0);
+  await assertNoUnexpectedWindows();
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0);
   await click('membership-close'); await click('browser-account-close');
   await evaluate('window.fixtureDenyFinalMeta = false');
@@ -429,7 +450,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     await assertProgress('error', { active: false });
     assert.equal(await evaluate('window.fixtureRole'), change === 'logout' ? 'guest' : 'member');
     assert.equal(await evaluate('window.fixtureDownloads.length'), 1, 'Logout or a replacement login during an authorized final metadata response must not save');
-    assert.equal(await evaluate('window.fixtureOpened.length'), 0);
+    await assertNoUnexpectedWindows();
     await until(`document.getElementById('browser-account-dialog').open`);
     await click('browser-account-close');
   }
@@ -462,7 +483,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await until(`window.fixtureDownloads.length === 3 && !document.getElementById('download-original-video-button').disabled`);
   await assertProgress('complete', { active: false, transferred: bytes.length });
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0, 'Member failure/retry cannot use an unprotected playback route');
-  assert.equal(await evaluate('window.fixtureOpened.length'), 0);
+  await assertNoUnexpectedWindows();
   await evaluate('window.fixtureDenyFinalMeta = false; window.fixtureRole = "ordinary"');
   await click('browser-account-open'); await click('account-refresh');
   await until(`document.getElementById('account-badge').textContent.includes('普通用户')`);
@@ -488,6 +509,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await evaluate(`window.fixtureOriginalAvailable = false; document.getElementById('parse-form').requestSubmit()`);
   await until(`document.getElementById('download-original-video-button').disabled && !document.getElementById('parse-button').disabled`);
   assert.match(await evaluate(`document.getElementById('original-video-hint').textContent`), /未提供原视频/);
+  await assertNoUnexpectedWindows(2);
   const browserScrollAudit = await evaluate('window.fixtureScrollAudit');
   for (const unsafe of ['javascript:alert(1)', 'https://www.xiaohongshu.com.attacker.test/explore/abc', 'https://user@www.xiaohongshu.com/explore/abc']) {
     const rejected = new URL(origin + '/'); rejected.searchParams.set('note', unsafe); rejected.searchParams.set('memberVideo', '1');
@@ -541,7 +563,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await evaluate(`window.fixtureSlow = false; window.fixtureRelease('resolve')`);
   await until(`window.fixtureDownloads.length === 1 && !document.getElementById('download-original-video-button').disabled`);
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0);
-  assert.equal(await evaluate('window.fixtureOpened.length'), 0);
+  await assertNoUnexpectedWindows(0);
   // Free playback uses the same nearby byte progress without a member request.
   const protectedBeforePlayback = await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/member_video').length`);
   await evaluate(`window.fixtureSlow = true; window.fixtureDeliveredBytes = 0;
