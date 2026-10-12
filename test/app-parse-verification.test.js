@@ -39,7 +39,7 @@ class Element extends EventTarget {
   scrollIntoView() {}
 }
 
-function page({ engine = 'node', desktop = false, fetchResult, allowPopup = true } = {}) {
+function page({ engine = 'node', desktop = false, fetchResult, allowPopup = true, appScript = appSource } = {}) {
   const nodes = new Map(), created = [], windows = [], calls = [], intervals = new Map();
   let userGesture = false;
   const node = id => {
@@ -95,8 +95,9 @@ function page({ engine = 'node', desktop = false, fetchResult, allowPopup = true
     } };
   };
   // Execute the real helper, app event registration, submit handler and parse function together.
+  const normalizedSource = appScript.replace(/\r\n?/g, '\n');
   vm.runInContext(verificationSource.replace(/^export /gm, '') + '\n'
-    + appSource.replace(/^import[\s\S]*?;\n/gm, '').replace('import("./lib/browser-python.js")', 'loadBrowserPython()')
+    + normalizedSource.replace(/^import[\s\S]*?;\n/gm, '').replace('import("./lib/browser-python.js")', 'loadBrowserPython()')
     + '\nglobalThis.app = { state, parseShareText, proxyUrl, videoApiUrl };', context, { filename: 'app-with-verification.js' });
   return { calls, windows, intervals, imports, node, ...context.app,
     submit(text = noteURL) {
@@ -138,6 +139,19 @@ test('ordinary success closes the preopened window without opening a verificatio
   assert.equal(env.windows.length, 1); assert.equal(env.windows[0].closed, true);
   assert.equal(env.windows[0].url, undefined); assert.equal(env.dialog(), undefined);
   assert.equal(env.state.busy, false); assert.equal(env.state.title, '解析完成');
+});
+
+test('CRLF checkouts execute the real web submit flow for both engines', async t => {
+  const appScript = appSource.replace(/\r\n?/g, '\n').replace(/\n/g, '\r\n');
+  for (const engine of ['node', 'python']) await t.test(engine, async () => {
+    const env = page({ engine, appScript });
+    await env.submit();
+    assert.equal(env.calls.find(call => call.type === 'fetch').url,
+      engine === 'python' ? '/api/browser_python_source' : '/api/parse');
+    assert.deepEqual(env.imports, engine === 'python' ? ['browser-python'] : []);
+    assert.equal(env.windows.length, 1); assert.equal(env.windows[0].closed, true);
+    assert.equal(env.state.busy, false); assert.equal(env.state.title, '解析完成');
+  });
 });
 
 test('network, parse and invalid-handoff failures close the submitted operation window', async t => {

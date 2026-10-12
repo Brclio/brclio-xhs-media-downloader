@@ -3,6 +3,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promi
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { normalizeBrowserPythonResult, parseWithBrowserPython } from '../lib/browser-python.js';
 import { buildWeb, PUBLIC_FILES, PYODIDE_FILES, PYODIDE_VERSION } from '../deploy/build-web.mjs';
 
@@ -17,6 +18,8 @@ const parsed = () => ({ title: '独立解析', content: '正文', strategy: 'exa
     liveVideo: { url: originalURL, backupUrls: [playbackURL], codec: 'h264', duration: 3 } }],
   videos: [{ url: originalURL, backupUrls: [playbackURL, originalURL], width: 1080, height: 1920, hasAudio: true, label: '1080p' },
     { url: originalURL, backupUrls: [] }], originalVideos: [{ url: originalURL }] });
+
+const repositoryDirectory = (moduleURL = import.meta.url, options) => fileURLToPath(new URL('../', moduleURL), options);
 
 function workerFixture(reply = { success: true, parsed: parsed() }) {
   const workers = [];
@@ -167,11 +170,20 @@ test('an unresponsive worker is terminated once when its fixed parsing deadline 
   worker.onerror(); assert.equal(worker.terminated, 1);
 });
 
+test('build fixture paths decode file URLs without duplicating Windows drives', () => {
+  const windowsRoot = repositoryDirectory('file:///D:/Brclio%20%E4%B8%AD%E6%96%87/test/browser-python.test.js', { windows: true });
+  assert.equal(path.win32.join(windowsRoot, 'lib', 'browser-python.js'), 'D:\\Brclio 中文\\lib\\browser-python.js');
+  const shareRoot = repositoryDirectory('file://build-host/share/Brclio%20%E4%B8%AD%E6%96%87/test/browser-python.test.js', { windows: true });
+  assert.equal(path.win32.join(shareRoot, 'app.js'), '\\\\build-host\\share\\Brclio 中文\\app.js');
+  const posixRoot = repositoryDirectory('file:///tmp/Brclio%20%E4%B8%AD%E6%96%87/test/browser-python.test.js', { windows: false });
+  assert.equal(path.posix.join(posixRoot, 'app.js'), '/tmp/Brclio 中文/app.js');
+});
+
 test('public build self-hosts the pinned runtime and exact pure parser under every Pages file limit', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'brclio-browser-python-build-'));
+  const root = await mkdtemp(path.join(tmpdir(), 'brclio browser Python 中文 '));
   t.after(() => rm(root, { recursive: true, force: true }));
   // Keep output isolated while serving the real dynamic-import module sources.
-  const repository = path.resolve(new URL('../', import.meta.url).pathname);
+  const repository = repositoryDirectory();
   for (const name of PUBLIC_FILES) {
     await mkdir(path.dirname(path.join(root, name)), { recursive: true });
     if (['assets', 'admin'].includes(name)) {

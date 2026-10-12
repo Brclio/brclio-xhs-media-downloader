@@ -54,6 +54,8 @@ jobs:
           python-version: '3.13'
           architecture: ${{ matrix.arch }}
       - run: npm ci
+      - name: Install locked dependencies for the subscription Worker regressions
+        run: npm ci --prefix cloudflare/subscription-proxy
       - name: Prepare the verified update proxy runtime without subscription defaults
         run: node scripts/prepare-update-proxy.mjs --arch ${{ matrix.arch }}
       # Electron 44 downloads its runtime lazily. Parallel native tests must

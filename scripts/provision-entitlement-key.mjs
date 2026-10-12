@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 export async function provisionEntitlementKey({ root = process.cwd(), keyId = 'v1',
   privateFile = path.join(root, 'data/entitlement-signing-key.pem'),
   configFile = path.join(root, 'desktop/account-config.json') } = {}) {
+  if (process.platform === 'win32') throw new Error('Provision the server signing key in WSL, Linux or macOS; this tool requires POSIX private-file permissions.');
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(keyId)) throw new Error('Invalid entitlement key ID.');
   const config = JSON.parse(await readFile(configFile, 'utf8'));
   let pem, created = false;

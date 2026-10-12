@@ -1,0 +1,198 @@
+{
+  "releaseVersion": "2.0.16",
+  "scope": "First build-only desktop CI failure audit; this report does not establish installer or publication success.",
+  "auditedAt": "2026-10-12T05:35:12Z",
+  "run": {
+    "id": 38207564038,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38207564038",
+    "workflow": "Desktop installers",
+    "event": "workflow_dispatch",
+    "headBranch": "main",
+    "sourceSha": "dde29bec4ab94235b48df1bcd3fba81534ac302b",
+    "status": "completed",
+    "conclusion": "failure",
+    "createdAt": "2026-10-12T05:21:12Z",
+    "updatedAt": "2026-10-12T05:24:14Z"
+  },
+  "jobs": [
+    {
+      "name": "mac-intel",
+      "conclusion": "failure",
+      "startedAt": "2026-10-12T05:21:16Z",
+      "completedAt": "2026-10-12T05:24:08Z",
+      "failedSteps": [
+        {
+          "name": "Run node --test --test-concurrency=1",
+          "startedAt": "2026-10-12T05:21:44Z",
+          "completedAt": "2026-10-12T05:24:04Z"
+        }
+      ],
+      "testCounts": {
+        "tests": 1550,
+        "pass": 1530,
+        "fail": 7,
+        "cancelled": 0,
+        "skipped": 13
+      },
+      "installerBuildSkipped": true,
+      "artifactUploadSkipped": true
+    },
+    {
+      "name": "mac-arm64",
+      "conclusion": "failure",
+      "startedAt": "2026-10-12T05:21:21Z",
+      "completedAt": "2026-10-12T05:23:10Z",
+      "failedSteps": [
+        {
+          "name": "Run node --test --test-concurrency=1",
+          "startedAt": "2026-10-12T05:21:41Z",
+          "completedAt": "2026-10-12T05:23:05Z"
+        }
+      ],
+      "testCounts": {
+        "tests": 1550,
+        "pass": 1530,
+        "fail": 7,
+        "cancelled": 0,
+        "skipped": 13
+      },
+      "installerBuildSkipped": true,
+      "artifactUploadSkipped": true
+    },
+    {
+      "name": "windows-x64",
+      "conclusion": "failure",
+      "startedAt": "2026-10-12T05:21:15Z",
+      "completedAt": "2026-10-12T05:24:14Z",
+      "failedSteps": [
+        {
+          "name": "Run node --test --test-concurrency=1",
+          "startedAt": "2026-10-12T05:21:53Z",
+          "completedAt": "2026-10-12T05:24:10Z"
+        }
+      ],
+      "testCounts": {
+        "tests": 1548,
+        "pass": 1457,
+        "fail": 23,
+        "cancelled": 0,
+        "skipped": 68
+      },
+      "installerBuildSkipped": true,
+      "artifactUploadSkipped": true
+    },
+    {
+      "name": "Publish verified installers",
+      "conclusion": "skipped",
+      "startedAt": "2026-10-12T05:24:14Z",
+      "completedAt": "2026-10-12T05:24:14Z",
+      "failedSteps": [],
+      "testCounts": null,
+      "installerBuildSkipped": null,
+      "artifactUploadSkipped": null
+    }
+  ],
+  "artifactCount": 0,
+  "failureCategories": [
+    {
+      "platforms": [
+        "mac-arm64",
+        "mac-intel",
+        "windows-x64"
+      ],
+      "code": "ERR_MODULE_NOT_FOUND",
+      "affectedFiles": [
+        "cloudflare/subscription-proxy/test/free-service.test.js",
+        "cloudflare/subscription-proxy/test/free-worker.test.js",
+        "cloudflare/subscription-proxy/test/worker-certificates.test.js",
+        "cloudflare/subscription-proxy/test/worker-http.test.js",
+        "cloudflare/subscription-proxy/test/worker-tls.test.js",
+        "cloudflare/subscription-proxy/test/worker-transport.test.js"
+      ],
+      "cause": "Root npm ci did not install the separate subscription-proxy lockfile; @reclaimprotocol/tls was unavailable."
+    },
+    {
+      "platforms": [
+        "mac-arm64",
+        "mac-intel",
+        "windows-x64"
+      ],
+      "code": "ERR_ASSERTION",
+      "affectedFiles": [
+        "cloudflare/subscription-proxy/test/policy.test.js:28"
+      ],
+      "actual": "SUBSCRIPTION_NO_SUPPORTED_NODES",
+      "expected": "SUBSCRIPTION_INVALID",
+      "cause": "The missing nested install resolved transitive root YAML 2.8.2; maxAliasCount 0 did not reject empty collection aliases. Locked nested YAML 2.9.1 rejects alias resolution."
+    },
+    {
+      "platforms": [
+        "windows-x64"
+      ],
+      "code": "SyntaxError",
+      "affectedFiles": [
+        "test/app-parse-verification.test.js:98"
+      ],
+      "cause": "The VM fixture removed only LF-terminated imports; CRLF checkout left import declarations in a script context."
+    },
+    {
+      "platforms": [
+        "windows-x64"
+      ],
+      "code": "ENOENT",
+      "affectedFiles": [
+        "test/browser-python.test.js:175"
+      ],
+      "cause": "URL.pathname passed to path.resolve duplicated the Windows drive prefix; fileURLToPath is required."
+    },
+    {
+      "platforms": [
+        "windows-x64"
+      ],
+      "code": "ERR_ASSERTION",
+      "affectedFiles": [
+        "test/entitlement-key-provisioning.test.js:17"
+      ],
+      "actualMode": "0666",
+      "expectedMode": "0600",
+      "cause": "A POSIX-only private-file mode assertion ran on Windows, where chmod/stat do not provide that confidentiality contract."
+    }
+  ],
+  "localSubscriptionPolicyVerification": {
+    "dependencyInstallation": "npm ci --prefix cloudflare/subscription-proxy --no-audit --no-fund",
+    "lockedYamlVersion": "2.9.1",
+    "testCommand": "npm test --prefix cloudflare/subscription-proxy",
+    "tests": 103,
+    "pass": 103,
+    "fail": 0,
+    "skipped": 0,
+    "change": "Visit the parsed YAML syntax tree and reject Alias nodes before object conversion; keep maxAliasCount 0 as defense in depth.",
+    "aliasCases": [
+      "empty sequence",
+      "nested empty mapping outside nodes",
+      "scalar",
+      "mapping key",
+      "recursive collection"
+    ],
+    "unusedAnchorsAllowed": true,
+    "fallbackYamlCompatibility": {
+      "version": "2.8.2",
+      "aliasCasesRejected": 5,
+      "anchoredValidSubscriptionAccepted": true
+    }
+  },
+  "releaseGates": {
+    "nativeInstallersProduced": false,
+    "packagedSourceVerified": false,
+    "publishedByThisRun": false,
+    "nextAction": "Repeat the complete native build workflow on the corrected clean release source; do not reuse artifacts from this failed run."
+  },
+  "buildOnlyProofCompatibility": {
+    "versionAndSourceShaBound": true,
+    "cleanSourceRequired": true,
+    "buildTagStoredInProof": false,
+    "canonicalTagMustResolveToSameSourceSha": true,
+    "publicationVerifierLimitation": "Supplying a build-only run ID currently requires a successful publisher job and fails for the skipped publisher; verify build-only provenance separately or add an explicit supported mode."
+  },
+  "privacy": "No full logs, personal account identifiers, note URLs, subscription values, or signing secrets are included."
+}

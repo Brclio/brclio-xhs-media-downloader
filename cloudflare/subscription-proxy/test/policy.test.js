@@ -31,6 +31,20 @@ test('YAML aliases, duplicate keys, unsupported structures and excessive input a
   assert.throws(() => parseSubscription(`proxies: []\nx: ${'['.repeat(300)}0${']'.repeat(300)}`));
 });
 
+for (const [description, suffix] of [
+  ['empty sequence', '\nx: &empty []\ny: *empty'],
+  ['empty mapping nested outside nodes', '\nx: &empty {}\ny: { nested: *empty }'],
+  ['scalar', '\nx: &text harmless\ny: *text'],
+  ['mapping key', '\nx: &key harmless\n*key: ignored'],
+  ['recursive collection', '\nx: &recursive [*recursive]'],
+]) test(`YAML ${description} alias is rejected even with valid supported nodes`, () => {
+  assert.throws(() => parseSubscription(subscription() + suffix), { code: 'SUBSCRIPTION_INVALID' });
+});
+
+test('unused YAML anchors do not prevent a valid supported subscription', () => {
+  assert.equal(parseSubscription(subscription() + '\nx: &empty []').length, 1);
+});
+
 for (const address of ['127.0.0.1', '10.1.1.1', '172.31.1.1', '192.168.1.1', '169.254.169.254', '100.64.1.1', '0.0.0.0', '224.0.0.1', '198.18.0.1', '::1', 'fc00::1', 'fe80::1', '::ffff:127.0.0.1', '2001:db8::1']) {
   test(`private/nonpublic address ${address} rejected`, () => assert.equal(isPublicAddress(address), false));
 }

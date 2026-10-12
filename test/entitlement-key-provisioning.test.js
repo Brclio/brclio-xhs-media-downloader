@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, rm, stat, chmod } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, stat, chmod, access } from 'node:fs/promises';
 import { createPrivateKey, createPublicKey } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { provisionEntitlementKey } from '../scripts/provision-entitlement-key.mjs';
 
-test('key provisioning pins only a public key, keeps the private PEM private and reuses it safely', async t => {
+test('key provisioning pins only a public key, keeps the private PEM private and reuses it safely', { skip: process.platform === 'win32' }, async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'entitlement-key-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, 'desktop'));
@@ -28,4 +28,11 @@ test('key provisioning pins only a public key, keeps the private PEM private and
   await writeFile(configFile, JSON.stringify({ entitlementPublicKeys: { v1: 'different key' } }));
   await assert.rejects(provisionEntitlementKey({ root }), /different public key/);
   assert.equal(await readFile(first.privateFile, 'utf8'), pem);
+});
+
+test('Windows key provisioning requires a POSIX host and never creates an unprotected private file', { skip: process.platform !== 'win32' }, async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'entitlement-key-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await assert.rejects(provisionEntitlementKey({ root }), /WSL, Linux or macOS/);
+  await assert.rejects(access(path.join(root, 'data/entitlement-signing-key.pem')), { code: 'ENOENT' });
 });

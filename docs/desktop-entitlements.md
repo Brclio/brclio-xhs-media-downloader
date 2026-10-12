@@ -37,6 +37,8 @@ node scripts/provision-entitlement-key.mjs
 
 该命令创建 `data/entitlement-signing-key.pem`（权限 600，Git 忽略），仅把对应公钥写入 `desktop/account-config.json` 的 `entitlementPublicKeys.v1`。再次执行会复用原密钥，拒绝用同一编号覆盖不同公钥。不要重新生成后丢弃已准备的私钥，也不要将私钥复制进代码、桌面安装包、静态网页或日志。
 
+密钥准备工具用于 Linux、macOS 或 WSL 的服务端发布环境，依赖 POSIX 私有文件权限；Windows 桌面用户无需运行它，客户端只使用已随安装包固定的公钥。
+
 服务端配置：
 
 - `AUTH_ENTITLEMENT_PRIVATE_KEY`：上述 Ed25519 私钥 PEM，使用平台 Secret。

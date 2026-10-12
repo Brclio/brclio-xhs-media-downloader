@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { isIP } from 'node:net';
-import { parseDocument } from 'yaml';
+import { parseDocument, visit } from 'yaml';
 
 export const LIMITS = Object.freeze({
   requestBytes: 16_384, subscriptionBytes: 2_097_152, noteBytes: 6_291_456,
@@ -106,6 +106,9 @@ export function parseSubscription(text) {
   try {
     const document = parseDocument(text, { version: '1.2', schema: 'core', uniqueKeys: true });
     if (document.errors.length || document.warnings.length) fail('SUBSCRIPTION_INVALID');
+    // Reject syntax before conversion: older YAML versions do not count empty
+    // collection aliases toward maxAliasCount, so that limit alone is not a ban.
+    visit(document, { Alias() { fail('SUBSCRIPTION_INVALID'); } });
     data = document.toJS({ maxAliasCount: 0 });
   } catch { fail('SUBSCRIPTION_INVALID'); }
   if (!data || typeof data !== 'object' || !Array.isArray(data.proxies) || data.proxies.length > 256) fail('SUBSCRIPTION_INVALID');
