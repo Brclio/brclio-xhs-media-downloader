@@ -6,6 +6,7 @@ import { createAccountService } from '../server/auth/service.js';
 
 export const ADMIN_COOKIE = '__Host-xhs-admin';
 export const BROWSER_COOKIE = '__Host-xhs-browser';
+export const GOOGLE_COOKIE = '__Host-xhs-google';
 const MAX_BODY_BYTES = 16_384;
 const FEEDBACK_BODY_BYTES = 1_600_000;
 const header = (req, name) => String(req.headers?.[name] || '');
@@ -65,9 +66,15 @@ export function createAccountHandler({ service, config, env, clientIp, mailerFac
       // Only the deployment adapter can select another platform's trusted IP header.
       // The default is Vercel, which overwrites x-vercel-forwarded-for.
       const ip = clientIp ? clientIp(req) : header(req, 'x-vercel-forwarded-for').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-      const result = await effectiveService.execute({ action: body.action, input: body.input, proof: body.proof, token: bearer || cookie, ip, client: browserFlow ? 'browser' : adminFlow ? 'admin' : 'desktop' });
-      if (body.action === 'verify-code' && ['admin', 'browser'].includes(body.input?.client)) {
-        const cookieName = body.input.client === 'browser' ? BROWSER_COOKIE : ADMIN_COOKIE;
+      const result = await effectiveService.execute({ action: body.action, input: body.input, proof: body.proof, token: bearer || cookie, ip, client: browserFlow ? 'browser' : adminFlow ? 'admin' : 'desktop',
+        googleBinding: cookieValue(req, GOOGLE_COOKIE) });
+      if (result.browserBinding && ['google-start', 'google-complete'].includes(body.action)) {
+        res.setHeader('Set-Cookie', `${GOOGLE_COOKIE}=${result.browserBinding}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=600`);
+        const { browserBinding: ignored, ...publicResult } = result;
+        return res.status(200).json({ ok: true, ...publicResult });
+      }
+      if ((body.action === 'verify-code' && ['admin', 'browser'].includes(body.input?.client)) || (body.action === 'google-complete' && result.loginClient === 'browser')) {
+        const cookieName = body.action === 'google-complete' || body.input.client === 'browser' ? BROWSER_COOKIE : ADMIN_COOKIE;
         res.setHeader('Set-Cookie', `${cookieName}=${result.token}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=34560000`);
         const { token: ignored, ...publicResult } = result;
         return res.status(200).json({ ok: true, ...publicResult });

@@ -125,7 +125,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.16、授权、实况、倍速" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.17、Google、授权、实况" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -139,6 +139,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#google-account-login"><span>v2.0.17 · 待发布</span><strong>Google 账号登录</strong></a>
               <a href="#local-membership-entitlement"><span>v2.0.16</span><strong>本地授权与故障续传</strong></a>
               <a href="#update-check-direct-first"><span>v2.0.15 / Android 1.0.15</span><strong>版本检测优先直连</strong></a>
               <a href="#live-photo-pvt-update"><span>v2.0.12</span><strong>整包隔空投送实况到 iPhone</strong></a>
@@ -208,7 +209,20 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
-            <article id="local-membership-entitlement" class="release-entry release-entry-featured" data-release-platforms="desktop">
+            <article id="google-account-login" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-12"><span>10.12</span><small>2026 · 软件账号</small></time></div>
+              <div class="release-card">
+                <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.17</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">桌面待发布</span></div><h3>用 Google 账号登录软件</h3></div></header>
+                <p class="release-lead">新增 Google 登录入口，并保留邮箱验证码。桌面客户端需要安装本版后才会出现新入口；正式安装包仍待三平台构建与发布核验。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>已有会员权益继续保留</strong>经 Google 验证的账号与符合邮箱关联条件的软件账号共用会员、评价和订单；邮箱验证码仍可使用。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>在默认浏览器中确认设备</strong>Mac / Windows 打开系统浏览器，核对 Google 账号与设备名称并确认后，客户端才保存登录状态。可取消或超时后重新登录。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>设备授权与下载规则沿用原有设置</strong>Google 登录不会绕过设备名额、会员期限或下载权限。软件账号与读取笔记的小红书账号仍分别登录。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>Android 账号页在浏览器使用</strong>Android 现有评价与订单入口继续打开系统浏览器，可使用网页 Google 登录；本次不新增 Android 原生软件账号会话。</p></div>
+                </div>
+              </div>
+            </article>
+            <article id="local-membership-entitlement" class="release-entry" data-release-platforms="desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-12"><span>10.12</span><small>2026 · 会员下载</small></time></div>
               <div class="release-card">
                 <header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.16</span><span class="release-badge release-badge-blue">Mac / Windows</span><span class="release-status">长任务恢复</span></div><h3>下载过程中，在本机检查会员授权</h3></div></header>

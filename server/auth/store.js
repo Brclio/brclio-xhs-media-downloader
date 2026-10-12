@@ -7,7 +7,7 @@ const ACCOUNT_UNAVAILABLE = '账号服务暂时不可用，请稍后重试。';
 const ACCOUNT_RATE_LIMITED = '账号服务请求较多，请稍后重试。';
 
 export function emptyState() {
-  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {}, feedbackCommentRateLimits: {}, updateProxyConfig: null, webParseProxyConfig: null, reviews: {}, orders: {} };
+  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {}, feedbackCommentRateLimits: {}, updateProxyConfig: null, webParseProxyConfig: null, reviews: {}, orders: {}, googleAttempts: {} };
 }
 export function validateState(state) {
   if (!state || state.schemaVersion !== 1 || !Array.isArray(state.audit)) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);
@@ -15,7 +15,7 @@ export function validateState(state) {
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);
   }
   // Additive schema migration: deployed schemaVersion 1 accounts remain valid.
-  for (const key of ['feedback', 'feedbackRateLimits', 'feedbackReplyRateLimits', 'feedbackCommentRateLimits']) {
+  for (const key of ['feedback', 'feedbackRateLimits', 'feedbackReplyRateLimits', 'feedbackCommentRateLimits', 'googleAttempts']) {
     if (state[key] === undefined) state[key] = {};
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '反馈数据格式异常，请联系管理员。', 503);
   }

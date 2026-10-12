@@ -83,8 +83,10 @@ function publicWebNavigation(html, homepage, page) {
     .replace(/<link\b[^>]*href="(?:\.\/|\/)?site-header\.css"[^>]*>\s*/g, '')
     .replace(/<script\b[^>]*src="(?:\.\/|\/)?site-header\.js"[^>]*>[\s\S]*?<\/script>\s*/g, '');
   const missingFonts = fonts.filter(link => !output.includes(link));
-  // Install the page context before deferred scripts and module imports run.
-  output = output.replace(/<head\b[^>]*>/, '$&\n  <script src="/site-navigation.js"></script>');
+  // OAuth returns to the homepage with a short-lived code. Set its referrer
+  // policy before even the navigation script is fetched, then install page context.
+  output = output.replace(/<meta\b[^>]*name="referrer"[^>]*>\s*/gi, '')
+    .replace(/<head\b[^>]*>/, '$&\n  <meta name="referrer" content="no-referrer">\n  <script src="/site-navigation.js"></script>');
   return output.replace('</head>', `${missingFonts.join('\n')}\n  <link rel="stylesheet" href="./site-navigation.css">\n  <link rel="stylesheet" href="./site-header.css">\n  <script src="./site-header.js" defer></script>\n</head>`);
 }
 

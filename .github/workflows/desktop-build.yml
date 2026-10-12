@@ -66,6 +66,9 @@ jobs:
       # subprocesses share the runner. Serialize files to keep their existing
       # readiness budgets meaningful; every test and assertion still runs.
       - run: node --test --test-concurrency=1
+      - name: Verify Google login, browser callback and explicit device confirmation in the real renderer
+        # Disposable account fixtures; no real Google, email or account writes.
+        run: npx electron scripts/verify-google-login-ui.cjs
       - name: Verify native Mac replacement and rollback in temporary signed apps
         if: runner.os != 'Windows'
         # These files launch real AppKit/Electron windows, sign bundles and mount

@@ -160,6 +160,9 @@ function registerIpc() {
     catch (error) { return { ok: false, error: { code: error.code || 'SERVICE_UNAVAILABLE', message: error.message }, state: accountClient.snapshot() }; }
   };
   handle('desktop:account-state', () => accountClient.snapshot());
+  handle('desktop:account-google-config', accountAction(() => accountClient.getGoogleConfig()));
+  handle('desktop:account-google-login', accountAction(() => accountClient.loginWithGoogle(url => shell.openExternal(url))));
+  handle('desktop:account-google-cancel', accountAction(() => accountClient.cancelGoogleLogin()));
   handle('desktop:commerce-request', accountAction((action, input = {}) => accountClient.commerceRequest(action, input)));
   handle('desktop:account-refresh', accountAction(async () => {
     // Only an explicit user action retries denied Keychain access. Background
@@ -542,6 +545,7 @@ else {
     if (quitting) return;
     quitting = true;
     startupReadyAbort.abort();
+    accountClient?.cancelGoogleLogin();
     videoDownload?.cancelAll();
     installConfirmation.cancel();
     clearTimeout(updateCheckTimer);

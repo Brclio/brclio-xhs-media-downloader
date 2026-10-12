@@ -15,6 +15,14 @@ function dateLabel(value) {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleString('zh-CN', { hour12: false, timeZoneName: 'short' }) : '—';
 }
+export function consumeGoogleCallback({ href, replace }) {
+  const url = new URL(href);
+  if (url.searchParams.get('google_callback') !== '1') return null;
+  const callback = { code: url.searchParams.get('code') || '', state: url.searchParams.get('state') || '', error: url.searchParams.get('error') || '' };
+  for (const key of ['google_callback', 'code', 'state', 'scope', 'authuser', 'prompt', 'error', 'error_description', 'hd']) url.searchParams.delete(key);
+  replace(url.href);
+  return callback;
+}
 export function membershipLabel(account) {
   const membership = account?.membership;
   if (!membership || membership.type === 'none') return '普通用户 · 未开通会员';
@@ -28,6 +36,10 @@ export function membershipLabel(account) {
 export async function initializeAccountUI() {
   const bridge = getAccountBridge();
   if (!bridge?.getAccountState || document.getElementById('software-account')) return;
+  // Discard OAuth query values before the first asynchronous account request.
+  // Codes and confirmation credentials live only in this page's memory.
+  const googleCallback = !window.xhsDesktop?.getAccountState ? consumeGoogleCallback({ href: window.location.href,
+    replace: href => window.history.replaceState(window.history.state, '', href) }) : null;
   const panel = document.createElement('section');
   panel.id = 'software-account';
   panel.className = 'software-account';
@@ -37,8 +49,18 @@ export async function initializeAccountUI() {
       <div><span class="account-eyebrow">SOFTWARE ACCOUNT</span><h2 id="account-title">软件账号与会员</h2></div>
       <div class="account-tools"><span id="account-badge" class="account-badge">读取登录状态…</span><button id="account-open-membership" class="button button-primary" type="button" aria-haspopup="dialog">开通会员</button><button id="account-refresh" class="button button-secondary" type="button">刷新权益</button></div>
     </div>
-    <p class="account-intro">软件账号用于会员权益；小红书账号用于读取笔记，两者分别登录。首次验证邮箱会自动创建软件账号。<a id="account-membership-details" href="./membership.html">查看会员权益 ↗</a></p>
+    <p class="account-intro">软件账号用于会员权益；小红书账号用于读取笔记，两者分别登录。可使用 Google 账号或邮箱验证码登录。<a id="account-membership-details" href="./membership.html">查看会员权益 ↗</a></p>
     <p id="account-notice" class="account-notice" role="status" aria-live="polite"></p>
+    <section id="account-google-confirmation" class="account-google-confirmation" aria-labelledby="account-google-confirm-title" hidden>
+      <h3 id="account-google-confirm-title">确认登录桌面客户端</h3>
+      <p>Google 账号 <strong id="account-google-confirm-email"></strong> 将登录设备 <strong id="account-google-confirm-device"></strong>。请确认这是你刚才在客户端发起的登录。</p>
+      <div class="account-google-actions"><button id="account-google-confirm" class="button button-primary" type="button">确认登录此设备</button><button id="account-google-decline" class="button button-secondary" type="button">取消</button></div>
+    </section>
+    <div id="account-google-login-row" class="account-google-login-row" hidden>
+      <div class="account-google-actions"><button id="account-google-login" class="button account-google-button" type="button"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.3 2.98-7.36Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.23-2.51c-.89.6-2.03.96-3.39.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.41 13.92a6 6 0 0 1 0-3.84V7.49H3.07a10 10 0 0 0 0 9.02l3.34-2.59Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.51 3.82 1.51l2.86-2.86A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.59C7.2 7.72 9.4 5.96 12 5.96Z"/></svg><span id="account-google-login-label">使用 Google 账号登录</span></button><button id="account-google-cancel" class="button button-secondary" type="button" hidden>取消 Google 登录</button></div>
+      <p id="account-google-note" class="account-form-note"></p>
+      <p class="account-login-divider"><span>或使用邮箱验证码</span></p>
+    </div>
     <form id="account-login-form" class="account-login-form">
       <label>邮箱地址<input id="account-email" type="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="you@example.com" required></label>
       <label>邮箱验证码<span class="account-code-row"><input id="account-otp" type="text" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6 位验证码" required><button id="account-send-code" class="button button-secondary" type="button">发送验证码</button></span></label>
@@ -92,7 +114,7 @@ export async function initializeAccountUI() {
   else if (navigation) navigation.insertAdjacentElement('afterend', panel);
   else (document.querySelector('main') || document.body).prepend(panel);
   const element = id => document.getElementById(id);
-  let busy = false, state = null, cooldownUntil = 0, cooldownTimer = null;
+  let busy = false, state = null, cooldownUntil = 0, cooldownTimer = null, googleEnabled = false, googleBusy = false, googleConfirmation = null;
   const commerce = initializeCommerceUI({ accountPanel: panel, openAccount: () => openAccountUI() });
   let paymentDraft = null, paymentBusy = false, paymentUserId = null, paymentEpoch = 0;
   const dialog = element('membership-dialog');
@@ -137,6 +159,14 @@ export async function initializeAccountUI() {
     element('account-open-membership').disabled = false;
     element('account-refresh').disabled = busy || !state?.configured || state?.status === 'initializing';
     element('account-refresh').textContent = state?.status === 'secure_storage_unavailable' ? '重试安全存储' : '刷新权益';
+    element('account-google-login-row').hidden = !googleEnabled || Boolean(state?.authenticated) || Boolean(googleConfirmation);
+    element('account-google-login-label').textContent = googleBusy ? (isDesktop ? '等待浏览器确认…' : '正在打开 Google…') : '使用 Google 账号登录';
+    element('account-login-form').hidden = Boolean(state?.authenticated) || Boolean(googleConfirmation);
+    element('account-google-cancel').hidden = !isDesktop || !googleBusy;
+    element('account-google-cancel').disabled = false;
+    element('account-google-confirm').disabled = busy;
+    element('account-google-decline').disabled = busy;
+    element('account-google-note').textContent = isDesktop ? '将在系统默认浏览器中登录，确认账号与设备后回到客户端。' : '首次登录会自动创建软件账号。已有相同邮箱的软件账号会保留会员权益。';
     const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
     element('account-send-code').disabled = blocked || remaining > 0;
     element('account-send-code').textContent = remaining ? `${remaining} 秒后重发` : '发送验证码';
@@ -206,6 +236,35 @@ export async function initializeAccountUI() {
       cooldownUntil = Date.now() + Math.max(60, Number(result.retryAfter) || 0) * 1000;
       cooldownTimer = setInterval(updateButtons, 1000); updateButtons(); element('account-otp').focus();
     }
+  });
+  element('account-google-login').addEventListener('click', async () => {
+    if (busy || !googleEnabled) return;
+    googleBusy = true;
+    await run(async () => {
+      notice(isDesktop ? '已打开默认浏览器。请完成 Google 登录并确认此设备，然后回到客户端。' : '正在打开 Google 登录…');
+      const reply = await bridge.loginAccountGoogle();
+      if (reply.ok && !isDesktop) {
+        const url = new URL(reply.result?.authorizationUrl);
+        if (url.origin !== 'https://accounts.google.com' || url.pathname !== '/o/oauth2/v2/auth' || url.username || url.password || url.hash) throw new Error('Google 登录地址无效，请重试。');
+        window.location.assign(url.href);
+      }
+      return reply;
+    }, isDesktop ? 'Google 账号登录成功。' : '正在跳转至 Google…');
+    googleBusy = false; updateButtons();
+  });
+  element('account-google-cancel').addEventListener('click', async () => {
+    try { await bridge.cancelAccountGoogleLogin?.(); }
+    catch { notice('取消登录失败，请重试。', true); }
+  });
+  element('account-google-confirm').addEventListener('click', async () => {
+    const confirmation = googleConfirmation;
+    if (!confirmation) return;
+    const result = await run(() => bridge.confirmAccountGoogleLogin(confirmation), '已确认登录。请返回桌面客户端，稍候即可看到登录状态。');
+    if (result) { googleConfirmation = null; element('account-google-confirmation').hidden = true; updateButtons(); }
+  });
+  element('account-google-decline').addEventListener('click', () => {
+    googleConfirmation = null; element('account-google-confirmation').hidden = true;
+    notice('未确认设备登录。请返回客户端取消此次 Google 登录。'); updateButtons();
   });
   element('account-login-form').addEventListener('submit', async event => {
     event.preventDefault();
@@ -285,6 +344,24 @@ export async function initializeAccountUI() {
   }, { once: true });
   try { render(await bridge.getAccountState()); }
   catch { notice('无法读取软件账号，请重新打开应用。', true); }
+  try { const reply = await bridge.getAccountGoogleConfig?.(); googleEnabled = reply?.ok === true && reply.result?.enabled === true; updateButtons(); } catch {}
+  if (googleCallback) {
+    const browserDialog = document.getElementById('browser-account-dialog');
+    if (browserDialog && !browserDialog.open) browserDialog.showModal();
+    if (googleCallback.error) notice('Google 登录已取消。你可以重新登录或使用邮箱验证码。');
+    else if (!googleCallback.code || !googleCallback.state) notice('Google 登录回调不完整，请重新登录。', true);
+    else {
+      const result = await run(() => bridge.completeAccountGoogleLogin(googleCallback), 'Google 账号登录成功。');
+      if (result?.loginClient === 'desktop' && result.status === 'confirmation_required') {
+        googleConfirmation = { attemptId: result.attemptId, confirmationToken: result.confirmationToken };
+        element('account-google-confirm-email').textContent = result.email || '已验证的 Google 账号';
+        element('account-google-confirm-device').textContent = result.deviceName || '桌面客户端';
+        element('account-google-confirmation').hidden = false;
+        notice('请核对账号与设备，然后确认登录桌面客户端。'); updateButtons();
+        element('account-google-confirm').focus();
+      }
+    }
+  }
 }
 
 export async function openAccountUI({ purchase = false } = {}) {

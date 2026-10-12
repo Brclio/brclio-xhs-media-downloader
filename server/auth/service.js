@@ -8,6 +8,8 @@ import { createCommerceService, accountNickname } from './commerce.js';
 import { subscriptionUrlsValue, updateProxyConfigView, updateProxyAuditView, updateProxyAuditReason } from './update-proxy.js';
 import { encryptWebParseSubscription, webParseSubscriptionUrlValue, webParseProxyPrivateConfig, webParseProxyAdminView } from './web-parse-proxy.js';
 import { issueEntitlement } from '../../lib/entitlement.js';
+import { createGoogleOAuth } from './google-oauth.js';
+import { createGoogleLoginService } from './google-login.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -72,11 +74,12 @@ function activationCodeValue(value) {
   return code;
 }
 
-export function createAccountService({ store, mailer, config, now = Date.now }) {
+export function createAccountService({ store, mailer, config, now = Date.now, fetchImpl }) {
   const hash = (purpose, value) => digest(config.pepper, purpose, value);
   const isAdmin = user => config.adminEmails.includes(user.email);
   const role = user => isAdmin(user) ? 'admin' : 'user';
   const otpKey = (email, client) => hash('otp-key', `${client}:${email}`);
+  const google = createGoogleOAuth({ config, now, fetchImpl });
   // A secret, purpose-separated HMAC makes targeted codes recoverable for email
   // retries without committing plaintext or reversible ciphertext to Git history.
   const targetedCode = code => `Brclio-${hash('targeted-activation-v1', `${code.id}:${code.recipientId}:${code.planId}`).slice(0, 40).toUpperCase()}`;
@@ -186,6 +189,34 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     return { message: '验证码已发送，首次验证将自动创建账号。', expiresInSeconds: config.otpTtlMs / 1000, retryAfterSeconds: config.otpIntervalMs / 1000 };
   }
 
+  function loginSession(state, user, client, deviceInput, token, time, existingSession) {
+    if (existingSession) return { token, account: account(state, user, existingSession, time) };
+    const session = { id: randomUUID(), userId: user.id, client, createdAt: iso(time), revokedAt: null, deviceId: null, deviceStatus: 'unbound' };
+    if (deviceInput) {
+      const userDevices = Object.values(state.devices).filter(d => d.userId === user.id);
+      const stableHash = deviceInput.stableHash || hash('device-stable', deviceInput.stableIdHash);
+      const revoked = userDevices.find(d => d.status === 'revoked' && (d.stableHash === stableHash || d.keyFingerprint === deviceInput.keyFingerprint));
+      const active = userDevices.find(d => d.status === 'active' && d.stableHash === stableHash && d.keyFingerprint === deviceInput.keyFingerprint);
+      session.publicKey = deviceInput.publicKey;
+      // A specific admin-approved replacement key is allowed; old stable-ID
+      // tombstones must not override that exact active stable+key record.
+      if (active) { session.deviceId = active.id; session.deviceStatus = 'authorized'; }
+      else if (revoked) { session.deviceId = revoked.id; session.deviceStatus = 'revoked'; }
+      else if (userDevices.filter(d => d.status === 'active').length < config.deviceLimit) {
+        // Only an explicit verified login can claim a slot. Read-only session refresh never binds.
+        const id = randomUUID();
+        state.devices[id] = { id, userId: user.id, stableHash, keyFingerprint: deviceInput.keyFingerprint, publicKey: deviceInput.publicKey, name: deviceInput.name, platform: deviceInput.platform, status: 'active', boundAt: iso(time), lastCheckedAt: iso(time), revokedAt: null };
+        session.deviceId = id;
+        session.deviceStatus = 'authorized';
+      } else session.deviceStatus = 'device_limit';
+      if (session.deviceStatus !== 'authorized' && !userDevices.some(d => d.keyFingerprint === deviceInput.keyFingerprint)) {
+        session.pendingDevice = { stableHash, keyFingerprint: deviceInput.keyFingerprint, publicKey: deviceInput.publicKey, name: deviceInput.name, platform: deviceInput.platform };
+      }
+    }
+    state.sessions[hash('session', token)] = session;
+    return { token, account: account(state, user, session, time) };
+  }
+
   async function verifyCode(request) {
     const email = emailValue(request.input.email);
     const client = request.input.client;
@@ -195,7 +226,6 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
     const deviceInput = client === 'desktop' ? normalizeDevice(request.input.device) : null;
     if (deviceInput) verifyProof({ ...request, token: '', publicKey: deviceInput.publicKey, now: now() });
     const token = randomBytes(32).toString('base64url');
-    const sessionKey = hash('session', token);
     const result = await store.transaction(state => {
       const time = now();
       const key = otpKey(email, client);
@@ -219,30 +249,7 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
       otp.consumedAt = iso(time);
       otp.status = 'consumed';
       (otp.checks ||= []).push({ at: iso(time), result: 'consumed' });
-      const session = { id: randomUUID(), userId: user.id, client, createdAt: iso(time), revokedAt: null, deviceId: null, deviceStatus: 'unbound' };
-      if (deviceInput) {
-        const userDevices = Object.values(state.devices).filter(d => d.userId === user.id);
-        const stableHash = hash('device-stable', deviceInput.stableIdHash);
-        const revoked = userDevices.find(d => d.status === 'revoked' && (d.stableHash === stableHash || d.keyFingerprint === deviceInput.keyFingerprint));
-        const active = userDevices.find(d => d.status === 'active' && d.stableHash === stableHash && d.keyFingerprint === deviceInput.keyFingerprint);
-        session.publicKey = deviceInput.publicKey;
-        // A specific admin-approved replacement key is allowed; old stable-ID
-        // tombstones must not override that exact active stable+key record.
-        if (active) { session.deviceId = active.id; session.deviceStatus = 'authorized'; }
-        else if (revoked) { session.deviceId = revoked.id; session.deviceStatus = 'revoked'; }
-        else if (userDevices.filter(d => d.status === 'active').length < config.deviceLimit) {
-          // Only an explicit OTP login can claim a slot. Read-only session refresh never binds.
-          const id = randomUUID();
-          state.devices[id] = { id, userId: user.id, stableHash, keyFingerprint: deviceInput.keyFingerprint, publicKey: deviceInput.publicKey, name: deviceInput.name, platform: deviceInput.platform, status: 'active', boundAt: iso(time), lastCheckedAt: iso(time), revokedAt: null };
-          session.deviceId = id;
-          session.deviceStatus = 'authorized';
-        } else session.deviceStatus = 'device_limit';
-        if (session.deviceStatus !== 'authorized' && !userDevices.some(d => d.keyFingerprint === deviceInput.keyFingerprint)) {
-          session.pendingDevice = { stableHash, keyFingerprint: deviceInput.keyFingerprint, publicKey: deviceInput.publicKey, name: deviceInput.name, platform: deviceInput.platform };
-        }
-      }
-      state.sessions[sessionKey] = session;
-      return { value: { token, account: account(state, user, session, time) } };
+      return { value: loginSession(state, user, client, deviceInput, token, time) };
     });
     if (result.error) fail(result.error.code, result.error.message, result.error.status);
     return result;
@@ -555,12 +562,14 @@ export function createAccountService({ store, mailer, config, now = Date.now }) 
 
   const feedbackService = createFeedbackService({ store, now, authenticate, hash, operation, audit, isAdmin });
   const commerceService = createCommerceService({ store, now, authenticate, hash, operation, audit });
+  const googleService = createGoogleLoginService({ store, now, hash, google, loginSession, emailValue, noMembership, isAdmin });
   return {
-    async execute({ action, input = {}, token = '', proof, ip = '', client }) {
+    async execute({ action, input = {}, token = '', proof, ip = '', client, googleBinding = '' }) {
       if (typeof action !== 'string' || action.length > 80 || !input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_REQUEST', '请求格式无效。');
-      const request = { action, input, token, proof, ip, client };
+      const request = { action, input, token, proof, ip, client, googleBinding };
       let result;
-      if (['profile-update', 'reviews-public', 'review-mine', 'review-submit', 'order-create', 'orders-mine', 'admin-orders', 'admin-record-order', 'admin-link-order-code', 'admin-revenue'].includes(action)) result = await commerceService.execute(request);
+      if (action.startsWith('google-')) result = await googleService.execute(request);
+      else if (['profile-update', 'reviews-public', 'review-mine', 'review-submit', 'order-create', 'orders-mine', 'admin-orders', 'admin-record-order', 'admin-link-order-code', 'admin-revenue'].includes(action)) result = await commerceService.execute(request);
       else if (action.startsWith('feedback-') || action.startsWith('admin-feedback')) result = await feedbackService.execute(request);
       else if (action === 'send-code') result = await sendCode(request);
       else if (action === 'admin-send-activation') result = await sendActivation(request);

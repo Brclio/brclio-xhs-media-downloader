@@ -27,6 +27,10 @@ function retryableAuthorizationError(error) {
   return TEMPORARY_AUTHORIZATION_CODES.has(code) || [429, 502, 503, 504].includes(error.status);
 }
 
+function retryableGooglePollError(error) {
+  return TEMPORARY_STORAGE_CODES.has(error.code) || TEMPORARY_AUTHORIZATION_CODES.has(error.code);
+}
+
 function authoritativeAuthorizationError(error) {
   return EXPIRED_SESSION_CODES.has(error.code)
     || /^(?:ACCOUNT_|AUTHORIZATION_|DEVICE_|MEMBERSHIP_|SESSION_|ENTITLEMENT_)/.test(error.code || '');
@@ -49,6 +53,15 @@ export function validateAccountEndpoint(value, allowInsecureDevelopment = false)
   return url.href;
 }
 
+export function validateGoogleAuthorizationUrl(value) {
+  let url;
+  try { url = new URL(value); } catch { throw accountError('GOOGLE_LOGIN_INVALID', 'Google 登录地址无效，请重试。'); }
+  if (url.origin !== 'https://accounts.google.com' || url.pathname !== '/o/oauth2/v2/auth' || url.username || url.password || url.hash) {
+    throw accountError('GOOGLE_LOGIN_INVALID', 'Google 登录地址无效，请重试。');
+  }
+  return url.href;
+}
+
 export class AccountClient {
   constructor({ store, endpoint, fetchImpl = globalThis.fetch, now = Date.now, monotonicNow = () => performance.now(), sleep = wait,
     entitlementPublicKeys = {}, onUpdate = () => {}, onDiagnostic = () => {}, allowInsecureDevelopment = false }) {
@@ -67,7 +80,8 @@ export class AccountClient {
   snapshot() {
     return structuredClone({ status: this.status, account: this.account, error: this.error,
       authenticated: Boolean(this.credentials?.token), verified: this.status === 'ready',
-      pendingLogout: Boolean(this.credentials?.pendingLogoutTokens?.length), configured: Boolean(this.endpoint), protectedFeatures: PROTECTED_FEATURES });
+      pendingLogout: Boolean(this.credentials?.pendingLogoutTokens?.length), googleLoginPending: Boolean(this._googleAttempt),
+      configured: Boolean(this.endpoint), protectedFeatures: PROTECTED_FEATURES });
   }
   _emit() { this.onUpdate(this.snapshot()); }
   _command(fn) {
@@ -176,7 +190,7 @@ export class AccountClient {
     const features = PROTECTED_FEATURES.filter(feature => this.credentials.entitlements?.[feature]);
     return Promise.allSettled(features.map(feature => this.authorize(feature, { forceRemote: true })));
   }
-  async _request(action, input = {}, { token = this.credentials?.token || '', unsigned = false, allowClockRetry = true, assertSession } = {}) {
+  async _request(action, input = {}, { token = this.credentials?.token || '', unsigned = false, allowClockRetry = true, assertSession, signal } = {}) {
     assertSession?.();
     const started = this.now();
     const startedMono = this.monotonicNow();
@@ -193,7 +207,8 @@ export class AccountClient {
     try {
       response = await this.fetchImpl(this.endpoint, { method: 'POST', redirect: 'error',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(body), signal: AbortSignal.timeout(action === 'feedback-finalize' ? 60_000 : 15_000) });
+        body: JSON.stringify(body), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)])
+          : AbortSignal.timeout(action === 'feedback-finalize' ? 60_000 : 15_000) });
       result = await response.json();
     } catch {
       assertSession?.();
@@ -206,7 +221,7 @@ export class AccountClient {
     if (Number.isFinite(serverTime)) this.serverOffset = serverTime - this.now();
     if (!response.ok || result?.ok !== true) {
       if (allowClockRetry && Number.isFinite(serverTime) && SKEW_CODES.has(result?.error?.code)) {
-        return this._request(action, input, { token, unsigned, allowClockRetry: false, assertSession });
+        return this._request(action, input, { token, unsigned, allowClockRetry: false, assertSession, signal });
       }
       const code = result?.error?.code || 'SERVICE_UNAVAILABLE';
       throw accountError(code, accountServiceMessage(code, result?.error?.message || '软件账号服务暂时不可用。'), response.status || 503);
@@ -260,22 +275,117 @@ export class AccountClient {
     });
   }
   verifyCode(email, code) {
+    this.cancelGoogleLogin();
     return this._command(async () => {
       this._requireStorage();
       try {
         const result = await this._request('verify-code', { email: String(email).trim(), code: String(code).trim(), client: 'desktop', device: this.store.device(this.credentials) }, { token: '' });
-        if (typeof result.token !== 'string' || !result.token || !result.account) throw accountError('SERVICE_UNAVAILABLE', '登录服务返回无效结果，请重试。');
-        const oldToken = this.credentials.token;
-        const next = { ...this.credentials, token: result.token, entitlements: {}, signedAuthorizationUsed: [...this._signedAuthorizationUsed],
-          pendingLogoutTokens: oldToken && oldToken !== result.token ? [...this.credentials.pendingLogoutTokens, oldToken] : this.credentials.pendingLogoutTokens };
-        try { await this.store.save(next); }
-        catch (error) { try { await this._request('logout', {}, { token: result.token }); } catch {} throw error; }
-        this._sessionGeneration++;
-        this._entitlementAnchors.clear();
-        this.credentials = next; this.account = result.account; this.status = 'ready'; this.error = null;
-        await this._flushPendingLogout(); this._emit(); return this.snapshot();
+        return await this._acceptLogin(result);
       } catch (error) { this._recordError(error); throw error; }
     });
+  }
+  async _acceptLogin(result, assertCurrent = () => {}, onAccepted = () => {}) {
+    if (typeof result.token !== 'string' || !result.token || !result.account?.user?.id) throw accountError('SERVICE_UNAVAILABLE', '登录服务返回无效结果，请重试。');
+    const previous = this.credentials, oldToken = previous.token;
+    const next = { ...previous, token: result.token, entitlements: {}, signedAuthorizationUsed: [...this._signedAuthorizationUsed],
+      pendingLogoutTokens: oldToken && oldToken !== result.token ? [...previous.pendingLogoutTokens, oldToken] : previous.pendingLogoutTokens };
+    let saved = false;
+    try {
+      assertCurrent();
+      await this.store.save(next); saved = true;
+      assertCurrent();
+    } catch (error) {
+      try { await this._request('logout', {}, { token: result.token }); } catch {}
+      if (saved) await this.store.save(previous);
+      throw error;
+    }
+    this._sessionGeneration++;
+    this._entitlementAnchors.clear();
+    this.credentials = next; this.account = result.account; this.status = 'ready'; this.error = null;
+    onAccepted();
+    await this._flushPendingLogout(); this._emit(); return this.snapshot();
+  }
+  getGoogleConfig() {
+    return this._request('google-config', { client: 'desktop' }, { token: '', unsigned: true });
+  }
+  async loginWithGoogle(openExternal) {
+    if (this._googleAttempt) throw accountError('GOOGLE_LOGIN_PENDING', 'Google 登录正在进行，请先完成或取消。', 409);
+    this._requireStorage();
+    const attempt = { cancelled: false, controller: new AbortController(), generation: this._sessionGeneration };
+    this._googleAttempt = attempt; this.error = null; this._emit();
+    const assertCurrent = () => {
+      if (attempt.cancelled || this._googleAttempt !== attempt) throw accountError('GOOGLE_LOGIN_CANCELLED', '已取消 Google 登录。', 400);
+      if (this._sessionGeneration !== attempt.generation) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请重新登录。', 409);
+    };
+    try {
+      const started = await this._command(async () => {
+        assertCurrent(); await this._flushPendingLogout();
+        return this._request('google-start', { client: 'desktop', device: this.store.device(this.credentials) },
+          { token: '', assertSession: assertCurrent, signal: attempt.controller.signal });
+      });
+      attempt.id = started.attemptId; attempt.pollToken = started.pollToken;
+      if (typeof attempt.id !== 'string' || !attempt.id || typeof attempt.pollToken !== 'string' || !attempt.pollToken) {
+        throw accountError('GOOGLE_LOGIN_INVALID', 'Google 登录服务返回无效结果，请重试。');
+      }
+      assertCurrent();
+      await openExternal(validateGoogleAuthorizationUrl(started.authorizationUrl));
+      assertCurrent();
+      const timeout = Math.min(600, Math.max(1, Number(started.expiresInSeconds) || 600)) * 1000;
+      const deadline = this.monotonicNow() + timeout;
+      while (this.monotonicNow() < deadline) {
+        assertCurrent();
+        let result;
+        try {
+          result = await this._request('google-poll', { client: 'desktop', attemptId: attempt.id, pollToken: attempt.pollToken },
+            { token: '', assertSession: assertCurrent, signal: attempt.controller.signal });
+        } catch (error) {
+          assertCurrent();
+          // Polling is idempotent: a lost reply may already have committed the
+          // session. Keep this attempt and recover it with a fresh device proof.
+          if (!retryableGooglePollError(error)) throw error;
+        }
+        if (result?.status === 'complete') {
+          // Persist only in the main process after the browser explicitly
+          // approved this device. A replacement login/logout invalidates it.
+          return await this._command(() => this._acceptLogin(result, assertCurrent, () => {
+            attempt.complete = true;
+            if (this._googleAttempt === attempt) this._googleAttempt = null;
+          }));
+        }
+        if (result && !['pending', 'confirmation_required'].includes(result.status)) throw accountError('GOOGLE_LOGIN_INVALID', 'Google 登录状态无效，请重试。');
+        let onAbort;
+        try {
+          const delay = Math.min(4000, Math.max(0, deadline - this.monotonicNow()));
+          await Promise.race([this.sleep(delay), new Promise(resolve => {
+            onAbort = resolve;
+            if (attempt.controller.signal.aborted) resolve();
+            else attempt.controller.signal.addEventListener('abort', onAbort, { once: true });
+          })]);
+        } finally { attempt.controller.signal.removeEventListener('abort', onAbort); }
+      }
+      throw accountError('GOOGLE_LOGIN_EXPIRED', 'Google 登录已超时，请点击 Google 登录重试。', 410);
+    } catch (error) {
+      // Never log authorization codes, poll secrets, or session tokens.
+      if (!['GOOGLE_LOGIN_CANCELLED', 'SESSION_CHANGED'].includes(error.code)) this._recordError(error);
+      throw error;
+    } finally {
+      if (this._googleAttempt === attempt) { this._googleAttempt = null; this._emit(); }
+      if (!attempt.complete) void this._cancelRemoteGoogleAttempt(attempt);
+    }
+  }
+  async _cancelRemoteGoogleAttempt(attempt) {
+    if (!attempt.id || !attempt.pollToken) return;
+    return attempt.cancelRequest ||= (async () => {
+      try { await this._request('google-cancel', { client: 'desktop', attemptId: attempt.id, pollToken: attempt.pollToken }, { token: '' }); } catch {}
+    })();
+  }
+  cancelGoogleLogin() {
+    const attempt = this._googleAttempt;
+    if (!attempt) return { cancelled: false };
+    attempt.cancelled = true; attempt.controller.abort();
+    this._googleAttempt = null; this._emit();
+    void this._cancelRemoteGoogleAttempt(attempt);
+    return { cancelled: true, message: '已取消 Google 登录。' };
   }
   async authorize(feature, { forceRemote = false } = {}) {
     if (!KNOWN_FEATURES.includes(feature)) throw accountError('FEATURE_UNKNOWN', '未知的授权功能。', 403);
@@ -420,6 +530,7 @@ export class AccountClient {
     });
   }
   logout() {
+    this.cancelGoogleLogin();
     return this._command(async () => {
       this._requireStorage();
       const next = { ...this.credentials, token: null, entitlements: {}, signedAuthorizationUsed: [...this._signedAuthorizationUsed],

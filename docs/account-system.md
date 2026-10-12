@@ -58,6 +58,35 @@ SQLite 类型 Durable Object `AccountRuntime` 已部署，用于账号和完整�
 
 GitHub 自动部署需在 Vercel 账号中连接有权限的 GitHub 身份，再在现有项目 Settings → Git 中关联**代码仓库**，生产分支设为 `main`。之后推送 `main` 才会触发生产构建；本机仅修改文件不会触发。业务数据仓库不关联 Vercel。`.vercelignore` 控制部署上传内容，本身不负责阻止代码仓库某次推送触发构建。桌面安装包仍需单独打包，网站自动部署不会自动替换用户已安装的客户端。
 
+## Google 账号登录
+
+网页与 Mac / Windows 客户端复用同一软件账号、会员和设备规则。Google 登录只请求 `openid email profile`，不申请 Gmail、Drive 或其他业务数据权限。邮箱验证码登录继续保留；Google 服务不可用或未配置时可使用验证码。
+
+在 Google Auth Platform 为本项目创建 **Web application** OAuth 客户端。网页和桌面都通过服务端交换授权码，因此只需要这一套 Web OAuth 客户端；桌面使用系统默认浏览器，不在 Electron 内嵌窗口中登录 Google。Google 后台的授权重定向 URI 必须逐字符匹配 `https://xhs.download.brclio.com/?google_callback=1`。其他独立部署使用自己的 `AUTH_SITE_ORIGIN` 加 `/?google_callback=1`，不接受调用方传入任意回调地址。
+
+将 `AUTH_GOOGLE_CLIENT_ID`、`AUTH_GOOGLE_CLIENT_SECRET` 保存到主 Worker Secrets，独立服务器可使用同名私有环境变量；如维护旧 Vercel 入口也使用同名配置。Pages 静态文件与客户端安装包不包含客户端 Secret。可选 `AUTH_GOOGLE_REDIRECT_URI` 必须等于上述固定回调；配置缺失或不匹配时 `google-config` 返回 `enabled: false`，不会使原有邮箱登录失效。Google 测试模式需要在目标对象中添加实际测试账号；对外开放时按 Google Auth Platform 的当前发布与验证要求完成设置。
+
+`POST /api/account` 新增以下 action：
+
+| action | input | 结果与边界 |
+| --- | --- | --- |
+| `google-config` | `{client: 'browser' \| 'desktop'}` | 仅返回是否启用，不公开服务器配置 |
+| `google-start` | 浏览器 `{client:'browser'}`；桌面 `{client:'desktop',device}`，顶层 `proof` 签名 | 返回 Google 授权 URL、`attemptId`、600 秒有效期；浏览器设置短期 HttpOnly 绑定 Cookie，桌面另返回仅供主进程持有的 `pollToken` |
+| `google-complete` | `{client:'browser',code,state}` | 必须同源；浏览器绑定 Cookie 匹配后设置现有 HttpOnly 网页会话，JSON 不返回令牌；桌面流程返回待确认的邮箱、设备名称与确认令牌，并设置独立短期绑定 Cookie，不签发客户端会话 |
+| `google-confirm` | `{client:'browser',attemptId,confirmationToken}` | 同源、回调浏览器 Cookie 与确认令牌均匹配；用户明确批准所示设备后才允许原客户端领取会话 |
+| `google-poll` | `{client:'desktop',attemptId,pollToken}`，顶层 `proof` | 原设备密钥签名，令牌签名消息中的会话字段为空；等待时返回 `pending` 或 `confirmation_required`，批准后返回 `complete`、会话令牌及账号；客户端按现有安全存储规则保存 |
+| `google-cancel` | 与 `google-poll` 相同 | 原设备签名取消；如会话刚被领取则撤销该会话，按现有退出规则保留设备绑定 |
+
+浏览器应在处理回调时立即清理地址栏中的授权码与 state；网页会话与 Google 绑定 Cookie 均不可由 JavaScript 读取。桌面确认页需展示 Google 邮箱和请求登录的设备名称，只有明确批准后才调用 `google-confirm`。所有浏览器 action 沿用准确 Origin 与 Fetch Metadata 校验；客户端的轮询密钥、设备私钥和会话令牌不进入渲染层。
+
+后端对 ID token 校验 Google JWKS RSA 签名、`RS256`、签名 key ID、issuer、audience / authorized party、有效时间、nonce、稳定 subject 与 `email_verified`。服务端使用 PKCE S256、随机 state、单次授权码与十分钟有效尝试。私有存储仅增加 `googleAttempts` 和用户的 Google subject 摘要，不存授权码、Google access / refresh / ID token、PKCE verifier、轮询令牌、确认令牌、绑定 Cookie 或软件会话明文。精确重复请求可恢复已提交的同一个会话；退出后重放不会重新创建会话。授权码交换的响应不确定时应重新发起登录，不重用已消费的授权码。
+
+首次 Google 登录按稳定 subject 摘要找账号。只有 Google 有权确认的 Gmail 邮箱或包含已验证 Workspace `hd` 的邮箱才按同一邮箱关联原账号，因此会员、已兑换激活码和已有设备不丢失；已经绑定其他 Google subject 的邮箱拒绝再次自动关联。使用第三方邮箱注册的 Google 账号不能只凭 `email_verified` 自动关联，需要走原邮箱验证码登录。Google subject 已关联后，Google 邮箱改名仍登录原账号，保留原软件账号邮箱。管理员的 Google 登录获得普通网页或客户端会话，仍须使用原管理员验证码入口进入后台。
+
+Google 登录成功本身不会跳过会员校验、设备上限或撤销记录。浏览器不占设备名额；桌面领取会话时与邮箱验证码复用同一设备绑定逻辑，名额满或旧设备已撤销时仍拒绝受保护功能。验收需分别覆盖真实网页登录、默认浏览器确认、客户端安全保存及重开、已有会员关联、取消和退出；本地签名测试或部署成功不能替代真实账号验收。
+
+实现依据：[Google OpenID Connect 服务端流程](https://developers.google.com/identity/openid-connect/openid-connect)、[Google ID token 校验与邮箱权威性说明](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token)。
+
 ## 邮件服务
 
 支持 SMTP、Resend 和自有邮件网关。使用 Gmail SMTP 时设置 `AUTH_MAIL_PROVIDER=smtp`、`AUTH_SMTP_HOST=smtp.gmail.com`、`AUTH_SMTP_PORT=465`、`AUTH_SMTP_USER` 为发信邮箱、`AUTH_SMTP_PASS` 为启用两步验证后生成的应用专用密码，`AUTH_MAIL_FROM` 使用相同邮箱。仅在服务端平台 Secrets 保存应用密码。端口 465 使用 TLS，587 强制 STARTTLS，保持证书验证；SMTP 日志关闭。Cloudflare 沿用同名配置，不使用 Vercel 邮件回退。
