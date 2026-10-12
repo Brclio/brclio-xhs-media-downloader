@@ -1,22 +1,98 @@
 {
-  "recordedAt": "2026-10-12T11:42:38.102Z",
+  "recordedAt": "2026-10-12T13:49:08.204Z",
   "implementationCommit": "25c8215d467d35475262a19c0914d98675ead1b6",
   "web": {
     "origin": "https://xhs.download.brclio.com",
-    "workerVersion": "aa72e203-1d5d-44b0-b263-2086ec980009",
-    "pagesDeployment": "9432cca2.brclio-xhs-pages.pages.dev",
+    "workerVersion": "a8f7466f-9e87-430c-92ca-7177e90abf5c",
+    "pagesDeployment": "0fa89d5d.brclio-xhs-pages.pages.dev",
     "googleConfigurationEnabled": true,
     "productionAccountAssetsMatchSource": [
       "account-ui.js",
       "account-ui.css",
-      "lib/browser-account.js"
+      "lib/browser-account.js",
+      "index.html",
+      "feedback.html",
+      "download.html",
+      "download.js",
+      "changelog.html"
     ],
     "googleAccountChooserObserved": true,
     "completedLogin": {
       "verified": true,
       "evidence": "User confirmed successful return to the account page showing their email. Automated browser control timed out after Google account selection."
     },
-    "credentials": "Google client secret configured only as a Cloudflare Worker Secret; temporary downloaded JSON removed after successful upload."
+    "credentials": "Google client secret configured only as a Cloudflare Worker Secret; temporary downloaded JSON removed after successful upload.",
+    "initialDeployment": {
+      "workerVersion": "aa72e203-1d5d-44b0-b263-2086ec980009",
+      "pagesDeployment": "9432cca2.brclio-xhs-pages.pages.dev"
+    },
+    "productionSourceCommit": "7c35b450aae143f016e5f505fa3a4f0a3f0a48f4",
+    "productionAssets": [
+      {
+        "path": "account-ui.js",
+        "status": 200,
+        "bytes": 33777,
+        "sha256": "7e12cc906460aa05b9962983c6474c2e71739619f1af96b4cc4a6be5aec9afae",
+        "matchesSource": true
+      },
+      {
+        "path": "account-ui.css",
+        "status": 200,
+        "bytes": 15382,
+        "sha256": "5c92ab108be394b66ec676145495cc5ddb07958248e18d2dd2d74664bc8a30a0",
+        "matchesSource": true
+      },
+      {
+        "path": "lib/browser-account.js",
+        "status": 200,
+        "bytes": 8080,
+        "sha256": "cffe06349b6d20f0a04a311de9069bac5d86095143ef51017a309684b255909f",
+        "matchesSource": true
+      },
+      {
+        "path": "index.html",
+        "status": 200,
+        "bytes": 65571,
+        "sha256": "359d1211ca08f4bce4dffc5245bf66e2931c7255e1b5d4439bbb2808c2f21319",
+        "matchesSource": true
+      },
+      {
+        "path": "feedback.html",
+        "status": 200,
+        "bytes": 16337,
+        "sha256": "c0ae53030a963730e3742cdf8d56513df28f604b4dcd82f42d6ecec37ffd8cac",
+        "matchesSource": true
+      },
+      {
+        "path": "download.html",
+        "status": 200,
+        "bytes": 34011,
+        "sha256": "235b64a80c8433bd76baff5699dd78e650be8e2fa6417d676c6678a3406650b3",
+        "matchesSource": true
+      },
+      {
+        "path": "download.js",
+        "status": 200,
+        "bytes": 9943,
+        "sha256": "679038c9e1c15a76e41478e31600de47e0aeadeb1aea46183859eac5620cb3d7",
+        "matchesSource": true
+      },
+      {
+        "path": "changelog.html",
+        "status": 200,
+        "bytes": 179198,
+        "sha256": "2c660cebd393a0644840ce2ec3e6914a19e84bffe2993cb97cf1d1634bc91fa4",
+        "matchesSource": true
+      }
+    ],
+    "productionAssetsVerifiedAt": "2026-10-12T13:28:38.737Z",
+    "productionVersion": "2.0.18",
+    "cloudflareAnonymousChecks": {
+      "ok": true,
+      "passed": 58,
+      "total": 58,
+      "checkedAt": "2026-10-12T13:09:25.789Z"
+    }
   },
   "localChecks": {
     "node": {
@@ -78,12 +154,20 @@
       "comparedPackagedSources": 242,
       "bundledProxyVerified": true,
       "bundledPythonParserVerified": true,
-      "launched": false
+      "launched": true,
+      "restoredSession": {
+        "sameGoogleAccountVerified": true,
+        "activeDurationMembershipVerified": true,
+        "existingDeviceAuthorizationPreserved": true,
+        "existingDownloadJobsPreserved": true,
+        "existingDownloadJobsCount": 4,
+        "evidence": "CUA account center confirmed the same Google account, active duration membership, authorized current device and four existing download jobs after launching the final v2.0.18 isolated package."
+      }
     }
   },
   "nativeRelease": {
     "targetVersion": "2.0.18",
-    "status": "prepared-awaiting-canonical-ci",
+    "status": "published-verified",
     "releaseTag": "v2.0.18",
     "firstBuildRun": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38242719832",
     "firstBuildFinding": "Startup verifier expected the old account button list; updating fixtures and repeating the native release gates.",
@@ -100,13 +184,64 @@
     },
     "startupStorageRecoveryVerified": true,
     "startupQuitVerified": true,
-    "startupFailureErrorVerified": true
+    "startupFailureErrorVerified": true,
+    "releaseCommit": "7c35b450aae143f016e5f505fa3a4f0a3f0a48f4",
+    "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.18",
+    "canonicalRun": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38250150579",
+    "successfulRunAttempt": 3,
+    "canonicalJobs": [
+      "mac-arm64",
+      "mac-intel",
+      "windows-x64",
+      "Publish verified installers"
+    ],
+    "assetCount": 11,
+    "publicInstallerProbes": 9,
+    "publicationVerification": "v2.0.18-publication-verification.json",
+    "previousCanonicalAttempts": [
+      {
+        "attempt": 1,
+        "failedJob": "mac-arm64",
+        "finding": "Pinned Python runtime download returned HTTP 504 before digest validation. Windows and Intel Mac completed successfully."
+      },
+      {
+        "attempt": 2,
+        "failedJob": "mac-arm64",
+        "finding": "Existing 5 ms timer-based profile-entitlement background revocation fixture expected 3 media requests and observed 4; paused/completed/failed state assertions passed. The unchanged fixture group passed all 8 independent local checks; the complete native gates passed on attempt 3."
+      }
+    ]
   },
   "installedClient": {
     "originalBundleVersion": "2.0.15",
-    "originalBundleReplaced": false,
-    "runningPreviewVersion": "2.0.17",
-    "googleLoginAndRestartVerified": true
+    "originalBundleReplaced": true,
+    "runningPreviewVersion": null,
+    "googleLoginAndRestartVerified": true,
+    "installedVersion": "2.0.18",
+    "runningOfficialVersion": "2.0.18",
+    "updateMethod": "Existing application built-in updater: download, pause/resume, complete SHA-256 verification, install, original-location replacement and automatic relaunch. No package cache was preseeded.",
+    "installedPackagedSourcesCompared": 242,
+    "completeCodeSignatureVerified": true,
+    "codeSignature": "adhoc",
+    "notarized": false,
+    "nativeInstallRecord": {
+      "status": "installed",
+      "previousVersion": "2.0.15",
+      "targetVersion": "2.0.18",
+      "launchRequested": true,
+      "startupConfirmed": true,
+      "backupRemoved": true,
+      "cleanupFailure": null,
+      "cleanedAt": "2026-10-12T13:40:10.534Z"
+    },
+    "downloadedOfficialDmg": {
+      "bytes": 167507316,
+      "sha256": "99f31eb27aa53df37a9eab86724d2e38aac9f39fa995bcd654eb4dcbce5d0fed"
+    },
+    "restoredGoogleSession": true,
+    "existingMembershipPreserved": true,
+    "existingDeviceAuthorizationPreserved": true,
+    "existingDownloadJobsCount": 4,
+    "evidence": "CUA observed v2.0.18 in the original application after automatic relaunch; the account center refreshed the same Google account, active membership and authorized device; the four previous download jobs remained. The native install journal confirmed startup and backup cleanup."
   },
   "android": {
     "version": "1.0.15",
