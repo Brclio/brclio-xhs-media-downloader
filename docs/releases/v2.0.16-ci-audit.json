@@ -194,5 +194,88 @@
     "canonicalTagMustResolveToSameSourceSha": true,
     "publicationVerifierLimitation": "Supplying a build-only run ID currently requires a successful publisher job and fails for the skipped publisher; verify build-only provenance separately or add an explicit supported mode."
   },
+  "secondNativeRunAudit": {
+    "run": {
+      "id": 38209060981,
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38209060981",
+      "sourceSha": "9565019f5bb1dbc2665c1c00820c110c642198b7",
+      "event": "workflow_dispatch",
+      "buildOnly": true,
+      "status": "completed",
+      "conclusion": "failure",
+      "createdAt": "2026-10-12T05:41:41Z",
+      "updatedAt": "2026-10-12T05:55:31Z"
+    },
+    "jobs": [
+      {
+        "name": "windows-x64",
+        "id": 114678932040,
+        "conclusion": "failure",
+        "nodeTests": { "tests": 1618, "pass": 1549, "fail": 0, "cancelled": 0, "skipped": 69 },
+        "failedStep": "Verify public and packaged learning page assets, navigation and QR saving",
+        "failureCategory": "LEARNING_UI_TIMEOUT",
+        "installerBuildPassed": true,
+        "packagedSourceVerificationPassed": true,
+        "installedAndPortableUpgradeFromV1_8_17Passed": true,
+        "artifactUploadSkipped": true
+      },
+      {
+        "name": "mac-intel",
+        "id": 114678932218,
+        "conclusion": "failure",
+        "nodeTests": { "tests": 1618, "pass": 1604, "fail": 0, "cancelled": 0, "skipped": 14 },
+        "failedStep": "Verify public and packaged learning page assets, navigation and QR saving",
+        "failureCategory": "LEARNING_UI_TIMEOUT",
+        "nativeMacReplacementAndRollbackPassed": true,
+        "installerBuildPassed": true,
+        "packagedSourceVerificationPassed": true,
+        "artifactUploadSkipped": true
+      },
+      {
+        "name": "mac-arm64",
+        "id": 114678932216,
+        "conclusion": "failure",
+        "nodeTests": { "tests": 1618, "pass": 1601, "fail": 3, "cancelled": 0, "skipped": 14 },
+        "failedStep": "Run node --test --test-concurrency=1",
+        "failureCategories": ["PROXY_TLS_CERTIFICATE_REJECTED", "PROFILE_REVOCATION_EXTRA_MEDIA"],
+        "installerBuildSkipped": true,
+        "packagedSourceVerificationSkipped": true,
+        "artifactUploadSkipped": true
+      }
+    ],
+    "passedNativeStepsOnWindowsAndIntel": [
+      "Python unit tests, native Live Photo encoding, bundled Python build and handler checks",
+      "Real Electron main process, preload bridge and both download engines",
+      "Native image clipboard and multi-file paste",
+      "Responsive startup, credential access recovery, startup quit and genuine startup failures",
+      "Isolated Xiaohongshu login reset with preserved app session",
+      "Retry and update controls in the real desktop renderer",
+      "Updater retries through the real manager, IPC and original preload"
+    ],
+    "failureDetails": [
+      {
+        "category": "LEARNING_UI_TIMEOUT",
+        "platforms": ["windows-x64", "mac-intel"],
+        "file": "scripts/verify-learning-ui.cjs",
+        "detail": "The separate public/packaged learning-page verifier reached its 75-second deadline. This run did not identify the stalled stage. Earlier embedded-learning checks passed; they do not establish this later gate passed."
+      },
+      {
+        "category": "PROXY_TLS_CERTIFICATE_REJECTED",
+        "platforms": ["mac-arm64"],
+        "file": "cloudflare/subscription-proxy/test/worker-certificates.test.js",
+        "detail": "The generated SHA1 self-signed trust-anchor acceptance fixture was rejected at the critical-extension check. The child failure also failed its parent test, accounting for two failed test counts. The exact offending CI extension was not logged."
+      },
+      {
+        "category": "PROFILE_REVOCATION_EXTRA_MEDIA",
+        "platforms": ["mac-arm64"],
+        "file": "test/profile-entitlement.test.js",
+        "detail": "The authoritative background device-revocation regression saved four media files where three were expected, exposing an authorization/media completion race."
+      }
+    ],
+    "artifactCount": 0,
+    "publisherConclusion": "skipped",
+    "publishedByThisRun": false,
+    "releaseGate": "Failed. Windows and Intel installers were built and checked on their runners, but no installer or native-proof artifacts were uploaded. Later UI/account/feedback/order/credential gates were skipped. Repeat the complete native workflow on corrected clean source before publication."
+  },
   "privacy": "No full logs, personal account identifiers, note URLs, subscription values, or signing secrets are included."
 }

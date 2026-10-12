@@ -10,22 +10,29 @@ import '../worker-transport.js';
 
 test('strict verifier validates a real signed chain and rejects CA, identity, usage, expiry and critical-extension violations', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'xhs-certificate-test-'));
-  const openssl = (...args) => execFileSync('openssl', args, { cwd: directory, stdio: 'ignore' });
+  const openssl = (...args) => execFileSync('openssl', args[0] === 'req'
+    ? ['req', '-config', 'fixture.cnf', ...args.slice(1), '-pkeyopt', 'ec_param_enc:named_curve'] : args, {
+    cwd: directory, stdio: 'ignore', env: { ...process.env, OPENSSL_CONF: join(directory, 'ambient.cnf') },
+  });
   const certificate = async (name) => loadX509FromPem(await readFile(join(directory, `${name}.pem`)));
   async function issue(name, issuer, extensions, { days = '1', cn = 'www.example.com', signature = 'sha256' } = {}) {
     openssl('req', '-new', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1', '-nodes', '-keyout', `${name}.key`, '-out', `${name}.csr`, '-subj', `/CN=${cn}`);
-    await writeFile(join(directory, `${name}.ext`), extensions, { mode: 0o600 });
+    await writeFile(join(directory, `${name}.ext`), `${extensions}subjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid,issuer\n`, { mode: 0o600 });
     openssl('x509', '-req', '-in', `${name}.csr`, '-CA', `${issuer}.pem`, '-CAkey', `${issuer}.key`, '-CAcreateserial', '-out', `${name}.pem`, '-days', days, `-${signature}`, '-extfile', `${name}.ext`);
   }
   try {
-    openssl('req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1', '-nodes', '-keyout', 'root.key', '-out', 'root.pem', '-days', '2', '-subj', '/CN=Fixture Root', '-addext', 'basicConstraints=critical,CA:TRUE', '-addext', 'keyUsage=critical,keyCertSign,cRLSign');
+    // A system openssl.cnf can add duplicate/unknown extensions. Deliberately
+    // install such an ambient default and require our fixture to ignore it.
+    await writeFile(join(directory, 'ambient.cnf'), '[req]\ndistinguished_name=dn\nx509_extensions=ambient\n[dn]\n[ambient]\n1.2.3.4=critical,DER:0C:01:61\n', { mode: 0o600 });
+    await writeFile(join(directory, 'fixture.cnf'), '[req]\ndistinguished_name=dn\ndefault_md=sha256\n[dn]\n[root]\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always,issuer\n', { mode: 0o600 });
+    openssl('req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1', '-nodes', '-keyout', 'root.key', '-out', 'root.pem', '-days', '2', '-subj', '/CN=Fixture Root', '-extensions', 'root');
     openssl('x509', '-in', 'root.pem', '-outform', 'DER', '-out', 'root.der');
     const trustedRoots = [await readFile(join(directory, 'root.der'))];
     const validExtensions = 'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:www.example.com\n';
     await issue('valid', 'root', validExtensions);
     await verifyStrictCertificateChain([await certificate('valid')], 'www.example.com', { trustedRoots });
     await t.test('configured SHA1 self-signed trust anchor is accepted only with strong leaf signature', async () => {
-      openssl('req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1', '-nodes', '-keyout', 'legacy-root.key', '-out', 'legacy-root.pem', '-days', '2', '-sha1', '-subj', '/CN=Fixture Legacy Trust Anchor', '-addext', 'basicConstraints=critical,CA:TRUE', '-addext', 'keyUsage=critical,keyCertSign,cRLSign');
+      openssl('req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:prime256v1', '-nodes', '-keyout', 'legacy-root.key', '-out', 'legacy-root.pem', '-days', '2', '-sha1', '-subj', '/CN=Fixture Legacy Trust Anchor', '-extensions', 'root');
       openssl('x509', '-in', 'legacy-root.pem', '-outform', 'DER', '-out', 'legacy-root.der');
       const legacyRoots = [await readFile(join(directory, 'legacy-root.der'))];
       await issue('legacy-anchor-leaf', 'legacy-root', validExtensions);

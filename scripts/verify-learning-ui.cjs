@@ -22,8 +22,9 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'xhs-app', privileges: {
 let win;
 let server;
 let finished = false;
+let stage = 'startup';
 const checks = [];
-const timeout = setTimeout(() => finish(1, new Error('LEARNING_UI_TIMEOUT')), 75_000);
+const timeout = setTimeout(() => finish(1, new Error(`LEARNING_UI_TIMEOUT: ${stage}`)), 75_000);
 async function finish(code, error) {
   if (finished) return;
   finished = true;
@@ -88,6 +89,7 @@ app.whenReady().then(async () => {
   }))()`);
 
   for (const [surface, origin] of [['web', webOrigin], ['desktop', 'xhs-app://local']]) {
+    stage = `${surface}: load learning page`;
     const failedRequests = [];
     const onFailure = (_event, code, description, url) => failedRequests.push({ code, description, url });
     win.webContents.on('did-fail-load', onFailure);
@@ -109,6 +111,7 @@ app.whenReady().then(async () => {
     }
 
     for (const width of [1440, 900, 390, 320]) {
+      stage = `${surface}: ${width}px layout and QR interaction`;
       win.setContentSize(width, 1000);
       await settle();
       await evaluate('scrollTo(0, 0)');
@@ -150,6 +153,7 @@ app.whenReady().then(async () => {
     assert.equal((await snapshot()).dialogOpen, false, `${surface}: explicit QR close`);
 
     const savedPath = path.join(temporary, `${surface}-wechat-qr.png`);
+    stage = `${surface}: save QR`;
     let download;
     const onDownload = (_event, item) => {
       item.setSavePath(savedPath);
@@ -166,10 +170,22 @@ app.whenReady().then(async () => {
     assert.equal(new URL(win.webContents.getURL()).pathname, '/learn.html', `${surface}: saving QR keeps the page open`);
     checks.push(`${surface}: consultation anchor, explicit dialog close, QR save exact bytes`);
 
-    const returned = new Promise(resolve => win.webContents.once('did-finish-load', resolve));
+    stage = `${surface}: return to tool`;
+    let returned = false;
+    if (surface === 'desktop') win.webContents.once('did-finish-load', () => { returned = true; });
+    else await evaluate('void (window.__learningVerificationDocument = document)');
     await click(surface === 'web' ? '.app-header .app-navigation a[href="/"]' : '#back-to-tool');
-    await returned;
+    // Public navigation changes routes in the existing document; the native
+    // protocol still performs a full load. Both must reach the real tool UI.
+    if (surface === 'desktop') await waitFor(() => returned, `${surface}: tool document finished loading`);
     await waitFor(() => ['/index.html', '/'].includes(new URL(win.webContents.getURL()).pathname), `${surface}: return to tool`);
+    await waitFor(() => evaluate(`Boolean(document.querySelector('#parse-form') && document.querySelector('#share-text'))`),
+      `${surface}: downloader form ready`);
+    if (surface === 'web') {
+      assert.equal(await evaluate('window.__learningVerificationDocument === document'), true,
+        'public return to tool preserves the existing document');
+      assert.equal(await evaluate('document.body.dataset.sitePage'), 'index', 'public return selects the homepage route');
+    }
     assert.deepEqual(failedRequests, [], `${surface}: no failed navigation`);
     win.webContents.removeListener('did-fail-load', onFailure);
     checks.push(`${surface}: return to tool`);

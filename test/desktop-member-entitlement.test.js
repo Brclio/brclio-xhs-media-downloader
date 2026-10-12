@@ -126,6 +126,7 @@ async function nativeFixture(t, options = {}) {
   const downloader = new NativeVideoDownload({ ticketService: f.ticketService,
     showSaveDialog: async () => ({ canceled: false, filePath: target }),
     authorize: (feature, input) => f.client.authorize(feature, input),
+    checkAuthorization: feature => f.client.checkLocalAuthorization(feature),
     fetchImpl: async () => {
       fetched++; await options.onFetch?.(f);
       return new Response(VIDEO, { headers: { 'content-type': 'video/mp4', 'content-length': String(VIDEO.length) } });
@@ -156,4 +157,55 @@ test('native original video retains the existing file when grant expiry, logout 
     assert.equal(await fs.readFile(f.target, 'utf8'), 'previous complete video');
     assert.deepEqual(await fs.readdir(f.directory), ['video.mp4'], 'Unpublished staging files are removed');
   });
+});
+
+test('native original publication rejects authorization changes during the final asynchronous target check', async t => {
+  for (const change of ['expiry', 'logout', 'device']) await t.test(change, async t => {
+    const f = await nativeFixture(t);
+    await fs.writeFile(f.target, 'previous complete video');
+    const originalLstat = fs.lstat;
+    let targetChecks = 0, callsAfterInvalidation;
+    t.mock.method(fs, 'lstat', async function (file, ...args) {
+      const result = await originalLstat.call(this, file, ...args);
+      if (file === f.target && ++targetChecks === 2) {
+        await f.invalidate(change);
+        callsAfterInvalidation = f.remoteCalls();
+      }
+      return result;
+    });
+    const result = await f.save();
+    assert.equal(targetChecks, 2, 'Invalidation occurs after streaming, in the final target validation');
+    assert.equal(result.ok, false);
+    assert.equal(result.error.status, change === 'logout' ? 401 : 403);
+    assert.equal(f.remoteCalls(), callsAfterInvalidation, 'The final signed authorization guard never contacts the backend');
+    assert.equal(await fs.readFile(f.target, 'utf8'), 'previous complete video');
+    assert.deepEqual(await fs.readdir(f.directory), ['video.mp4'], 'Unpublished staging files are removed');
+  });
+});
+
+test('native original publication checks the signed grant synchronously after its final awaited session check', async t => {
+  const f = await nativeFixture(t);
+  await fs.writeFile(f.target, 'previous complete video');
+  const originalLstat = fs.lstat, originalSession = f.ticketService.session;
+  let targetChecks = 0;
+  t.mock.method(fs, 'lstat', async function (file, ...args) {
+    const result = await originalLstat.call(this, file, ...args);
+    if (file === f.target) targetChecks++;
+    return result;
+  });
+  t.mock.method(f.ticketService, 'session', async function (...args) {
+    const session = await originalSession.apply(this, args), originalRecheck = session.recheck;
+    session.recheck = async function (...values) {
+      await originalRecheck.apply(this, values);
+      if (targetChecks === 2) await f.invalidate('expiry');
+    };
+    return session;
+  });
+  const result = await f.save();
+  assert.equal(targetChecks, 2);
+  assert.equal(result.ok, false);
+  assert.equal(result.error.status, 403);
+  assert.equal(f.remoteCalls(), 1, 'Expiry at commit is rejected locally without renewing the grant');
+  assert.equal(await fs.readFile(f.target, 'utf8'), 'previous complete video');
+  assert.deepEqual(await fs.readdir(f.directory), ['video.mp4']);
 });

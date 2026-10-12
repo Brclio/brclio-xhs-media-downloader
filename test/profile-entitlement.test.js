@@ -12,6 +12,13 @@ const PROFILE = 'https://www.xiaohongshu.com/user/profile/5e413a430000000001000f
 const START = Date.parse('2026-10-12T00:00:00Z');
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 2, 4, 5, 6, 0xff, 0xd9]);
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function waitFor(check) {
+  const until = Date.now() + 5000;
+  while (!check()) {
+    assert.ok(Date.now() < until, 'Expected background authorization transition did not arrive');
+    await wait(1);
+  }
+}
 
 // Real signing, client authorization, queue persistence and media writes; only
 // the account HTTP transport, XHS page extraction and clock are simulated.
@@ -127,7 +134,9 @@ test('130-note download survives storage outage after note 101 using a signed gr
         pollWindow = true;
       }
     },
-    async onSleep() { if (pollWindow) { pollWindow = false; await wait(25); } }
+    async onSleep(f) {
+      if (pollWindow) { pollWindow = false; await waitFor(() => f.calls.some(call => call.mode === 'storage-down')); }
+    }
   });
   await f.start();
   const result = await f.settle();
@@ -174,7 +183,15 @@ test('authoritative background device revocation invalidates a valid grant and p
         pollWindow = true;
       }
     },
-    async onSleep() { if (pollWindow) { pollWindow = false; await wait(25); } }
+    async onSleep(f) {
+      if (pollWindow) {
+        pollWindow = false;
+        await waitFor(() => {
+          try { f.client.checkLocalAuthorization('profile-download'); return false; }
+          catch { return true; }
+        });
+      }
+    }
   });
   await f.start();
   const paused = await f.settle();
@@ -194,4 +211,59 @@ test('authoritative background device revocation invalidates a valid grant and p
   assert.equal(resumed.completed + resumed.skipped, 3);
   assert.equal(f.media.length, 6);
   assert.equal(new Set(f.media).size, 6);
+});
+
+test('profile media cannot publish or overwrite after signed authorization changes during final path validation', async t => {
+  for (const change of ['expiry', 'revocation']) for (const existing of [false, true]) await t.test(`${change} ${existing ? 'existing target' : 'new target'}`, async child => {
+    let f, target, armed = false, transitions = 0;
+    const previous = Buffer.from('previous image remains untouched');
+    f = await fixture(child, { notes: 1, images: 2,
+      managerOptions: {
+        // This regression exercises the commit guard independently of timers.
+        authorizationIntervalMs: 60_000, localAuthorizationIntervalMs: 60_000,
+        fetchImpl: async (url, init) => {
+          init.signal?.throwIfAborted(); f.media.push(url);
+          if (url.endsWith('-1.jpg') && transitions === 0) {
+            target = path.join(f.directory, f.manager.snapshot().items[0].directoryName, 'image-002.jpg');
+            if (existing) await fs.writeFile(target, previous);
+            armed = true;
+          }
+          return new Response(JPEG, { headers: { 'content-type': 'image/jpeg', 'content-length': String(JPEG.length) } });
+        }
+      }
+    });
+    const lstat = fs.lstat.bind(fs);
+    child.mock.method(fs, 'lstat', async (filename, ...args) => {
+      let result, error;
+      try { result = await lstat(filename, ...args); } catch (failure) { error = failure; }
+      if (filename === target && armed) {
+        armed = false; transitions++;
+        if (change === 'expiry') f.advance(86_400_000 + 1);
+        else {
+          f.setMode('revoked');
+          await assert.rejects(f.client.authorize('profile-download', { forceRemote: true }), { code: 'DEVICE_REVOKED' });
+        }
+      }
+      if (error) throw error;
+      return result;
+    });
+    await f.start();
+    const paused = await f.settle();
+    assert.equal(transitions, 1, 'Authorization changes in the final awaited target check');
+    assert.equal(paused.status, 'paused'); assert.equal(paused.pauseReason, 'ACCOUNT_AUTHORIZATION_REQUIRED');
+    assert.equal(paused.items[0].status, 'pending'); assert.equal(paused.failed, 0);
+    assert.deepEqual(await fileBytes(f, 1), JPEG);
+    if (existing) assert.deepEqual(await fs.readFile(target), previous, 'An already existing target must never be replaced');
+    else await assert.rejects(fs.stat(target), { code: 'ENOENT' }, 'New media must remain unpublished');
+    const noteDirectory = path.dirname(target);
+    assert.equal((await fs.readdir(noteDirectory)).some(name => name.endsWith('.part')), false);
+    assert.deepEqual(paused.items[0].id, f.descriptors[0].id);
+    const persisted = JSON.parse(await fs.readFile(path.join(f.stateDirectory, 'profile-job.json'), 'utf8'));
+    assert.equal(persisted.status, 'paused', 'Recovery state remains writable after authorization is denied');
+    f.renew(); await f.manager.resume();
+    const complete = await f.settle();
+    assert.equal(complete.status, 'completed'); assert.equal(f.media.length, 3);
+    assert.deepEqual(await fs.readFile(target), JPEG);
+    assert.deepEqual(await fileBytes(f, 1), JPEG, 'Previously committed media is verified and retained on resume');
+  });
 });

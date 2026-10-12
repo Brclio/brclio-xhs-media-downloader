@@ -40,9 +40,9 @@ async function abortable(promise, signal) {
 
 /** Downloads in the main process with bounded memory and an OS-approved target. */
 export class NativeVideoDownload {
-  constructor({ showSaveDialog, fetchImpl = fetch, authorize = async () => {}, ticketService,
+  constructor({ showSaveDialog, fetchImpl = fetch, authorize = async () => {}, checkAuthorization, ticketService,
     onProgress = () => {}, onDiagnostic = () => {} }) {
-    Object.assign(this, { showSaveDialog, fetchImpl, authorize, ticketService, onProgress, onDiagnostic });
+    Object.assign(this, { showSaveDialog, fetchImpl, authorize, checkAuthorization, ticketService, onProgress, onDiagnostic });
     this.requests = new Map();
     this.operations = new Set();
     this.stopping = false;
@@ -119,12 +119,20 @@ export class NativeVideoDownload {
       }
       if (!file) throw lastError || new Error('视频下载失败，请重新解析。');
       throwIfAborted(signal);
-      if (memberSession) await memberSession.recheck();
       await this.authorize('single-download');
       throwIfAborted(signal);
       await assertSafeTarget(root, root, name);
       throwIfAborted(signal);
       const target = path.join(root, name);
+      if (memberSession) {
+        // All asynchronous path checks precede the final authorization gate.
+        // Signed grants fail locally; the session recheck retains legacy and
+        // account-switch handling without extending an expired signed grant.
+        this.checkAuthorization?.('watermark-free-video');
+        await memberSession.recheck();
+        this.checkAuthorization?.('watermark-free-video');
+      }
+      throwIfAborted(signal);
       await fs.rename(path.join(stage, file.name), target);
       this.progress(selected.requestId, { phase: 'saved', loadedBytes: file.bytes, totalBytes: file.bytes });
       return { ok: true, cancelled: false, path: target, bytes: file.bytes, mediaTracks: file.mediaTracks };

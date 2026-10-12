@@ -26,11 +26,15 @@ function parseContentRange(value) {
 async function fetchVideo(url, range, authorizeOriginal, fetchImpl, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let originalAuthorized = false, originalPrincipal;
 
   try {
     for (let hop = 0; hop < 6; hop += 1) {
     if (!isXhsVideoUrl(url)) throw new XhsError("视频 CDN 地址不受支持。", 502);
-    if (isMemberVideoUrl(url)) await authorizeOriginal();
+    if (isMemberVideoUrl(url)) {
+      originalPrincipal = await authorizeOriginal();
+      originalAuthorized = true;
+    }
     const response = await fetchImpl(url, {
       method: "GET",
       headers: {
@@ -53,7 +57,7 @@ async function fetchVideo(url, range, authorizeOriginal, fetchImpl, timeoutMs) {
       await response.body?.cancel().catch(() => {});
       throw new XhsError("视频 CDN 跳转到了不受支持的地址。", 502);
     }
-    return response;
+    return { response, originalAuthorized, originalPrincipal };
     }
   } catch (error) {
     if (error instanceof XhsError) throw error;
@@ -99,7 +103,7 @@ function getSourceUrl(req) {
   return sourceUrl;
 }
 
-export function createVideoHandler({ fetchImpl = (...args) => globalThis.fetch(...args), onError = error => console.error('video error', error), timeoutMs = 18000, authorizeOriginal = async () => {
+export function createVideoHandler({ fetchImpl = (...args) => globalThis.fetch(...args), onError = error => console.error('video error', error), timeoutMs = 18000, recheckOriginal = async () => {}, authorizeOriginal = async () => {
   throw new XhsError("原视频需要有效会员，请使用会员原视频下载。", 403);
 } } = {}) {
 return async function handler(req, res) {
@@ -117,7 +121,7 @@ return async function handler(req, res) {
     const action = String(req.query.action ?? "meta");
 
     if (action === "meta") {
-      const response = await fetchVideo(sourceUrl, "bytes=0-0", authorizeOriginal, fetchImpl, timeoutMs);
+      const { response, originalAuthorized, originalPrincipal } = await fetchVideo(sourceUrl, "bytes=0-0", authorizeOriginal, fetchImpl, timeoutMs);
       if (![200, 206].includes(response.status)) {
         throw new XhsError(`视频服务器返回 HTTP ${response.status}。`, 502);
       }
@@ -132,6 +136,7 @@ return async function handler(req, res) {
       if (size > MAX_VIDEO_BYTES) {
         throw new XhsError("视频超过 512 MB，浏览器本地合并可能占用过多内存。", 413);
       }
+      if (originalAuthorized) await recheckOriginal(originalPrincipal);
 
       return res.status(200).json({
         success: true,
@@ -152,7 +157,7 @@ return async function handler(req, res) {
       throw new XhsError(`单个视频分段不能超过 ${MAX_CHUNK_BYTES} 字节。`, 413);
     }
 
-    const response = await fetchVideo(sourceUrl, `bytes=${start}-${end}`, authorizeOriginal, fetchImpl, timeoutMs);
+    const { response, originalAuthorized, originalPrincipal } = await fetchVideo(sourceUrl, `bytes=${start}-${end}`, authorizeOriginal, fetchImpl, timeoutMs);
     if (![200, 206].includes(response.status)) {
       throw new XhsError(`视频服务器返回 HTTP ${response.status}。`, 502);
     }
@@ -178,6 +183,7 @@ return async function handler(req, res) {
     const buffer = await readBufferWithLimit(response, MAX_CHUNK_BYTES);
     if (buffer.length !== end - start + 1) throw new XhsError("视频分段不完整，已停止合并。", 502);
     const contentType = response.headers.get("content-type")?.split(";", 1)[0] || "application/octet-stream";
+    if (originalAuthorized) await recheckOriginal(originalPrincipal);
 
     res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Length", String(buffer.length));

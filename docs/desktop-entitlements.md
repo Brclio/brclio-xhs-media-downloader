@@ -63,4 +63,4 @@ npm run desktop:verify:entitlement
 
 集成验证使用真实签名、AccountClient、ProfileManager、任务持久化和实际媒体文件写入，账号 HTTP、小红书解析、计时及凭据存储使用隔离 fixture，未访问反馈用户的账号。覆盖 130 篇 / 390 张图、第 101 篇后账号存储故障、到期暂停、后台撤销、恢复后校验已保存文件并继续。密码存储及原有桌面链路另由现有回归测试覆盖。Node 测试和 workerd 验签通过，不等于生产签名配置、安装包或真实用户设备已经验证。
 
-发布前按原生 CI 相同的 `node --test --test-concurrency=1` 串行运行：Node 1,595 通过、12 个平台/环境限定测试跳过、0 失败；Python 47 通过。真实 macOS 安全存储另完成两个 Electron 进程间签名凭证保存、离线恢复、旧凭据兼容与撤销持久化验证。`npm run cloudflare:check` 构建与部署 dry-run 通过。会员视频集成还覆盖 40 次分块请求无额外远程授权，以及到期、退出、撤销时拒绝发布媒体。详见[验证记录](releases/2026-10-12-desktop-entitlement-validation.json)。
+发布前按原生 CI 相同的 `node --test --test-concurrency=1` 串行运行：Node 1,637 通过、13 个平台/环境限定测试跳过、0 失败；Python 47 通过。真实 macOS 安全存储另完成两个 Electron 进程间签名凭证保存、离线恢复、旧凭据兼容与撤销持久化验证。`npm run cloudflare:check` 构建与部署 dry-run 通过。会员视频集成还覆盖 40 次分块请求无额外远程授权，以及到期、退出、撤销时拒绝发布媒体。新增提交边界验证覆盖视频缓冲期间、最终路径检查期间和最后一次异步授权检查后的失效；原生视频与主页媒体在最终文件提交前同步检查，保留已有文件、清理临时文件，并保留可恢复的任务记录。详见[验证记录](releases/2026-10-12-desktop-entitlement-validation.json)。

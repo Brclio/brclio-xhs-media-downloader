@@ -191,6 +191,75 @@ test('direct Node and Python original-video admissions request fresh remote auth
   assert.deepEqual(admissions, Array.from({ length: 4 }, () => ({ feature: 'watermark-free-video', options: { forceRemote: true } })));
 });
 
+test('direct original responses recheck local authorization after CDN or Python buffering before releasing media', async t => {
+  const original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  for (const engine of ['node', 'python']) for (const action of ['meta', 'chunk']) {
+    for (const change of ['expiry', 'logout', 'revocation', 'account-switch']) await t.test(`${engine} ${action} ${change}`, async child => {
+      let invalidated = false, localChecks = 0, remoteChecks = 0, mediaRequests = 0;
+      const response = () => new Response(Uint8Array.of(7), { status: 206,
+        headers: { 'content-type': 'video/mp4', 'content-length': '1', 'content-range': 'bytes 0-0/1' } });
+      child.mock.method(console, 'error', () => {});
+      child.mock.method(globalThis, 'fetch', async () => { mediaRequests++; invalidated = true; return response(); });
+      const handle = createProtocolHandler({ rootDirectory,
+        authorize: async (feature, options) => {
+          if (feature === 'single-download') return { authorized: true, free: true };
+          remoteChecks++; assert.equal(options?.forceRemote, true);
+          return { authorized: true, userId: 'member-a' };
+        },
+        checkAuthorization: feature => {
+          assert.equal(feature, 'watermark-free-video'); localChecks++; assert.equal(invalidated, true);
+          if (change === 'account-switch') return { authorized: true, userId: 'member-b' };
+          throw Object.assign(new Error(change), { status: change === 'logout' ? 401 : 403,
+            code: { expiry: 'ENTITLEMENT_EXPIRED', logout: 'ACCOUNT_AUTHORIZATION_REQUIRED', revocation: 'DEVICE_REVOKED' }[change] });
+        },
+        pythonBackend: { available: true, request: async () => { mediaRequests++; invalidated = true; return response(); } }
+      });
+      const route = engine === 'node' ? '/api/video' : '/api/python_video';
+      const result = await handle(new Request(`xhs-app://local${route}?${new URLSearchParams({ url: original, action, start: '0', end: '0' })}`));
+      assert.equal(result.status, ['logout', 'account-switch'].includes(change) ? 401 : 403);
+      assert.equal((await result.json()).success, false);
+      for (const header of ['content-length', 'content-range', 'x-video-total', 'accept-ranges']) assert.equal(result.headers.get(header), null, header);
+      assert.equal(remoteChecks, 1, 'Post-buffer signed validation must not start another remote authorization');
+      assert.equal(localChecks, 1); assert.equal(mediaRequests, 1);
+    });
+  }
+});
+
+test('direct original release stays local for signed grants and checks legacy authorization live', async t => {
+  const original = 'https://sns-video-bd.xhscdn.com/original.mp4';
+  for (const signed of [true, false]) await t.test(signed ? 'signed' : 'legacy', async child => {
+    const calls = []; let localChecks = 0;
+    child.mock.method(globalThis, 'fetch', async () => new Response(Uint8Array.of(7), { status: 206,
+      headers: { 'content-type': 'video/mp4', 'content-range': 'bytes 0-0/1' } }));
+    const handle = createProtocolHandler({ rootDirectory,
+      authorize: async (feature, options) => {
+        if (feature === 'single-download') return;
+        calls.push(options); return { authorized: true, userId: 'member' };
+      },
+      checkAuthorization: () => { localChecks++; return signed ? { authorized: true, userId: 'member' } : null; }
+    });
+    const result = await handle(new Request(`xhs-app://local/api/video?${new URLSearchParams({ url: original, action: 'chunk', start: '0', end: '0' })}`));
+    assert.equal(result.status, 200); assert.deepEqual([...new Uint8Array(await result.arrayBuffer())], [7]);
+    assert.deepEqual(calls, signed ? [{ forceRemote: true }] : [{ forceRemote: true }, undefined]);
+    assert.equal(localChecks, 1);
+  });
+});
+
+test('free playback responses never check protected authorization, including prior to release', async t => {
+  const playback = 'https://sns-video-bd.xhscdn.com/stream/playback.mp4';
+  const response = () => new Response(Uint8Array.of(7), { status: 206, headers: { 'content-range': 'bytes 0-0/1' } });
+  t.mock.method(globalThis, 'fetch', async () => response());
+  const handle = createProtocolHandler({ rootDirectory,
+    authorize: async feature => { assert.equal(feature, 'single-download'); },
+    checkAuthorization: () => assert.fail('Free playback must not check membership'),
+    pythonBackend: { available: true, request: async () => response() }
+  });
+  for (const route of ['/api/video', '/api/python_video']) {
+    const result = await handle(new Request(`xhs-app://local${route}?${new URLSearchParams({ url: playback, action: 'chunk', start: '0', end: '0' })}`));
+    assert.equal(result.status, route === '/api/python_video' ? 206 : 200); assert.deepEqual([...new Uint8Array(await result.arrayBuffer())], [7]);
+  }
+});
+
 test('desktop member gateway resolves original-only pages to account-bound tickets and checks every read', async t => {
   const id = '1234567890abcdef12345678';
   const noteUrl = `https://www.xiaohongshu.com/explore/${id}`;

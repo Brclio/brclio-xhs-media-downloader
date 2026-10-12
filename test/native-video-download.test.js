@@ -154,6 +154,28 @@ test('an admitted member stream may finish after its ticket expires while live m
   assert.equal((await f.downloader.save(input(ticket))).error.status, 403, 'A fresh use of the expired ticket is rejected');
 });
 
+test('legacy member authorization is rechecked after the final asynchronous target validation', async t => {
+  let allowed = true, targetChecks = 0;
+  const ticketService = createMemberVideoTicketService({ authorize: async () => {
+    if (!allowed) throw Object.assign(new Error('会员已撤销'), { code: 'MEMBERSHIP_REVOKED', status: 403 });
+    return { userId: 'member-a' };
+  } });
+  const f = await fixture(t, { ticketService });
+  await fs.writeFile(f.target, 'previous complete video');
+  const originalLstat = fs.lstat;
+  t.mock.method(fs, 'lstat', async function (file, ...args) {
+    const result = await originalLstat.call(this, file, ...args);
+    if (file === f.target && ++targetChecks === 2) allowed = false;
+    return result;
+  });
+  const result = await f.downloader.save(input(original));
+  assert.equal(targetChecks, 2);
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'MEMBERSHIP_REVOKED');
+  assert.equal(await fs.readFile(f.target, 'utf8'), 'previous complete video');
+  assert.deepEqual(await fs.readdir(f.directory), ['视频.mp4']);
+});
+
 test('native publishes to the exact OS-selected name and atomically replaces an approved regular file', async t => {
   const f = await fixture(t);
   const chosen = path.join(f.directory, 'video-without-extension');

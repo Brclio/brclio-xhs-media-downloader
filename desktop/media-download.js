@@ -187,7 +187,7 @@ function abortableOperation(operation, signal, onLateResult = () => {}) {
   });
 }
 
-export async function downloadMedia({ root, directory, asset, fetchImpl, signal, beforeRequest = async () => {}, authorize, onDiagnostic = () => {}, onProgress = () => {}, maxBytes, timeoutMs }) {
+export async function downloadMedia({ root, directory, asset, fetchImpl, signal, beforeRequest = async () => {}, beforeCommit, authorize, onDiagnostic = () => {}, onProgress = () => {}, maxBytes, timeoutMs }) {
   if (!asset || !['image', 'video'].includes(asset.kind)) throw new Error('媒体类型无效。');
   if (typeof asset.key !== 'string' || !asset.key || safeFilename(asset.key) !== asset.key) throw new Error('下载文件名无效。');
   // Video files are written incrementally to disk. A zero limit means unlimited;
@@ -306,6 +306,14 @@ export async function downloadMedia({ root, directory, asset, fetchImpl, signal,
     throwIfAborted(requestSignal);
     await assertSafeTarget(root, directory, name);
     progress(bytes, declared, 'saving');
+    throwIfAborted(requestSignal);
+    // Keep this guard synchronous after the final filesystem await, so a
+    // revoked grant cannot publish a staged file or replace an existing one.
+    const commitCheck = beforeCommit?.({ memberVideo });
+    if (commitCheck && typeof commitCheck.then === 'function') {
+      Promise.resolve(commitCheck).catch(() => {});
+      throw new Error('提交前授权检查必须同步完成。');
+    }
     throwIfAborted(requestSignal);
     await fs.rename(temporary, path.join(directory, name));
     diagnostic('media.saved', { bytes, hasAudio: mediaTracks?.hasAudio, hasVideo: mediaTracks?.hasVideo });

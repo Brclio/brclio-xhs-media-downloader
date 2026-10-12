@@ -28,8 +28,8 @@
   },
   "validation": {
     "npmTest": {
-      "nodePassed": 1595,
-      "nodeSkipped": 12,
+      "nodePassed": 1637,
+      "nodeSkipped": 13,
       "nodeFailed": 0,
       "nodeCommand": "node --test --test-concurrency=1",
       "pythonPassed": 47
@@ -45,6 +45,17 @@
     "memberVideoIntegration": {
       "testsPassedIncludingSubtests": 10,
       "chunksWithNoAdditionalRemoteAuthorization": 40
+    },
+    "finalPublicationAuthorization": {
+      "rawVideoAfterBuffering": true,
+      "nativeVideoAfterFinalPathValidation": true,
+      "nativeVideoSynchronousGuardAfterFinalAwait": true,
+      "profileMediaAfterFinalPathValidation": true,
+      "existingFilesPreserved": true,
+      "temporaryFilesCleaned": true,
+      "recoveryStateWritableAfterDenial": true,
+      "renewalResumesOnlyMissingMedia": true,
+      "additionalRemoteChecksForSignedCommit": 0
     },
     "clockAndBindingChecks": [
       "runtime monotonic expiry",

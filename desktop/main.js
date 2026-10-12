@@ -365,6 +365,7 @@ async function boot() {
   videoDownload = new NativeVideoDownload({
     showSaveDialog: options => dialog.showSaveDialog(mainWindow, options),
     fetchImpl: createElectronUpdateFetch(net), authorize: feature => accountClient.authorize(feature),
+    checkAuthorization: feature => accountClient.checkLocalAuthorization(feature),
     ticketService: memberVideoTicketService, onDiagnostic: diagnostic,
     onProgress(progress) {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:video-download-progress', progress);
@@ -372,7 +373,8 @@ async function boot() {
   });
   protocol.handle('xhs-app', createProtocolHandler({ rootDirectory: app.getAppPath(), pythonBackend, memberVideoTicketService,
     onDiagnostic: diagnostic,
-    authorize: (feature, options) => accountClient.authorize(feature, options) }));
+    authorize: (feature, options) => accountClient.authorize(feature, options),
+    checkAuthorization: feature => accountClient.checkLocalAuthorization(feature) }));
   const permissions = new Set(['clipboard-read', 'clipboard-sanitized-write']);
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
     callback(contents === mainWindow?.webContents && isAppUrl(details.requestingUrl || contents.getURL()) && permissions.has(permission));

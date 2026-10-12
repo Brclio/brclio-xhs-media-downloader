@@ -315,8 +315,8 @@ export class ProfileManager {
     }).finally(() => { clearInterval(authorizationTimer); clearInterval(localAuthorizationTimer); this._runTask = null; this._controller = null; });
   }
 
-  _checkLocalAuthorization() {
-    try { return this.checkAuthorization?.('profile-download'); }
+  _checkLocalAuthorization(feature = 'profile-download') {
+    try { return this.checkAuthorization?.(feature); }
     catch (error) {
       throw Object.assign(new Error(error.message || '会员授权已失效，任务已暂停。'), { code: 'ACCOUNT_AUTHORIZATION_REQUIRED', cause: error });
     }
@@ -578,6 +578,10 @@ export class ProfileManager {
         const result = await downloadMedia({
           ...this.mediaOptions, root, directory, asset: { ...asset, url: urls[attempt % urls.length] }, signal,
           fetchImpl: this.fetchImpl, beforeRequest: (requestSignal) => this._pace(requestSignal),
+          beforeCommit: ({ memberVideo }) => {
+            this._checkLocalAuthorization();
+            if (memberVideo) this._checkLocalAuthorization('watermark-free-video');
+          },
           authorize: feature => this.authorize(feature),
           onDiagnostic: (event, fields) => this._diagnostic(event, { ...fields, noteId: item.id, sequence: item.sequence })
         });
