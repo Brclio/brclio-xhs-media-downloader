@@ -1,0 +1,1520 @@
+{
+  "generation_mode": "builtin",
+  "tool": "image_gen.imagegen",
+  "count": 100,
+  "generation_calls": 100,
+  "one_call_per_avatar": true,
+  "thumbnail_processing": {
+    "format": "WebP",
+    "dimensions": [
+      256,
+      256
+    ],
+    "quality": 86,
+    "method": 6,
+    "resampling": "Lanczos",
+    "orientation": "EXIF normalized"
+  },
+  "avatars": [
+    {
+      "id": "avatar-001",
+      "name": "晴空",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-001.png",
+      "original_sha256": "ea43acb03b6f9742523f74a4899bf2e0ecf6733ddf10113fc4b2b565bf33cf30",
+      "original_bytes": 2171075,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-001.webp",
+      "thumbnail_sha256": "512f8d719f3ab9b2acc674b4d6e3ac63edc574ba6ec35a1cfa2d67fe74f67df2",
+      "thumbnail_bytes": 9184
+    },
+    {
+      "id": "avatar-002",
+      "name": "远山",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-002.png",
+      "original_sha256": "71e1e61a81c8e4c4aaa4f1a5080ea28f854ad5a5dfb4261c32756b04f322993f",
+      "original_bytes": 2223455,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-002.webp",
+      "thumbnail_sha256": "af7679b27418e1bc9761fb5019f5557799f6e736dd4d2fd4a09df29b10ecac70",
+      "thumbnail_bytes": 7938
+    },
+    {
+      "id": "avatar-003",
+      "name": "暖风",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-003.png",
+      "original_sha256": "49193be1e4cfb49199b0863a6385c73f149956ffb106e824775dfb43dd4e682d",
+      "original_bytes": 2308083,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-003.webp",
+      "thumbnail_sha256": "2b6cd6595d83bed9cbb66f5136f5379103013fd005e3f69678c7ec579b8fde52",
+      "thumbnail_bytes": 10050
+    },
+    {
+      "id": "avatar-004",
+      "name": "晨光",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-004.png",
+      "original_sha256": "8d387aae8c5bc4a0e609d0210d8af00e92b44a2735243badaae0cf0ee0fcddce",
+      "original_bytes": 2377006,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-004.webp",
+      "thumbnail_sha256": "654920214bd14f9036d25c8ebf4bba9ae928a9f99726b63eced7b239f4ff4f21",
+      "thumbnail_bytes": 8340
+    },
+    {
+      "id": "avatar-005",
+      "name": "小满",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-005.png",
+      "original_sha256": "5f1fd911f7a3cd4bc2cdd85c1964e2cf304cb5c423a31e7185a05be4f8778fe6",
+      "original_bytes": 2184854,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-005.webp",
+      "thumbnail_sha256": "5056b2d7a5bd8027a5a1d58e57183260e829b0de6f1435a87f1f4463c711c71a",
+      "thumbnail_bytes": 8356
+    },
+    {
+      "id": "avatar-006",
+      "name": "星野",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-006.png",
+      "original_sha256": "15d65bc709b4086017e477ea5633b1d1599f5a0420a5f93e3d4f989cab60d128",
+      "original_bytes": 2109763,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-006.webp",
+      "thumbnail_sha256": "1c24137d992c67fe566bfb402ac759bae310244e07c5e81800082d5b31cb2d63",
+      "thumbnail_bytes": 7650
+    },
+    {
+      "id": "avatar-007",
+      "name": "青禾",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-007.png",
+      "original_sha256": "7d9a55bac2dfe0a96d6e2a3914536ac04543708a39e42dd125fb0821a4090371",
+      "original_bytes": 2343315,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-007.webp",
+      "thumbnail_sha256": "faeae917f3737ed81535b97e85db5391a68f818fcb66409a1201083e8369a7ac",
+      "thumbnail_bytes": 8774
+    },
+    {
+      "id": "avatar-008",
+      "name": "晚晴",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-008.png",
+      "original_sha256": "4f656517f2380729d7bac85b8dd68a535abe41acfdc9f9b6a76ebf9ed96f4aa2",
+      "original_bytes": 2158464,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-008.webp",
+      "thumbnail_sha256": "79ba9eb09aec1c7d41e88bca3ee4dfa080afa061a630e2da396400b1196bf973",
+      "thumbnail_bytes": 6698
+    },
+    {
+      "id": "avatar-009",
+      "name": "云朵",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-009.png",
+      "original_sha256": "e1798ad023b9d98cede4e0714bdd29122c8c3595beadc4968e0c2deab0adc77c",
+      "original_bytes": 2350363,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-009.webp",
+      "thumbnail_sha256": "289de708156a5bea5f2a8e698ffc95f67c3f7c7e32bc3ebc00d2eb8b373e8bb3",
+      "thumbnail_bytes": 11128
+    },
+    {
+      "id": "avatar-010",
+      "name": "向阳",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-010.png",
+      "original_sha256": "7cb5bb6da297cf7b40619444a176410eacdabf96ce670cf024e2b86c380caf94",
+      "original_bytes": 2218964,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-010.webp",
+      "thumbnail_sha256": "d45a16947c8bcf70a958a9f0c27b01925ebcc1b8e3b4d6c1580a8218ca8dbd4d",
+      "thumbnail_bytes": 9004
+    },
+    {
+      "id": "avatar-011",
+      "name": "溪流",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-011.png",
+      "original_sha256": "365ec2b59726ba5475ffabfbb585f61373fe3a37c9529ab15f0595133c79fe24",
+      "original_bytes": 2217371,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-011.webp",
+      "thumbnail_sha256": "f5f829f88d19b5f800bf2652be69b36c30f85a13d1343039c86688241d051a73",
+      "thumbnail_bytes": 8150
+    },
+    {
+      "id": "avatar-012",
+      "name": "山海",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-012.png",
+      "original_sha256": "63c749c738ce4c4390ae4905a157d69349fa0ffad3e2e9fb91c6dc1bae76ac39",
+      "original_bytes": 2133375,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-012.webp",
+      "thumbnail_sha256": "f99a85949f1eaf7e0f8cd9b6a6d98cc37c412f3b600e2fedd975bb402f642841",
+      "thumbnail_bytes": 9014
+    },
+    {
+      "id": "avatar-013",
+      "name": "橙光",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-013.png",
+      "original_sha256": "4ae6f412e3f9b5d77c9105438f893df7416358bf9cec3e16d58cee79063b65e0",
+      "original_bytes": 2451883,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-013.webp",
+      "thumbnail_sha256": "adc0e35a0144d687f2bc80f5794942a1a19549529bf48b5f16c05e01c2fe2452",
+      "thumbnail_bytes": 13706
+    },
+    {
+      "id": "avatar-014",
+      "name": "月白",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-014.png",
+      "original_sha256": "e90342a58c5fdb99c2a33d605b4fc230542e49197533226e1d5b64ecc186ce19",
+      "original_bytes": 2242160,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-014.webp",
+      "thumbnail_sha256": "4d9482efafa1fa50689a20a0f302449a76de29fc02e5af2e664c3740ff4affc9",
+      "thumbnail_bytes": 7516
+    },
+    {
+      "id": "avatar-015",
+      "name": "小鹿",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-015.png",
+      "original_sha256": "aef6f7c91b0f8cf8041af57c5510ec1404c386df8e87cbdb47f77bf344f4c544",
+      "original_bytes": 2179814,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-015.webp",
+      "thumbnail_sha256": "b1f4acb10b78acccaacac956f8056d1ed10847473a3a0d1b930201f9c8d82beb",
+      "thumbnail_bytes": 7458
+    },
+    {
+      "id": "avatar-016",
+      "name": "拾光",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-016.png",
+      "original_sha256": "7ca4081fb7c8c750f82a1b2fdf50324070b61f51f8eaed7bb6148b68b39a72ad",
+      "original_bytes": 2136948,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-016.webp",
+      "thumbnail_sha256": "4ec0f000d88ce8a8332a61d0ca87d3642d023e7f87d530d81ca667971e47e93a",
+      "thumbnail_bytes": 8468
+    },
+    {
+      "id": "avatar-017",
+      "name": "清茶",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-017.png",
+      "original_sha256": "062cee3a707025688be4c571086168ea6b04e0fadd804014e8fa9bf41c15b532",
+      "original_bytes": 2330838,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-017.webp",
+      "thumbnail_sha256": "16f33e876ff3abf4277d5e02167f2fbac2237a10eed80d4728d4173ae13851ae",
+      "thumbnail_bytes": 9264
+    },
+    {
+      "id": "avatar-018",
+      "name": "阿蓝",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-018.png",
+      "original_sha256": "5bc816c4b3ce1f0aa6a879466ba6ad16ac8ec2a972de7d812841152d3ad8becd",
+      "original_bytes": 2091646,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-018.webp",
+      "thumbnail_sha256": "33406c980086807ec0d795e6371ee4ef18e040fcad75ccd725778f80d9694963",
+      "thumbnail_bytes": 9548
+    },
+    {
+      "id": "avatar-019",
+      "name": "暖阳",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-019.png",
+      "original_sha256": "910c65ac4bee026fd482f31a77b8bed2ce07ba6e65da2ae26bbb58e5f43fc6c1",
+      "original_bytes": 2174799,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-019.webp",
+      "thumbnail_sha256": "303380abd34327593d613edd81e2d5b933f908c1b312785bbd7ab38491eced34",
+      "thumbnail_bytes": 9160
+    },
+    {
+      "id": "avatar-020",
+      "name": "雾岚",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-020.png",
+      "original_sha256": "cbda73affdb851a0474d5d9b1ed2e8693e36dbd45b5ae1d9ad65578c92d35e03",
+      "original_bytes": 2311852,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-020.webp",
+      "thumbnail_sha256": "0c00f20b4eb9e4a4267f49a2986660473ef5e68dfe8d04b58f0a712c63608ca3",
+      "thumbnail_bytes": 9282
+    },
+    {
+      "id": "avatar-021",
+      "name": "墨墨",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-021.png",
+      "original_sha256": "8c91b36c29da0ef8d4336ff55fed36028f2076c482394caa5c5f1accc73df836",
+      "original_bytes": 2167747,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-021.webp",
+      "thumbnail_sha256": "11bf5afe24178ac299abd37bcdbdf5a09284f350f748bb359a8758cfd1d8f26b",
+      "thumbnail_bytes": 8552
+    },
+    {
+      "id": "avatar-022",
+      "name": "奶糖",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-022.png",
+      "original_sha256": "b5c1c910096b24681f423494b32a1100ca6ce1ae16c411d71ec1dfac54c03818",
+      "original_bytes": 2161484,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-022.webp",
+      "thumbnail_sha256": "be2fbdd7f79cffc9be87b9a977983dceb462658c6c9fa427c80f03de7518a0f9",
+      "thumbnail_bytes": 7018
+    },
+    {
+      "id": "avatar-023",
+      "name": "橘子",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-023.png",
+      "original_sha256": "55ed911df5aa60d6819b1e1e23b385fd85ef56a00f594a637aab4ace477e8419",
+      "original_bytes": 2313947,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-023.webp",
+      "thumbnail_sha256": "782c40374a6da2fac43be40242f109c305591bb255c43c88f521df5b894f2e63",
+      "thumbnail_bytes": 10750
+    },
+    {
+      "id": "avatar-024",
+      "name": "芝麻",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-024.png",
+      "original_sha256": "595190ab31d887d0f5fca9cec7ef278e72509e8c503b833d6dae0a49ff7b9509",
+      "original_bytes": 2538481,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-024.webp",
+      "thumbnail_sha256": "6754b825e82669fb7080abf7144a4614d77d2249bfcf2e62bacb2980a3d06b3a",
+      "thumbnail_bytes": 10204
+    },
+    {
+      "id": "avatar-025",
+      "name": "雪球",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-025.png",
+      "original_sha256": "ac9af03824b85b820695caf594abba948e8a5d38d8e3cc75aafb9b85be524f16",
+      "original_bytes": 2033679,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-025.webp",
+      "thumbnail_sha256": "64b0336efab7ad117c7ff34054220d102e02bb4710a854c9e7bf1393fee58856",
+      "thumbnail_bytes": 6386
+    },
+    {
+      "id": "avatar-026",
+      "name": "阿柴",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-026.png",
+      "original_sha256": "02e0e1f733484f8a90358af58053f674efdfb5373d971c167b993901e2a58e6c",
+      "original_bytes": 2236652,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-026.webp",
+      "thumbnail_sha256": "250ce1d17d7f3d9755811a01e71fc3a7e6aa33b9cf2c8f7592f13ec10fa096a1",
+      "thumbnail_bytes": 8854
+    },
+    {
+      "id": "avatar-027",
+      "name": "团团",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-027.png",
+      "original_sha256": "3ad756e7c255efca205e6ee12182bdc1b04b05e25f1e78be2e1cf7649e1ec809",
+      "original_bytes": 2367561,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-027.webp",
+      "thumbnail_sha256": "8cccda04d112b31a7052f3d935dcccb70dc2d82ca930da90d17a330b62ae275f",
+      "thumbnail_bytes": 9684
+    },
+    {
+      "id": "avatar-028",
+      "name": "花卷",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-028.png",
+      "original_sha256": "b8ed06a779929898c55698a2bec152ca5af029855852b387963db740ac5cd8dd",
+      "original_bytes": 2290947,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-028.webp",
+      "thumbnail_sha256": "097f14523b955ff98f5e2d9dc7c5b126c20ef7322014b8d2158951b5b4068a4c",
+      "thumbnail_bytes": 8898
+    },
+    {
+      "id": "avatar-029",
+      "name": "可乐",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-029.png",
+      "original_sha256": "2ce11d0d5088ba93a82a216542d763ff3c46a7561c67a68d179006530ed89794",
+      "original_bytes": 2272523,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-029.webp",
+      "thumbnail_sha256": "4128774aef8486d55b0cd205d9caa74a81cad697e4b11ac608e714504fff57e1",
+      "thumbnail_bytes": 8758
+    },
+    {
+      "id": "avatar-030",
+      "name": "松饼",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-030.png",
+      "original_sha256": "ff29302d6f6e8bc48e17f1106b93987273b11b0727791b254d5f2e79a8dfbe3a",
+      "original_bytes": 2010335,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-030.webp",
+      "thumbnail_sha256": "3b333e4f6c9463b111410e69539ae261a2e2595e1de02e805cb8674aebfe5985",
+      "thumbnail_bytes": 8728
+    },
+    {
+      "id": "avatar-031",
+      "name": "栗栗",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-031.png",
+      "original_sha256": "459c465e036cb478f287152510a1c9d9f95205e80726fbbd033fa742552bbb8f",
+      "original_bytes": 2511477,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-031.webp",
+      "thumbnail_sha256": "0b33030c7ab973cf73802ea3820620da88694fcf941b24c7a4919aaf96bacfd9",
+      "thumbnail_bytes": 11252
+    },
+    {
+      "id": "avatar-032",
+      "name": "松果",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-032.png",
+      "original_sha256": "283374f91b1f2091362b0c5938c4e63bd008e2ff49af969bc13706ea028dfd42",
+      "original_bytes": 2397628,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-032.webp",
+      "thumbnail_sha256": "bead20ed2361b4c21334963c53132814a45d070ebf99d58de7f7c1136f0cba82",
+      "thumbnail_bytes": 10360
+    },
+    {
+      "id": "avatar-033",
+      "name": "竹竹",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-033.png",
+      "original_sha256": "09184cd1d97af479223636738dfe69b194cf704eae3b7f1412dbd959f7faba1c",
+      "original_bytes": 2333981,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-033.webp",
+      "thumbnail_sha256": "90b0259a40f5822d57061914a316dc3da8c28e04c174e3543e8c26483c02ad9e",
+      "thumbnail_bytes": 8690
+    },
+    {
+      "id": "avatar-034",
+      "name": "棕棕",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-034.png",
+      "original_sha256": "475c4c9b709ee828e2a6312703bdea1400b4e47ed39768d1601b77618711cfcd",
+      "original_bytes": 2392286,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-034.webp",
+      "thumbnail_sha256": "48e63d8474264f2cbee3a5e6ebb9109ba6e9fdaced746350b169be7076a2707a",
+      "thumbnail_bytes": 9428
+    },
+    {
+      "id": "avatar-035",
+      "name": "小獭",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-035.png",
+      "original_sha256": "3e5bf00dd9ae81515bfcde9ca42dcafff01b929b7288a253ffa6f9c43029e027",
+      "original_bytes": 2374660,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-035.webp",
+      "thumbnail_sha256": "7582871b532a2e104b0bba3aa987122132d40c9e1d2063c93b49a6fa440b57bf",
+      "thumbnail_bytes": 10602
+    },
+    {
+      "id": "avatar-036",
+      "name": "茸茸",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-036.png",
+      "original_sha256": "db8e629ed4ab1f06d1df6d25064c52f34c16826a856ec704640bfbcf66fd0ff7",
+      "original_bytes": 2126795,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-036.webp",
+      "thumbnail_sha256": "64caacf1438534971874bfd38ed246d939de558f8ed0a26f27bf3759213310f8",
+      "thumbnail_bytes": 7862
+    },
+    {
+      "id": "avatar-037",
+      "name": "点点",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-037.png",
+      "original_sha256": "373042d15d4985b6c9c7017664a20fecbda3b48fb4f2903a6f784627aeca7b94",
+      "original_bytes": 2190805,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-037.webp",
+      "thumbnail_sha256": "f1c74833ecb4d471c5198228489ade13d9f8f9e42e700743196f376cba0c1e13",
+      "thumbnail_bytes": 9078
+    },
+    {
+      "id": "avatar-038",
+      "name": "跳跳",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-038.png",
+      "original_sha256": "3e69f8ac9e7dd8fd53218096426c047ad69249ff3233ad782eee31aa7e843e5e",
+      "original_bytes": 2280583,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-038.webp",
+      "thumbnail_sha256": "92f4979bbda35e85bd23a2736b055648a0cd536c15e0e9df70d73b4db5fe2048",
+      "thumbnail_bytes": 10304
+    },
+    {
+      "id": "avatar-039",
+      "name": "阿考",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-039.png",
+      "original_sha256": "05735a6d9da5f01799869eeaedba48a9cd8353b2c81f728e57e14b7595f85f12",
+      "original_bytes": 2520581,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-039.webp",
+      "thumbnail_sha256": "2a74d418446cfedd72792aec3048784abe4c7ac50fc3cacb90e0d93bb848e8ae",
+      "thumbnail_bytes": 10558
+    },
+    {
+      "id": "avatar-040",
+      "name": "绵绵",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-040.png",
+      "original_sha256": "89c58a7107c07386e59d474222defef88352c4f959149678074aea5a3b8b318f",
+      "original_bytes": 2203421,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-040.webp",
+      "thumbnail_sha256": "f6ad89933f50be620205dd30353dc3fc8120c35c239e5b2d344925046dbe4acd",
+      "thumbnail_bytes": 8368
+    },
+    {
+      "id": "avatar-041",
+      "name": "咕咕",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-041.png",
+      "original_sha256": "0eb22e53001117153910e0be91a4a2ce7228caf02e6b40b5dacc8b8b3f96aff9",
+      "original_bytes": 2367023,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-041.webp",
+      "thumbnail_sha256": "ee57c2109b9feb48f22504254209de41d8bd17409ff20811c2c9a3da0819e49d",
+      "thumbnail_bytes": 10632
+    },
+    {
+      "id": "avatar-042",
+      "name": "啾啾",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-042.png",
+      "original_sha256": "8902960a80fa06dc501c11ec87ae878359aa4eb143385801dc495322a4f9137b",
+      "original_bytes": 2262664,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-042.webp",
+      "thumbnail_sha256": "7e34caa271d73df6630dd96b673789953dca49c5b7208ad0d5df3730b489b39e",
+      "thumbnail_bytes": 8866
+    },
+    {
+      "id": "avatar-043",
+      "name": "小企鹅",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-043.png",
+      "original_sha256": "8be0c1a4323e5bdc8564c36d94d3f73ebb420ed84fa3fb517a3ab099829a8b64",
+      "original_bytes": 2243741,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-043.webp",
+      "thumbnail_sha256": "68a4a31be839a208078eb96397ed9f15588e85618d3cdd5ab57c283b0252aab3",
+      "thumbnail_bytes": 8734
+    },
+    {
+      "id": "avatar-044",
+      "name": "火火",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-044.png",
+      "original_sha256": "09bd4b12dd14decae63f59249d9c326f5ae468c06c30f3d6c4a668f17886c8e1",
+      "original_bytes": 2050999,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-044.webp",
+      "thumbnail_sha256": "a11f5452479966b3b4548195f89e81bd00ffa89495af0aedf32a4e9de4d2644d",
+      "thumbnail_bytes": 8138
+    },
+    {
+      "id": "avatar-045",
+      "name": "金金",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-045.png",
+      "original_sha256": "fe97b32ec9ca1a6b9737cd4bde35498fc06b8b27a01a494912db5295168f5356",
+      "original_bytes": 2271808,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-045.webp",
+      "thumbnail_sha256": "9e9be03c3dca856c9a3e7f2b693a222a88107d9b6be9deb63ce30195bac436cd",
+      "thumbnail_bytes": 9584
+    },
+    {
+      "id": "avatar-046",
+      "name": "小浣",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-046.png",
+      "original_sha256": "0a65297c15f86c436671c77e38dc7d7c117ca3e4a1988d7401d54b8b36013550",
+      "original_bytes": 2496337,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-046.webp",
+      "thumbnail_sha256": "b534a9dac12fbc2a6283416ad0a70ea1da4ef82a7a075ff1a348018df936b836",
+      "thumbnail_bytes": 11968
+    },
+    {
+      "id": "avatar-047",
+      "name": "刺刺",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-047.png",
+      "original_sha256": "2bc8d2cd39480a80155790413b2b00f92c4efd8725cc2dc70631b4bd64401ce0",
+      "original_bytes": 2607782,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-047.webp",
+      "thumbnail_sha256": "08ca41a4ce5aac45789a0af708d77663271e5cd8e82f0bbb7359e1685908e745",
+      "thumbnail_bytes": 14468
+    },
+    {
+      "id": "avatar-048",
+      "name": "胖达",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-048.png",
+      "original_sha256": "50b4a37c15a0572a5fe80ed87407939150cbd0aff15e7fb73baa071d560c7b22",
+      "original_bytes": 2532454,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-048.webp",
+      "thumbnail_sha256": "47f7fecd588fb3734ec1993cb1c82216c2c292f5445bd0bf866abde1d71a2928",
+      "thumbnail_bytes": 13626
+    },
+    {
+      "id": "avatar-049",
+      "name": "阿呱",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-049.png",
+      "original_sha256": "8785ab87744d96f9d43616a15bc877a56b82e29d6451db82f98d6b20c2e3a702",
+      "original_bytes": 2211480,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-049.webp",
+      "thumbnail_sha256": "cdf2afef1189d0c91e9e738c4eacfa79950ebab1197f9f8138d91eafae27e26b",
+      "thumbnail_bytes": 8578
+    },
+    {
+      "id": "avatar-050",
+      "name": "小鲸",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-050.png",
+      "original_sha256": "310282da193e0e8aa95abe939934494408e26e5277e3726e8d5e7eec1cb661bd",
+      "original_bytes": 2012777,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-050.webp",
+      "thumbnail_sha256": "0135627795d9b857dff4adce8a253b93607b306fa714a4a4d660957efa3808a2",
+      "thumbnail_bytes": 6258
+    },
+    {
+      "id": "avatar-051",
+      "name": "小龟",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-051.png",
+      "original_sha256": "dc6e1a0e37dfff2b7adb08cea5dad6b43b3714d9d768f451fc8e6f62dcab744b",
+      "original_bytes": 2235575,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-051.webp",
+      "thumbnail_sha256": "c9a98d405fd8c191c0db54d5948094358bd2f9ff4e10caa1576ed1283fa8d2e8",
+      "thumbnail_bytes": 9922
+    },
+    {
+      "id": "avatar-052",
+      "name": "波波",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-052.png",
+      "original_sha256": "1b845211e2ec2b2faf99690b8849ae4565163da7279d5a99d8092949a2e43fed",
+      "original_bytes": 1882663,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-052.webp",
+      "thumbnail_sha256": "f5398a6e94f213655de41b54cfe87037b5087596cb26bad4ed123feb1b331696",
+      "thumbnail_bytes": 8010
+    },
+    {
+      "id": "avatar-053",
+      "name": "海蓝",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-053.png",
+      "original_sha256": "ceb32249ea1ecfc42dd5dccbcefa8cf7d80785a3e2c08aee095e592ad2e30884",
+      "original_bytes": 2276211,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-053.webp",
+      "thumbnail_sha256": "6532e3d60b6a76f199c0342ac8694cb25c316e419fb8bf330121876657bf4c8a",
+      "thumbnail_bytes": 11982
+    },
+    {
+      "id": "avatar-054",
+      "name": "虾米",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-054.png",
+      "original_sha256": "2e57fb5b587d66e4f1d7989bc9ff371d9da738fbac430b1f61249ae0c628898c",
+      "original_bytes": 1937740,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-054.webp",
+      "thumbnail_sha256": "b7c3d4f258df027b693eb41fa9bfdd48791999ab08e0bf04c645928c05a2e4ec",
+      "thumbnail_bytes": 10402
+    },
+    {
+      "id": "avatar-055",
+      "name": "小海豹",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-055.png",
+      "original_sha256": "95697e6fbd6911e25ebf813158fe07dd28b7e8217ebda311717df8db005dd1ea",
+      "original_bytes": 2457283,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-055.webp",
+      "thumbnail_sha256": "4ed8613806f42569e57d91a0190ce1469e67f18a11afab560772f2835f56d1bb",
+      "thumbnail_bytes": 10180
+    },
+    {
+      "id": "avatar-056",
+      "name": "豆豆",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-056.png",
+      "original_sha256": "946713acd91b159916c5f2130c565116e18856836226347a7fb65e360c691955",
+      "original_bytes": 2006331,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-056.webp",
+      "thumbnail_sha256": "e6e6170308d00826e0fa46e916ca92678a3ac356f5a2242a67272c74ea242a07",
+      "thumbnail_bytes": 7668
+    },
+    {
+      "id": "avatar-057",
+      "name": "咪噜",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-057.png",
+      "original_sha256": "3a0929a3b9224a75487ef6fc3712c78b9476db90e7e3282b9adeb8ce60886ce7",
+      "original_bytes": 2400911,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-057.webp",
+      "thumbnail_sha256": "b36d6e30b8249899b900cd6d21a25affa8e46e9dd2272c630878b24249d178e5",
+      "thumbnail_bytes": 8806
+    },
+    {
+      "id": "avatar-058",
+      "name": "萌牛",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-058.png",
+      "original_sha256": "1da41b62f092804c0969f8015ed14adb60f2689ce67d9e5cea630f590da564aa",
+      "original_bytes": 2412412,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-058.webp",
+      "thumbnail_sha256": "11a498a6cbc1e4f20c24123d88cdd3188630d749605660261940237566f9e44d",
+      "thumbnail_bytes": 12104
+    },
+    {
+      "id": "avatar-059",
+      "name": "斑斑",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-059.png",
+      "original_sha256": "d248a7bccda5b577de04e8b6992c914c9fdafbd15f1ad04c2b201d7e88b84f42",
+      "original_bytes": 2283875,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-059.webp",
+      "thumbnail_sha256": "930f6dbd6309e33a6bea5501917b4cb077396f20e9142891ecc1c9100d977120",
+      "thumbnail_bytes": 11212
+    },
+    {
+      "id": "avatar-060",
+      "name": "长颈鹿",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-060.png",
+      "original_sha256": "a323db8554ea277ceaa6cabcbc7326f9ecd00dc18814e8cdfe2cbeae155c7673",
+      "original_bytes": 1940663,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-060.webp",
+      "thumbnail_sha256": "dcb0ba6d6f538a31d1749594ee9314e4491981b0f486538f1c5022329174e1c2",
+      "thumbnail_bytes": 8274
+    },
+    {
+      "id": "avatar-061",
+      "name": "小蓝",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-061.png",
+      "original_sha256": "4e2f809107481f5a8d1f67d0052e2308e5d1146b9b6c656762183371836f8ee4",
+      "original_bytes": 2207431,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-061.webp",
+      "thumbnail_sha256": "d269e7e86dc57d24d8499fd6178479119658847a5d0da210f1e22a42187e0009",
+      "thumbnail_bytes": 9140
+    },
+    {
+      "id": "avatar-062",
+      "name": "阿圆",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-062.png",
+      "original_sha256": "580ee319d3b7dcd46981cf7d60ded6dd1cfd29e441c74773b844ba8090bf4159",
+      "original_bytes": 1936893,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-062.webp",
+      "thumbnail_sha256": "864e1da8b23d942049959a4458b7b2c1dc379a42b7e5e140c262b91b1d2fbb70",
+      "thumbnail_bytes": 7082
+    },
+    {
+      "id": "avatar-063",
+      "name": "小铜",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-063.png",
+      "original_sha256": "af8385788e3128141b02d950568d44ce998df6b30cd581f48906d2a912faf5c9",
+      "original_bytes": 2362956,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-063.webp",
+      "thumbnail_sha256": "98c6a707ede558dbf697e996d5c4ec22c485fb6fa38353633f82838afad3eb3c",
+      "thumbnail_bytes": 10782
+    },
+    {
+      "id": "avatar-064",
+      "name": "星星",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-064.png",
+      "original_sha256": "6155d565cac074e542a72577641d0a2ec66af758d6c44cedff1664a7995c59cb",
+      "original_bytes": 2348422,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-064.webp",
+      "thumbnail_sha256": "02a2d74de9afdbc7daea20c0e6c4dbf16c7092bdc1d280532bfc67bd6278fcc9",
+      "thumbnail_bytes": 12648
+    },
+    {
+      "id": "avatar-065",
+      "name": "月球",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-065.png",
+      "original_sha256": "ad1559c1fda9737050c42f0a77ae272f8f4271d7413b0f50a8487f8a929b35d9",
+      "original_bytes": 2071621,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-065.webp",
+      "thumbnail_sha256": "0cb687a9bf13f4c5b906f3ff559f807c6c90c4d11145981db217d1f746bf44a5",
+      "thumbnail_bytes": 6446
+    },
+    {
+      "id": "avatar-066",
+      "name": "云游",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-066.png",
+      "original_sha256": "54ba0540776b5f8b51f419b6026fdd03f8cdf1d694e4f5e2921ef5dcd889bb0d",
+      "original_bytes": 1756738,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-066.webp",
+      "thumbnail_sha256": "2a43397d2497d6e84e6ac684f10863efec775882a884f82f8b11971d6fcbcea8",
+      "thumbnail_bytes": 3642
+    },
+    {
+      "id": "avatar-067",
+      "name": "太阳",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-067.png",
+      "original_sha256": "8b793e731c90c745fc2c1198ff2a8c25fc7cc5741d436f37ed58aac35341a848",
+      "original_bytes": 1979937,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-067.webp",
+      "thumbnail_sha256": "33d7a26f200fe575d4f6e320aa2997a56ac837ee3e5b7b1166caba9bade29aff",
+      "thumbnail_bytes": 7696
+    },
+    {
+      "id": "avatar-068",
+      "name": "小星球",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-068.png",
+      "original_sha256": "fb3b5f4e9f5305a8d2c1329a5f54506e8a24d0b48b7d6f9995c51e5ac49daa13",
+      "original_bytes": 2019944,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-068.webp",
+      "thumbnail_sha256": "f3838a9f0287c554a80933d9824298d20ac8ee1532216731b44bd55c0b584300",
+      "thumbnail_bytes": 8310
+    },
+    {
+      "id": "avatar-069",
+      "name": "雪人",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-069.png",
+      "original_sha256": "b450becc174e91bdebf3a61d03f2313e3b69bdbe439c6841072fddaceade4b94",
+      "original_bytes": 2229809,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-069.webp",
+      "thumbnail_sha256": "dbbdfb1b50b65835b823091b792bbdcad758fcf1b7a594ce0b38e2cc1f923526",
+      "thumbnail_bytes": 9620
+    },
+    {
+      "id": "avatar-070",
+      "name": "灯灯",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-070.png",
+      "original_sha256": "21fe7eaf8fb9de9bee551823626446e48f90dfa212d9028e38c582c001865786",
+      "original_bytes": 1831305,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-070.webp",
+      "thumbnail_sha256": "6bbca7c177bbcb86423c006b5586fe35b1c6601af9053ba1295b8ba4f6e05569",
+      "thumbnail_bytes": 6220
+    },
+    {
+      "id": "avatar-071",
+      "name": "花花",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-071.png",
+      "original_sha256": "ea3bbd2dceddf9ce0905a80c4fbdba4f732b64162ef114e79882c7f05b5d51dd",
+      "original_bytes": 2118315,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-071.webp",
+      "thumbnail_sha256": "321fae81da29b4fbec91ed888147971320715c3366425beae32656ed286131f7",
+      "thumbnail_bytes": 8704
+    },
+    {
+      "id": "avatar-072",
+      "name": "仙仙",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-072.png",
+      "original_sha256": "8766d43b1dc7b15e398fcdce5d094a1e313d59738203a6f5120671c37eaeaef0",
+      "original_bytes": 2157916,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-072.webp",
+      "thumbnail_sha256": "8291aefdc85e47d7a561cba08cc25b1985424d233d542b884f84e1efafff344b",
+      "thumbnail_bytes": 10148
+    },
+    {
+      "id": "avatar-073",
+      "name": "小菇",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-073.png",
+      "original_sha256": "ec906f856f30d7438841da6840576968fec304c03581e52bbe9b1450ea986595",
+      "original_bytes": 1925746,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-073.webp",
+      "thumbnail_sha256": "9f9606bf625f569bd055a8e34859764685386e92ffd2d0fff797fee675da0b03",
+      "thumbnail_bytes": 8176
+    },
+    {
+      "id": "avatar-074",
+      "name": "芽芽",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-074.png",
+      "original_sha256": "3ce91f06b649b93e9248136af1dd81e7ec30431694fbbdf37b83cf06552a7021",
+      "original_bytes": 1804040,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-074.webp",
+      "thumbnail_sha256": "34cf3c88a82cdd5c9c682dc909232f8e80fa113394b3958df2cea003a41d1102",
+      "thumbnail_bytes": 5512
+    },
+    {
+      "id": "avatar-075",
+      "name": "橡子",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-075.png",
+      "original_sha256": "22bf21b3babd27be21ee7fef6fea128189f71b7f4aab42057b1d1200ea8f0ed3",
+      "original_bytes": 2222546,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-075.webp",
+      "thumbnail_sha256": "1916e8717d5665cb8b072fdb6d7bbef64d8c3084208c1380119a742a4f4d9fd0",
+      "thumbnail_bytes": 9984
+    },
+    {
+      "id": "avatar-076",
+      "name": "柠柠",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-076.png",
+      "original_sha256": "e877ecf911091ddf7cfae4f89e21c595324efb33bb9c161405132406f1c0edd8",
+      "original_bytes": 1974116,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-076.webp",
+      "thumbnail_sha256": "5ad97fca30878ca9da1bcafc8ed1c36b4fa0428c2f773f62d546ab7ba62cd3eb",
+      "thumbnail_bytes": 7528
+    },
+    {
+      "id": "avatar-077",
+      "name": "桃桃",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-077.png",
+      "original_sha256": "7fae683b4d638d32d6467a803428c2e4b2e98ba770957451bd75607a2498cb30",
+      "original_bytes": 2002441,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-077.webp",
+      "thumbnail_sha256": "07fcb1c86fbc954434cf043ba08f3255f4108f31f628b2eeeab28ff88f4fe7e9",
+      "thumbnail_bytes": 6746
+    },
+    {
+      "id": "avatar-078",
+      "name": "梨梨",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-078.png",
+      "original_sha256": "238c727fadd2794af0282ff70b2a44d68e99335439c7237ebb5bafed0b322a93",
+      "original_bytes": 2016256,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-078.webp",
+      "thumbnail_sha256": "1abf27c145120c1c88fb019d55f72e6b491b27deff662cf839318333d3b36e4c",
+      "thumbnail_bytes": 6758
+    },
+    {
+      "id": "avatar-079",
+      "name": "草莓",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-079.png",
+      "original_sha256": "c77247b4828e6dd383edfcddd84d83967478c50d9b8413d53d54b88d6a22dc62",
+      "original_bytes": 2166358,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-079.webp",
+      "thumbnail_sha256": "4978ac4a9868f0a400a7eadfd2bcede844c561f43c0a511122554e07edfd3f1c",
+      "thumbnail_bytes": 9884
+    },
+    {
+      "id": "avatar-080",
+      "name": "南瓜",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-080.png",
+      "original_sha256": "b6840a5e5709eb2a248b8a61b04bf6399389db726f7e31a366185bfcf7a4d829",
+      "original_bytes": 2276211,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-080.webp",
+      "thumbnail_sha256": "8564e23317ebfcfb928dddb9671029eaa583f96022031aacfc6991aeec241b81",
+      "thumbnail_bytes": 9122
+    },
+    {
+      "id": "avatar-081",
+      "name": "龙龙",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-081.png",
+      "original_sha256": "04e6642459aea3c8e99ff2b35f95417ed7c007b1c30e6a01544192a767c98c08",
+      "original_bytes": 2150534,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-081.webp",
+      "thumbnail_sha256": "d657292e78725e0a3fe9da90656f7c48c7dc5bc48a2b30a42f59c4ac183f2ce1",
+      "thumbnail_bytes": 8588
+    },
+    {
+      "id": "avatar-082",
+      "name": "独角",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-082.png",
+      "original_sha256": "348012f6cd992642766d208303c3fb2b14afef3aa71a1d3336192ee96b082c02",
+      "original_bytes": 2022706,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-082.webp",
+      "thumbnail_sha256": "e212b77c48222e42bac13a9260e8e532aa0cd8b710513d5dd44354beff8c9e1e",
+      "thumbnail_bytes": 7174
+    },
+    {
+      "id": "avatar-083",
+      "name": "小精灵",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-083.png",
+      "original_sha256": "430e3fd47f21f44506afe52c94c12ff29fe351b4e6bfafda97c5b7ba4fc3f29f",
+      "original_bytes": 2244609,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-083.webp",
+      "thumbnail_sha256": "395cc559e97639057398ac2fe5d06e59732ab85a6c25a2fe4f25efe44cb097b6",
+      "thumbnail_bytes": 9660
+    },
+    {
+      "id": "avatar-084",
+      "name": "魔法师",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-084.png",
+      "original_sha256": "ee21e0457680ed909b1dc77720046d5717ab2a708198bb7320c8f4a2b51771a4",
+      "original_bytes": 2443047,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-084.webp",
+      "thumbnail_sha256": "9a40480d76cec9390c10d436ee079602d4f204b9796a4bc9683665c7111662a9",
+      "thumbnail_bytes": 10910
+    },
+    {
+      "id": "avatar-085",
+      "name": "小幽灵",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-085.png",
+      "original_sha256": "e4b11e1a3a3cf64f872b81fd63a1dfa83359822c596fbf18bb0fe875b92c31a1",
+      "original_bytes": 1783357,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-085.webp",
+      "thumbnail_sha256": "79d93de6f362b036b31bcf47e43557a9d31d29f60e0cc454b926af3c65c7021d",
+      "thumbnail_bytes": 3640
+    },
+    {
+      "id": "avatar-086",
+      "name": "面包",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-086.png",
+      "original_sha256": "388918cee6a54c5c510d4086f3f962741b439efa6842360c5413afae7d726e88",
+      "original_bytes": 2472194,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-086.webp",
+      "thumbnail_sha256": "a06d2a456c9a91ffc7ae6e17d1a461576000033de4b2829de259fd0f420070e9",
+      "thumbnail_bytes": 13206
+    },
+    {
+      "id": "avatar-087",
+      "name": "奶酪",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-087.png",
+      "original_sha256": "a0727adb1c0b5c37597d4f643ce95e0ef003f6aae97883dbdb94eb2948d87055",
+      "original_bytes": 1857814,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-087.webp",
+      "thumbnail_sha256": "7ff52cee99b05c26162d782f19842638104bf3e9415d941384b0c08a191511ec",
+      "thumbnail_bytes": 6276
+    },
+    {
+      "id": "avatar-088",
+      "name": "茶茶",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-088.png",
+      "original_sha256": "7958877a3a7aa38f072feba0d7ca8c9c678f3b5ef8b3e500a183b6b41fbee55d",
+      "original_bytes": 1919907,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-088.webp",
+      "thumbnail_sha256": "6c2a5c14dc68c7e5258095ada504a9bd9d02d1d407a40386ba602ba6b7780e05",
+      "thumbnail_bytes": 7432
+    },
+    {
+      "id": "avatar-089",
+      "name": "咖咖",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-089.png",
+      "original_sha256": "83956482c959bc17bfc3571e5396f32578758798db3779f4119da7487862b54d",
+      "original_bytes": 1931182,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-089.webp",
+      "thumbnail_sha256": "13d4f1a9d96b4419014342570823b95a45b67a08961881f5827bbc2294e5055a",
+      "thumbnail_bytes": 9156
+    },
+    {
+      "id": "avatar-090",
+      "name": "饭团",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-090.png",
+      "original_sha256": "6cfa598eed22a7c750a0bb8143ad13b66ec95fdf5a9449e568cc198823f669bc",
+      "original_bytes": 1914287,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-090.webp",
+      "thumbnail_sha256": "e008b7be04017f4480abf8a52fd7b177ec38624599a1abbf984da85df7cdcbd8",
+      "thumbnail_bytes": 4874
+    },
+    {
+      "id": "avatar-091",
+      "name": "画画",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-091.png",
+      "original_sha256": "6d06709753e6047ea26a9121cbf364bae2eef049e6c740fb203eabeacd545c53",
+      "original_bytes": 2188922,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-091.webp",
+      "thumbnail_sha256": "c6fcb70c775e6abc7fe4b5fcafb8ff9524828bc5ef61af1051bdf63e9308c668",
+      "thumbnail_bytes": 10626
+    },
+    {
+      "id": "avatar-092",
+      "name": "木木",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-092.png",
+      "original_sha256": "fe785dbfa037c67a22798857b1b9f000151c33485af935d5d56100eba2513234",
+      "original_bytes": 2256047,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-092.webp",
+      "thumbnail_sha256": "ff4cfd7626ada4c656f4f29736c3a16846e2500199b44886b9857bcaeb498133",
+      "thumbnail_bytes": 10084
+    },
+    {
+      "id": "avatar-093",
+      "name": "书书",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-093.png",
+      "original_sha256": "97b3963ea1e6050d4b8d503eb80fea927569770d71907b550347948022eccab8",
+      "original_bytes": 2412118,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-093.webp",
+      "thumbnail_sha256": "bcad8e4178199b3aafa9f6e21008bfbacfa65a35ab879fda07b00d2013080fa3",
+      "thumbnail_bytes": 10266
+    },
+    {
+      "id": "avatar-094",
+      "name": "旅旅",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-094.png",
+      "original_sha256": "8bc0c10e87c4d8b9feb27b3bb5b4545d1921c90e5d26aefd0a663908d8186437",
+      "original_bytes": 2145988,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-094.webp",
+      "thumbnail_sha256": "9a46ed725963a23515a786844306671247ac15eddc1c3ce9270034a6a56a1cdc",
+      "thumbnail_bytes": 9488
+    },
+    {
+      "id": "avatar-095",
+      "name": "厨厨",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-095.png",
+      "original_sha256": "89326892d72399b8dd8b6c3c1302a624178350244af15ce95ef110f85b4bc53a",
+      "original_bytes": 2056690,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-095.webp",
+      "thumbnail_sha256": "aa1f9a324c1e543e803138a3409253755b8934dee94c9ae7ebe5521a702ba1a7",
+      "thumbnail_bytes": 7336
+    },
+    {
+      "id": "avatar-096",
+      "name": "乐乐",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-096.png",
+      "original_sha256": "ffbe996b867f9a5850e7864de181d5c2fe47af393fbe538b4c6a9bc8fe960ea6",
+      "original_bytes": 2296727,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-096.webp",
+      "thumbnail_sha256": "ecee17761441c973e8f42b04658797edbe6b9982504d07ec017670564d6089ca",
+      "thumbnail_bytes": 8958
+    },
+    {
+      "id": "avatar-097",
+      "name": "航航",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-097.png",
+      "original_sha256": "a2db240ae2d179c6d08cff8e50e404d71e00d9c03c13eb5619b3b527d28592c0",
+      "original_bytes": 2324389,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-097.webp",
+      "thumbnail_sha256": "0c250fb3d9d8384eff56ef6127b95f7396f8c97d93c82ea575a80eb7653b2761",
+      "thumbnail_bytes": 12200
+    },
+    {
+      "id": "avatar-098",
+      "name": "园园",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-098.png",
+      "original_sha256": "2fe5f1b1a8d051cc5b76bd2b36af81aa3b5464ff375338765e485ed2ba1879b1",
+      "original_bytes": 2292676,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-098.webp",
+      "thumbnail_sha256": "60110a1f354add4e39f23bd0a5ae31c8b2d21c95cfb12833775506ec82e9597b",
+      "thumbnail_bytes": 11484
+    },
+    {
+      "id": "avatar-099",
+      "name": "阿宇",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-099.png",
+      "original_sha256": "97369d98d7e1ac21151ca5d8630cceaf7ae6905fe7aeddca6e5395d6ea43b1e9",
+      "original_bytes": 2160073,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-099.webp",
+      "thumbnail_sha256": "b195ff3cccc15966e84cb94f5cd7c09f787e1b5373f4387f2c049dcab7318895",
+      "thumbnail_bytes": 9568
+    },
+    {
+      "id": "avatar-100",
+      "name": "小福",
+      "generator": "builtin image_gen.imagegen",
+      "original_file": "avatar-100.png",
+      "original_sha256": "20314b845afee3cdd3b32c7b7fd57c15f89d554374220e46965b71f5db6a8703",
+      "original_bytes": 2149294,
+      "original_dimensions": [
+        1254,
+        1254
+      ],
+      "thumbnail_file": "avatar-100.webp",
+      "thumbnail_sha256": "935f9bb235470ae61b636d54622aad01a0f9ee83901a722f8fa8358a50510271",
+      "thumbnail_bytes": 7800
+    }
+  ]
+}

@@ -19,6 +19,7 @@
     { "binding": "SUBSCRIPTION_PROXY", "service": "brclio-xhs-subscription-proxy" }
   ],
   "browser": { "binding": "BROWSER" },
+  "triggers": { "crons": ["17 * * * *"] },
   "durable_objects": {
     "bindings": [
       { "name": "ACCOUNT_RUNTIME", "class_name": "AccountRuntime" },

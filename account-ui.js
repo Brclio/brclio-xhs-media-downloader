@@ -2,6 +2,7 @@
 import { MEMBERSHIP_PLANS, getMembershipPlan } from './lib/membership-plans.js';
 import { getAccountBridge } from './lib/browser-account.js';
 import { initializeCommerceUI } from './commerce-ui.js';
+import { initializeAvatarUI } from './avatar-ui.js';
 
 const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
 
@@ -116,6 +117,7 @@ export async function initializeAccountUI() {
   const element = id => document.getElementById(id);
   let busy = false, state = null, cooldownUntil = 0, cooldownTimer = null, googleEnabled = false, googleBusy = false, googleConfirmation = null;
   const commerce = initializeCommerceUI({ accountPanel: panel, openAccount: () => openAccountUI() });
+  const avatars = initializeAvatarUI({ panel, bridge, onState: value => render(value), isAccountBusy: () => busy, documentImpl: document, windowImpl: window });
   let paymentDraft = null, paymentBusy = false, paymentUserId = null, paymentEpoch = 0;
   const dialog = element('membership-dialog');
   let copiedEmail = '';
@@ -155,7 +157,7 @@ export async function initializeAccountUI() {
   };
   const updateButtons = () => {
     const blocked = busy || !state?.configured || ['initializing', 'secure_storage_unavailable'].includes(state?.status);
-    panel.querySelectorAll('button').forEach(button => { if (!dialog.contains(button)) button.disabled = blocked; });
+    panel.querySelectorAll('button').forEach(button => { if (!dialog.contains(button) && !button.closest('[data-avatar-ui]')) button.disabled = blocked; });
     element('account-open-membership').disabled = false;
     element('account-refresh').disabled = busy || !state?.configured || state?.status === 'initializing';
     element('account-refresh').textContent = state?.status === 'secure_storage_unavailable' ? '重试安全存储' : '刷新权益';
@@ -172,6 +174,7 @@ export async function initializeAccountUI() {
     element('account-send-code').textContent = remaining ? `${remaining} 秒后重发` : '发送验证码';
     if (!remaining && cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
     renderPurchase();
+    avatars?.renderControls();
   };
   const render = value => {
     if (!value) return;
@@ -184,6 +187,7 @@ export async function initializeAccountUI() {
       element('membership-order-status').textContent = '付款后提交所选套餐和付款方式，订单将显示为待核实。此操作不会自动扣款或开通会员。';
     }
     commerce?.updateAccount(value);
+    avatars?.updateAccount(value);
     window.dispatchEvent(new CustomEvent('brclio-account-update', { detail: value }));
     const account = value.account;
     element('account-login-form').hidden = Boolean(value.authenticated);

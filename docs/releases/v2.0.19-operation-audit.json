@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.19",
+  "status": "prepublication-audit",
+  "before": {
+    "sourceSha": "c9dd2a30e0f8c24ec585a273fd6727c8704d2c7a",
+    "cloudflareDeploymentId": "a8f7466f-9e87-430c-92ca-7177e90abf5c",
+    "cloudflareDeployedAt": "2026-10-12T13:02:44.721671Z",
+    "secretNamesCount": 24,
+    "secretNamesSha256": "a81530073a6a6ce8fa9a3d6d6b796308bc126a81f43190e308e142f6ddb60c1c",
+    "secretNamesUnchanged": true,
+    "secretValuesRead": false,
+    "r2Enabled": false,
+    "r2ReadOnlyProbeCode": 10042,
+    "privateDataRepo": true,
+    "privateDataRepoHead": "818d8a275f103a36e87704def9c13f81d81983db",
+    "publishedDesktopVersion": "2.0.18"
+  },
+  "scope": {
+    "storageProvider": "existing-private-github-repository",
+    "newStorageResources": false,
+    "newDurableObjectClasses": false,
+    "bindingsAndMigrationsUnchanged": true,
+    "newSchedule": "Hourly cleanup of expired unfinished avatar uploads; cursor also in GitHub",
+    "deployTargets": [
+      "existing main Cloudflare Worker",
+      "existing Cloudflare Pages project",
+      "desktop release v2.0.19"
+    ],
+    "untouchedTargets": [
+      "Python Worker",
+      "subscription proxy Worker",
+      "Android release"
+    ],
+    "accountBusinessFileUsedForTests": false
+  },
+  "sourceReview": {
+    "trackedDiffReviewed": true,
+    "untrackedFilesReviewed": true,
+    "unrelatedChangesFound": false,
+    "generatedOriginalsIgnoredByGit": true,
+    "privateCredentialsInChanges": false,
+    "reviewedFiles": 156,
+    "secretMarkerMatches": 0,
+    "r2AndAvatarStorageBindingResiduals": 0
+  },
+  "assets": {
+    "builtinCount": 100,
+    "generationTool": "builtin image_gen.imagegen",
+    "independentGenerationCalls": 100,
+    "compressedFormat": "WebP",
+    "dimensions": [
+      256,
+      256
+    ],
+    "compressedBytes": 905308,
+    "distinctCompressedHashes": 100,
+    "generatedOriginalBytes": 219763892,
+    "originalArchiveCopiesHashMatch": true
+  },
+  "validation": {
+    "python": {
+      "passed": 47,
+      "failed": 0
+    },
+    "packagedSourcesAndAvatarAssets": {
+      "passed": 11,
+      "failed": 0
+    },
+    "realRendererAvatarCatalog": {
+      "decoded": 100,
+      "widthsChecked": [
+        1280,
+        760,
+        390,
+        320
+      ]
+    },
+    "workerdGithub100MiB": {
+      "bytes": 104857600,
+      "parts": 34,
+      "sha256": "ffd74a1b748b760f82f94525f8808766d0f05eb5bca98756f8afc358cf543b19",
+      "maxGithubRequestsPerHttpRequest": 47,
+      "downloadGithubRequests": 36,
+      "collectionRecoveryAfterPointerWriteFailure": true
+    },
+    "productionAuthenticatedUpload": false,
+    "node": {
+      "total": 1712,
+      "passed": 1699,
+      "failed": 0,
+      "skipped": 13,
+      "skipReason": "Platform-specific native tests; formal platform builds run their own native acceptance gates"
+    },
+    "adapterIndependentReview": {
+      "passed": 13,
+      "failed": 0
+    },
+    "realRendererAdminCollection": "PASS: paginated compressed previews, exact original attachment, responsive view, logout isolation",
+    "cloudflareDryRun": "PASS: only existing bindings",
+    "pagesBuild": "PASS"
+  }
+}

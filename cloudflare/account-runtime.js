@@ -4,6 +4,8 @@ import { invokeHandler, MAX_ACCOUNT_BODY_BYTES, RequestTooLargeError } from './h
 import { createGithubStore } from '../server/auth/store.js';
 import { readConfig } from '../server/auth/config.js';
 import { webParseProxyPrivateConfig } from '../server/auth/web-parse-proxy.js';
+import { avatarBinaryResponse, cleanupAvatarUploads } from '../server/auth/avatar.js';
+import { getAvatarStorage } from '../server/auth/github-avatar-storage.js';
 
 export async function loadWebParseProxySettings(env, { store = createGithubStore(env) } = {}) {
   const { state } = await store.read();
@@ -12,8 +14,9 @@ export async function loadWebParseProxySettings(env, { store = createGithubStore
 
 /**
  * Private SQLite-backed Durable Object, using its larger CPU allowance for
- * account state and full feedback verification. GitHub remains the only data
- * store; this class never writes to Durable Object storage.
+ * account state and full feedback verification. The existing private GitHub
+ * repository holds account metadata and avatar originals/derivatives. Durable
+ * Object storage is not used as a second application database.
  */
 export class AccountRuntime {
   constructor(_state, env) {
@@ -22,6 +25,12 @@ export class AccountRuntime {
 
   async fetch(request) {
     try {
+      if (new URL(request.url).pathname === '/api/account_avatar') return avatarBinaryResponse(request, { storage: getAvatarStorage(this.env), config: readConfig(this.env) });
+      if (new URL(request.url).pathname === '/__internal/avatar-cleanup') {
+        if (request.method !== 'GET') return Response.json({ ok: false }, { status: 405 });
+        await cleanupAvatarUploads(getAvatarStorage(this.env));
+        return Response.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
+      }
       if (new URL(request.url).pathname === '/__internal/web-parse-proxy-settings') {
         const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
         if (request.method !== 'GET') return Response.json({ ok: false, error: { code: 'METHOD_NOT_ALLOWED' } }, { status: 405, headers: { ...headers, Allow: 'GET' } });
@@ -29,6 +38,7 @@ export class AccountRuntime {
       }
       return await invokeHandler(createAccountHandler({
         env: this.env,
+        avatarStorageAvailable: true,
         mailerFactory: createCloudflareMailer,
         // The public Worker preserves the platform-supplied header when calling
         // this private namespace; caller-controlled forwarding headers are ignored.

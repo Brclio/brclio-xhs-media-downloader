@@ -1,4 +1,5 @@
 import { openAccountUI } from "./account-ui.js";
+import { accountAvatarImage, resetAvatarImages } from "./lib/avatar-client.js";
 
 const RUNNING_STATUSES = new Set(["discovering", "downloading", "waiting"]);
 const STATUS_LABELS = {
@@ -235,6 +236,8 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   document.body.classList.add("is-desktop");
   document.title = "Brclio 小红书下载器";
   ui.navigation.hidden = false;
+  element("desktop-user-area").hidden = false;
+  element("desktop-location").hidden = false;
   ui.singlePanel.setAttribute("role", "tabpanel");
   ui.singlePanel.setAttribute("aria-labelledby", "single-note-tab");
   ui.singlePanel.tabIndex = 0;
@@ -259,6 +262,72 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     ["learning", element("desktop-learning-link"), element("desktop-learning-page")]
   ];
   for (const [, , page] of pages) page.classList.add("desktop-page");
+  const primaryPages = pages.filter(([, tab]) => tab.getAttribute("role") === "tab");
+  const userMenu = element("desktop-user-menu");
+  const userToggle = element("desktop-user-toggle");
+  const userAvatarImage = document.createElement("img");
+  userAvatarImage.className = "desktop-user-avatar-image";
+  userAvatarImage.width = userAvatarImage.height = 34;
+  userAvatarImage.alt = "";
+  userAvatarImage.hidden = true;
+  element("desktop-user-avatar").append(userAvatarImage);
+  let userAvatarRevision = 0;
+  const menuPages = pages.filter(([, tab]) => userMenu.contains(tab));
+  const menuItems = Array.from(userMenu.querySelectorAll('[role="menuitem"]'));
+  const pageLabels = { single: "单篇下载", live: "制作实况", profile: "主页批量", account: "账号与设备",
+    reviews: "用户评价", membership: "会员权益", feedback: "问题反馈", about: "关于软件", vip: "VIP 交流群", learning: "编程私教与书籍" };
+  // Only the three tools are tabs. Account commands and support buttons remain
+  // independently reachable, including when their destination is selected.
+  for (const [, tab, page] of pages) {
+    if (tab.getAttribute("role") !== "tab") page.setAttribute("role", "region");
+  }
+  function focusMenuItem(item) {
+    for (const candidate of menuItems) candidate.tabIndex = candidate === item ? 0 : -1;
+    item.focus({ preventScroll: true });
+    item.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+  function closeUserMenu() {
+    if (userMenu.matches(":popover-open")) userMenu.hidePopover();
+  }
+  userMenu.addEventListener("toggle", event => {
+    const open = event.newState === "open";
+    userToggle.setAttribute("aria-expanded", String(open));
+    if (open) {
+      if (!userMenu.contains(document.activeElement)) focusMenuItem(menuItems.find(item => item.getAttribute("aria-current") === "page") || menuItems[0]);
+    } else {
+      // Native light dismissal normally restores the invoker. Cover browsers
+      // that leave focus in the now hidden menu without stealing outside focus.
+      if (userMenu.contains(document.activeElement) || document.activeElement === document.body) userToggle.focus({ preventScroll: true });
+      for (const item of menuItems) item.tabIndex = -1;
+    }
+  });
+  userToggle.addEventListener("keydown", event => {
+    if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    event.preventDefault();
+    if (!userMenu.matches(":popover-open")) userMenu.showPopover({ source: userToggle });
+    focusMenuItem(event.key === "ArrowUp" ? menuItems.at(-1) : menuItems[0]);
+  });
+  userMenu.addEventListener("keydown", event => {
+    if (event.key === "Tab") {
+      // Let Tab continue through the visible workspace, skipping hidden items.
+      closeUserMenu();
+      userToggle.focus({ preventScroll: true });
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const index = menuItems.indexOf(document.activeElement);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? menuItems.length - 1
+      : (index + (event.key === "ArrowUp" ? menuItems.length - 1 : 1)) % menuItems.length;
+    focusMenuItem(menuItems[next]);
+  });
+  // Escape must restore the avatar even when the menu was opened by keyboard.
+  userMenu.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeUserMenu();
+    userToggle.focus({ preventScroll: true });
+  });
   element("desktop-about-update-mount").append(ui.updatePanel);
   element("desktop-about-update-actions").append(ui.updateCheck);
   ui.details.open = true;
@@ -383,7 +452,7 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   const updateNavigationOrientation = () => {
     ui.navigation.querySelector('[role="tablist"]')
       .setAttribute("aria-orientation", compactNavigation.matches ? "horizontal" : "vertical");
-    if (compactNavigation.matches) pages.find(([name]) => name === currentPage)?.[1]
+    if (compactNavigation.matches) primaryPages.find(([name]) => name === currentPage)?.[1]
       .scrollIntoView({ block: "nearest", inline: "nearest" });
   };
   updateNavigationOrientation();
@@ -427,11 +496,20 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     if (enteringLearning) returnFromLearning = currentPage;
     for (const [name, candidate, page] of pages) {
       const selected = candidate === tab;
-      candidate.setAttribute("aria-selected", String(selected));
-      candidate.tabIndex = selected ? 0 : -1;
+      if (candidate.getAttribute("role") === "tab") {
+        candidate.setAttribute("aria-selected", String(selected));
+        candidate.tabIndex = selected ? 0 : -1;
+      } else {
+        if (selected) candidate.setAttribute("aria-current", "page");
+        else candidate.removeAttribute("aria-current");
+      }
       page.hidden = !selected;
       if (selected) currentPage = name;
     }
+    if (!primaryPages.some(([, candidate]) => candidate === tab)) primaryPages[0][1].tabIndex = 0;
+    const selectedMenuPage = menuPages.some(([, candidate]) => candidate === tab);
+    userToggle.classList.toggle("is-current", selectedMenuPage);
+    element("desktop-current-page").textContent = pageLabels[currentPage];
     document.body.dataset.desktopPage = currentPage;
     if (currentPage === "live" && !liveFrame.hasAttribute("src")) liveFrame.src = liveFrame.dataset.src;
     if (currentPage === "membership" && !membershipFrame.hasAttribute("src")) membershipFrame.src = membershipFrame.dataset.src;
@@ -439,8 +517,10 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     if (currentPage === "learning" && !learningFrame.hasAttribute("src")) learningFrame.src = learningFrame.dataset.src;
     if (currentPage === "about") element("desktop-update-announcement").hidden = true;
     if (currentPage === "feedback") { void loadDiagnostics(); void loadFeedbackList(); }
-    if (focus) tab.focus();
-    if (compactNavigation.matches) tab.scrollIntoView({ block: "nearest", inline: "nearest" });
+    closeUserMenu();
+    if (selectedMenuPage) pages.find(([name]) => name === currentPage)[2].focus({ preventScroll: true });
+    else if (focus) tab.focus({ preventScroll: true });
+    if (compactNavigation.matches && tab.getAttribute("role") === "tab") tab.scrollIntoView({ block: "nearest", inline: "nearest" });
     if (enteringVip) restoreVipScroll(vipRevision);
     if (enteringLearning) restoreLearningScroll(learningScrollRevision);
     if (enteringMembership) restoreMembershipScroll(membershipRevision);
@@ -452,16 +532,17 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
   }
   for (const [, tab] of pages) {
     tab.addEventListener("click", () => selectTab(tab));
+  }
+  for (const [, tab] of primaryPages) {
     tab.addEventListener("keydown", (event) => {
       if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
-      const index = pages.findIndex(([, candidate]) => candidate === tab);
-      const next = event.key === "Home" ? 0 : event.key === "End" ? pages.length - 1
-        : (index + (["ArrowLeft", "ArrowUp"].includes(event.key) ? pages.length - 1 : 1)) % pages.length;
-      selectTab(pages[next][1], true);
+      const index = primaryPages.findIndex(([, candidate]) => candidate === tab);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? primaryPages.length - 1
+        : (index + (["ArrowLeft", "ArrowUp"].includes(event.key) ? primaryPages.length - 1 : 1)) % primaryPages.length;
+      selectTab(primaryPages[next][1], true);
     });
   }
-  element("desktop-account-shortcut").addEventListener("click", () => navigate("account"));
   element("desktop-feedback-login").addEventListener("click", () => navigate("account"));
   element("desktop-about-feedback").addEventListener("click", () => navigate("feedback"));
   element("desktop-announcement-open").addEventListener("click", () => {
@@ -543,9 +624,35 @@ export async function initializeDesktopUI({ onInfo = () => {}, onCopyNoteLink, o
     const account = next.account;
     element("desktop-account-summary").textContent = next.authenticated ? account?.user?.email || "已登录软件账号" : "登录软件账号";
     const membership = account?.membership;
-    element("desktop-account-summary-status").textContent = !next.authenticated ? "查看会员与设备授权"
+    const status = !next.authenticated ? "查看会员与设备授权"
       : !next.verified ? "授权状态待刷新" : membership?.type === "permanent" ? "永久会员"
         : membership?.active ? "有效期会员" : membership?.type === "duration" ? "会员已到期" : "普通用户";
+    element("desktop-account-summary-status").textContent = status;
+    const email = next.authenticated ? account?.user?.email || "" : "";
+    element("desktop-user-name").textContent = next.authenticated ? email.split("@")[0] || "我的账号" : "登录账号";
+    element("desktop-user-status").textContent = next.authenticated ? status : "账号与会员";
+    element("desktop-user-initial").textContent = Array.from(email)[0]?.toLocaleUpperCase() || "B";
+    element("desktop-user-initial").hidden = !next.authenticated;
+    element("desktop-user-guest-icon").toggleAttribute("hidden", Boolean(next.authenticated));
+    if (!next.authenticated) resetAvatarImages(bridge);
+    const avatarRevision = ++userAvatarRevision;
+    userAvatarImage.hidden = true;
+    userAvatarImage.removeAttribute("src");
+    userAvatarImage.onerror = () => {
+      if (avatarRevision !== userAvatarRevision) return;
+      userAvatarImage.hidden = true;
+      element("desktop-user-initial").hidden = !next.authenticated;
+      element("desktop-user-guest-icon").toggleAttribute("hidden", Boolean(next.authenticated));
+    };
+    void accountAvatarImage(next.authenticated ? account?.user : null, bridge).then(url => {
+      if (avatarRevision !== userAvatarRevision || !url) return;
+      userAvatarImage.src = url;
+      userAvatarImage.hidden = false;
+      element("desktop-user-initial").hidden = true;
+      element("desktop-user-guest-icon").setAttribute("hidden", "");
+    });
+    element("desktop-user-avatar").dataset.member = String(Boolean(next.authenticated && next.verified && (membership?.active || membership?.type === "permanent")));
+    userToggle.setAttribute("aria-label", next.authenticated ? `${email || "我的账号"}，${status}，打开用户菜单` : "登录账号，打开用户菜单");
     renderFeedbackControls();
     if (previousUserId !== feedbackUserId() && currentPage === "feedback") void loadFeedbackList();
   }

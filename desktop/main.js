@@ -164,6 +164,10 @@ function registerIpc() {
   handle('desktop:account-google-login', accountAction(() => accountClient.loginWithGoogle(url => shell.openExternal(url))));
   handle('desktop:account-google-cancel', accountAction(() => accountClient.cancelGoogleLogin()));
   handle('desktop:commerce-request', accountAction((action, input = {}) => accountClient.commerceRequest(action, input)));
+  handle('desktop:avatar-select', accountAction(input => accountClient.selectAccountAvatar(input)));
+  handle('desktop:avatar-upload', accountAction(input => accountClient.uploadAccountAvatar(input)));
+  handle('desktop:avatar-thumbnail', accountAction(input => accountClient.getAccountAvatarThumbnail(input)));
+  handle('desktop:avatar-original', accountAction(input => accountClient.getAccountAvatarOriginal(input)));
   handle('desktop:account-refresh', accountAction(async () => {
     // Only an explicit user action retries denied Keychain access. Background
     // entitlement checks must never keep reopening the system password dialog.

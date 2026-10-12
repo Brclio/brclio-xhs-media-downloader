@@ -37,7 +37,7 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   // Historical v1.5 artifacts predate the update manager.
   try { await stat(path.join(sourceDirectory, 'desktop/update-manager.js')); expectedSources.push('desktop/update-manager.js'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
-  for (const name of ['account-ui.js', 'account-ui.css', 'commerce-ui.js', 'commerce-ui.css', 'download.html', 'download.css', 'download.js',
+  for (const name of ['account-ui.js', 'account-ui.css', 'avatar-ui.js', 'commerce-ui.js', 'commerce-ui.css', 'download.html', 'download.css', 'download.js',
     'changelog.js', 'ios-shortcut.js', 'ios-shortcut.css', 'product.html', 'product.css', 'product.js',
     'live.html', 'live.css', 'live.js', 'lib/live-photo-maker.js', 'lib/live-photo-format.js', 'lib/live-photo-package.js',
     'lib/live-photo-heic.js', 'lib/live-photo-heic-encoder.js', 'lib/live-photo-heic-worker.js', 'assets/vendor/heic/heic-encoder.js',
@@ -47,7 +47,7 @@ export async function verifyAsar(archive, sourceDirectory, version) {
     'desktop/windows-update.js', 'desktop/install-confirmation.js', 'desktop/mac-update-cleanup.js',
     'desktop/startup-ready.js', 'desktop/mac-update-history.js', 'desktop/image-clipboard.js',
     'desktop/native-clipboard.js', 'desktop/native-video-download.js', 'desktop/xhs-login-reset.js', 'desktop/update-proxy.js', 'desktop/system-proxy.js', 'desktop/proxy-core-supervisor.cjs',
-    'lib/image-dimensions.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/review-nicknames.js', 'lib/browser-account.js', 'lib/member-video-handler.js', 'lib/video-policy.js',
+    'lib/image-dimensions.js', 'lib/diagnostic-sanitize.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/review-nicknames.js', 'lib/browser-account.js', 'lib/avatar-client.js', 'lib/account-avatar-transfer.js', 'lib/member-video-handler.js', 'lib/video-policy.js',
     'lib/parse-verification.js', 'lib/browser-python.js', 'lib/browser-python-worker.js']) {
     try { await stat(path.join(sourceDirectory, name)); expectedSources.push(name); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -77,6 +77,15 @@ export async function verifyAsar(archive, sourceDirectory, version) {
   for (const name of expectedSources) {
     assert.ok(extract(name).equals(await readFile(path.join(sourceDirectory, name))),
       `Packaged source differs from release tag: ${name}`);
+  }
+  if (expectedSources.includes('avatar-ui.js')) {
+    const base = 'assets/avatars/';
+    const manifest = JSON.parse(await readFile(path.join(sourceDirectory, base + 'manifest.json'), 'utf8'));
+    assert.equal(manifest.length, 100, 'Packaged avatar catalog must contain all 100 choices');
+    for (const name of ['manifest.json', ...manifest.map(item => `${item.id}.webp`)]) {
+      assert.ok(extract(base + name).equals(await readFile(path.join(sourceDirectory, base + name))),
+        `Packaged avatar asset differs from release tag: ${name}`);
+    }
   }
   // Payment images must be the exact reviewed codes. Loading the purchase UI
   // alone does not establish that its packaged QR assets are present or intact.

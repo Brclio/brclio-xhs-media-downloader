@@ -1,0 +1,716 @@
+{
+  "mode": "builtin",
+  "tool": "image_gen.imagegen",
+  "count": 100,
+  "dimensions": {
+    "width": 256,
+    "height": 256
+  },
+  "compression": {
+    "format": "webp",
+    "quality": 86,
+    "method": 6
+  },
+  "items": [
+    {
+      "id": "avatar-001",
+      "name": "晴空",
+      "subject": "adult East Asian woman with short tousled charcoal hair, round clear glasses and a mustard cardigan, gentle smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult East Asian woman with short tousled charcoal hair, round clear glasses and a mustard cardigan, gentle smile.",
+      "url": "/assets/avatars/avatar-001.webp"
+    },
+    {
+      "id": "avatar-002",
+      "name": "远山",
+      "subject": "adult East Asian man with soft wavy dark hair, blue overshirt and calm smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult East Asian man with soft wavy dark hair, blue overshirt and calm smile.",
+      "url": "/assets/avatars/avatar-002.webp"
+    },
+    {
+      "id": "avatar-003",
+      "name": "暖风",
+      "subject": "adult Black woman with a rounded natural afro, red scarf and joyful smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult Black woman with a rounded natural afro, red scarf and joyful smile.",
+      "url": "/assets/avatars/avatar-003.webp"
+    },
+    {
+      "id": "avatar-004",
+      "name": "晨光",
+      "subject": "adult South Asian man with a neat beard, muted teal sweater and kind eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult South Asian man with a neat beard, muted teal sweater and kind eyes.",
+      "url": "/assets/avatars/avatar-004.webp"
+    },
+    {
+      "id": "avatar-005",
+      "name": "小满",
+      "subject": "adult woman with a short auburn bob, cream shirt and tiny blue earrings",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult woman with a short auburn bob, cream shirt and tiny blue earrings.",
+      "url": "/assets/avatars/avatar-005.webp"
+    },
+    {
+      "id": "avatar-006",
+      "name": "星野",
+      "subject": "adult nonbinary person with a silver pixie haircut and a soft blue hoodie",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult nonbinary person with a silver pixie haircut and a soft blue hoodie.",
+      "url": "/assets/avatars/avatar-006.webp"
+    },
+    {
+      "id": "avatar-007",
+      "name": "青禾",
+      "subject": "adult East Asian woman with long dark braid over one shoulder and a sage green knit top",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult East Asian woman with long dark braid over one shoulder and a sage green knit top.",
+      "url": "/assets/avatars/avatar-007.webp"
+    },
+    {
+      "id": "avatar-008",
+      "name": "晚晴",
+      "subject": "adult Black man with close-cropped hair, understated round glasses and a terracotta sweatshirt",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult Black man with close-cropped hair, understated round glasses and a terracotta sweatshirt.",
+      "url": "/assets/avatars/avatar-008.webp"
+    },
+    {
+      "id": "avatar-009",
+      "name": "云朵",
+      "subject": "older adult woman with silver curly hair, cream sweater and a warm knowing smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: older adult woman with silver curly hair, cream sweater and a warm knowing smile.",
+      "url": "/assets/avatars/avatar-009.webp"
+    },
+    {
+      "id": "avatar-010",
+      "name": "向阳",
+      "subject": "older adult man with white hair and white beard, ochre vest and friendly smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: older adult man with white hair and white beard, ochre vest and friendly smile.",
+      "url": "/assets/avatars/avatar-010.webp"
+    },
+    {
+      "id": "avatar-011",
+      "name": "溪流",
+      "subject": "adult Southeast Asian woman with chin-length black hair, blue headband and warm cream blouse",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult Southeast Asian woman with chin-length black hair, blue headband and warm cream blouse.",
+      "url": "/assets/avatars/avatar-011.webp"
+    },
+    {
+      "id": "avatar-012",
+      "name": "山海",
+      "subject": "adult Latino man with dark curly hair, a small moustache and a muted red jacket",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult Latino man with dark curly hair, a small moustache and a muted red jacket.",
+      "url": "/assets/avatars/avatar-012.webp"
+    },
+    {
+      "id": "avatar-013",
+      "name": "橙光",
+      "subject": "adult woman with voluminous copper curly hair, soft freckles and a blue collar",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult woman with voluminous copper curly hair, soft freckles and a blue collar.",
+      "url": "/assets/avatars/avatar-013.webp"
+    },
+    {
+      "id": "avatar-014",
+      "name": "月白",
+      "subject": "adult East Asian man with long dark hair tied in a small bun and cream linen shirt",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult East Asian man with long dark hair tied in a small bun and cream linen shirt.",
+      "url": "/assets/avatars/avatar-014.webp"
+    },
+    {
+      "id": "avatar-015",
+      "name": "小鹿",
+      "subject": "adult woman wearing a muted olive hijab, warm smile and cream blouse",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult woman wearing a muted olive hijab, warm smile and cream blouse.",
+      "url": "/assets/avatars/avatar-015.webp"
+    },
+    {
+      "id": "avatar-016",
+      "name": "拾光",
+      "subject": "adult nonbinary person with short tight purple-black curls and a yellow crewneck",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult nonbinary person with short tight purple-black curls and a yellow crewneck.",
+      "url": "/assets/avatars/avatar-016.webp"
+    },
+    {
+      "id": "avatar-017",
+      "name": "清茶",
+      "subject": "adult East Asian woman with small oval glasses, neat black bob and dusty rose sweater",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult East Asian woman with small oval glasses, neat black bob and dusty rose sweater.",
+      "url": "/assets/avatars/avatar-017.webp"
+    },
+    {
+      "id": "avatar-018",
+      "name": "阿蓝",
+      "subject": "adult Black woman with long microbraids gathered up, small gold stud earrings and a blue shirt",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult Black woman with long microbraids gathered up, small gold stud earrings and a blue shirt.",
+      "url": "/assets/avatars/avatar-018.webp"
+    },
+    {
+      "id": "avatar-019",
+      "name": "暖阳",
+      "subject": "adult Pacific Islander man with thick dark wavy hair and a warm yellow shirt",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult Pacific Islander man with thick dark wavy hair and a warm yellow shirt.",
+      "url": "/assets/avatars/avatar-019.webp"
+    },
+    {
+      "id": "avatar-020",
+      "name": "雾岚",
+      "subject": "adult woman with pale skin, dark shoulder-length waves and a muted red beret",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult woman with pale skin, dark shoulder-length waves and a muted red beret.",
+      "url": "/assets/avatars/avatar-020.webp"
+    },
+    {
+      "id": "avatar-021",
+      "name": "墨墨",
+      "subject": "black cat with amber eyes and a tiny blue neckerchief",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: black cat with amber eyes and a tiny blue neckerchief.",
+      "url": "/assets/avatars/avatar-021.webp"
+    },
+    {
+      "id": "avatar-022",
+      "name": "奶糖",
+      "subject": "cream fluffy cat with round cheeks and a muted red bow tie",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: cream fluffy cat with round cheeks and a muted red bow tie.",
+      "url": "/assets/avatars/avatar-022.webp"
+    },
+    {
+      "id": "avatar-023",
+      "name": "橘子",
+      "subject": "ginger tabby cat with white muzzle and a mustard collar",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: ginger tabby cat with white muzzle and a mustard collar.",
+      "url": "/assets/avatars/avatar-023.webp"
+    },
+    {
+      "id": "avatar-024",
+      "name": "芝麻",
+      "subject": "gray tuxedo cat with white chin and wise green eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: gray tuxedo cat with white chin and wise green eyes.",
+      "url": "/assets/avatars/avatar-024.webp"
+    },
+    {
+      "id": "avatar-025",
+      "name": "雪球",
+      "subject": "white longhaired cat with pale blue eyes and one tiny gold bell",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: white longhaired cat with pale blue eyes and one tiny gold bell.",
+      "url": "/assets/avatars/avatar-025.webp"
+    },
+    {
+      "id": "avatar-026",
+      "name": "阿柴",
+      "subject": "shiba inu dog with warm ginger fur and a blue bandana",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: shiba inu dog with warm ginger fur and a blue bandana.",
+      "url": "/assets/avatars/avatar-026.webp"
+    },
+    {
+      "id": "avatar-027",
+      "name": "团团",
+      "subject": "corgi dog with upright ears, white blaze and cheerful open-mouthed smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: corgi dog with upright ears, white blaze and cheerful open-mouthed smile.",
+      "url": "/assets/avatars/avatar-027.webp"
+    },
+    {
+      "id": "avatar-028",
+      "name": "花卷",
+      "subject": "brown-and-white beagle dog with floppy ears and a red scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: brown-and-white beagle dog with floppy ears and a red scarf.",
+      "url": "/assets/avatars/avatar-028.webp"
+    },
+    {
+      "id": "avatar-029",
+      "name": "可乐",
+      "subject": "black Labrador dog with glossy friendly eyes and a mustard collar",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: black Labrador dog with glossy friendly eyes and a mustard collar.",
+      "url": "/assets/avatars/avatar-029.webp"
+    },
+    {
+      "id": "avatar-030",
+      "name": "松饼",
+      "subject": "cream poodle dog with softly rounded curls and a blue bow tie",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: cream poodle dog with softly rounded curls and a blue bow tie.",
+      "url": "/assets/avatars/avatar-030.webp"
+    },
+    {
+      "id": "avatar-031",
+      "name": "栗栗",
+      "subject": "red fox with elegant pointed ears, white cheek tufts and calm smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: red fox with elegant pointed ears, white cheek tufts and calm smile.",
+      "url": "/assets/avatars/avatar-031.webp"
+    },
+    {
+      "id": "avatar-032",
+      "name": "松果",
+      "subject": "red squirrel with rounded ears, a big fluffy tail visible behind one shoulder and a tiny blue scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: red squirrel with rounded ears, a big fluffy tail visible behind one shoulder and a tiny blue scarf.",
+      "url": "/assets/avatars/avatar-032.webp"
+    },
+    {
+      "id": "avatar-033",
+      "name": "竹竹",
+      "subject": "giant panda with bright friendly eyes and one small leaf near one ear",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: giant panda with bright friendly eyes and one small leaf near one ear.",
+      "url": "/assets/avatars/avatar-033.webp"
+    },
+    {
+      "id": "avatar-034",
+      "name": "棕棕",
+      "subject": "brown bear with round ears, cream muzzle and red neckerchief",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: brown bear with round ears, cream muzzle and red neckerchief.",
+      "url": "/assets/avatars/avatar-034.webp"
+    },
+    {
+      "id": "avatar-035",
+      "name": "小獭",
+      "subject": "sea otter with whiskers, cream muzzle and a tiny blue vest",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: sea otter with whiskers, cream muzzle and a tiny blue vest.",
+      "url": "/assets/avatars/avatar-035.webp"
+    },
+    {
+      "id": "avatar-036",
+      "name": "茸茸",
+      "subject": "white rabbit with relaxed long ears and a yellow scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: white rabbit with relaxed long ears and a yellow scarf.",
+      "url": "/assets/avatars/avatar-036.webp"
+    },
+    {
+      "id": "avatar-037",
+      "name": "点点",
+      "subject": "spotted deer with gentle eyes, small antlers and a blue collar ribbon",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: spotted deer with gentle eyes, small antlers and a blue collar ribbon.",
+      "url": "/assets/avatars/avatar-037.webp"
+    },
+    {
+      "id": "avatar-038",
+      "name": "跳跳",
+      "subject": "kangaroo with warm tan fur, round curious eyes and a red bandana",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: kangaroo with warm tan fur, round curious eyes and a red bandana.",
+      "url": "/assets/avatars/avatar-038.webp"
+    },
+    {
+      "id": "avatar-039",
+      "name": "阿考",
+      "subject": "koala with fluffy gray ears, broad nose and one eucalyptus leaf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: koala with fluffy gray ears, broad nose and one eucalyptus leaf.",
+      "url": "/assets/avatars/avatar-039.webp"
+    },
+    {
+      "id": "avatar-040",
+      "name": "绵绵",
+      "subject": "sheep with fluffy cream wool, small brown face and a blue neckerchief",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: sheep with fluffy cream wool, small brown face and a blue neckerchief.",
+      "url": "/assets/avatars/avatar-040.webp"
+    },
+    {
+      "id": "avatar-041",
+      "name": "咕咕",
+      "subject": "round barn owl with a heart-shaped cream face and gentle amber eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: round barn owl with a heart-shaped cream face and gentle amber eyes.",
+      "url": "/assets/avatars/avatar-041.webp"
+    },
+    {
+      "id": "avatar-042",
+      "name": "啾啾",
+      "subject": "small blue-and-yellow songbird with a slightly tilted head",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: small blue-and-yellow songbird with a slightly tilted head.",
+      "url": "/assets/avatars/avatar-042.webp"
+    },
+    {
+      "id": "avatar-043",
+      "name": "小企鹅",
+      "subject": "penguin with a cream belly, rosy cheeks and a red knitted scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: penguin with a cream belly, rosy cheeks and a red knitted scarf.",
+      "url": "/assets/avatars/avatar-043.webp"
+    },
+    {
+      "id": "avatar-044",
+      "name": "火火",
+      "subject": "flamingo with a gracefully curved neck and a tiny blue sailor collar",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: flamingo with a gracefully curved neck and a tiny blue sailor collar.",
+      "url": "/assets/avatars/avatar-044.webp"
+    },
+    {
+      "id": "avatar-045",
+      "name": "金金",
+      "subject": "golden retriever dog with floppy ears, soft golden fur and a muted red scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: golden retriever dog with floppy ears, soft golden fur and a muted red scarf.",
+      "url": "/assets/avatars/avatar-045.webp"
+    },
+    {
+      "id": "avatar-046",
+      "name": "小浣",
+      "subject": "raccoon with a dark eye mask, rounded ears and a mustard neckerchief",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: raccoon with a dark eye mask, rounded ears and a mustard neckerchief.",
+      "url": "/assets/avatars/avatar-046.webp"
+    },
+    {
+      "id": "avatar-047",
+      "name": "刺刺",
+      "subject": "hedgehog with soft brown quills, cream face and one tiny blue flower",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: hedgehog with soft brown quills, cream face and one tiny blue flower.",
+      "url": "/assets/avatars/avatar-047.webp"
+    },
+    {
+      "id": "avatar-048",
+      "name": "胖达",
+      "subject": "red panda with rust fur, white eyebrow markings and round black eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: red panda with rust fur, white eyebrow markings and round black eyes.",
+      "url": "/assets/avatars/avatar-048.webp"
+    },
+    {
+      "id": "avatar-049",
+      "name": "阿呱",
+      "subject": "friendly green frog with rounded eyes and a cream sailor collar",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly green frog with rounded eyes and a cream sailor collar.",
+      "url": "/assets/avatars/avatar-049.webp"
+    },
+    {
+      "id": "avatar-050",
+      "name": "小鲸",
+      "subject": "small blue whale viewed as a friendly upright rounded portrait, tiny cream cheek highlight",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: small blue whale viewed as a friendly upright rounded portrait, tiny cream cheek highlight.",
+      "url": "/assets/avatars/avatar-050.webp"
+    },
+    {
+      "id": "avatar-051",
+      "name": "小龟",
+      "subject": "gentle green tortoise with a brown shell peeking behind shoulders and a blue scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: gentle green tortoise with a brown shell peeking behind shoulders and a blue scarf.",
+      "url": "/assets/avatars/avatar-051.webp"
+    },
+    {
+      "id": "avatar-052",
+      "name": "波波",
+      "subject": "round pufferfish with tiny spines, pale cream body and warm orange accents",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: round pufferfish with tiny spines, pale cream body and warm orange accents.",
+      "url": "/assets/avatars/avatar-052.webp"
+    },
+    {
+      "id": "avatar-053",
+      "name": "海蓝",
+      "subject": "friendly blue octopus with softly curled arms framing a smiling face",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly blue octopus with softly curled arms framing a smiling face.",
+      "url": "/assets/avatars/avatar-053.webp"
+    },
+    {
+      "id": "avatar-054",
+      "name": "虾米",
+      "subject": "warm coral shrimp with expressive dark eyes and a neat simple curved silhouette",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: warm coral shrimp with expressive dark eyes and a neat simple curved silhouette.",
+      "url": "/assets/avatars/avatar-054.webp"
+    },
+    {
+      "id": "avatar-055",
+      "name": "小海豹",
+      "subject": "plump gray seal with a cream muzzle, fine whiskers and a small blue scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: plump gray seal with a cream muzzle, fine whiskers and a small blue scarf.",
+      "url": "/assets/avatars/avatar-055.webp"
+    },
+    {
+      "id": "avatar-056",
+      "name": "豆豆",
+      "subject": "friendly duck with warm yellow feathers, orange bill and a blue cap",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly duck with warm yellow feathers, orange bill and a blue cap.",
+      "url": "/assets/avatars/avatar-056.webp"
+    },
+    {
+      "id": "avatar-057",
+      "name": "咪噜",
+      "subject": "friendly capybara with warm brown fur, small ears and a cream headband",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly capybara with warm brown fur, small ears and a cream headband.",
+      "url": "/assets/avatars/avatar-057.webp"
+    },
+    {
+      "id": "avatar-058",
+      "name": "萌牛",
+      "subject": "gentle brown Highland cow with shaggy fringe and small cream horns",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: gentle brown Highland cow with shaggy fringe and small cream horns.",
+      "url": "/assets/avatars/avatar-058.webp"
+    },
+    {
+      "id": "avatar-059",
+      "name": "斑斑",
+      "subject": "friendly zebra with rounded ears and a mustard scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly zebra with rounded ears and a mustard scarf.",
+      "url": "/assets/avatars/avatar-059.webp"
+    },
+    {
+      "id": "avatar-060",
+      "name": "长颈鹿",
+      "subject": "giraffe with a long elegant neck, simple warm spots and a blue bow tie",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: giraffe with a long elegant neck, simple warm spots and a blue bow tie.",
+      "url": "/assets/avatars/avatar-060.webp"
+    },
+    {
+      "id": "avatar-061",
+      "name": "小蓝",
+      "subject": "friendly small retro robot with rounded blue metal head, two warm dot eyes and a cream body",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly small retro robot with rounded blue metal head, two warm dot eyes and a cream body.",
+      "url": "/assets/avatars/avatar-061.webp"
+    },
+    {
+      "id": "avatar-062",
+      "name": "阿圆",
+      "subject": "friendly round cream robot with one little yellow antenna and red cheek lights",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly round cream robot with one little yellow antenna and red cheek lights.",
+      "url": "/assets/avatars/avatar-062.webp"
+    },
+    {
+      "id": "avatar-063",
+      "name": "小铜",
+      "subject": "friendly copper-toned robot with rounded square head, blue eyes and cream neck joint",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly copper-toned robot with rounded square head, blue eyes and cream neck joint.",
+      "url": "/assets/avatars/avatar-063.webp"
+    },
+    {
+      "id": "avatar-064",
+      "name": "星星",
+      "subject": "friendly astronaut in a cream helmet with a clear open visor revealing a smiling adult face",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly astronaut in a cream helmet with a clear open visor revealing a smiling adult face.",
+      "url": "/assets/avatars/avatar-064.webp"
+    },
+    {
+      "id": "avatar-065",
+      "name": "月球",
+      "subject": "friendly round moon creature with cream crater freckles, tiny navy eyes and a blue scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly round moon creature with cream crater freckles, tiny navy eyes and a blue scarf.",
+      "url": "/assets/avatars/avatar-065.webp"
+    },
+    {
+      "id": "avatar-066",
+      "name": "云游",
+      "subject": "friendly puffy cream cloud character with small rosy cheeks and tiny blue feet barely visible",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly puffy cream cloud character with small rosy cheeks and tiny blue feet barely visible.",
+      "url": "/assets/avatars/avatar-066.webp"
+    },
+    {
+      "id": "avatar-067",
+      "name": "太阳",
+      "subject": "friendly warm golden sun character with a simple round face and softly curved rays",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly warm golden sun character with a simple round face and softly curved rays.",
+      "url": "/assets/avatars/avatar-067.webp"
+    },
+    {
+      "id": "avatar-068",
+      "name": "小星球",
+      "subject": "friendly muted blue planet character with a delicate golden orbit ring and tiny smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly muted blue planet character with a delicate golden orbit ring and tiny smile.",
+      "url": "/assets/avatars/avatar-068.webp"
+    },
+    {
+      "id": "avatar-069",
+      "name": "雪人",
+      "subject": "friendly snowman portrait with cream-white rounded face, coral nose and a blue scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly snowman portrait with cream-white rounded face, coral nose and a blue scarf.",
+      "url": "/assets/avatars/avatar-069.webp"
+    },
+    {
+      "id": "avatar-070",
+      "name": "灯灯",
+      "subject": "friendly little lantern spirit with a warm glowing yellow body, tiny face and a blue top",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly little lantern spirit with a warm glowing yellow body, tiny face and a blue top.",
+      "url": "/assets/avatars/avatar-070.webp"
+    },
+    {
+      "id": "avatar-071",
+      "name": "花花",
+      "subject": "friendly daisy flower character with soft white petals, warm yellow face and two green leaves",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly daisy flower character with soft white petals, warm yellow face and two green leaves.",
+      "url": "/assets/avatars/avatar-071.webp"
+    },
+    {
+      "id": "avatar-072",
+      "name": "仙仙",
+      "subject": "friendly small cactus in a muted blue pot with a warm smiling face and one coral flower",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly small cactus in a muted blue pot with a warm smiling face and one coral flower.",
+      "url": "/assets/avatars/avatar-072.webp"
+    },
+    {
+      "id": "avatar-073",
+      "name": "小菇",
+      "subject": "friendly mushroom character with a warm red cap, cream spots and a smiling cream stalk",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly mushroom character with a warm red cap, cream spots and a smiling cream stalk.",
+      "url": "/assets/avatars/avatar-073.webp"
+    },
+    {
+      "id": "avatar-074",
+      "name": "芽芽",
+      "subject": "friendly two-leaf seedling character in a terracotta pot with dark dot eyes and a small smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly two-leaf seedling character in a terracotta pot with dark dot eyes and a small smile.",
+      "url": "/assets/avatars/avatar-074.webp"
+    },
+    {
+      "id": "avatar-075",
+      "name": "橡子",
+      "subject": "friendly acorn character with a textured brown cap, warm cream face and a blue scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly acorn character with a textured brown cap, warm cream face and a blue scarf.",
+      "url": "/assets/avatars/avatar-075.webp"
+    },
+    {
+      "id": "avatar-076",
+      "name": "柠柠",
+      "subject": "friendly lemon character with a soft yellow round body, one green leaf and tiny smiling eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly lemon character with a soft yellow round body, one green leaf and tiny smiling eyes.",
+      "url": "/assets/avatars/avatar-076.webp"
+    },
+    {
+      "id": "avatar-077",
+      "name": "桃桃",
+      "subject": "friendly peach character with warm coral cheeks, one leaf and a cream highlight",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly peach character with warm coral cheeks, one leaf and a cream highlight.",
+      "url": "/assets/avatars/avatar-077.webp"
+    },
+    {
+      "id": "avatar-078",
+      "name": "梨梨",
+      "subject": "friendly pale green pear character with a short stem, cream cheeks and a gentle smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly pale green pear character with a short stem, cream cheeks and a gentle smile.",
+      "url": "/assets/avatars/avatar-078.webp"
+    },
+    {
+      "id": "avatar-079",
+      "name": "草莓",
+      "subject": "friendly strawberry character with a rounded red body, muted green leafy top and tiny warm eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly strawberry character with a rounded red body, muted green leafy top and tiny warm eyes.",
+      "url": "/assets/avatars/avatar-079.webp"
+    },
+    {
+      "id": "avatar-080",
+      "name": "南瓜",
+      "subject": "friendly orange pumpkin character with a small leaf, soft rounded ridges and a blue scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly orange pumpkin character with a small leaf, soft rounded ridges and a blue scarf.",
+      "url": "/assets/avatars/avatar-080.webp"
+    },
+    {
+      "id": "avatar-081",
+      "name": "龙龙",
+      "subject": "gentle little blue dragon with small cream horns, rounded snout and friendly golden eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: gentle little blue dragon with small cream horns, rounded snout and friendly golden eyes.",
+      "url": "/assets/avatars/avatar-081.webp"
+    },
+    {
+      "id": "avatar-082",
+      "name": "独角",
+      "subject": "friendly white unicorn with a small golden horn, muted blue mane and a calm smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly white unicorn with a small golden horn, muted blue mane and a calm smile.",
+      "url": "/assets/avatars/avatar-082.webp"
+    },
+    {
+      "id": "avatar-083",
+      "name": "小精灵",
+      "subject": "adult forest elf with short moss-green hair, small pointed ears and a cream cape",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult forest elf with short moss-green hair, small pointed ears and a cream cape.",
+      "url": "/assets/avatars/avatar-083.webp"
+    },
+    {
+      "id": "avatar-084",
+      "name": "魔法师",
+      "subject": "adult gentle wizard with white beard, muted blue pointed hat and cream robe collar",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult gentle wizard with white beard, muted blue pointed hat and cream robe collar.",
+      "url": "/assets/avatars/avatar-084.webp"
+    },
+    {
+      "id": "avatar-085",
+      "name": "小幽灵",
+      "subject": "friendly cream ghost with softly rounded silhouette, tiny navy eyes and a muted red bow tie",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly cream ghost with softly rounded silhouette, tiny navy eyes and a muted red bow tie.",
+      "url": "/assets/avatars/avatar-085.webp"
+    },
+    {
+      "id": "avatar-086",
+      "name": "面包",
+      "subject": "friendly round bread baker mascot with warm brown crust, cream face and a blue chef scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly round bread baker mascot with warm brown crust, cream face and a blue chef scarf.",
+      "url": "/assets/avatars/avatar-086.webp"
+    },
+    {
+      "id": "avatar-087",
+      "name": "奶酪",
+      "subject": "friendly wedge-shaped cheese character with golden cream tones, round rosy cheeks and tiny eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly wedge-shaped cheese character with golden cream tones, round rosy cheeks and tiny eyes.",
+      "url": "/assets/avatars/avatar-087.webp"
+    },
+    {
+      "id": "avatar-088",
+      "name": "茶茶",
+      "subject": "friendly small blue teacup character with a warm cream face and a simple wisp of steam",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly small blue teacup character with a warm cream face and a simple wisp of steam.",
+      "url": "/assets/avatars/avatar-088.webp"
+    },
+    {
+      "id": "avatar-089",
+      "name": "咖咖",
+      "subject": "friendly terracotta coffee cup character with a cream foam top and tiny dark smiling eyes",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly terracotta coffee cup character with a cream foam top and tiny dark smiling eyes.",
+      "url": "/assets/avatars/avatar-089.webp"
+    },
+    {
+      "id": "avatar-090",
+      "name": "饭团",
+      "subject": "friendly rounded rice ball character with white rice texture, a simple navy seaweed patch and rosy cheeks",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly rounded rice ball character with white rice texture, a simple navy seaweed patch and rosy cheeks.",
+      "url": "/assets/avatars/avatar-090.webp"
+    },
+    {
+      "id": "avatar-091",
+      "name": "画画",
+      "subject": "adult artist with short dark curls, a muted blue beret and a cream paint-splashed smock collar",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult artist with short dark curls, a muted blue beret and a cream paint-splashed smock collar.",
+      "url": "/assets/avatars/avatar-091.webp"
+    },
+    {
+      "id": "avatar-092",
+      "name": "木木",
+      "subject": "adult craftsperson with wavy brown hair, round glasses and a mustard apron over cream shirt",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult craftsperson with wavy brown hair, round glasses and a mustard apron over cream shirt.",
+      "url": "/assets/avatars/avatar-092.webp"
+    },
+    {
+      "id": "avatar-093",
+      "name": "书书",
+      "subject": "adult librarian with short silver bob, oval blue glasses and a terracotta cardigan",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult librarian with short silver bob, oval blue glasses and a terracotta cardigan.",
+      "url": "/assets/avatars/avatar-093.webp"
+    },
+    {
+      "id": "avatar-094",
+      "name": "旅旅",
+      "subject": "adult hiker with warm brown skin, a cream bucket hat and a muted blue jacket",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult hiker with warm brown skin, a cream bucket hat and a muted blue jacket.",
+      "url": "/assets/avatars/avatar-094.webp"
+    },
+    {
+      "id": "avatar-095",
+      "name": "厨厨",
+      "subject": "adult chef with brown skin, a softly folded cream chef cap and red neckerchief",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult chef with brown skin, a softly folded cream chef cap and red neckerchief.",
+      "url": "/assets/avatars/avatar-095.webp"
+    },
+    {
+      "id": "avatar-096",
+      "name": "乐乐",
+      "subject": "adult musician with short black hair, round warm headphones and a mustard sweater",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult musician with short black hair, round warm headphones and a mustard sweater.",
+      "url": "/assets/avatars/avatar-096.webp"
+    },
+    {
+      "id": "avatar-097",
+      "name": "航航",
+      "subject": "adult aviator with a vintage cream flight helmet, raised blue goggles and a friendly smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult aviator with a vintage cream flight helmet, raised blue goggles and a friendly smile.",
+      "url": "/assets/avatars/avatar-097.webp"
+    },
+    {
+      "id": "avatar-098",
+      "name": "园园",
+      "subject": "adult gardener with a broad cream straw hat, warm freckles and a muted green collar",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult gardener with a broad cream straw hat, warm freckles and a muted green collar.",
+      "url": "/assets/avatars/avatar-098.webp"
+    },
+    {
+      "id": "avatar-099",
+      "name": "阿宇",
+      "subject": "adult space explorer with short dark curls, a cream-and-blue futuristic suit collar and calm smile",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: adult space explorer with short dark curls, a cream-and-blue futuristic suit collar and calm smile.",
+      "url": "/assets/avatars/avatar-099.webp"
+    },
+    {
+      "id": "avatar-100",
+      "name": "小福",
+      "subject": "friendly original lucky cat-like fantasy mascot with cream fur, one small golden forehead spot and a muted red scarf",
+      "prompt": "Use case: stylized-concept\nAsset type: built-in desktop app user avatar, one standalone square raster illustration.\nStyle/medium: polished contemporary hand-painted character portrait, soft matte gouache texture, confident clean shapes and delicate shading, appealing but not overly childish.\nScene/backdrop: plain warm cream background with a subtle soft halo, no scene or props outside the subject.\nComposition/framing: exactly one subject, centered head-and-shoulders close portrait, face large and fully inside the central 72 percent of the square for circular cropping; clean readable silhouette at 32 pixels, generous outer margin.\nLighting/mood: soft even studio light, warm friendly relaxed expression.\nColor palette: warm cream base with restrained muted blue, mustard yellow, terracotta red and natural subject colors, refined low saturation.\nConstraints: create a single original distinct avatar, not a grid or collage; no lettering, numbers, logos, watermark, UI, frame, border or photorealistic likeness; uncluttered background; square 1:1 image.\nSubject: friendly original lucky cat-like fantasy mascot with cream fur, one small golden forehead spot and a muted red scarf.",
+      "url": "/assets/avatars/avatar-100.webp"
+    }
+  ]
+}

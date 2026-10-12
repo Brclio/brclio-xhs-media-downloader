@@ -132,6 +132,10 @@ jobs:
         run: npm run desktop:verify:login-reset
       - name: Verify retry and update controls in the real desktop renderer
         run: npx electron scripts/verify-desktop-ui.mjs
+      - name: Verify avatar selection, original upload and compressed display
+        run: npx electron scripts/verify-avatar-ui.cjs
+      - name: Verify private avatar collection and existing account administration
+        run: npm run admin:verify
       - name: Verify updater retries through the real manager, IPC and original preload
         # Deterministic offline streams only. Real subscriptions require explicit --live.
         timeout-minutes: 3

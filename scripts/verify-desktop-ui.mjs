@@ -358,6 +358,20 @@ app.whenReady().then(async () => {
   // repeated showModal/Escape cycles exhaust Chromium's CloseWatcher allowance:
   // cancel becomes non-cancelable and the browser bypasses dialog.close itself.
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`, true);
+  const press = keyCode => {
+    const nativeKey = keyCode.replace(/^Arrow/, '');
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: nativeKey });
+    if (keyCode === 'Enter') win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: nativeKey });
+  };
+  const openUserMenu = async () => {
+    await click('#desktop-user-toggle');
+    await check(`document.querySelector('#desktop-user-menu').matches(':popover-open')
+      && document.querySelector('#desktop-user-toggle').getAttribute('aria-expanded') === 'true'`, 'avatar opens the user menu');
+  };
+  const assertUserMenuClosed = description => check(`!document.querySelector('#desktop-user-menu').matches(':popover-open')
+    && document.querySelector('#desktop-user-toggle').getAttribute('aria-expanded') === 'false'
+    && Array.from(document.querySelectorAll('#desktop-user-menu [role="menuitem"]')).every(item => item.tabIndex === -1)`, description);
   const paint = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
   const resizeViewport = async (width, height) => {
     // Native resize and renderer viewport updates are asynchronous. In
@@ -443,6 +457,46 @@ app.whenReady().then(async () => {
   await win.loadURL('xhs-app://local/');
   await check(`document.querySelector('#profile-items').children.length === 100`, 'initial list rendered');
   await check(`document.body.dataset.desktopReady === 'true'`, 'desktop readiness follows successful info and profile initialization');
+  assert.equal(await evaluate(`document.body.dataset.desktopPage`), 'profile', 'batch download remains the initial desktop page');
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#desktop-navigation [role="tablist"] [role="tab"]'), tab => tab.id)`),
+    ['single-note-tab', 'live-photo-tab', 'profile-tab'], 'primary navigation contains the three download tools');
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#desktop-support-navigation button'), button => ({ id: button.id, role: button.getAttribute('role') }))`),
+    [{ id: 'feedback-tab', role: null }, { id: 'about-tab', role: null }], 'feedback and about remain regular support buttons');
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#desktop-user-menu [role="menuitem"]'), item => item.id)`),
+    ['account-tab', 'desktop-membership-link', 'reviews-tab', 'desktop-vip-link', 'desktop-learning-link'], 'all account and community destinations are in the avatar menu');
+  assert.equal(await evaluate(`document.querySelector('#desktop-user-toggle').tagName === 'BUTTON'
+    && document.querySelector('#desktop-user-toggle').getAttribute('popovertarget') === 'desktop-user-menu'
+    && document.querySelector('#desktop-user-menu').getAttribute('popover') === 'auto'
+    && document.querySelector('#desktop-user-menu').getAttribute('role') === 'menu'
+    && !document.querySelector('#desktop-user-menu [aria-selected]')
+    && !document.querySelector('#desktop-support-navigation [aria-selected]')`), true, 'native user menu and support routes do not join tab selection');
+  await check(`document.querySelector('#desktop-user-name').textContent === 'ordinary'
+    && document.querySelector('#desktop-user-status').textContent === '普通用户'
+    && document.querySelector('#desktop-account-summary').textContent === 'ordinary@example.com'
+    && document.querySelector('#desktop-account-summary-status').textContent === '普通用户'
+    && !document.querySelector('#desktop-user-initial').hidden && document.querySelector('#desktop-user-guest-icon').hasAttribute('hidden')`, 'header and menu show the current software account');
+  await openUserMenu();
+  await check(`document.activeElement.id === 'account-tab'`, 'opening the avatar menu focuses its first destination');
+  for (const [key, expected] of [['End', 'desktop-learning-link'], ['ArrowDown', 'account-tab'],
+    ['ArrowUp', 'desktop-learning-link'], ['Home', 'account-tab'], ['ArrowDown', 'desktop-membership-link']]) {
+    press(key);
+    await check(`document.activeElement.id === ${JSON.stringify(expected)}`, `user menu ${key} focuses ${expected}`);
+    assert.equal(await evaluate(`document.body.dataset.desktopPage`), 'profile', 'menu arrow keys move focus without changing the work page');
+  }
+  press('Escape');
+  await assertUserMenuClosed('Escape closes the avatar menu and removes hidden items from tab order');
+  await check(`document.activeElement.id === 'desktop-user-toggle'`, 'Escape restores avatar focus');
+  await evaluate(`document.querySelector('#desktop-user-toggle').focus()`);
+  press('ArrowDown');
+  await check(`document.querySelector('#desktop-user-menu').matches(':popover-open') && document.activeElement.id === 'account-tab'`, 'avatar ArrowDown opens the menu at its first destination');
+  press('Escape');
+  await assertUserMenuClosed('keyboard-opened menu closes with Escape');
+  await openUserMenu();
+  const outsideMenu = await evaluate(`(() => { const rect = document.querySelector('#desktop-current-page').getBoundingClientRect(); return { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) }; })()`);
+  win.webContents.sendInputEvent({ type: 'mouseDown', ...outsideMenu, button: 'left', clickCount: 1 });
+  win.webContents.sendInputEvent({ type: 'mouseUp', ...outsideMenu, button: 'left', clickCount: 1 });
+  await assertUserMenuClosed('native outside click dismisses the avatar menu');
+  await check(`document.activeElement.id === 'desktop-user-toggle'`, 'outside dismissal restores avatar focus');
   await verifyShortcut(win);
   assert.equal(readyEvents.get(win.webContents.id), 1, 'successful initialization emits exactly one desktop-ready event');
   const proxyScreenshots = {};
@@ -612,12 +666,15 @@ app.whenReady().then(async () => {
   // Exercise the real embedded page and its packaged resources, keeping the
   // downloader's renderer alive throughout navigation and QR saving.
   const learningScreenshots = {};
+  const userMenuScreenshots = {};
   const learningPopups = [];
   win.webContents.setWindowOpenHandler(({ url }) => { learningPopups.push(url); return { action: 'deny' }; });
   assert.equal(await evaluate(`document.querySelector('#desktop-learning-frame').hasAttribute('src')`), false, 'learning page loads only on first selection');
-  assert.equal(await evaluate(`document.querySelectorAll('#desktop-navigation [role="tab"]').length`), 10, 'Reviews join the ten-page desktop tablist');
+  assert.equal(await evaluate(`document.querySelectorAll('#desktop-navigation [role="tab"]').length`), 3, 'only the three download tools are primary tabs');
   await click('#reviews-tab');
-  await check(`document.body.dataset.desktopPage === 'reviews' && !document.querySelector('#desktop-reviews-page').hidden && document.querySelector('#review-list').textContent.includes('网页与客户端都很方便')`, 'reviews render in their own desktop tab');
+  await check(`document.body.dataset.desktopPage === 'reviews' && !document.querySelector('#desktop-reviews-page').hidden
+    && document.activeElement.id === 'desktop-reviews-page' && document.querySelector('#reviews-tab').getAttribute('aria-current') === 'page'
+    && document.querySelector('#review-list').textContent.includes('网页与客户端都很方便')`, 'programmatic review navigation renders its page and focuses the visible panel');
   await click('#profile-tab');
   const initialMainUrl = win.webContents.getURL();
   await evaluate(`(() => {
@@ -632,33 +689,33 @@ app.whenReady().then(async () => {
     document.querySelector('#desktop-feedback-description').value = '查看书籍后继续填写这份反馈。';
     document.querySelector('#profile-tab').focus();
   })()`);
-  const press = keyCode => {
-    const nativeKey = keyCode.replace(/^Arrow/, '');
-    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: nativeKey });
-    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: nativeKey });
-  };
   const learningDocument = `document.querySelector('#desktop-learning-frame').contentDocument`;
   const learningWindow = `document.querySelector('#desktop-learning-frame').contentWindow`;
   const clickLearning = selector => evaluate(`${learningDocument}.querySelector(${JSON.stringify(selector)}).click()`, true);
   const assertSelectedLearning = async description => assert.equal(await evaluate(`(() => {
     const tab = document.querySelector('#desktop-learning-link'), page = document.querySelector('#desktop-learning-page');
-    return document.body.dataset.desktopPage === 'learning' && tab.getAttribute('aria-selected') === 'true'
-      && tab.tabIndex === 0 && !page.hidden && page.getAttribute('aria-labelledby') === tab.id
-      && Array.from(document.querySelectorAll('#desktop-navigation [role="tab"]')).filter(t => t.getAttribute('aria-selected') === 'true').length === 1
+    return document.body.dataset.desktopPage === 'learning' && tab.getAttribute('aria-current') === 'page'
+      && !tab.hasAttribute('aria-selected') && tab.tabIndex === -1 && !page.hidden && page.getAttribute('aria-labelledby') === tab.id
+      && !document.querySelector('#desktop-user-menu').matches(':popover-open')
+      && Array.from(document.querySelectorAll('#desktop-navigation [role="tab"]')).every(t => t.getAttribute('aria-selected') === 'false')
       && Array.from(document.querySelectorAll('main > .desktop-page')).filter(p => !p.hidden).length === 1;
   })()`), true, description);
+  for (const [key, expected, focused] of [['End', 'profile', 'profile-tab'], ['ArrowRight', 'single', 'single-note-tab'],
+    ['ArrowLeft', 'profile', 'profile-tab'], ['Home', 'single', 'single-note-tab'], ['ArrowDown', 'live', 'live-photo-tab']]) {
+    press(key);
+    await check(`document.body.dataset.desktopPage === ${JSON.stringify(expected)} && document.activeElement.id === ${JSON.stringify(focused)}`, `primary ${key} selects and focuses ${expected}`);
+    assert.equal(await evaluate(`document.querySelectorAll('#desktop-navigation [role="tab"][aria-selected="true"]').length`), 1, 'primary keyboard navigation keeps one selected tab');
+  }
+  await click('#profile-tab');
+  await openUserMenu();
   press('End');
-  await check(`document.body.dataset.desktopPage === 'learning' && document.activeElement.id === 'desktop-learning-link'`, 'End selects and focuses the final learning tab');
+  await check(`document.activeElement.id === 'desktop-learning-link'`, 'End reaches learning inside the user menu');
+  press('Enter');
+  await check(`document.body.dataset.desktopPage === 'learning' && document.activeElement.id === 'desktop-learning-page'`, 'keyboard menu activation selects learning and focuses its visible panel');
   await check(`${learningDocument}?.body?.classList.contains('learning-embedded') && ${learningDocument}?.querySelector('.book-art')?.naturalWidth > 0`, 'embedded learning page and book image load from the packaged protocol');
-  await assertSelectedLearning('learning page has consistent selected-tab and visible-panel state');
+  await assertSelectedLearning('learning page has consistent current-menu-item and visible-panel state');
   await evaluate(`fixtureLearning.document = ${learningDocument}; fixtureLearning.frameLoads = 0;
     fixtureLearning.frame.addEventListener('load', () => fixtureLearning.frameLoads++);`);
-  press('ArrowRight');
-  await check(`document.body.dataset.desktopPage === 'single' && document.activeElement.id === 'single-note-tab'`, 'keyboard navigation wraps from learning to single download');
-  press('ArrowLeft');
-  await check(`document.body.dataset.desktopPage === 'learning' && document.activeElement.id === 'desktop-learning-link'`, 'keyboard navigation wraps back to learning');
-  press('Home');
-  await check(`document.body.dataset.desktopPage === 'single' && document.activeElement.id === 'single-note-tab'`, 'Home still selects the first download tab');
   for (const [tab, page, returnLink] of [
     ['#profile-tab', 'profile', '#back-to-tool'],
     ['#single-note-tab', 'single', '.site-header .brand'],
@@ -702,11 +759,25 @@ app.whenReady().then(async () => {
     const geometry = await evaluate(learningFits);
     assert.equal(geometry.fits, true, `embedded page fits ${width}px without parent or child horizontal overflow: ${JSON.stringify(geometry)}`);
     assert.equal(await evaluate(`document.querySelector('#desktop-navigation [role="tablist"]').getAttribute('aria-orientation')`), width <= 600 ? 'horizontal' : 'vertical', 'tab orientation follows the compact navigation');
-    if (width <= 600) await check(`(() => {
-      const tabs = document.querySelector('#desktop-navigation [role="tablist"]').getBoundingClientRect();
-      const selected = document.querySelector('#desktop-learning-link').getBoundingClientRect();
-      return selected.left >= tabs.left - 1 && selected.right <= tabs.right + 1;
-    })()`, `${width}px: resize keeps the selected learning tab visible in compact navigation`);
+    await openUserMenu();
+    await check(`document.activeElement.id === 'desktop-learning-link'`, `${width}px: reopening the avatar menu focuses its current destination`);
+    const menuGeometry = await evaluate(`(() => {
+      const menu = document.querySelector('#desktop-user-menu'), toggle = document.querySelector('#desktop-user-toggle');
+      const rect = menu.getBoundingClientRect(), avatar = toggle.getBoundingClientRect();
+      const items = Array.from(menu.querySelectorAll('[role="menuitem"]'), item => item.getBoundingClientRect());
+      return { fits: rect.left >= -1 && rect.right <= innerWidth + 1 && rect.top >= -1 && rect.bottom <= innerHeight + 1
+        && menu.scrollWidth <= menu.clientWidth && avatar.width > 0 && avatar.right <= innerWidth + 1 && avatar.left >= 0
+        && items.every(item => item.width > 0 && item.left >= rect.left && item.right <= rect.right + 1),
+        menu: rect.toJSON(), avatar: avatar.toJSON(), viewport: { width: innerWidth, height: innerHeight } };
+    })()`);
+    assert.equal(menuGeometry.fits, true, `${width}px: avatar and all five menu destinations fit the viewport: ${JSON.stringify(menuGeometry)}`);
+    if (width === 1320 || width === 320) {
+      userMenuScreenshots[width] = path.join(temporary, `desktop-user-menu-${width}.png`);
+      writeFileSync(userMenuScreenshots[width], await captureFrame());
+    }
+    press('Escape');
+    await assertUserMenuClosed(`${width}px: menu dismisses without changing the selected learning page`);
+    await check(`document.activeElement.id === 'desktop-user-toggle' && document.body.dataset.desktopPage === 'learning'`, `${width}px: menu dismissal restores visible avatar focus`);
     await captureLearning(`${width}-top`);
     await clickLearning('a[href="#contact"]');
     await check(`${learningWindow}.location.hash === '#contact' && ${learningDocument}.querySelector('#contact').getBoundingClientRect().top >= 0
@@ -850,6 +921,25 @@ app.whenReady().then(async () => {
   await check(`document.body.dataset.desktopPage === 'vip'`, 'membership community link selects the separately priced VIP page');
   assert.equal(win.webContents.getURL(), initialMainUrl, 'membership and community navigation preserve downloader drafts');
   assert.deepEqual(learningPopups, [], 'membership navigation creates no popup window');
+  for (const [id, page, panel] of [
+    ['account-tab', 'account', 'desktop-account-page'],
+    ['desktop-membership-link', 'membership', 'desktop-membership-page'],
+    ['reviews-tab', 'reviews', 'desktop-reviews-page'],
+    ['desktop-vip-link', 'vip', 'desktop-vip-page'],
+    ['desktop-learning-link', 'learning', 'desktop-learning-page']
+  ]) {
+    await openUserMenu();
+    await click(`#${id}`);
+    await assertUserMenuClosed(`${page}: choosing a user-menu destination closes the popover`);
+    await check(`document.body.dataset.desktopPage === ${JSON.stringify(page)}
+      && document.activeElement.id === ${JSON.stringify(panel)} && !document.getElementById(${JSON.stringify(panel)}).hidden
+      && document.getElementById(${JSON.stringify(id)}).getAttribute('aria-current') === 'page'
+      && document.querySelectorAll('#desktop-user-menu [aria-current="page"]').length === 1
+      && document.querySelectorAll('#desktop-navigation [role="tab"][aria-selected="true"]').length === 0`, `${page}: user-menu selection preserves its route and focuses the visible region`);
+    assert.equal(win.webContents.getURL(), initialMainUrl, `${page}: menu routing keeps the downloader document alive`);
+  }
+  win.webContents.send('ui-fixture:navigate', { page: 'account' });
+  await check(`document.body.dataset.desktopPage === 'account' && document.activeElement.id === 'desktop-account-page'`, 'main-process account navigation focuses the visible page instead of its hidden menu item');
   await evaluate(`for (const [id, value] of Object.entries(fixtureLearning.original)) document.getElementById(id).value = value`);
   await click('#profile-tab');
   await resizeViewport(1180, 980);
@@ -1499,12 +1589,58 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('#desktop-feedback-submit').disabled`), false, 'ordinary user can submit without membership');
   publishAccount({ configured: true, authenticated: false, verified: false, status: 'signed_out' });
   await check(`document.querySelector('#desktop-feedback-submit').disabled && !document.querySelector('#desktop-feedback-account-hint').hidden`, 'feedback requires software login');
+  await check(`document.querySelector('#desktop-user-name').textContent === '登录账号'
+    && document.querySelector('#desktop-user-status').textContent === '账号与会员'
+    && document.querySelector('#desktop-account-summary').textContent === '登录软件账号'
+    && document.querySelector('#desktop-account-summary-status').textContent === '查看会员与设备授权'
+    && document.querySelector('#desktop-user-initial').hidden && !document.querySelector('#desktop-user-guest-icon').hasAttribute('hidden')
+    && document.querySelector('#desktop-user-avatar').dataset.member === 'false'`, 'logout updates the visible avatar and hidden menu account summary');
   await click('#desktop-feedback-login');
   assert.equal(await evaluate(`document.body.dataset.desktopPage`), 'account');
   await screenshotPage('account-login', '#account-tab');
+  publishAccount({ configured: true, authenticated: true, verified: false, status: 'authenticated', account: {
+    user: { id: 'fixture-user', email: 'pending@example.com' }, membership: { type: 'permanent', active: true }, device: { status: 'authorized' }
+  } });
+  await check(`document.querySelector('#desktop-user-name').textContent === 'pending'
+    && document.querySelector('#desktop-user-status').textContent === '授权状态待刷新'
+    && document.querySelector('#desktop-account-summary-status').textContent === '授权状态待刷新'
+    && document.querySelector('#desktop-user-avatar').dataset.member === 'false'
+    && !document.querySelector('#desktop-user-initial').hidden && document.querySelector('#desktop-user-guest-icon').hasAttribute('hidden')`, 'unverified login updates the header without displaying confirmed membership');
+  publishAccount({ configured: true, authenticated: true, verified: true, status: 'authenticated', account: {
+    user: { id: 'fixture-user', email: 'member@example.com' }, membership: { type: 'permanent', active: true }, device: { status: 'authorized' }
+  } });
+  await check(`document.querySelector('#desktop-user-name').textContent === 'member'
+    && document.querySelector('#desktop-user-status').textContent === '永久会员'
+    && document.querySelector('#desktop-account-summary-status').textContent === '永久会员'
+    && document.querySelector('#desktop-user-avatar').dataset.member === 'true'`, 'verified membership is reflected in the avatar and menu');
+  // A valid maximum-length email may wrap over several lines in the menu.
+  // At the desktop's minimum height, keyboard focus must scroll into view.
+  const longAccountEmail = `${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(61)}`;
+  publishAccount({ configured: true, authenticated: true, verified: true, status: 'authenticated', account: {
+    user: { id: 'fixture-user', email: longAccountEmail }, membership: { type: 'permanent', active: true }, device: { status: 'authorized' }
+  } });
+  await check(`document.querySelector('#desktop-account-summary').textContent === ${JSON.stringify(longAccountEmail)}`, 'long account identity renders without truncating the menu summary');
+  await resizeViewport(760, 600);
+  await evaluate(`document.querySelector('#desktop-user-toggle').focus()`);
+  press('ArrowUp');
+  await check(`document.querySelector('#desktop-user-menu').matches(':popover-open') && document.activeElement.id === 'desktop-learning-link'`, 'avatar ArrowUp opens at the last menu command');
+  await check(`(() => {
+    const menu = document.querySelector('#desktop-user-menu'), bounds = menu.getBoundingClientRect();
+    const item = document.activeElement.getBoundingClientRect(), header = document.querySelector('.app-header');
+    return bounds.bottom <= innerHeight && item.top >= bounds.top && item.bottom <= bounds.bottom
+      && menu.scrollWidth <= menu.clientWidth && header.scrollWidth <= innerWidth;
+  })()`, 'long email and focused final menu item fit at the minimum desktop size');
+  press('Tab');
+  await assertUserMenuClosed('Tab closes the menu and removes its commands from the hidden tab order');
+  await check(`document.activeElement.getClientRects().length > 0 && !document.querySelector('#desktop-user-menu').contains(document.activeElement)
+    && document.body.dataset.desktopPage === 'account'`, 'Tab continues in the visible workspace without changing pages');
+  await resizeViewport(1180, 980);
   publishAccount({ configured: true, authenticated: true, verified: true, status: 'authenticated', account: { user: { id: 'fixture-user', email: 'ordinary@example.com' }, membership: { type: 'none', active: false }, device: { status: 'authorized' } } });
   await click('#feedback-tab');
   await check(`!document.querySelector('#desktop-feedback-submit').disabled`, 'feedback unlocked after login');
+  await check(`document.querySelector('#desktop-user-name').textContent === 'ordinary'
+    && document.querySelector('#desktop-user-status').textContent === '普通用户'
+    && document.querySelector('#desktop-user-avatar').dataset.member === 'false'`, 'ordinary login restores the header account state');
   await click('#desktop-diagnostics-copy');
   await check(`document.querySelector('#desktop-diagnostics-result').textContent.includes('已复制')`, 'copy diagnostics feedback');
   await click('#desktop-diagnostics-export');
@@ -1535,7 +1671,7 @@ app.whenReady().then(async () => {
   // the requested viewport consistently on macOS and Windows.
   await check(`window.innerWidth === 390`, 'narrow viewport');
   assert.equal(await evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true, 'no horizontal overflow');
-  for (const tab of ['#profile-tab', '#single-note-tab', '#account-tab', '#desktop-membership-link', '#feedback-tab', '#about-tab', '#desktop-learning-link']) {
+  for (const tab of ['#profile-tab', '#single-note-tab', '#live-photo-tab', '#account-tab', '#desktop-membership-link', '#reviews-tab', '#feedback-tab', '#about-tab', '#desktop-vip-link', '#desktop-learning-link']) {
     await click(tab);
     assert.equal(await evaluate(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true, `${tab} has no narrow horizontal overflow`);
     assert.equal(await evaluate(`document.documentElement.scrollHeight <= window.innerHeight`), true, `${tab} preserves viewport height`);
@@ -1643,7 +1779,7 @@ app.whenReady().then(async () => {
     'renderer update requests supply no automatic or manual intent override');
   web.destroy();
   win.destroy();
-  console.log(JSON.stringify({ smoke: 'passed', checks: ['proxy close controls share pending state, deduplicate shutdown and retry failures', 'late initial and stop proxy snapshots cannot overwrite newer state events', 'system proxy precedence survives manual internal shutdown', 'manual proxy controls stay available during pending check and download IPC', 'explicit checks and downloads re-enable stopped proxy and close automatically without a resume control', 'proxy controls fit at 390px and 320px including short update dialogs', 'XHS login reset confirmation cancel, pending deduplication, success, retry and safe error rendering', 'XHS reset rejects unconfirmed cleanup and stale initial login discovery', '760px and 390px login/reset controls with long nickname', 'iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'live proxy retry counts, pending pause, ten-failure manual recovery and 320px layout', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'ten independent pages including Live Photo and reviews', 'lazy packaged learning iframe, keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], loginResetScreenshots, learningScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots, proxyScreenshots, retryScreenshots }));
+  console.log(JSON.stringify({ smoke: 'passed', checks: ['proxy close controls share pending state, deduplicate shutdown and retry failures', 'late initial and stop proxy snapshots cannot overwrite newer state events', 'system proxy precedence survives manual internal shutdown', 'manual proxy controls stay available during pending check and download IPC', 'explicit checks and downloads re-enable stopped proxy and close automatically without a resume control', 'proxy controls fit at 390px and 320px including short update dialogs', 'XHS login reset confirmation cancel, pending deduplication, success, retry and safe error rendering', 'XHS reset rejects unconfirmed cleanup and stale initial login discovery', '760px and 390px login/reset controls with long nickname', 'iPhone shortcut external link, copy success and failure on desktop, web and downloads', 'failure beyond 100 visible', 'failure filter and single retry', 'signed failed-link copy, fallback and denied feedback', 'single-note recovery preserves URL, focuses input and clears stale results', 'busy single-note guard and active batch recovery', 'URL-only updates refresh failed-link actions', 'active queue retry guard', 'no automatic update requests', 'update progress and pause', 'live proxy retry counts, pending pause, ten-failure manual recovery and 320px layout', 'retained download progress and continuation', 'known release remains downloadable after failed recheck with and without partial bytes', 'recheck notice clears after download or successful check', 'download retry without retained bytes', 'phase-aware retries', 'manual latest-installer recovery, deduplication, error preservation and 320px layout', 'manual install only', 'broker-backed installation approval, cancellation and expiry', 'installation dialog desktop and 390px layout', 'desktop-ready emitted only after successful initialization', 'safe text rendering', 'release update-section selection and empty-section fallback', 'Mac and Windows installation hints', '390px all-page layout', 'ten preserved routes with three primary tool tabs and grouped support buttons', 'avatar menu native dismissal, arrow wrap, keyboard activation and visible destination focus', 'header account state follows ordinary login, logout, unverified authorization and membership', 'avatar menu 1320/900/760/390/320 layout', 'lazy packaged learning iframe, primary keyboard wrap and return navigation', 'membership iframe lazy loading, account entry, purchase CTA, community entry and reading-position persistence', 'download and feedback drafts survive embedded navigation', 'embedded 1320/900/760/390/320 layout with no parent or child overflow', 'nested QR dialog Escape, explicit close, backdrop and original-byte save', 'frame DOM and scroll survive tab switches without new windows', 'hidden child scroll resets restore reading position, including rapid switches and repeated selection', 'feedback login gate and ordinary member', 'diagnostics copy/export', 'feedback progress and failure', 'automatic update notice deduplication', 'version dialog focus and dismissal', 'dialog progress and background download', 'scrollable notes with fixed footer at 390px', 'native notification navigation', 'nonmodal history during a 46 percent download', 'history read and acknowledgement race guards', 'history acknowledgement errors and reload', 'history text safety and 390px layout', 'web-only regression'], loginResetScreenshots, learningScreenshots, userMenuScreenshots, savedLearningQr, failureScreenshots, narrowViewport, screenshot, narrowScreenshot, updateDialogScreenshot, updateDialogNarrowScreenshot, installDialogScreenshot, installDialogNarrowScreenshot, checkFailureScreenshots, pageScreenshots, historyScreenshot, historyNarrowScreenshot, installationCloseOrders, manualInstallerScreenshots, proxyScreenshots, retryScreenshots }));
   clearTimeout(timeout);
   app.exit(0);
 }).catch(error => {

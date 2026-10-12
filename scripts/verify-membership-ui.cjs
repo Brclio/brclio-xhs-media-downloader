@@ -53,7 +53,8 @@ Object.defineProperty(navigator, 'clipboard', { value: { writeText: async text =
 } } });
 document.body.classList.add('is-desktop');
 document.querySelectorAll('.desktop-page, #single-note-panel, #profile-panel').forEach(element => { element.hidden = true; });
-document.querySelectorAll('.desktop-tab').forEach(element => { element.setAttribute('aria-selected', String(element.id === 'account-tab')); });
+document.querySelectorAll('[role="tab"]').forEach(element => { element.setAttribute('aria-selected', 'false'); });
+document.getElementById('account-tab').setAttribute('aria-current', 'page');
 document.getElementById('desktop-navigation').hidden = false;
 document.getElementById('desktop-account-page').hidden = false;
 document.getElementById('desktop-account-summary').textContent = 'member@example.test';

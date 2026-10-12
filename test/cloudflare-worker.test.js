@@ -220,7 +220,8 @@ test('static asset routing sends the private namespace to the Worker before any 
 
 test('health supports HEAD and unexpected failures never expose internal messages', async () => {
   const healthy = await worker.fetch(request('/api/health'), { VERSION: 'test-version', PYTHON_API: { fetch() {} } });
-  assert.deepEqual(await healthy.json(), { ok: true, platform: 'cloudflare', version: 'test-version', pythonBinding: true });
+  assert.deepEqual(await healthy.json(), { ok: true, platform: 'cloudflare', version: 'test-version', pythonBinding: true,
+    avatars: { builtinCount: 100, customUploads: false, maxOriginalBytes: 100 * 1024 * 1024 } });
   assert.equal(await (await worker.fetch(request('/api/health', { method: 'HEAD' }))).text(), '');
   assert.equal((await worker.fetch(request('/api/health', { method: 'POST' }))).status, 405);
   const fail = () => { throw new Error('internal-secret-sentinel'); };

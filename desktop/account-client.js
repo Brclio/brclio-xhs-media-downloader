@@ -2,6 +2,7 @@ import { createHash, randomUUID, sign } from 'node:crypto';
 import { accountError } from './account-storage.js';
 import { KNOWN_FEATURES, PROTECTED_FEATURES } from '../lib/membership-policy.js';
 import { verifyEntitlement } from '../lib/entitlement.js';
+import { uploadAccountAvatarTransfer, fetchAccountAvatarThumbnail } from '../lib/account-avatar-transfer.js';
 
 const EXPIRED_SESSION_CODES = new Set(['SESSION_REVOKED', 'INVALID_SESSION', 'SESSION_INVALID', 'UNAUTHENTICATED']);
 const SKEW_CODES = new Set(['PROOF_EXPIRED', 'PROOF_TIMESTAMP_INVALID', 'TIMESTAMP_INVALID']);
@@ -76,6 +77,7 @@ export class AccountClient {
     this._hasEntitlementKeys = entitlementPublicKeys instanceof Map ? entitlementPublicKeys.size > 0 : Object.keys(entitlementPublicKeys || {}).length > 0;
     this._entitlementAnchors = new Map(); this._signedAuthorizationUsed = new Set();
     this._nicknameRevision = 0; this._nicknameRequest = 0; this._nicknameApplied = 0;
+    this._avatarRevision = 0; this._avatarRequest = 0; this._avatarApplied = 0;
   }
   snapshot() {
     return structuredClone({ status: this.status, account: this.account, error: this.error,
@@ -195,6 +197,7 @@ export class AccountClient {
     const started = this.now();
     const startedMono = this.monotonicNow();
     const nicknameRevision = this._nicknameRevision;
+    const avatarRevision = this._avatarRevision;
     if (!this.endpoint) throw accountError('CONFIGURATION_REQUIRED', '授权服务尚未配置，会员功能暂不可用。');
     const body = { action, input };
     if (!unsigned) {
@@ -208,7 +211,7 @@ export class AccountClient {
       response = await this.fetchImpl(this.endpoint, { method: 'POST', redirect: 'error',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(body), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)])
-          : AbortSignal.timeout(action === 'feedback-finalize' ? 60_000 : 15_000) });
+          : AbortSignal.timeout(['feedback-finalize', 'avatar-complete'].includes(action) ? 60_000 : 15_000) });
       result = await response.json();
     } catch {
       assertSession?.();
@@ -230,6 +233,8 @@ export class AccountClient {
       && result.account?.user?.id === this.account?.user?.id && this.account?.user?.nickname) {
       result.account.user.nickname = this.account.user.nickname;
     }
+    if (avatarRevision !== this._avatarRevision && this.credentials?.token === token
+      && result.account?.user?.id === this.account?.user?.id) result.account.user.avatar = this.account.user.avatar;
     if (body.proof) Object.defineProperty(result, REQUEST_CONTEXT, { value: { nonce: body.proof.nonce, startedAt: started, startedMono } });
     return result;
   }
@@ -466,6 +471,35 @@ export class AccountClient {
     if (!['feedback-begin', 'feedback-upload-part', 'feedback-finalize', 'feedback-mine', 'feedback-detail', 'feedback-reply'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效反馈操作。', 400);
     return this._authenticatedRequest(action, input, expectedUserId);
   }
+  async avatarRequest(action, input = {}) {
+    const serial = ['avatar-select', 'avatar-complete'].includes(action) ? ++this._avatarRequest : 0;
+    const result = await this._authenticatedRequest(action, input, input.expectedUserId);
+    if (serial > this._avatarApplied && result.profile?.avatar && this.account?.user?.id === input.expectedUserId) {
+      this._avatarApplied = serial; this._avatarRevision++;
+      this.account = { ...this.account, user: { ...this.account.user, avatar: result.profile.avatar } };
+      this._emit();
+    }
+    return result;
+  }
+  selectAccountAvatar(input) { return this.avatarRequest('avatar-select', { builtinId: input?.builtinId, expectedUserId: input?.expectedUserId }); }
+  async uploadAccountAvatar(input) {
+    const token = this.credentials?.token, expectedUserId = input?.expectedUserId;
+    const assertCurrent = () => {
+      if (!token || this.credentials?.token !== token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请重试。', 409);
+    };
+    return uploadAccountAvatarTransfer({ input, endpoint: this.endpoint, fetchImpl: this.fetchImpl, assertCurrent,
+      request: (action, values) => this.avatarRequest(action, values) });
+  }
+  async getAccountAvatarThumbnail(input = {}) {
+    const token = this.credentials?.token, expectedUserId = input.expectedUserId;
+    const assertCurrent = () => {
+      if (!token || this.credentials?.token !== token || this.account?.user?.id !== expectedUserId) throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请重试。', 409);
+    };
+    assertCurrent();
+    if (this.account.user.avatar?.kind !== 'upload') return { thumbnail: null, contentType: null };
+    return fetchAccountAvatarThumbnail({ url: this.account.user.avatar.url, endpoint: this.endpoint, fetchImpl: this.fetchImpl, assertCurrent });
+  }
+  getAccountAvatarOriginal(input = {}) { return this.avatarRequest('avatar-original', { expectedUserId: input.expectedUserId }); }
   commerceRequest(action, input = {}) {
     if (!['reviews-public', 'profile-update', 'review-mine', 'review-submit', 'orders-mine', 'order-create'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
     if (action === 'reviews-public') return this._request(action, input, { token: '', unsigned: true });

@@ -1,0 +1,502 @@
+[
+  {
+    "id": "avatar-001",
+    "name": "晴空",
+    "url": "/assets/avatars/avatar-001.webp"
+  },
+  {
+    "id": "avatar-002",
+    "name": "远山",
+    "url": "/assets/avatars/avatar-002.webp"
+  },
+  {
+    "id": "avatar-003",
+    "name": "暖风",
+    "url": "/assets/avatars/avatar-003.webp"
+  },
+  {
+    "id": "avatar-004",
+    "name": "晨光",
+    "url": "/assets/avatars/avatar-004.webp"
+  },
+  {
+    "id": "avatar-005",
+    "name": "小满",
+    "url": "/assets/avatars/avatar-005.webp"
+  },
+  {
+    "id": "avatar-006",
+    "name": "星野",
+    "url": "/assets/avatars/avatar-006.webp"
+  },
+  {
+    "id": "avatar-007",
+    "name": "青禾",
+    "url": "/assets/avatars/avatar-007.webp"
+  },
+  {
+    "id": "avatar-008",
+    "name": "晚晴",
+    "url": "/assets/avatars/avatar-008.webp"
+  },
+  {
+    "id": "avatar-009",
+    "name": "云朵",
+    "url": "/assets/avatars/avatar-009.webp"
+  },
+  {
+    "id": "avatar-010",
+    "name": "向阳",
+    "url": "/assets/avatars/avatar-010.webp"
+  },
+  {
+    "id": "avatar-011",
+    "name": "溪流",
+    "url": "/assets/avatars/avatar-011.webp"
+  },
+  {
+    "id": "avatar-012",
+    "name": "山海",
+    "url": "/assets/avatars/avatar-012.webp"
+  },
+  {
+    "id": "avatar-013",
+    "name": "橙光",
+    "url": "/assets/avatars/avatar-013.webp"
+  },
+  {
+    "id": "avatar-014",
+    "name": "月白",
+    "url": "/assets/avatars/avatar-014.webp"
+  },
+  {
+    "id": "avatar-015",
+    "name": "小鹿",
+    "url": "/assets/avatars/avatar-015.webp"
+  },
+  {
+    "id": "avatar-016",
+    "name": "拾光",
+    "url": "/assets/avatars/avatar-016.webp"
+  },
+  {
+    "id": "avatar-017",
+    "name": "清茶",
+    "url": "/assets/avatars/avatar-017.webp"
+  },
+  {
+    "id": "avatar-018",
+    "name": "阿蓝",
+    "url": "/assets/avatars/avatar-018.webp"
+  },
+  {
+    "id": "avatar-019",
+    "name": "暖阳",
+    "url": "/assets/avatars/avatar-019.webp"
+  },
+  {
+    "id": "avatar-020",
+    "name": "雾岚",
+    "url": "/assets/avatars/avatar-020.webp"
+  },
+  {
+    "id": "avatar-021",
+    "name": "墨墨",
+    "url": "/assets/avatars/avatar-021.webp"
+  },
+  {
+    "id": "avatar-022",
+    "name": "奶糖",
+    "url": "/assets/avatars/avatar-022.webp"
+  },
+  {
+    "id": "avatar-023",
+    "name": "橘子",
+    "url": "/assets/avatars/avatar-023.webp"
+  },
+  {
+    "id": "avatar-024",
+    "name": "芝麻",
+    "url": "/assets/avatars/avatar-024.webp"
+  },
+  {
+    "id": "avatar-025",
+    "name": "雪球",
+    "url": "/assets/avatars/avatar-025.webp"
+  },
+  {
+    "id": "avatar-026",
+    "name": "阿柴",
+    "url": "/assets/avatars/avatar-026.webp"
+  },
+  {
+    "id": "avatar-027",
+    "name": "团团",
+    "url": "/assets/avatars/avatar-027.webp"
+  },
+  {
+    "id": "avatar-028",
+    "name": "花卷",
+    "url": "/assets/avatars/avatar-028.webp"
+  },
+  {
+    "id": "avatar-029",
+    "name": "可乐",
+    "url": "/assets/avatars/avatar-029.webp"
+  },
+  {
+    "id": "avatar-030",
+    "name": "松饼",
+    "url": "/assets/avatars/avatar-030.webp"
+  },
+  {
+    "id": "avatar-031",
+    "name": "栗栗",
+    "url": "/assets/avatars/avatar-031.webp"
+  },
+  {
+    "id": "avatar-032",
+    "name": "松果",
+    "url": "/assets/avatars/avatar-032.webp"
+  },
+  {
+    "id": "avatar-033",
+    "name": "竹竹",
+    "url": "/assets/avatars/avatar-033.webp"
+  },
+  {
+    "id": "avatar-034",
+    "name": "棕棕",
+    "url": "/assets/avatars/avatar-034.webp"
+  },
+  {
+    "id": "avatar-035",
+    "name": "小獭",
+    "url": "/assets/avatars/avatar-035.webp"
+  },
+  {
+    "id": "avatar-036",
+    "name": "茸茸",
+    "url": "/assets/avatars/avatar-036.webp"
+  },
+  {
+    "id": "avatar-037",
+    "name": "点点",
+    "url": "/assets/avatars/avatar-037.webp"
+  },
+  {
+    "id": "avatar-038",
+    "name": "跳跳",
+    "url": "/assets/avatars/avatar-038.webp"
+  },
+  {
+    "id": "avatar-039",
+    "name": "阿考",
+    "url": "/assets/avatars/avatar-039.webp"
+  },
+  {
+    "id": "avatar-040",
+    "name": "绵绵",
+    "url": "/assets/avatars/avatar-040.webp"
+  },
+  {
+    "id": "avatar-041",
+    "name": "咕咕",
+    "url": "/assets/avatars/avatar-041.webp"
+  },
+  {
+    "id": "avatar-042",
+    "name": "啾啾",
+    "url": "/assets/avatars/avatar-042.webp"
+  },
+  {
+    "id": "avatar-043",
+    "name": "小企鹅",
+    "url": "/assets/avatars/avatar-043.webp"
+  },
+  {
+    "id": "avatar-044",
+    "name": "火火",
+    "url": "/assets/avatars/avatar-044.webp"
+  },
+  {
+    "id": "avatar-045",
+    "name": "金金",
+    "url": "/assets/avatars/avatar-045.webp"
+  },
+  {
+    "id": "avatar-046",
+    "name": "小浣",
+    "url": "/assets/avatars/avatar-046.webp"
+  },
+  {
+    "id": "avatar-047",
+    "name": "刺刺",
+    "url": "/assets/avatars/avatar-047.webp"
+  },
+  {
+    "id": "avatar-048",
+    "name": "胖达",
+    "url": "/assets/avatars/avatar-048.webp"
+  },
+  {
+    "id": "avatar-049",
+    "name": "阿呱",
+    "url": "/assets/avatars/avatar-049.webp"
+  },
+  {
+    "id": "avatar-050",
+    "name": "小鲸",
+    "url": "/assets/avatars/avatar-050.webp"
+  },
+  {
+    "id": "avatar-051",
+    "name": "小龟",
+    "url": "/assets/avatars/avatar-051.webp"
+  },
+  {
+    "id": "avatar-052",
+    "name": "波波",
+    "url": "/assets/avatars/avatar-052.webp"
+  },
+  {
+    "id": "avatar-053",
+    "name": "海蓝",
+    "url": "/assets/avatars/avatar-053.webp"
+  },
+  {
+    "id": "avatar-054",
+    "name": "虾米",
+    "url": "/assets/avatars/avatar-054.webp"
+  },
+  {
+    "id": "avatar-055",
+    "name": "小海豹",
+    "url": "/assets/avatars/avatar-055.webp"
+  },
+  {
+    "id": "avatar-056",
+    "name": "豆豆",
+    "url": "/assets/avatars/avatar-056.webp"
+  },
+  {
+    "id": "avatar-057",
+    "name": "咪噜",
+    "url": "/assets/avatars/avatar-057.webp"
+  },
+  {
+    "id": "avatar-058",
+    "name": "萌牛",
+    "url": "/assets/avatars/avatar-058.webp"
+  },
+  {
+    "id": "avatar-059",
+    "name": "斑斑",
+    "url": "/assets/avatars/avatar-059.webp"
+  },
+  {
+    "id": "avatar-060",
+    "name": "长颈鹿",
+    "url": "/assets/avatars/avatar-060.webp"
+  },
+  {
+    "id": "avatar-061",
+    "name": "小蓝",
+    "url": "/assets/avatars/avatar-061.webp"
+  },
+  {
+    "id": "avatar-062",
+    "name": "阿圆",
+    "url": "/assets/avatars/avatar-062.webp"
+  },
+  {
+    "id": "avatar-063",
+    "name": "小铜",
+    "url": "/assets/avatars/avatar-063.webp"
+  },
+  {
+    "id": "avatar-064",
+    "name": "星星",
+    "url": "/assets/avatars/avatar-064.webp"
+  },
+  {
+    "id": "avatar-065",
+    "name": "月球",
+    "url": "/assets/avatars/avatar-065.webp"
+  },
+  {
+    "id": "avatar-066",
+    "name": "云游",
+    "url": "/assets/avatars/avatar-066.webp"
+  },
+  {
+    "id": "avatar-067",
+    "name": "太阳",
+    "url": "/assets/avatars/avatar-067.webp"
+  },
+  {
+    "id": "avatar-068",
+    "name": "小星球",
+    "url": "/assets/avatars/avatar-068.webp"
+  },
+  {
+    "id": "avatar-069",
+    "name": "雪人",
+    "url": "/assets/avatars/avatar-069.webp"
+  },
+  {
+    "id": "avatar-070",
+    "name": "灯灯",
+    "url": "/assets/avatars/avatar-070.webp"
+  },
+  {
+    "id": "avatar-071",
+    "name": "花花",
+    "url": "/assets/avatars/avatar-071.webp"
+  },
+  {
+    "id": "avatar-072",
+    "name": "仙仙",
+    "url": "/assets/avatars/avatar-072.webp"
+  },
+  {
+    "id": "avatar-073",
+    "name": "小菇",
+    "url": "/assets/avatars/avatar-073.webp"
+  },
+  {
+    "id": "avatar-074",
+    "name": "芽芽",
+    "url": "/assets/avatars/avatar-074.webp"
+  },
+  {
+    "id": "avatar-075",
+    "name": "橡子",
+    "url": "/assets/avatars/avatar-075.webp"
+  },
+  {
+    "id": "avatar-076",
+    "name": "柠柠",
+    "url": "/assets/avatars/avatar-076.webp"
+  },
+  {
+    "id": "avatar-077",
+    "name": "桃桃",
+    "url": "/assets/avatars/avatar-077.webp"
+  },
+  {
+    "id": "avatar-078",
+    "name": "梨梨",
+    "url": "/assets/avatars/avatar-078.webp"
+  },
+  {
+    "id": "avatar-079",
+    "name": "草莓",
+    "url": "/assets/avatars/avatar-079.webp"
+  },
+  {
+    "id": "avatar-080",
+    "name": "南瓜",
+    "url": "/assets/avatars/avatar-080.webp"
+  },
+  {
+    "id": "avatar-081",
+    "name": "龙龙",
+    "url": "/assets/avatars/avatar-081.webp"
+  },
+  {
+    "id": "avatar-082",
+    "name": "独角",
+    "url": "/assets/avatars/avatar-082.webp"
+  },
+  {
+    "id": "avatar-083",
+    "name": "小精灵",
+    "url": "/assets/avatars/avatar-083.webp"
+  },
+  {
+    "id": "avatar-084",
+    "name": "魔法师",
+    "url": "/assets/avatars/avatar-084.webp"
+  },
+  {
+    "id": "avatar-085",
+    "name": "小幽灵",
+    "url": "/assets/avatars/avatar-085.webp"
+  },
+  {
+    "id": "avatar-086",
+    "name": "面包",
+    "url": "/assets/avatars/avatar-086.webp"
+  },
+  {
+    "id": "avatar-087",
+    "name": "奶酪",
+    "url": "/assets/avatars/avatar-087.webp"
+  },
+  {
+    "id": "avatar-088",
+    "name": "茶茶",
+    "url": "/assets/avatars/avatar-088.webp"
+  },
+  {
+    "id": "avatar-089",
+    "name": "咖咖",
+    "url": "/assets/avatars/avatar-089.webp"
+  },
+  {
+    "id": "avatar-090",
+    "name": "饭团",
+    "url": "/assets/avatars/avatar-090.webp"
+  },
+  {
+    "id": "avatar-091",
+    "name": "画画",
+    "url": "/assets/avatars/avatar-091.webp"
+  },
+  {
+    "id": "avatar-092",
+    "name": "木木",
+    "url": "/assets/avatars/avatar-092.webp"
+  },
+  {
+    "id": "avatar-093",
+    "name": "书书",
+    "url": "/assets/avatars/avatar-093.webp"
+  },
+  {
+    "id": "avatar-094",
+    "name": "旅旅",
+    "url": "/assets/avatars/avatar-094.webp"
+  },
+  {
+    "id": "avatar-095",
+    "name": "厨厨",
+    "url": "/assets/avatars/avatar-095.webp"
+  },
+  {
+    "id": "avatar-096",
+    "name": "乐乐",
+    "url": "/assets/avatars/avatar-096.webp"
+  },
+  {
+    "id": "avatar-097",
+    "name": "航航",
+    "url": "/assets/avatars/avatar-097.webp"
+  },
+  {
+    "id": "avatar-098",
+    "name": "园园",
+    "url": "/assets/avatars/avatar-098.webp"
+  },
+  {
+    "id": "avatar-099",
+    "name": "阿宇",
+    "url": "/assets/avatars/avatar-099.webp"
+  },
+  {
+    "id": "avatar-100",
+    "name": "小福",
+    "url": "/assets/avatars/avatar-100.webp"
+  }
+]

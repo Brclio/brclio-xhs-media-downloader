@@ -8,6 +8,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   const issue = { recipients: [], code: null, reason: '', searchRequest: 0 };
   const commerce = { orders: [], page: 1, pageSize: 20, total: 0, totalPages: 0, revenue: null, recipients: [], target: null, listRequest: 0, revenueRequest: 0, searchRequest: 0 };
   let orderLinkTarget = null;
+  const avatarCollection = { cursor: null, history: [null], page: 0, request: 0 };
   let dialogResolve = null;
   let sendTimer = null;
   let userRequest = 0;
@@ -222,6 +223,8 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
     $('orders-count').textContent = '';
     $('orders-filter-form').reset(); $('revenue-filter-form').reset();
     feedbackSessionEpoch += 1; feedbackRequest += 1;
+    avatarCollection.request += 1; avatarCollection.cursor = null; avatarCollection.history = [null]; avatarCollection.page = 0;
+    $('avatars-list').replaceChildren(); $('avatars-pagination').replaceChildren(); $('avatars-count').textContent = '';
     state.feedback = []; state.selectedFeedback = null; state.feedbackDetail = null; state.feedbackHistory = []; state.feedbackMessages = []; state.feedbackDrafts.clear(); state.feedbackLog = null; state.mutating = false;
     updateProxyConfig = null; updateProxyRequest += 1; updateProxyDraft = '';
     $('update-proxy-form').reset(); setUpdateProxyVisibility(false, false); $('save-update-proxy').disabled = true;
@@ -272,7 +275,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
   async function switchTab(name) {
     state.tab = name;
     tabs.forEach((tab) => { const active = tab.dataset.tab === name; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; $(`panel-${tab.dataset.tab}`).hidden = !active; });
-    if (!state.loaded.has(name)) await ({ users: loadUsers, orders: loadCommerce, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback, 'update-proxy': loadUpdateProxyConfig, 'web-parse-proxy': loadWebParseProxyConfig })[name]();
+    if (!state.loaded.has(name)) await ({ users: loadUsers, orders: loadCommerce, codes: loadCodes, audit: loadAudit, status: loadStatus, feedback: loadFeedback, avatars: loadAvatars, 'update-proxy': loadUpdateProxyConfig, 'web-parse-proxy': loadWebParseProxyConfig })[name]();
     if (name === 'codes' && !issue.recipients.length) await findRecipients();
   }
   tabs.forEach((tab, index) => {
@@ -1022,6 +1025,40 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       await finishOrderRecord(await mutate('admin-record-order', input));
     });
   });
+  function avatarBinaryUrl(value, action) {
+    const url = new URL(value, location.origin);
+    if (url.origin !== location.origin || url.pathname !== '/api/account_avatar' || url.searchParams.get('action') !== action) throw new Error('头像下载地址无效，请刷新收藏后重试。');
+    return url.href;
+  }
+  async function loadAvatars(page = avatarCollection.page) {
+    const request = ++avatarCollection.request, epoch = feedbackSessionEpoch;
+    const cursor = avatarCollection.history[page];
+    const data = await api('admin-avatar-list', { limit: PAGE_SIZE, ...(cursor ? { cursor } : {}) });
+    if (request !== avatarCollection.request || epoch !== feedbackSessionEpoch || !state.admin) return;
+    avatarCollection.page = page; avatarCollection.cursor = data.cursor || null; state.loaded.add('avatars');
+    const records = Array.isArray(data.avatars) ? data.avatars : [];
+    $('avatars-count').textContent = `第 ${page + 1} 页 · 本页 ${records.length} 张原图`;
+    if (!records.length) empty($('avatars-list'), '暂无收藏的头像原图。用户成功上传自定义头像后会显示在这里。');
+    else $('avatars-list').replaceChildren(table(['压缩预览', '上传账号 / 文件', '收藏时间 / 原图大小', '原图收藏'], records.map(item => {
+      const preview = el('img', 'avatar-collection-preview'); preview.alt = '压缩头像预览'; preview.width = 64; preview.height = 64; preview.loading = 'lazy'; preview.src = avatarBinaryUrl(item.thumbnailUrl, 'thumbnail');
+      const detail = el('div'); detail.append(record(item.name, item.contentType), el('code', 'avatar-collection-hash', `SHA-256 ${item.sha256}`));
+      const download = button('下载原图', 'button-secondary button-small', async () => {
+        const downloadEpoch = feedbackSessionEpoch;
+        const file = await api('admin-avatar-original', { avatarId: item.id });
+        if (downloadEpoch !== feedbackSessionEpoch || !state.admin) return;
+        const link = el('a'); link.href = avatarBinaryUrl(file.url, 'original'); link.download = file.name || item.name; link.rel = 'noreferrer'; link.hidden = true;
+        document.body.append(link); link.click(); link.remove();
+        tell('已开始下载原图，文件内容保留上传时的原始字节。', 'success');
+      });
+      detail.append(download);
+      return [preview, record(item.ownerEmail || item.userId, item.userId), record(fmt(item.collectedAt), `${(Number(item.bytes) / 1024 / 1024).toFixed(2)} MB`), detail];
+    }), 'avatar-collection-table'));
+    const navigation = $('avatars-pagination'); navigation.replaceChildren();
+    const previous = button('上一页', 'button-secondary button-small', () => loadAvatars(avatarCollection.page - 1)); previous.disabled = page <= 0;
+    const next = button('下一页', 'button-secondary button-small', () => { avatarCollection.history[avatarCollection.page + 1] = avatarCollection.cursor; return loadAvatars(avatarCollection.page + 1); }); next.disabled = !avatarCollection.cursor;
+    navigation.append(previous, el('span', '', `第 ${page + 1} 页`), next);
+  }
+  $('refresh-avatars').addEventListener('click', () => run($('refresh-avatars'), () => { avatarCollection.history = [null]; return loadAvatars(0); }));
   async function loadAudit() { const data = await api('admin-audit'); state.audit = data.audit || []; state.total.audit = data.total || state.audit.length; state.pages.audit = 0; state.loaded.add('audit'); renderAudit(); }
   function renderAudit() {
     const visible = pageItems('audit', state.audit, renderAudit);

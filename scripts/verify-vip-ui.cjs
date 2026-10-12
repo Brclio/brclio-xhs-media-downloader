@@ -197,7 +197,7 @@ app.whenReady().then(async () => {
   await click('#desktop-vip-link');
   const vipDocument = `document.querySelector('#desktop-vip-frame').contentDocument`;
   const vipWindow = `document.querySelector('#desktop-vip-frame').contentWindow`;
-  const selectedVip = `document.body.dataset.desktopPage === 'vip' && document.querySelector('#desktop-vip-link').getAttribute('aria-selected') === 'true'
+  const selectedVip = `document.body.dataset.desktopPage === 'vip' && document.querySelector('#desktop-vip-link').getAttribute('aria-current') === 'page'
     && !document.querySelector('#desktop-vip-page').hidden`;
   await waitFor(() => evaluate(`${selectedVip} && ${vipDocument}?.body?.classList.contains('vip-embedded') && ${vipDocument}?.querySelector('#qr-open img')?.naturalWidth > 0`), 'anonymous user opens embedded VIP page');
   await assertOffer(vipDocument);

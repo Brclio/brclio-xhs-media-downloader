@@ -14,6 +14,7 @@ export function readConfig(env = process.env) {
     otpGlobalHourlyLimit: Number(env.AUTH_GLOBAL_HOURLY_LIMIT || 200),
     deviceCheckWriteMs: 86_400_000,
     siteOrigin: env.AUTH_SITE_ORIGIN || '',
+    avatarOrigin: env.AUTH_AVATAR_ORIGIN || env.AUTH_SITE_ORIGIN || '',
     googleClientId: env.AUTH_GOOGLE_CLIENT_ID || '',
     googleClientSecret: env.AUTH_GOOGLE_CLIENT_SECRET || '',
     googleRedirectUri: env.AUTH_GOOGLE_REDIRECT_URI || '',

@@ -3,6 +3,7 @@ import { readConfig } from '../server/auth/config.js';
 import { createGithubStore } from '../server/auth/store.js';
 import { createMailer } from '../server/auth/mailer.js';
 import { createAccountService } from '../server/auth/service.js';
+import { getAvatarStorage, avatarRequestFetch } from '../server/auth/github-avatar-storage.js';
 
 export const ADMIN_COOKIE = '__Host-xhs-admin';
 export const BROWSER_COOKIE = '__Host-xhs-browser';
@@ -41,7 +42,7 @@ function requireOrigin(req, origin) {
 }
 
 /** Injectable for HTTP boundary tests; the default instance is created lazily from platform Secrets. */
-export function createAccountHandler({ service, config, env, clientIp, mailerFactory = createMailer, now = Date.now } = {}) {
+export function createAccountHandler({ service, config, env, clientIp, mailerFactory = createMailer, now = Date.now, avatarStorageAvailable = false } = {}) {
   return async function handler(req, res) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
@@ -54,11 +55,14 @@ export function createAccountHandler({ service, config, env, clientIp, mailerFac
       // Workers supplies request-scoped bindings explicitly; never mutate process.env.
       // Omitted env retains the Vercel / local process environment behavior.
       const effectiveConfig = config || readConfig(env);
-      const effectiveService = service || createAccountService({ store: createGithubStore(env), mailer: mailerFactory(env), config: effectiveConfig });
+      const avatarAction = body.action?.startsWith?.('avatar-') || body.action?.startsWith?.('admin-avatar-');
+      const fetchImpl = avatarAction ? avatarRequestFetch() : undefined;
+      const effectiveService = service || createAccountService({ store: createGithubStore(env, fetchImpl ? { fetchImpl } : {}), mailer: mailerFactory(env), config: effectiveConfig,
+        avatarStorage: avatarStorageAvailable ? getAvatarStorage(env, fetchImpl ? { fetchImpl } : {}) : null });
       const adminCookie = cookieValue(req, ADMIN_COOKIE), browserCookie = cookieValue(req, BROWSER_COOKIE);
       const bearer = header(req, 'authorization').match(/^Bearer ([A-Za-z0-9_-]{32,200})$/)?.[1] || '';
       const adminAction = body.action?.startsWith?.('admin-') || body.input?.client === 'admin';
-      const browserFlow = !adminAction && (body.input?.client === 'browser' || ['feedback-owner-detail', 'feedback-owner-reply'].includes(body.action) || (['feedback-public-comment', 'profile-update', 'review-mine', 'review-submit', 'order-create', 'orders-mine'].includes(body.action) && Boolean(browserCookie)));
+      const browserFlow = !adminAction && (body.input?.client === 'browser' || ['feedback-owner-detail', 'feedback-owner-reply'].includes(body.action) || ((body.action?.startsWith?.('avatar-') || ['feedback-public-comment', 'profile-update', 'review-mine', 'review-submit', 'order-create', 'orders-mine'].includes(body.action)) && Boolean(browserCookie)));
       const cookie = browserFlow ? browserCookie : adminCookie;
       const adminFlow = adminAction || (!browserFlow && Boolean(adminCookie));
       if (adminFlow || browserFlow || cookie) requireOrigin(req, effectiveConfig.siteOrigin);

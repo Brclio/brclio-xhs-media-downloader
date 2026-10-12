@@ -5,6 +5,9 @@ import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
 import packageInfo from '../package.json' with { type: 'json' };
 import { browserPythonMedia } from './browser-python-source.js';
+import { avatarBinaryResponse, cleanupAvatarUploads, AVATAR_MAX_BYTES } from '../server/auth/avatar.js';
+import { readConfig } from '../server/auth/config.js';
+import { getAvatarStorage } from '../server/auth/github-avatar-storage.js';
 export { AccountRuntime } from './account-runtime.js';
 export { ParseRuntime } from './parse-runtime.js';
 import { invokeHandler, readBoundedBody, RequestTooLargeError, MAX_API_BODY_BYTES, MAX_ACCOUNT_BODY_BYTES } from './http-adapter.js';
@@ -44,6 +47,11 @@ function applySecurityHeaders(response, pathname) {
 /** Overrides keep boundary tests independent from external media/account services. */
 export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = createAccountHandler } = {}) {
   return {
+    async scheduled(_event, env, ctx) {
+      ctx.waitUntil(env.ACCOUNT_RUNTIME
+        ? env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch('https://account.internal/__internal/avatar-cleanup')
+        : cleanupAvatarUploads(getAvatarStorage(env)));
+    },
     async fetch(request, env = {}) {
       const url = new URL(request.url);
       const path = url.pathname;
@@ -51,12 +59,16 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
       try {
         if (path === '/api/health') {
           response = request.method === 'GET' || request.method === 'HEAD'
-            ? json({ ok: true, platform: 'cloudflare', version: env.VERSION || packageInfo.version, pythonBinding: Boolean(env.PYTHON_API?.fetch), ...(env.DEPLOYMENT?.id ? { deploymentId: env.DEPLOYMENT.id } : {}) })
+            ? json({ ok: true, platform: 'cloudflare', version: env.VERSION || packageInfo.version, pythonBinding: Boolean(env.PYTHON_API?.fetch), avatars: { builtinCount: 100, customUploads: Boolean(getAvatarStorage(env)), maxOriginalBytes: AVATAR_MAX_BYTES }, ...(env.DEPLOYMENT?.id ? { deploymentId: env.DEPLOYMENT.id } : {}) })
             : json({ success: false, message: '只支持 GET 请求。' }, 405, { Allow: 'GET, HEAD' });
+        } else if (path === '/api/account_avatar') {
+          response = env.ACCOUNT_RUNTIME
+            ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)
+            : await avatarBinaryResponse(request, { storage: getAvatarStorage(env), config: readConfig(env) });
         } else if (path === '/api/account') {
           response = env.ACCOUNT_RUNTIME
             ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)
-            : await invokeHandler(accountFactory({ env, clientIp: cloudflareClientIp }), request, { maxBodyBytes: MAX_ACCOUNT_BODY_BYTES });
+            : await invokeHandler(accountFactory({ env, clientIp: cloudflareClientIp, avatarStorageAvailable: true }), request, { maxBodyBytes: MAX_ACCOUNT_BODY_BYTES });
         } else if (path === '/api/member_video' && env.PARSE_RUNTIME) {
           response = await env.PARSE_RUNTIME.get(env.PARSE_RUNTIME.idFromName('parsing-v1')).fetch(request);
         } else if (path === '/api/member_video') {

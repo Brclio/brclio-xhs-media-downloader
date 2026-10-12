@@ -10,6 +10,7 @@ import { encryptWebParseSubscription, webParseSubscriptionUrlValue, webParseProx
 import { issueEntitlement } from '../../lib/entitlement.js';
 import { createGoogleOAuth } from './google-oauth.js';
 import { createGoogleLoginService } from './google-login.js';
+import { createAvatarService, avatarView } from './avatar.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -74,7 +75,7 @@ function activationCodeValue(value) {
   return code;
 }
 
-export function createAccountService({ store, mailer, config, now = Date.now, fetchImpl }) {
+export function createAccountService({ store, mailer, config, now = Date.now, fetchImpl, avatarStorage }) {
   const hash = (purpose, value) => digest(config.pepper, purpose, value);
   const isAdmin = user => config.adminEmails.includes(user.email);
   const role = user => isAdmin(user) ? 'admin' : 'user';
@@ -106,7 +107,7 @@ export function createAccountService({ store, mailer, config, now = Date.now, fe
       return [feature, { requiresMembership, requiresDevice,
         allowed: !requiresMembership || (supportedClient && member.active && (!requiresDevice || device.status === 'authorized')) }];
     }));
-    return { user: { id: user.id, email: user.email, nickname: accountNickname(user), role: role(user), createdAt: user.createdAt }, membership: member, device, features, serverTime: iso(time) };
+    return { user: { id: user.id, email: user.email, nickname: accountNickname(user), role: role(user), createdAt: user.createdAt, avatar: avatarView(user.avatar) }, membership: member, device, features, serverTime: iso(time) };
   }
   function userView(state, user, time) {
     return { id: user.id, email: user.email, role: role(user), createdAt: user.createdAt, membership: membership(user, time), devices: Object.values(state.devices).filter(d => d.userId === user.id).map(d => ({ id: d.id, name: d.name, platform: d.platform, status: d.status, boundAt: d.boundAt, lastCheckedAt: d.lastCheckedAt, revokedAt: d.revokedAt || null })) };
@@ -563,12 +564,14 @@ export function createAccountService({ store, mailer, config, now = Date.now, fe
   const feedbackService = createFeedbackService({ store, now, authenticate, hash, operation, audit, isAdmin });
   const commerceService = createCommerceService({ store, now, authenticate, hash, operation, audit });
   const googleService = createGoogleLoginService({ store, now, hash, google, loginSession, emailValue, noMembership, isAdmin });
+  const avatarService = createAvatarService({ store, now, hash, config, authenticate, storage: avatarStorage });
   return {
     async execute({ action, input = {}, token = '', proof, ip = '', client, googleBinding = '' }) {
       if (typeof action !== 'string' || action.length > 80 || !input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_REQUEST', '请求格式无效。');
       const request = { action, input, token, proof, ip, client, googleBinding };
       let result;
-      if (action.startsWith('google-')) result = await googleService.execute(request);
+      if (action.startsWith('avatar-') || action.startsWith('admin-avatar-')) result = await avatarService.execute(request);
+      else if (action.startsWith('google-')) result = await googleService.execute(request);
       else if (['profile-update', 'reviews-public', 'review-mine', 'review-submit', 'order-create', 'orders-mine', 'admin-orders', 'admin-record-order', 'admin-link-order-code', 'admin-revenue'].includes(action)) result = await commerceService.execute(request);
       else if (action.startsWith('feedback-') || action.startsWith('admin-feedback')) result = await feedbackService.execute(request);
       else if (action === 'send-code') result = await sendCode(request);

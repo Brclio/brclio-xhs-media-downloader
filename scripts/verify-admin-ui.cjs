@@ -58,6 +58,7 @@ app.whenReady().then(async () => {
   const { createAccountService } = await import(source('server/auth/service.js'));
   const { readConfig } = await import(source('server/auth/config.js'));
   const { createAccountHandler, ADMIN_COOKIE } = await import(source('api/account.js'));
+  const { avatarBinaryResponse } = await import(source('server/auth/avatar.js'));
   let state = emptyState();
   let version = 1;
   const now = Date.parse('2026-09-20T10:00:00.000Z');
@@ -131,7 +132,20 @@ app.whenReady().then(async () => {
     AUTH_SECRET_PEPPER: 'integration-fixture-only-'.repeat(3),
     AUTH_ADMIN_EMAILS: 'admin@example.test',
   });
-  const service = createAccountService({ store, mailer, config, now: () => now });
+  const avatarBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64');
+  const avatarObjects = new Map();
+  for (let index = 0; index < 21; index++) {
+    const id = `abcdef01-1234-4321-9876-${String(index).padStart(12, '0')}`;
+    avatarObjects.set(`collection/${id}.json`, Buffer.from(JSON.stringify({ id, userId: 'abcdef02-1234-4321-9876-000000000001', ownerEmail: 'avatar@example.test', name: `头像 ${index} <收藏>.png`, contentType: 'image/png', bytes: avatarBytes.length, sha256: digest(avatarBytes), partCount: 1, collectedAt: date })));
+    avatarObjects.set(`originals/${id}/part-000`, avatarBytes);
+    avatarObjects.set(`thumbnails/${id}`, avatarBytes);
+  }
+  const avatarStorage = {
+    async get(key) { const bytes = avatarObjects.get(key); return bytes ? { size: bytes.length, httpMetadata: { contentType: 'image/png' }, body: new Uint8Array(bytes), text: async () => bytes.toString(), arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) } : null; },
+    async put() { throw new Error('Admin collection must remain read-only'); }, async delete() { throw new Error('Admin collection cannot delete originals'); },
+    async list({ prefix, limit, cursor }) { const keys = [...avatarObjects.keys()].filter(key => key.startsWith(prefix)).sort(); const start = Number(cursor || 0); return { objects: keys.slice(start, start + limit).map(key => ({ key })), truncated: start + limit < keys.length, cursor: String(start + limit) }; },
+  };
+  const service = createAccountService({ store, mailer, config, now: () => now, avatarStorage });
   let handler;
   const calls = [];
   let failNextFeedbackReply = false;
@@ -144,6 +158,12 @@ app.whenReady().then(async () => {
   fs.rmSync(keyFile);
   fs.rmSync(certificateFile);
   server = createServer(tlsOptions, (req, res) => {
+    if (req.url.startsWith('/api/account_avatar?')) {
+      avatarBinaryResponse(new Request(`${config.siteOrigin}${req.url}`), { storage: avatarStorage, config, now: () => now }).then(async response => {
+        res.statusCode = response.status; response.headers.forEach((value, key) => res.setHeader(key, value)); res.end(Buffer.from(await response.arrayBuffer()));
+      }).catch(() => { res.statusCode = 500; res.end(); });
+      return;
+    }
     if (req.url === '/api/account') {
       let text = '';
       req.on('data', chunk => { text += chunk; });
@@ -459,6 +479,24 @@ app.whenReady().then(async () => {
   assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'conversation and reply composer fit a phone width');
   fs.writeFileSync(path.join(screenshots, 'feedback-phone.png'), (await win.webContents.capturePage()).toPNG());
   win.setContentSize(1280, 1000);
+  await click('#tab-avatars');
+  await check(`document.querySelectorAll('.avatar-collection-table tbody tr').length === 20`, 'avatar collection is server paginated');
+  assert.ok(await evaluate(`document.querySelector('#avatars-list').textContent.includes('<收藏>') && !document.querySelector('#avatars-list 收藏')`), 'original filenames are rendered as text');
+  assert.ok(await evaluate(`Array.from(document.querySelectorAll('.avatar-collection-preview')).every(img => new URL(img.src).searchParams.get('action') === 'thumbnail')`), 'collection preview uses only compressed thumbnails');
+  const originalDownload = new Promise((resolve, reject) => win.webContents.session.once('will-download', (event, item) => {
+    const filename = path.join(temporary, item.getFilename()); item.setSavePath(filename);
+    item.once('done', (ignored, status) => status === 'completed' ? resolve(filename) : reject(new Error(`Original download ${status}`)));
+  }));
+  await click('.avatar-collection-table button');
+  assert.deepEqual(fs.readFileSync(await originalDownload), avatarBytes, 'original download preserves exact uploaded bytes');
+  await click('#avatars-pagination button:last-child');
+  await check(`document.querySelectorAll('.avatar-collection-table tbody tr').length === 1 && document.querySelector('#avatars-count').textContent.includes('第 2 页')`, 'collection next page uses cursor');
+  await click('#avatars-pagination button:first-child');
+  await check(`document.querySelectorAll('.avatar-collection-table tbody tr').length === 20`, 'collection previous page restores bounded records');
+  win.setContentSize(360, 1000); await pause(80);
+  assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'original collection fits phone width');
+  fs.writeFileSync(path.join(screenshots, 'avatar-collection.png'), (await win.webContents.capturePage()).toPNG());
+  win.setContentSize(1280, 1000);
   await click('#tab-status');
   await check(`document.querySelector('#status-content').textContent.includes('连接或认证失败')`, 'configured but unavailable SMTP is visibly unsuccessful');
   fs.writeFileSync(path.join(screenshots, 'status.png'), (await win.webContents.capturePage()).toPNG());
@@ -574,6 +612,7 @@ app.whenReady().then(async () => {
   await check(`document.querySelector('#workspace').hidden`, 'actual logout');
   releaseDetail(); await pause(100);
   assert.equal(await evaluate(`document.querySelector('#feedback-detail').textContent`), '', 'logout clears retained feedback and logs from the document');
+  assert.equal(await evaluate(`document.querySelector('#avatars-list').textContent`), '', 'logout clears private original collection records');
   assert.equal(await evaluate(`document.querySelector('#issue-preview').textContent.includes('student@example.test')`), false, 'logout clears targeted customer details');
   assert.equal(await evaluate(`document.querySelector('#update-proxy-url').value`), '', 'logout clears subscription credentials from the form');
   assert.equal(await evaluate(`document.querySelector('#web-parse-proxy-url').value`), '', 'logout clears web proxy credentials from the form');

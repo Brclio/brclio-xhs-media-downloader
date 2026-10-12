@@ -51,6 +51,10 @@ async function verifyEmbeddedLearning(win) {
   app.on('browser-window-created', onWindow);
   win.webContents.on('did-fail-load', onFailure);
   try {
+    assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#desktop-navigation [role="tab"]'), item => item.id)`),
+      ['single-note-tab', 'live-photo-tab', 'profile-tab'], 'The packaged client exposes only download tools as primary tabs');
+    assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#desktop-user-menu [role="menuitem"]'), item => item.id)`),
+      ['account-tab', 'desktop-membership-link', 'reviews-tab', 'desktop-vip-link', 'desktop-learning-link'], 'Every account and community route is preserved in the avatar menu');
     assert.equal(await evaluate("!document.querySelector('#desktop-learning-frame').hasAttribute('src')"), true,
       'Promotion stays unloaded until it is selected');
     const draftFields = {
@@ -91,7 +95,8 @@ async function verifyEmbeddedLearning(win) {
     assert.ok(frameState.resources.every(url => url.startsWith('xhs-app://local/')), 'Promotion works from packaged assets only');
     const learningScrollY = await evaluateLearning('scrollY');
     assert.ok(learningScrollY > 0, 'The contact section has a real scroll position to preserve');
-    assert.equal(await evaluate(`document.getElementById('desktop-learning-link').getAttribute('aria-selected')`), 'true');
+    assert.equal(await evaluate(`document.getElementById('desktop-learning-link').getAttribute('aria-current')`), 'page');
+    assert.equal(await evaluate(`document.activeElement.id`), 'desktop-learning-page', 'Programmatic learning navigation focuses its visible panel');
     assert.equal(await evaluate(`document.getElementById('profile-panel').hidden && !document.getElementById('desktop-learning-page').hidden`), true);
 
     // Exercise real main-process delivery while the downloader panel is hidden.
@@ -134,24 +139,49 @@ async function verifyEmbeddedLearning(win) {
         'Switching tabs reuses the loaded promotion document');
     }
 
-    for (const [start, key, expected] of [['profile-tab', 'End', 'learning'], ['desktop-learning-link', 'Home', 'single'],
-      ['single-note-tab', 'ArrowLeft', 'learning'], ['desktop-learning-link', 'ArrowDown', 'single']]) {
+    for (const [start, key, expected] of [['profile-tab', 'End', 'profile'], ['profile-tab', 'Home', 'single'],
+      ['single-note-tab', 'ArrowLeft', 'profile'], ['profile-tab', 'ArrowDown', 'single'],
+      ['single-note-tab', 'ArrowRight', 'live'], ['live-photo-tab', 'ArrowDown', 'profile']]) {
       await evaluate(`document.getElementById(${JSON.stringify(start)}).click(); document.getElementById(${JSON.stringify(start)}).focus()`);
       const keyCode = key.replace(/^Arrow/, '');
       win.webContents.sendInputEvent({ type: 'keyDown', keyCode });
       win.webContents.sendInputEvent({ type: 'keyUp', keyCode });
       await waitFor(() => evaluate(`document.body.dataset.desktopPage === ${JSON.stringify(expected)}`), `Keyboard ${key} did not reach ${expected}`);
       assert.equal(await evaluate(`document.querySelectorAll('#desktop-navigation [role="tab"][aria-selected="true"]').length`), 1,
-        'Keyboard navigation keeps one selected tab');
-      assert.equal(await evaluate(`document.activeElement.getAttribute('aria-selected')`), 'true', 'Keyboard navigation moves focus into the selected tab');
+        'Primary keyboard navigation keeps one selected tool tab');
+      assert.equal(await evaluate(`document.activeElement.getAttribute('aria-selected')`), 'true', 'Primary keyboard navigation moves focus into the selected tool tab');
     }
-    await evaluate("document.getElementById('desktop-learning-link').click()");
+    await evaluate("document.getElementById('desktop-user-toggle').click()");
+    await waitFor(() => evaluate(`document.querySelector('#desktop-user-menu').matches(':popover-open')
+      && document.querySelector('#desktop-user-toggle').getAttribute('aria-expanded') === 'true'
+      && document.activeElement.id === 'account-tab'`), 'Avatar menu did not open with its first destination focused');
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'End' });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'End' });
+    await waitFor(() => evaluate("document.activeElement.id === 'desktop-learning-link'"), 'Menu End did not focus learning');
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Enter' });
+    win.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Enter' });
+    await waitFor(() => evaluate(`document.body.dataset.desktopPage === 'learning'
+      && document.activeElement.id === 'desktop-learning-page'
+      && !document.querySelector('#desktop-user-menu').matches(':popover-open')
+      && document.querySelector('#desktop-user-toggle').getAttribute('aria-expanded') === 'false'`), 'Keyboard menu activation did not select learning, close the menu and focus its visible page');
 
     for (const width of [1320, 900, 760]) {
       win.setContentSize(width, 940);
       await new Promise(resolve => setTimeout(resolve, 60));
       assert.equal(await evaluateLearning('document.documentElement.scrollWidth <= innerWidth + 1'), true,
         `Embedded promotion has no horizontal overflow at ${width}px`);
+      await evaluate("document.getElementById('desktop-user-toggle').click()");
+      await waitFor(() => evaluate(`document.querySelector('#desktop-user-menu').matches(':popover-open')
+        && document.activeElement.id === 'desktop-learning-link'`), 'Menu reopening did not focus the current destination');
+      assert.equal(await evaluate(`(() => { const menu = document.getElementById('desktop-user-menu');
+        const bounds = menu.getBoundingClientRect(); return bounds.left >= -1 && bounds.right <= innerWidth + 1
+          && bounds.top >= -1 && bounds.bottom <= innerHeight + 1 && menu.scrollWidth <= menu.clientWidth; })()`), true,
+      `Avatar menu fits the packaged client at ${width}px`);
+      win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+      await waitFor(() => evaluate(`!document.querySelector('#desktop-user-menu').matches(':popover-open')
+        && document.activeElement.id === 'desktop-user-toggle'`), 'Menu Escape did not restore avatar focus');
       await evaluateLearning("document.getElementById('qr-open').focus(); document.getElementById('qr-open').click()");
       assert.equal(await evaluateLearning("document.getElementById('qr-dialog').open"), true);
       assert.equal(await evaluateLearning(`(() => { const bounds = document.getElementById('qr-dialog').getBoundingClientRect();

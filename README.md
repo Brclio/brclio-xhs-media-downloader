@@ -1,5 +1,7 @@
 # Brclio 小红书下载器
 
+桌面 v2.0.19 整理为三项主要工具与右上角个人菜单，并支持 100 张内置头像、100MB 以内原图上传和压缩头像显示。原图、缩略图及收藏信息保存至现有 GitHub 私有数据仓库，管理员可按页下载原图；现有登录、会员、下载和更新流程继续保留。详见[版本说明](docs/releases/v2.0.19.md)。
+
 [v2.0.16 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.16)，修复主页长任务因账号服务短暂故障而暂停的问题：启动会员操作时联网确认，过程中使用绑定账号、会话和设备的签名凭证本地校验，后台每 5 分钟同步；有效凭证下断网或存储故障可继续下载。Mac / Windows 更新至 2.0.16，Android 保持 [1.0.15](docs/releases/android-v1.0.15.md)。三平台原生 CI、11 个公开附件及新旧更新器入口已核验，详见[版本说明](docs/releases/v2.0.16.md)、[公开发布核验](docs/releases/v2.0.16-publication-verification.json)与[生产部署核验](docs/releases/v2.0.16-production-verification.json)。版本检测优先直连、断点续传和安装替换仍沿用现有流程。
 
 [v2.0.12 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.12)，改进实况整包导出：网页与 Mac / Windows「制作实况」默认导出含完整 `.pvt` 实况包的 ZIP。在 Mac 解压后，通过 Finder 隔空投送整个 `.pvt` 到 iPhone；本次用户实机确认 HEIC 2 秒、JPEG 3 秒两种样本均可在「照片」作为实况接收并长按播放。支持 0.5–8 秒成片、视频 1 / 1.5 / 2 / 3 倍速，以及与成片一致的片段和封面预览；1 倍速可保留声音或静音，其他倍速成片统一静音。8 秒是本工具的成片范围，本轮优先保留已验证的手机交接方式。Android 沿用 v1.0.13。三平台构建与升级门禁、公开附件、正式 Mac 包生成和[线上网站核验](docs/releases/v2.0.12-web-verification.json)通过，详见[本次版本说明](docs/releases/v2.0.12.md)与[实况包和实机验证记录](docs/live-photo-pvt-verification.json)。
