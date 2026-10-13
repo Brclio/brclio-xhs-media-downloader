@@ -1,0 +1,810 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://xhs.download.brclio.com",
+  "expectedVersion": "2.0.21",
+  "startedAt": "2026-10-13T00:17:44.631Z",
+  "isolation": {
+    "softwareRendering": true,
+    "blockAllNonGetHead": true,
+    "authenticated": false,
+    "accountWrites": false
+  },
+  "blockedRequests": [
+    {
+      "method": "POST",
+      "url": "https://xhs.download.brclio.com/api/account",
+      "resourceType": "xhr"
+    },
+    {
+      "method": "POST",
+      "url": "https://xhs.download.brclio.com/api/account",
+      "resourceType": "xhr"
+    },
+    {
+      "method": "POST",
+      "url": "https://xhs.download.brclio.com/api/account",
+      "resourceType": "xhr"
+    },
+    {
+      "method": "POST",
+      "url": "https://counter.bornforthis.cn/hit",
+      "resourceType": "ping"
+    }
+  ],
+  "allowedMethods": {
+    "GET": 197
+  },
+  "rendererErrors": [],
+  "consoleErrors": [],
+  "requestFailures": {
+    "count": 28,
+    "errors": [
+      "net::ERR_CACHE_MISS"
+    ],
+    "note": "Chromium diagnostic cache misses were retained in the local trace; the page, all 100 avatar decodes and responsive assertions passed."
+  },
+  "navigation": {
+    "href": "https://xhs.download.brclio.com/",
+    "title": "Brclio 小红书下载器",
+    "readyState": "complete",
+    "mainCount": 1,
+    "bodyTextLength": 1772
+  },
+  "health": {
+    "ok": true,
+    "platform": "cloudflare",
+    "version": "2.0.21",
+    "pythonBinding": true,
+    "avatars": {
+      "builtinCount": 100,
+      "customUploads": true,
+      "maxOriginalBytes": 104857600
+    },
+    "deploymentId": "5171c1f5-e582-4360-98d4-1b810c4578e4"
+  },
+  "layouts": [
+    {
+      "width": 1280,
+      "height": 960,
+      "documentWidth": 1280,
+      "bodyWidth": 1280,
+      "horizontalOverflow": false,
+      "visibleTitle": "把问题告诉我们。"
+    },
+    {
+      "width": 390,
+      "height": 960,
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "visibleTitle": "把问题告诉我们。"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "production-page-2.0.21-1280.png",
+      "bytes": 523866,
+      "sha256": "e936dcaa5b272f6341af2442dcd47dbb65dcf949c721f8cf427effed36f3bdb3",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "production-page-2.0.21-390.png",
+      "bytes": 289977,
+      "sha256": "e3553b4aa3472addd425827590b6c931f81c6e8f0d05642dfc71f885dc63a358",
+      "visuallyReviewed": true
+    }
+  ],
+  "avatars": {
+    "manifestStatus": 200,
+    "count": 100,
+    "uniqueIds": 100,
+    "uniqueUrls": 100,
+    "decoded": 100,
+    "decodes": [
+      {
+        "id": "avatar-001",
+        "url": "/assets/avatars/avatar-001.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-002",
+        "url": "/assets/avatars/avatar-002.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-003",
+        "url": "/assets/avatars/avatar-003.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-004",
+        "url": "/assets/avatars/avatar-004.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-005",
+        "url": "/assets/avatars/avatar-005.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-006",
+        "url": "/assets/avatars/avatar-006.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-007",
+        "url": "/assets/avatars/avatar-007.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-008",
+        "url": "/assets/avatars/avatar-008.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-009",
+        "url": "/assets/avatars/avatar-009.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-010",
+        "url": "/assets/avatars/avatar-010.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-011",
+        "url": "/assets/avatars/avatar-011.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-012",
+        "url": "/assets/avatars/avatar-012.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-013",
+        "url": "/assets/avatars/avatar-013.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-014",
+        "url": "/assets/avatars/avatar-014.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-015",
+        "url": "/assets/avatars/avatar-015.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-016",
+        "url": "/assets/avatars/avatar-016.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-017",
+        "url": "/assets/avatars/avatar-017.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-018",
+        "url": "/assets/avatars/avatar-018.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-019",
+        "url": "/assets/avatars/avatar-019.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-020",
+        "url": "/assets/avatars/avatar-020.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-021",
+        "url": "/assets/avatars/avatar-021.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-022",
+        "url": "/assets/avatars/avatar-022.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-023",
+        "url": "/assets/avatars/avatar-023.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-024",
+        "url": "/assets/avatars/avatar-024.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-025",
+        "url": "/assets/avatars/avatar-025.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-026",
+        "url": "/assets/avatars/avatar-026.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-027",
+        "url": "/assets/avatars/avatar-027.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-028",
+        "url": "/assets/avatars/avatar-028.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-029",
+        "url": "/assets/avatars/avatar-029.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-030",
+        "url": "/assets/avatars/avatar-030.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-031",
+        "url": "/assets/avatars/avatar-031.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-032",
+        "url": "/assets/avatars/avatar-032.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-033",
+        "url": "/assets/avatars/avatar-033.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-034",
+        "url": "/assets/avatars/avatar-034.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-035",
+        "url": "/assets/avatars/avatar-035.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-036",
+        "url": "/assets/avatars/avatar-036.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-037",
+        "url": "/assets/avatars/avatar-037.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-038",
+        "url": "/assets/avatars/avatar-038.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-039",
+        "url": "/assets/avatars/avatar-039.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-040",
+        "url": "/assets/avatars/avatar-040.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-041",
+        "url": "/assets/avatars/avatar-041.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-042",
+        "url": "/assets/avatars/avatar-042.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-043",
+        "url": "/assets/avatars/avatar-043.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-044",
+        "url": "/assets/avatars/avatar-044.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-045",
+        "url": "/assets/avatars/avatar-045.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-046",
+        "url": "/assets/avatars/avatar-046.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-047",
+        "url": "/assets/avatars/avatar-047.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-048",
+        "url": "/assets/avatars/avatar-048.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-049",
+        "url": "/assets/avatars/avatar-049.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-050",
+        "url": "/assets/avatars/avatar-050.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-051",
+        "url": "/assets/avatars/avatar-051.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-052",
+        "url": "/assets/avatars/avatar-052.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-053",
+        "url": "/assets/avatars/avatar-053.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-054",
+        "url": "/assets/avatars/avatar-054.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-055",
+        "url": "/assets/avatars/avatar-055.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-056",
+        "url": "/assets/avatars/avatar-056.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-057",
+        "url": "/assets/avatars/avatar-057.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-058",
+        "url": "/assets/avatars/avatar-058.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-059",
+        "url": "/assets/avatars/avatar-059.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-060",
+        "url": "/assets/avatars/avatar-060.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-061",
+        "url": "/assets/avatars/avatar-061.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-062",
+        "url": "/assets/avatars/avatar-062.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-063",
+        "url": "/assets/avatars/avatar-063.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-064",
+        "url": "/assets/avatars/avatar-064.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-065",
+        "url": "/assets/avatars/avatar-065.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-066",
+        "url": "/assets/avatars/avatar-066.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-067",
+        "url": "/assets/avatars/avatar-067.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-068",
+        "url": "/assets/avatars/avatar-068.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-069",
+        "url": "/assets/avatars/avatar-069.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-070",
+        "url": "/assets/avatars/avatar-070.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-071",
+        "url": "/assets/avatars/avatar-071.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-072",
+        "url": "/assets/avatars/avatar-072.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-073",
+        "url": "/assets/avatars/avatar-073.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-074",
+        "url": "/assets/avatars/avatar-074.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-075",
+        "url": "/assets/avatars/avatar-075.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-076",
+        "url": "/assets/avatars/avatar-076.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-077",
+        "url": "/assets/avatars/avatar-077.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-078",
+        "url": "/assets/avatars/avatar-078.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-079",
+        "url": "/assets/avatars/avatar-079.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-080",
+        "url": "/assets/avatars/avatar-080.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-081",
+        "url": "/assets/avatars/avatar-081.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-082",
+        "url": "/assets/avatars/avatar-082.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-083",
+        "url": "/assets/avatars/avatar-083.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-084",
+        "url": "/assets/avatars/avatar-084.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-085",
+        "url": "/assets/avatars/avatar-085.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-086",
+        "url": "/assets/avatars/avatar-086.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-087",
+        "url": "/assets/avatars/avatar-087.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-088",
+        "url": "/assets/avatars/avatar-088.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-089",
+        "url": "/assets/avatars/avatar-089.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-090",
+        "url": "/assets/avatars/avatar-090.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-091",
+        "url": "/assets/avatars/avatar-091.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-092",
+        "url": "/assets/avatars/avatar-092.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-093",
+        "url": "/assets/avatars/avatar-093.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-094",
+        "url": "/assets/avatars/avatar-094.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-095",
+        "url": "/assets/avatars/avatar-095.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-096",
+        "url": "/assets/avatars/avatar-096.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-097",
+        "url": "/assets/avatars/avatar-097.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-098",
+        "url": "/assets/avatars/avatar-098.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-099",
+        "url": "/assets/avatars/avatar-099.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      },
+      {
+        "id": "avatar-100",
+        "url": "/assets/avatars/avatar-100.webp",
+        "width": 256,
+        "height": 256,
+        "decoded": true
+      }
+    ]
+  },
+  "accountVerification": "Not performed: all POST requests, including read-only account me/config/reviews discovery, were blocked before transmission.",
+  "result": "PASS",
+  "finishedAt": "2026-10-13T00:18:05.755Z",
+  "sourceSha": "b26d3ec56b3056708050986c74bc5fe25c15426f"
+}

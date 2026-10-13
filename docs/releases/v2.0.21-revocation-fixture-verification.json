@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "originalSourceSha": "303bb2d011a1464f2d8aac563dfbbcf814502025",
+  "fixedSourceSha": "b26d3ec56b3056708050986c74bc5fe25c15426f",
+  "method": "Controlled account-response delivery waits until the actual pacing sleep barrier or fourth media request; revoked media response waits for client local denial. No production modules or target assertions changed.",
+  "controlledReportSha256": "c3b96482b469c5bd877545a2a1b8cb285507bd80f505052f628836104ecbf450",
+  "productionCodeChanged": false,
+  "safetyAssertionsRetained": 13,
+  "naturalOriginalPassed": 20,
+  "naturalFixedCopyPassed": 20,
+  "trackedFixedRepeatedPassed": 20,
+  "trackedFullFilePassed": 8,
+  "controlledOriginal": {
+    "runs": 10,
+    "expectedRequestCountFailures": 10,
+    "fourRequestsAndOnlyThreeSaves": true,
+    "representative": {
+      "variant": "original",
+      "run": 1,
+      "exit": 1,
+      "snapshot": {
+        "media": 4,
+        "saved": 3,
+        "status": "paused",
+        "completed": 1,
+        "failed": 0,
+        "calls": [
+          {
+            "action": "me",
+            "at": 1791763200000,
+            "mode": "healthy"
+          },
+          {
+            "action": "authorize",
+            "feature": "profile-download",
+            "at": 1791763200000,
+            "mode": "healthy"
+          },
+          {
+            "action": "authorize",
+            "feature": "profile-download",
+            "at": 1791763515001,
+            "mode": "revoked"
+          }
+        ],
+        "events": [
+          {
+            "event": "media.saved",
+            "details": {
+              "kind": "image",
+              "assetKey": "image-001",
+              "bytes": 11,
+              "noteId": "000000000000000000000001",
+              "sequence": 1
+            }
+          },
+          {
+            "event": "media.saved",
+            "details": {
+              "kind": "image",
+              "assetKey": "image-002",
+              "bytes": 11,
+              "noteId": "000000000000000000000001",
+              "sequence": 1
+            }
+          },
+          {
+            "event": "media.saved",
+            "details": {
+              "kind": "image",
+              "assetKey": "image-001",
+              "bytes": 11,
+              "noteId": "000000000000000000000002",
+              "sequence": 2
+            }
+          },
+          {
+            "event": "media.error",
+            "details": {
+              "kind": "image",
+              "assetKey": "image-002",
+              "code": "ACCOUNT_AUTHORIZATION_REQUIRED",
+              "noteId": "000000000000000000000002",
+              "sequence": 2
+            }
+          },
+          {
+            "event": "task.interrupted",
+            "details": {
+              "code": "ACCOUNT_AUTHORIZATION_REQUIRED",
+              "causeCode": "DEVICE_REVOKED",
+              "status": "paused",
+              "completed": 1,
+              "skipped": 0
+            }
+          }
+        ]
+      },
+      "timeline": [
+        "RACE_PACE {\"media\":0,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_PACE {\"media\":0,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":1,\"mode\":\"healthy\",\"clock\":1791763206000,\"aborted\":false,\"localValid\":true}",
+        "RACE_PACE {\"media\":1,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":2,\"mode\":\"healthy\",\"clock\":1791763209000,\"aborted\":false,\"localValid\":true}",
+        "RACE_PACE {\"media\":2,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_PACE {\"media\":2,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":3,\"mode\":\"healthy\",\"clock\":1791763215000,\"aborted\":false,\"localValid\":true}",
+        "RACE_PACE {\"media\":3,\"pollWindow\":true,\"remaining\":-297001}",
+        "RACE_FETCH {\"media\":4,\"mode\":\"revoked\",\"clock\":1791763515001,\"aborted\":false,\"localValid\":true}",
+        "RACE_AUTHORITATIVE_REPLY {\"media\":4,\"clock\":1791763515001,\"fixtureBarrierEntered\":false}"
+      ]
+    }
+  },
+  "controlledFixed": {
+    "runs": 10,
+    "passed": 10,
+    "threeRequestsAndThreeSaves": true,
+    "representative": {
+      "variant": "patched",
+      "run": 1,
+      "exit": 0,
+      "snapshot": {
+        "media": 3,
+        "saved": 3,
+        "status": "paused",
+        "completed": 1,
+        "failed": 0,
+        "calls": [
+          {
+            "action": "me",
+            "at": 1791763200000,
+            "mode": "healthy"
+          },
+          {
+            "action": "authorize",
+            "feature": "profile-download",
+            "at": 1791763200000,
+            "mode": "healthy"
+          },
+          {
+            "action": "authorize",
+            "feature": "profile-download",
+            "at": 1791763518001,
+            "mode": "revoked"
+          }
+        ],
+        "events": [
+          {
+            "event": "media.saved",
+            "details": {
+              "kind": "image",
+              "assetKey": "image-001",
+              "bytes": 11,
+              "noteId": "000000000000000000000001",
+              "sequence": 1
+            }
+          },
+          {
+            "event": "media.saved",
+            "details": {
+              "kind": "image",
+              "assetKey": "image-002",
+              "bytes": 11,
+              "noteId": "000000000000000000000001",
+              "sequence": 1
+            }
+          },
+          {
+            "event": "media.saved",
+            "details": {
+              "kind": "image",
+              "assetKey": "image-001",
+              "bytes": 11,
+              "noteId": "000000000000000000000002",
+              "sequence": 2
+            }
+          },
+          {
+            "event": "media.error",
+            "details": {
+              "kind": "image",
+              "assetKey": "image-002",
+              "code": "ACCOUNT_AUTHORIZATION_REQUIRED",
+              "noteId": "000000000000000000000002",
+              "sequence": 2
+            }
+          },
+          {
+            "event": "task.interrupted",
+            "details": {
+              "code": "ACCOUNT_AUTHORIZATION_REQUIRED",
+              "causeCode": "DEVICE_REVOKED",
+              "status": "paused",
+              "completed": 1,
+              "skipped": 0
+            }
+          }
+        ]
+      },
+      "timeline": [
+        "RACE_PACE {\"media\":0,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_PACE {\"media\":0,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":1,\"mode\":\"healthy\",\"clock\":1791763206000,\"aborted\":false,\"localValid\":true}",
+        "RACE_PACE {\"media\":1,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":2,\"mode\":\"healthy\",\"clock\":1791763209000,\"aborted\":false,\"localValid\":true}",
+        "RACE_PACE {\"media\":2,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_PACE {\"media\":2,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":3,\"mode\":\"healthy\",\"clock\":1791763215000,\"aborted\":false,\"localValid\":true}",
+        "RACE_PACE {\"media\":3,\"pollWindow\":true,\"remaining\":3000}",
+        "RACE_SLEEP_BARRIER {\"media\":3,\"clock\":1791763218000}",
+        "RACE_AUTHORITATIVE_REPLY {\"media\":3,\"clock\":1791763518001,\"fixtureBarrierEntered\":true}",
+        "RACE_AUTHORITATIVE_REPLY {\"media\":3,\"clock\":1791763518001,\"fixtureBarrierEntered\":true}",
+        "RACE_PACE {\"media\":3,\"pollWindow\":false,\"remaining\":-300001}",
+        "RACE_PACE {\"media\":3,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":4,\"mode\":\"healthy\",\"clock\":1791763521001,\"aborted\":false,\"localValid\":true}",
+        "RACE_PACE {\"media\":4,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_PACE {\"media\":4,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":5,\"mode\":\"healthy\",\"clock\":1791763527001,\"aborted\":false,\"localValid\":true}",
+        "RACE_PACE {\"media\":5,\"pollWindow\":false,\"remaining\":3000}",
+        "RACE_FETCH {\"media\":6,\"mode\":\"healthy\",\"clock\":1791763530001,\"aborted\":false,\"localValid\":true}"
+      ]
+    }
+  }
+}

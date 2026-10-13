@@ -1,0 +1,949 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.21",
+  "sourceSha": "b26d3ec56b3056708050986c74bc5fe25c15426f",
+  "verifiedAt": "2026-10-13T00:17:52.153Z",
+  "origin": "https://brclio-xhs-pages.pages.dev",
+  "health": {
+    "ok": true,
+    "platform": "cloudflare",
+    "version": "2.0.21",
+    "pythonBinding": true,
+    "avatars": {
+      "builtinCount": 100,
+      "customUploads": true,
+      "maxOriginalBytes": 104857600
+    },
+    "deploymentId": "5171c1f5-e582-4360-98d4-1b810c4578e4"
+  },
+  "builtinCount": 100,
+  "distinctCompressedAssets": 100,
+  "assets": [
+    {
+      "path": "avatar-ui.js",
+      "publicPath": "/avatar-ui.js",
+      "status": 200,
+      "bytes": 11885,
+      "sha256": "4e4bfd1f202d9857137549f3852c943b9e8e27a6715b588b67ae1d7212902e96",
+      "matchesBuild": true
+    },
+    {
+      "path": "account-ui.js",
+      "publicPath": "/account-ui.js",
+      "status": 200,
+      "bytes": 34096,
+      "sha256": "de4c023b4b8ca3eca0f96bea9265de6ce8aa287c3397a85b4ca5f1ee0001569f",
+      "matchesBuild": true
+    },
+    {
+      "path": "account-ui.css",
+      "publicPath": "/account-ui.css",
+      "status": 200,
+      "bytes": 20312,
+      "sha256": "4997779cf07ac77470f5517041e220aa55b2807e2222c7ee3d972dc18f675269",
+      "matchesBuild": true
+    },
+    {
+      "path": "desktop-ui.js",
+      "publicPath": "/desktop-ui.js",
+      "status": 200,
+      "bytes": 104213,
+      "sha256": "5bc3304ad268bce25f1b0a1306029fe57bece72de1907d7f953c74c466ba639f",
+      "matchesBuild": true
+    },
+    {
+      "path": "desktop-ui.css",
+      "publicPath": "/desktop-ui.css",
+      "status": 200,
+      "bytes": 57797,
+      "sha256": "e162699b756e761938f250578ca1944cb43347171ac1d84506f684e02ab46afd",
+      "matchesBuild": true
+    },
+    {
+      "path": "lib/avatar-client.js",
+      "publicPath": "/lib/avatar-client.js",
+      "status": 200,
+      "bytes": 6754,
+      "sha256": "6c59f611cd302b1f86e3275a453d8f67d6f69adf0e6e1193b7a83d7de5fbf3f1",
+      "matchesBuild": true
+    },
+    {
+      "path": "lib/account-avatar-transfer.js",
+      "publicPath": "/lib/account-avatar-transfer.js",
+      "status": 200,
+      "bytes": 4976,
+      "sha256": "152b691082717a5f5e4a8af04531c060ac31677088cd9ba56e02e9b1101eecc1",
+      "matchesBuild": true
+    },
+    {
+      "path": "lib/browser-account.js",
+      "publicPath": "/lib/browser-account.js",
+      "status": 200,
+      "bytes": 10953,
+      "sha256": "b0c6816d78ccb70d54f9ba612506a26e7075e02789419ae0febdd0b1cff59018",
+      "matchesBuild": true
+    },
+    {
+      "path": "admin/admin.js",
+      "publicPath": "/admin/admin.js",
+      "status": 200,
+      "bytes": 96051,
+      "sha256": "e879852981d3b7dceb6cad57f45a6cf5036de04c33546f53015a73b9b240c296",
+      "matchesBuild": true
+    },
+    {
+      "path": "admin/admin.css",
+      "publicPath": "/admin/admin.css",
+      "status": 200,
+      "bytes": 26700,
+      "sha256": "8cf7a3905f64be8296b0801382df1f6ee10a82840683934b2c67565ce16630d7",
+      "matchesBuild": true
+    },
+    {
+      "path": "admin/index.html",
+      "publicPath": "/admin/",
+      "status": 200,
+      "bytes": 26825,
+      "sha256": "4d0c169e138fbfb14e7bfe255e6aad6d06f07556ab77b6f2ebf73dfe30746a25",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/manifest.json",
+      "publicPath": "/assets/avatars/manifest.json",
+      "status": 200,
+      "bytes": 10024,
+      "sha256": "df147ff6c59f44592c80bb5eef11cc2e122fb1c16ab53c0ce3c165c478e7d404",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-001.webp",
+      "publicPath": "/assets/avatars/avatar-001.webp",
+      "status": 200,
+      "bytes": 9184,
+      "sha256": "512f8d719f3ab9b2acc674b4d6e3ac63edc574ba6ec35a1cfa2d67fe74f67df2",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-002.webp",
+      "publicPath": "/assets/avatars/avatar-002.webp",
+      "status": 200,
+      "bytes": 7938,
+      "sha256": "af7679b27418e1bc9761fb5019f5557799f6e736dd4d2fd4a09df29b10ecac70",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-003.webp",
+      "publicPath": "/assets/avatars/avatar-003.webp",
+      "status": 200,
+      "bytes": 10050,
+      "sha256": "2b6cd6595d83bed9cbb66f5136f5379103013fd005e3f69678c7ec579b8fde52",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-004.webp",
+      "publicPath": "/assets/avatars/avatar-004.webp",
+      "status": 200,
+      "bytes": 8340,
+      "sha256": "654920214bd14f9036d25c8ebf4bba9ae928a9f99726b63eced7b239f4ff4f21",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-005.webp",
+      "publicPath": "/assets/avatars/avatar-005.webp",
+      "status": 200,
+      "bytes": 8356,
+      "sha256": "5056b2d7a5bd8027a5a1d58e57183260e829b0de6f1435a87f1f4463c711c71a",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-006.webp",
+      "publicPath": "/assets/avatars/avatar-006.webp",
+      "status": 200,
+      "bytes": 7650,
+      "sha256": "1c24137d992c67fe566bfb402ac759bae310244e07c5e81800082d5b31cb2d63",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-007.webp",
+      "publicPath": "/assets/avatars/avatar-007.webp",
+      "status": 200,
+      "bytes": 8774,
+      "sha256": "faeae917f3737ed81535b97e85db5391a68f818fcb66409a1201083e8369a7ac",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-008.webp",
+      "publicPath": "/assets/avatars/avatar-008.webp",
+      "status": 200,
+      "bytes": 6698,
+      "sha256": "79ba9eb09aec1c7d41e88bca3ee4dfa080afa061a630e2da396400b1196bf973",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-009.webp",
+      "publicPath": "/assets/avatars/avatar-009.webp",
+      "status": 200,
+      "bytes": 11128,
+      "sha256": "289de708156a5bea5f2a8e698ffc95f67c3f7c7e32bc3ebc00d2eb8b373e8bb3",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-010.webp",
+      "publicPath": "/assets/avatars/avatar-010.webp",
+      "status": 200,
+      "bytes": 9004,
+      "sha256": "d45a16947c8bcf70a958a9f0c27b01925ebcc1b8e3b4d6c1580a8218ca8dbd4d",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-011.webp",
+      "publicPath": "/assets/avatars/avatar-011.webp",
+      "status": 200,
+      "bytes": 8150,
+      "sha256": "f5f829f88d19b5f800bf2652be69b36c30f85a13d1343039c86688241d051a73",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-012.webp",
+      "publicPath": "/assets/avatars/avatar-012.webp",
+      "status": 200,
+      "bytes": 9014,
+      "sha256": "f99a85949f1eaf7e0f8cd9b6a6d98cc37c412f3b600e2fedd975bb402f642841",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-013.webp",
+      "publicPath": "/assets/avatars/avatar-013.webp",
+      "status": 200,
+      "bytes": 13706,
+      "sha256": "adc0e35a0144d687f2bc80f5794942a1a19549529bf48b5f16c05e01c2fe2452",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-014.webp",
+      "publicPath": "/assets/avatars/avatar-014.webp",
+      "status": 200,
+      "bytes": 7516,
+      "sha256": "4d9482efafa1fa50689a20a0f302449a76de29fc02e5af2e664c3740ff4affc9",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-015.webp",
+      "publicPath": "/assets/avatars/avatar-015.webp",
+      "status": 200,
+      "bytes": 7458,
+      "sha256": "b1f4acb10b78acccaacac956f8056d1ed10847473a3a0d1b930201f9c8d82beb",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-016.webp",
+      "publicPath": "/assets/avatars/avatar-016.webp",
+      "status": 200,
+      "bytes": 8468,
+      "sha256": "4ec0f000d88ce8a8332a61d0ca87d3642d023e7f87d530d81ca667971e47e93a",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-017.webp",
+      "publicPath": "/assets/avatars/avatar-017.webp",
+      "status": 200,
+      "bytes": 9264,
+      "sha256": "16f33e876ff3abf4277d5e02167f2fbac2237a10eed80d4728d4173ae13851ae",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-018.webp",
+      "publicPath": "/assets/avatars/avatar-018.webp",
+      "status": 200,
+      "bytes": 9548,
+      "sha256": "33406c980086807ec0d795e6371ee4ef18e040fcad75ccd725778f80d9694963",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-019.webp",
+      "publicPath": "/assets/avatars/avatar-019.webp",
+      "status": 200,
+      "bytes": 9160,
+      "sha256": "303380abd34327593d613edd81e2d5b933f908c1b312785bbd7ab38491eced34",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-020.webp",
+      "publicPath": "/assets/avatars/avatar-020.webp",
+      "status": 200,
+      "bytes": 9282,
+      "sha256": "0c00f20b4eb9e4a4267f49a2986660473ef5e68dfe8d04b58f0a712c63608ca3",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-021.webp",
+      "publicPath": "/assets/avatars/avatar-021.webp",
+      "status": 200,
+      "bytes": 8552,
+      "sha256": "11bf5afe24178ac299abd37bcdbdf5a09284f350f748bb359a8758cfd1d8f26b",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-022.webp",
+      "publicPath": "/assets/avatars/avatar-022.webp",
+      "status": 200,
+      "bytes": 7018,
+      "sha256": "be2fbdd7f79cffc9be87b9a977983dceb462658c6c9fa427c80f03de7518a0f9",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-023.webp",
+      "publicPath": "/assets/avatars/avatar-023.webp",
+      "status": 200,
+      "bytes": 10750,
+      "sha256": "782c40374a6da2fac43be40242f109c305591bb255c43c88f521df5b894f2e63",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-024.webp",
+      "publicPath": "/assets/avatars/avatar-024.webp",
+      "status": 200,
+      "bytes": 10204,
+      "sha256": "6754b825e82669fb7080abf7144a4614d77d2249bfcf2e62bacb2980a3d06b3a",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-025.webp",
+      "publicPath": "/assets/avatars/avatar-025.webp",
+      "status": 200,
+      "bytes": 6386,
+      "sha256": "64b0336efab7ad117c7ff34054220d102e02bb4710a854c9e7bf1393fee58856",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-026.webp",
+      "publicPath": "/assets/avatars/avatar-026.webp",
+      "status": 200,
+      "bytes": 8854,
+      "sha256": "250ce1d17d7f3d9755811a01e71fc3a7e6aa33b9cf2c8f7592f13ec10fa096a1",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-027.webp",
+      "publicPath": "/assets/avatars/avatar-027.webp",
+      "status": 200,
+      "bytes": 9684,
+      "sha256": "8cccda04d112b31a7052f3d935dcccb70dc2d82ca930da90d17a330b62ae275f",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-028.webp",
+      "publicPath": "/assets/avatars/avatar-028.webp",
+      "status": 200,
+      "bytes": 8898,
+      "sha256": "097f14523b955ff98f5e2d9dc7c5b126c20ef7322014b8d2158951b5b4068a4c",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-029.webp",
+      "publicPath": "/assets/avatars/avatar-029.webp",
+      "status": 200,
+      "bytes": 8758,
+      "sha256": "4128774aef8486d55b0cd205d9caa74a81cad697e4b11ac608e714504fff57e1",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-030.webp",
+      "publicPath": "/assets/avatars/avatar-030.webp",
+      "status": 200,
+      "bytes": 8728,
+      "sha256": "3b333e4f6c9463b111410e69539ae261a2e2595e1de02e805cb8674aebfe5985",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-031.webp",
+      "publicPath": "/assets/avatars/avatar-031.webp",
+      "status": 200,
+      "bytes": 11252,
+      "sha256": "0b33030c7ab973cf73802ea3820620da88694fcf941b24c7a4919aaf96bacfd9",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-032.webp",
+      "publicPath": "/assets/avatars/avatar-032.webp",
+      "status": 200,
+      "bytes": 10360,
+      "sha256": "bead20ed2361b4c21334963c53132814a45d070ebf99d58de7f7c1136f0cba82",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-033.webp",
+      "publicPath": "/assets/avatars/avatar-033.webp",
+      "status": 200,
+      "bytes": 8690,
+      "sha256": "90b0259a40f5822d57061914a316dc3da8c28e04c174e3543e8c26483c02ad9e",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-034.webp",
+      "publicPath": "/assets/avatars/avatar-034.webp",
+      "status": 200,
+      "bytes": 9428,
+      "sha256": "48e63d8474264f2cbee3a5e6ebb9109ba6e9fdaced746350b169be7076a2707a",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-035.webp",
+      "publicPath": "/assets/avatars/avatar-035.webp",
+      "status": 200,
+      "bytes": 10602,
+      "sha256": "7582871b532a2e104b0bba3aa987122132d40c9e1d2063c93b49a6fa440b57bf",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-036.webp",
+      "publicPath": "/assets/avatars/avatar-036.webp",
+      "status": 200,
+      "bytes": 7862,
+      "sha256": "64caacf1438534971874bfd38ed246d939de558f8ed0a26f27bf3759213310f8",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-037.webp",
+      "publicPath": "/assets/avatars/avatar-037.webp",
+      "status": 200,
+      "bytes": 9078,
+      "sha256": "f1c74833ecb4d471c5198228489ade13d9f8f9e42e700743196f376cba0c1e13",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-038.webp",
+      "publicPath": "/assets/avatars/avatar-038.webp",
+      "status": 200,
+      "bytes": 10304,
+      "sha256": "92f4979bbda35e85bd23a2736b055648a0cd536c15e0e9df70d73b4db5fe2048",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-039.webp",
+      "publicPath": "/assets/avatars/avatar-039.webp",
+      "status": 200,
+      "bytes": 10558,
+      "sha256": "2a74d418446cfedd72792aec3048784abe4c7ac50fc3cacb90e0d93bb848e8ae",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-040.webp",
+      "publicPath": "/assets/avatars/avatar-040.webp",
+      "status": 200,
+      "bytes": 8368,
+      "sha256": "f6ad89933f50be620205dd30353dc3fc8120c35c239e5b2d344925046dbe4acd",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-041.webp",
+      "publicPath": "/assets/avatars/avatar-041.webp",
+      "status": 200,
+      "bytes": 10632,
+      "sha256": "ee57c2109b9feb48f22504254209de41d8bd17409ff20811c2c9a3da0819e49d",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-042.webp",
+      "publicPath": "/assets/avatars/avatar-042.webp",
+      "status": 200,
+      "bytes": 8866,
+      "sha256": "7e34caa271d73df6630dd96b673789953dca49c5b7208ad0d5df3730b489b39e",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-043.webp",
+      "publicPath": "/assets/avatars/avatar-043.webp",
+      "status": 200,
+      "bytes": 8734,
+      "sha256": "68a4a31be839a208078eb96397ed9f15588e85618d3cdd5ab57c283b0252aab3",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-044.webp",
+      "publicPath": "/assets/avatars/avatar-044.webp",
+      "status": 200,
+      "bytes": 8138,
+      "sha256": "a11f5452479966b3b4548195f89e81bd00ffa89495af0aedf32a4e9de4d2644d",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-045.webp",
+      "publicPath": "/assets/avatars/avatar-045.webp",
+      "status": 200,
+      "bytes": 9584,
+      "sha256": "9e9be03c3dca856c9a3e7f2b693a222a88107d9b6be9deb63ce30195bac436cd",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-046.webp",
+      "publicPath": "/assets/avatars/avatar-046.webp",
+      "status": 200,
+      "bytes": 11968,
+      "sha256": "b534a9dac12fbc2a6283416ad0a70ea1da4ef82a7a075ff1a348018df936b836",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-047.webp",
+      "publicPath": "/assets/avatars/avatar-047.webp",
+      "status": 200,
+      "bytes": 14468,
+      "sha256": "08ca41a4ce5aac45789a0af708d77663271e5cd8e82f0bbb7359e1685908e745",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-048.webp",
+      "publicPath": "/assets/avatars/avatar-048.webp",
+      "status": 200,
+      "bytes": 13626,
+      "sha256": "47f7fecd588fb3734ec1993cb1c82216c2c292f5445bd0bf866abde1d71a2928",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-049.webp",
+      "publicPath": "/assets/avatars/avatar-049.webp",
+      "status": 200,
+      "bytes": 8578,
+      "sha256": "cdf2afef1189d0c91e9e738c4eacfa79950ebab1197f9f8138d91eafae27e26b",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-050.webp",
+      "publicPath": "/assets/avatars/avatar-050.webp",
+      "status": 200,
+      "bytes": 6258,
+      "sha256": "0135627795d9b857dff4adce8a253b93607b306fa714a4a4d660957efa3808a2",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-051.webp",
+      "publicPath": "/assets/avatars/avatar-051.webp",
+      "status": 200,
+      "bytes": 9922,
+      "sha256": "c9a98d405fd8c191c0db54d5948094358bd2f9ff4e10caa1576ed1283fa8d2e8",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-052.webp",
+      "publicPath": "/assets/avatars/avatar-052.webp",
+      "status": 200,
+      "bytes": 8010,
+      "sha256": "f5398a6e94f213655de41b54cfe87037b5087596cb26bad4ed123feb1b331696",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-053.webp",
+      "publicPath": "/assets/avatars/avatar-053.webp",
+      "status": 200,
+      "bytes": 11982,
+      "sha256": "6532e3d60b6a76f199c0342ac8694cb25c316e419fb8bf330121876657bf4c8a",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-054.webp",
+      "publicPath": "/assets/avatars/avatar-054.webp",
+      "status": 200,
+      "bytes": 10402,
+      "sha256": "b7c3d4f258df027b693eb41fa9bfdd48791999ab08e0bf04c645928c05a2e4ec",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-055.webp",
+      "publicPath": "/assets/avatars/avatar-055.webp",
+      "status": 200,
+      "bytes": 10180,
+      "sha256": "4ed8613806f42569e57d91a0190ce1469e67f18a11afab560772f2835f56d1bb",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-056.webp",
+      "publicPath": "/assets/avatars/avatar-056.webp",
+      "status": 200,
+      "bytes": 7668,
+      "sha256": "e6e6170308d00826e0fa46e916ca92678a3ac356f5a2242a67272c74ea242a07",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-057.webp",
+      "publicPath": "/assets/avatars/avatar-057.webp",
+      "status": 200,
+      "bytes": 8806,
+      "sha256": "b36d6e30b8249899b900cd6d21a25affa8e46e9dd2272c630878b24249d178e5",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-058.webp",
+      "publicPath": "/assets/avatars/avatar-058.webp",
+      "status": 200,
+      "bytes": 12104,
+      "sha256": "11a498a6cbc1e4f20c24123d88cdd3188630d749605660261940237566f9e44d",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-059.webp",
+      "publicPath": "/assets/avatars/avatar-059.webp",
+      "status": 200,
+      "bytes": 11212,
+      "sha256": "930f6dbd6309e33a6bea5501917b4cb077396f20e9142891ecc1c9100d977120",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-060.webp",
+      "publicPath": "/assets/avatars/avatar-060.webp",
+      "status": 200,
+      "bytes": 8274,
+      "sha256": "dcb0ba6d6f538a31d1749594ee9314e4491981b0f486538f1c5022329174e1c2",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-061.webp",
+      "publicPath": "/assets/avatars/avatar-061.webp",
+      "status": 200,
+      "bytes": 9140,
+      "sha256": "d269e7e86dc57d24d8499fd6178479119658847a5d0da210f1e22a42187e0009",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-062.webp",
+      "publicPath": "/assets/avatars/avatar-062.webp",
+      "status": 200,
+      "bytes": 7082,
+      "sha256": "864e1da8b23d942049959a4458b7b2c1dc379a42b7e5e140c262b91b1d2fbb70",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-063.webp",
+      "publicPath": "/assets/avatars/avatar-063.webp",
+      "status": 200,
+      "bytes": 10782,
+      "sha256": "98c6a707ede558dbf697e996d5c4ec22c485fb6fa38353633f82838afad3eb3c",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-064.webp",
+      "publicPath": "/assets/avatars/avatar-064.webp",
+      "status": 200,
+      "bytes": 12648,
+      "sha256": "02a2d74de9afdbc7daea20c0e6c4dbf16c7092bdc1d280532bfc67bd6278fcc9",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-065.webp",
+      "publicPath": "/assets/avatars/avatar-065.webp",
+      "status": 200,
+      "bytes": 6446,
+      "sha256": "0cb687a9bf13f4c5b906f3ff559f807c6c90c4d11145981db217d1f746bf44a5",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-066.webp",
+      "publicPath": "/assets/avatars/avatar-066.webp",
+      "status": 200,
+      "bytes": 3642,
+      "sha256": "2a43397d2497d6e84e6ac684f10863efec775882a884f82f8b11971d6fcbcea8",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-067.webp",
+      "publicPath": "/assets/avatars/avatar-067.webp",
+      "status": 200,
+      "bytes": 7696,
+      "sha256": "33d7a26f200fe575d4f6e320aa2997a56ac837ee3e5b7b1166caba9bade29aff",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-068.webp",
+      "publicPath": "/assets/avatars/avatar-068.webp",
+      "status": 200,
+      "bytes": 8310,
+      "sha256": "f3838a9f0287c554a80933d9824298d20ac8ee1532216731b44bd55c0b584300",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-069.webp",
+      "publicPath": "/assets/avatars/avatar-069.webp",
+      "status": 200,
+      "bytes": 9620,
+      "sha256": "dbbdfb1b50b65835b823091b792bbdcad758fcf1b7a594ce0b38e2cc1f923526",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-070.webp",
+      "publicPath": "/assets/avatars/avatar-070.webp",
+      "status": 200,
+      "bytes": 6220,
+      "sha256": "6bbca7c177bbcb86423c006b5586fe35b1c6601af9053ba1295b8ba4f6e05569",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-071.webp",
+      "publicPath": "/assets/avatars/avatar-071.webp",
+      "status": 200,
+      "bytes": 8704,
+      "sha256": "321fae81da29b4fbec91ed888147971320715c3366425beae32656ed286131f7",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-072.webp",
+      "publicPath": "/assets/avatars/avatar-072.webp",
+      "status": 200,
+      "bytes": 10148,
+      "sha256": "8291aefdc85e47d7a561cba08cc25b1985424d233d542b884f84e1efafff344b",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-073.webp",
+      "publicPath": "/assets/avatars/avatar-073.webp",
+      "status": 200,
+      "bytes": 8176,
+      "sha256": "9f9606bf625f569bd055a8e34859764685386e92ffd2d0fff797fee675da0b03",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-074.webp",
+      "publicPath": "/assets/avatars/avatar-074.webp",
+      "status": 200,
+      "bytes": 5512,
+      "sha256": "34cf3c88a82cdd5c9c682dc909232f8e80fa113394b3958df2cea003a41d1102",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-075.webp",
+      "publicPath": "/assets/avatars/avatar-075.webp",
+      "status": 200,
+      "bytes": 9984,
+      "sha256": "1916e8717d5665cb8b072fdb6d7bbef64d8c3084208c1380119a742a4f4d9fd0",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-076.webp",
+      "publicPath": "/assets/avatars/avatar-076.webp",
+      "status": 200,
+      "bytes": 7528,
+      "sha256": "5ad97fca30878ca9da1bcafc8ed1c36b4fa0428c2f773f62d546ab7ba62cd3eb",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-077.webp",
+      "publicPath": "/assets/avatars/avatar-077.webp",
+      "status": 200,
+      "bytes": 6746,
+      "sha256": "07fcb1c86fbc954434cf043ba08f3255f4108f31f628b2eeeab28ff88f4fe7e9",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-078.webp",
+      "publicPath": "/assets/avatars/avatar-078.webp",
+      "status": 200,
+      "bytes": 6758,
+      "sha256": "1abf27c145120c1c88fb019d55f72e6b491b27deff662cf839318333d3b36e4c",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-079.webp",
+      "publicPath": "/assets/avatars/avatar-079.webp",
+      "status": 200,
+      "bytes": 9884,
+      "sha256": "4978ac4a9868f0a400a7eadfd2bcede844c561f43c0a511122554e07edfd3f1c",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-080.webp",
+      "publicPath": "/assets/avatars/avatar-080.webp",
+      "status": 200,
+      "bytes": 9122,
+      "sha256": "8564e23317ebfcfb928dddb9671029eaa583f96022031aacfc6991aeec241b81",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-081.webp",
+      "publicPath": "/assets/avatars/avatar-081.webp",
+      "status": 200,
+      "bytes": 8588,
+      "sha256": "d657292e78725e0a3fe9da90656f7c48c7dc5bc48a2b30a42f59c4ac183f2ce1",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-082.webp",
+      "publicPath": "/assets/avatars/avatar-082.webp",
+      "status": 200,
+      "bytes": 7174,
+      "sha256": "e212b77c48222e42bac13a9260e8e532aa0cd8b710513d5dd44354beff8c9e1e",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-083.webp",
+      "publicPath": "/assets/avatars/avatar-083.webp",
+      "status": 200,
+      "bytes": 9660,
+      "sha256": "395cc559e97639057398ac2fe5d06e59732ab85a6c25a2fe4f25efe44cb097b6",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-084.webp",
+      "publicPath": "/assets/avatars/avatar-084.webp",
+      "status": 200,
+      "bytes": 10910,
+      "sha256": "9a40480d76cec9390c10d436ee079602d4f204b9796a4bc9683665c7111662a9",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-085.webp",
+      "publicPath": "/assets/avatars/avatar-085.webp",
+      "status": 200,
+      "bytes": 3640,
+      "sha256": "79d93de6f362b036b31bcf47e43557a9d31d29f60e0cc454b926af3c65c7021d",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-086.webp",
+      "publicPath": "/assets/avatars/avatar-086.webp",
+      "status": 200,
+      "bytes": 13206,
+      "sha256": "a06d2a456c9a91ffc7ae6e17d1a461576000033de4b2829de259fd0f420070e9",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-087.webp",
+      "publicPath": "/assets/avatars/avatar-087.webp",
+      "status": 200,
+      "bytes": 6276,
+      "sha256": "7ff52cee99b05c26162d782f19842638104bf3e9415d941384b0c08a191511ec",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-088.webp",
+      "publicPath": "/assets/avatars/avatar-088.webp",
+      "status": 200,
+      "bytes": 7432,
+      "sha256": "6c2a5c14dc68c7e5258095ada504a9bd9d02d1d407a40386ba602ba6b7780e05",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-089.webp",
+      "publicPath": "/assets/avatars/avatar-089.webp",
+      "status": 200,
+      "bytes": 9156,
+      "sha256": "13d4f1a9d96b4419014342570823b95a45b67a08961881f5827bbc2294e5055a",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-090.webp",
+      "publicPath": "/assets/avatars/avatar-090.webp",
+      "status": 200,
+      "bytes": 4874,
+      "sha256": "e008b7be04017f4480abf8a52fd7b177ec38624599a1abbf984da85df7cdcbd8",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-091.webp",
+      "publicPath": "/assets/avatars/avatar-091.webp",
+      "status": 200,
+      "bytes": 10626,
+      "sha256": "c6fcb70c775e6abc7fe4b5fcafb8ff9524828bc5ef61af1051bdf63e9308c668",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-092.webp",
+      "publicPath": "/assets/avatars/avatar-092.webp",
+      "status": 200,
+      "bytes": 10084,
+      "sha256": "ff4cfd7626ada4c656f4f29736c3a16846e2500199b44886b9857bcaeb498133",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-093.webp",
+      "publicPath": "/assets/avatars/avatar-093.webp",
+      "status": 200,
+      "bytes": 10266,
+      "sha256": "bcad8e4178199b3aafa9f6e21008bfbacfa65a35ab879fda07b00d2013080fa3",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-094.webp",
+      "publicPath": "/assets/avatars/avatar-094.webp",
+      "status": 200,
+      "bytes": 9488,
+      "sha256": "9a46ed725963a23515a786844306671247ac15eddc1c3ce9270034a6a56a1cdc",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-095.webp",
+      "publicPath": "/assets/avatars/avatar-095.webp",
+      "status": 200,
+      "bytes": 7336,
+      "sha256": "aa1f9a324c1e543e803138a3409253755b8934dee94c9ae7ebe5521a702ba1a7",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-096.webp",
+      "publicPath": "/assets/avatars/avatar-096.webp",
+      "status": 200,
+      "bytes": 8958,
+      "sha256": "ecee17761441c973e8f42b04658797edbe6b9982504d07ec017670564d6089ca",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-097.webp",
+      "publicPath": "/assets/avatars/avatar-097.webp",
+      "status": 200,
+      "bytes": 12200,
+      "sha256": "0c250fb3d9d8384eff56ef6127b95f7396f8c97d93c82ea575a80eb7653b2761",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-098.webp",
+      "publicPath": "/assets/avatars/avatar-098.webp",
+      "status": 200,
+      "bytes": 11484,
+      "sha256": "60110a1f354add4e39f23bd0a5ae31c8b2d21c95cfb12833775506ec82e9597b",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-099.webp",
+      "publicPath": "/assets/avatars/avatar-099.webp",
+      "status": 200,
+      "bytes": 9568,
+      "sha256": "b195ff3cccc15966e84cb94f5cd7c09f787e1b5373f4387f2c049dcab7318895",
+      "matchesBuild": true
+    },
+    {
+      "path": "assets/avatars/avatar-100.webp",
+      "publicPath": "/assets/avatars/avatar-100.webp",
+      "status": 200,
+      "bytes": 7800,
+      "sha256": "935f9bb235470ae61b636d54622aad01a0f9ee83901a722f8fa8358a50510271",
+      "matchesBuild": true
+    }
+  ],
+  "unauthenticated": [
+    {
+      "action": "avatar-select",
+      "status": 403,
+      "errorCode": "ORIGIN_FORBIDDEN"
+    },
+    {
+      "action": "admin-avatar-list",
+      "status": 403,
+      "errorCode": "ORIGIN_FORBIDDEN"
+    }
+  ],
+  "binaryBoundaries": [
+    {
+      "query": "action=original&token=invalid",
+      "status": 403
+    },
+    {
+      "query": "action=thumbnail&id=invalid",
+      "status": 404
+    },
+    {
+      "query": "action=thumbnail&id=00000000-0000-0000-0000-000000000000",
+      "status": 404
+    }
+  ],
+  "authenticatedProductionUpload": false,
+  "accountWrites": false,
+  "canonicalOriginRestrictionsPreserved": true,
+  "uploadValidation": "Real local Workerd integration covers the complete 100MiB original, private persistence, exact SHA-256 retrieval and compression."
+}

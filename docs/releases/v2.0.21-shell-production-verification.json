@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.21",
+  "sourceSha": "b26d3ec56b3056708050986c74bc5fe25c15426f",
+  "verifiedAt": "2026-10-13T00:17:48.741Z",
+  "result": "PASS",
+  "accountWrites": false,
+  "documents": [
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "path": "index.html",
+      "publicUrl": "https://xhs.download.brclio.com/",
+      "status": 200,
+      "bytes": 68639,
+      "sha256": "2fa9a408dcaa471000d1965526e644151abdabe723d3d606b47e877b7c67c7e1",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "path": "download.html",
+      "publicUrl": "https://xhs.download.brclio.com/download",
+      "status": 200,
+      "bytes": 38029,
+      "sha256": "7fd0316637113839d77442a0442a5c80e17acffd6ccd73e871143a3d426ce649",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "path": "changelog.html",
+      "publicUrl": "https://xhs.download.brclio.com/changelog",
+      "status": 200,
+      "bytes": 185413,
+      "sha256": "7542923431a2932978e1641ec8882394ba256101e87c76d368a27e536aaa501c",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "path": "index.html",
+      "publicUrl": "https://brclio-xhs-pages.pages.dev/",
+      "status": 200,
+      "bytes": 68639,
+      "sha256": "2fa9a408dcaa471000d1965526e644151abdabe723d3d606b47e877b7c67c7e1",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "path": "download.html",
+      "publicUrl": "https://brclio-xhs-pages.pages.dev/download",
+      "status": 200,
+      "bytes": 38029,
+      "sha256": "7fd0316637113839d77442a0442a5c80e17acffd6ccd73e871143a3d426ce649",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "path": "changelog.html",
+      "publicUrl": "https://brclio-xhs-pages.pages.dev/changelog",
+      "status": 200,
+      "bytes": 185413,
+      "sha256": "7542923431a2932978e1641ec8882394ba256101e87c76d368a27e536aaa501c",
+      "matchesBuild": true
+    }
+  ]
+}
