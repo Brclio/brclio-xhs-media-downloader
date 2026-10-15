@@ -1,4 +1,5 @@
 .git
+.brclio-pay-task-*
 **/.env
 **/.env.*
 !.env.example

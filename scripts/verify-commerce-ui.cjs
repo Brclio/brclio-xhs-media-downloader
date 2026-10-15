@@ -20,6 +20,7 @@ const state = () => ({ configured: true, authenticated: Boolean(user), verified:
 function route(action, input = {}) {
   calls.push({ action, input: structuredClone(input) });
   if (action === 'google-config') return result({ enabled: true });
+  if (action === 'payment-catalog') return result({ catalog: { enabled: false, mode: 'live', currency: 'CNY', version: 'fixture', plans: [] } });
   if (action === 'me' || action === 'verify-code') return result({ account: account() });
   if (action === 'send-code') return result({ retryAfterSeconds: 60 });
   if (action === 'logout') { user = null; return result({}); }

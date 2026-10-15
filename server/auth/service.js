@@ -11,6 +11,7 @@ import { issueEntitlement } from '../../lib/entitlement.js';
 import { createGoogleOAuth } from './google-oauth.js';
 import { createGoogleLoginService } from './google-login.js';
 import { createAvatarService, avatarView } from './avatar.js';
+import { createBrclioPayService } from './brclio-pay.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -75,7 +76,7 @@ function activationCodeValue(value) {
   return code;
 }
 
-export function createAccountService({ store, mailer, config, now = Date.now, fetchImpl, avatarStorage }) {
+export function createAccountService({ store, mailer, config, now = Date.now, fetchImpl, avatarStorage, paymentClient, paymentConfig }) {
   const hash = (purpose, value) => digest(config.pepper, purpose, value);
   const isAdmin = user => config.adminEmails.includes(user.email);
   const role = user => isAdmin(user) ? 'admin' : 'user';
@@ -565,12 +566,15 @@ export function createAccountService({ store, mailer, config, now = Date.now, fe
   const commerceService = createCommerceService({ store, now, authenticate, hash, operation, audit });
   const googleService = createGoogleLoginService({ store, now, hash, google, loginSession, emailValue, noMembership, isAdmin });
   const avatarService = createAvatarService({ store, now, hash, config, authenticate, storage: avatarStorage });
+  const paymentService = createBrclioPayService({ store, now, authenticate, hash, config: paymentConfig || config.brclioPay || {}, paymentClient, protectedFeatures: config.protectedFeatures });
   return {
+    receivePayment: request => paymentService.receivePayment(request),
     async execute({ action, input = {}, token = '', proof, ip = '', client, googleBinding = '' }) {
       if (typeof action !== 'string' || action.length > 80 || !input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_REQUEST', '请求格式无效。');
       const request = { action, input, token, proof, ip, client, googleBinding };
       let result;
-      if (action.startsWith('avatar-') || action.startsWith('admin-avatar-')) result = await avatarService.execute(request);
+      if (['payment-catalog', 'payment-create', 'payment-status'].includes(action)) result = await paymentService.execute(request);
+      else if (action.startsWith('avatar-') || action.startsWith('admin-avatar-')) result = await avatarService.execute(request);
       else if (action.startsWith('google-')) result = await googleService.execute(request);
       else if (['profile-update', 'reviews-public', 'review-mine', 'review-submit', 'order-create', 'orders-mine', 'admin-orders', 'admin-record-order', 'admin-link-order-code', 'admin-revenue'].includes(action)) result = await commerceService.execute(request);
       else if (action.startsWith('feedback-') || action.startsWith('admin-feedback')) result = await feedbackService.execute(request);

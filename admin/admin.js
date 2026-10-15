@@ -829,7 +829,7 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       finishWebParseProxySave(await mutate('admin-save-web-parse-proxy-config', { enabled, subscriptionUrl, expectedRevision: webParseProxyConfig.revision, reason: $('web-parse-proxy-reason').value.trim() }));
     });
   });
-  const paymentMethodLabels = { alipay: '支付宝', wechat: '微信支付', other: '其他', activation_code: '激活码套餐入账' };
+  const paymentMethodLabels = { alipay: '支付宝', wechat: '微信支付', other: '其他', activation_code: '激活码套餐入账', brclio_pay: 'Brclio Pay' };
   function money(cents) { return Number.isSafeInteger(cents) ? `¥${(cents / 100).toFixed(2)}` : '未确认'; }
   function beijingTime(value) {
     if (!value) return '—';
@@ -889,7 +889,9 @@ import { MEMBERSHIP_PLANS } from '../lib/membership-plans.js';
       if (order.codeId) reference.append(el('span', 'small-text', `激活码记录：${order.codeId}`));
       if (order.reason) { const details = el('details'); details.append(el('summary', '', '核对说明'), el('p', 'order-reason', order.reason)); reference.append(details); }
       const control = el('div', 'order-actions');
-      if (order.status === 'confirmed') {
+      if (order.source === 'brclio_pay') {
+        control.append(el('span', 'small-text', order.status === 'confirmed' ? '已自动开通，收款只读' : '等待支付通知自动核实'));
+      } else if (order.status === 'confirmed') {
         control.append(el('span', 'small-text', activationReceipt ? '已自动入账，无需确认' : '已确认，收款只读'));
         if (!order.codeId && !activationReceipt) control.append(button('关联激活码', 'button-secondary button-small', () => openOrderLink(order)));
         else control.append(el('span', 'small-text', '已关联激活码'));

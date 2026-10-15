@@ -1,4 +1,5 @@
 # Native applications and build tooling are not part of the web deployment.
+.brclio-pay-task-*/
 desktop/
 desktop-runtime/
 dist-desktop/

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { fail } from './errors.js';
 import { getMembershipPlan } from '../../lib/membership-plans.js';
 import { defaultReviewNickname, normalizeReviewNickname } from '../../lib/review-nicknames.js';
+import { validateBrclioPayState, brclioOrderView } from './brclio-pay.js';
 
 const own = (object, key) => Object.hasOwn(object, key) ? object[key] : undefined;
 const iso = time => new Date(time).toISOString();
@@ -26,13 +27,14 @@ export function validateCommerceState(state) {
     if (state[key] === undefined) state[key] = {};
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '评价或订单数据格式异常。', 503);
   }
+  validateBrclioPayState(state);
   for (const [userId, review] of Object.entries(state.reviews)) {
     if (!review || review.userId !== userId || !uuidPattern.test(review.id || '') || !Number.isSafeInteger(review.rating) || review.rating < 1 || review.rating > 5 || typeof review.content !== 'string' || review.content.length > 2000 || !validTime(review.createdAt) || (review.nickname !== undefined && !validNickname(review.nickname))) fail('STORAGE_INVALID', '软件评价数据格式异常。', 503);
   }
   for (const user of Object.values(state.users)) if (user?.nickname !== undefined && !validNickname(user.nickname)) fail('STORAGE_INVALID', '软件账号昵称格式异常。', 503);
   const payments = new Set(), codes = new Set();
   for (const [id, order] of Object.entries(state.orders)) {
-    if (!order || order.id !== id || !uuidPattern.test(id) || typeof order.userId !== 'string' || !getMembershipPlan(order.planId) || !Number.isSafeInteger(order.priceCents) || order.priceCents < 0 || !['pending', 'confirmed'].includes(order.status) || !methods.includes(order.paymentMethod) || !validTime(order.createdAt)) fail('STORAGE_INVALID', '订单数据格式异常。', 503);
+    if (!order || order.id !== id || !uuidPattern.test(id) || typeof order.userId !== 'string' || !getMembershipPlan(order.planId) || !Number.isSafeInteger(order.priceCents) || order.priceCents < 0 || !['pending', 'confirmed'].includes(order.status) || !(methods.includes(order.paymentMethod) || order.paymentMethod === 'brclio_pay') || !validTime(order.createdAt)) fail('STORAGE_INVALID', '订单数据格式异常。', 503);
     if (order.status === 'confirmed') {
       if (!Number.isSafeInteger(order.amountCents) || order.amountCents < 1 || order.amountCents > maxAmount || !validTime(order.paidAt) || !validTime(order.confirmedAt) || !/^[a-f0-9]{64}$/.test(order.paymentKey || '') || typeof order.transactionReference !== 'string' || order.transactionReference.trim().length < 3 || order.transactionReference.length > 120 || typeof order.reason !== 'string' || order.reason.trim().length < 2 || typeof order.confirmedBy !== 'string' || payments.has(order.paymentKey)) fail('STORAGE_INVALID', '收款记录数据格式异常。', 503);
       payments.add(order.paymentKey);
@@ -80,7 +82,7 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
     if (input.expectedUserId !== user.id) fail('ACCOUNT_CHANGED', '登录账号已变化，请刷新页面后重新操作。', 409);
   }
   function orderView(order, state, admin = false) {
-    const result = { id: order.id, userId: order.userId, planId: order.planId, planName: order.planName, priceCents: order.priceCents, amountCents: order.amountCents, status: order.status, paymentMethod: order.paymentMethod, paidAt: order.paidAt, createdAt: order.createdAt, confirmedAt: order.confirmedAt, codeId: order.codeId || null, source: order.source };
+    const result = order.source === 'brclio_pay' ? brclioOrderView(order) : { id: order.id, userId: order.userId, planId: order.planId, planName: order.planName, priceCents: order.priceCents, amountCents: order.amountCents, status: order.status, paymentMethod: order.paymentMethod, paidAt: order.paidAt, createdAt: order.createdAt, confirmedAt: order.confirmedAt, codeId: order.codeId || null, source: order.source };
     if (admin) Object.assign(result, { email: own(state.users, order.userId)?.email || '', transactionReference: order.transactionReference || '', reason: order.reason || '', confirmedBy: order.confirmedBy || null });
     return result;
   }
@@ -173,6 +175,7 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
           if (typeof input.reason !== 'string' || input.reason.trim().length < 2 || input.reason.length > 500) fail('REASON_REQUIRED', '请填写 2 至 500 字的关联说明。');
           const order = own(state.orders, input.orderId);
           if (!order) fail('ORDER_NOT_FOUND', '订单不存在。', 404);
+          if (order.source === 'brclio_pay') fail('PAYMENT_AUTOMATED_ORDER', '在线支付订单由验签回调开通，不能关联激活码。', 409);
           if (order.status !== 'confirmed') fail('ORDER_NOT_CONFIRMED', '请先核实并确认实际收款，再关联激活码。', 409);
           if (order.codeId) fail('ORDER_ALREADY_LINKED', '该订单已经关联激活码，不能再次修改。', 409);
           const code = own(state.codes, input.codeId);
@@ -200,6 +203,7 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
         if (input.orderId) {
           prior = own(state.orders, input.orderId) || ledger(state).find(order => order.id === input.orderId);
           if (!prior || prior.userId !== target.id || prior.planId !== plan.id) fail('ORDER_NOT_FOUND', '订单不存在或与所选用户、套餐不符。', 404);
+          if (prior.source === 'brclio_pay') fail('PAYMENT_AUTOMATED_ORDER', '在线支付订单只能通过验签回调确认收款。', 409);
           if (prior.status === 'confirmed') fail('ORDER_ALREADY_CONFIRMED', '该订单已经确认收款，不能再次修改。', 409);
           if (prior.codeId && codeId && prior.codeId !== codeId) fail('ORDER_CODE_MISMATCH', '激活码与历史记录不一致。', 409);
           codeId ||= prior.codeId;

@@ -3,6 +3,7 @@ import image from '../api/image.js';
 import video from '../api/video.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
+import { createBrclioPaymentHandler } from '../api/brclio-payment.js';
 import packageInfo from '../package.json' with { type: 'json' };
 import { browserPythonMedia } from './browser-python-source.js';
 import { avatarBinaryResponse, cleanupAvatarUploads, AVATAR_MAX_BYTES } from '../server/auth/avatar.js';
@@ -65,6 +66,10 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
           response = env.ACCOUNT_RUNTIME
             ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)
             : await avatarBinaryResponse(request, { storage: getAvatarStorage(env), config: readConfig(env) });
+        } else if (path === '/api/brclio-payment') {
+          response = env.ACCOUNT_RUNTIME
+            ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)
+            : await invokeHandler(createBrclioPaymentHandler({ env }), request);
         } else if (path === '/api/account') {
           response = env.ACCOUNT_RUNTIME
             ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)

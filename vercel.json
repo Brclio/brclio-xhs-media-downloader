@@ -27,6 +27,10 @@
       "maxDuration": 60,
       "excludeFiles": "{desktop/**,desktop-runtime/**,dist-desktop/**,test/**,docs/**}"
     },
+    "api/brclio-payment.js": {
+      "maxDuration": 60,
+      "excludeFiles": "{desktop/**,desktop-runtime/**,dist-desktop/**,test/**,docs/**}"
+    },
     "api/member_video.js": {
       "maxDuration": 60,
       "excludeFiles": "{desktop/**,desktop-runtime/**,dist-desktop/**,test/**,docs/**}"

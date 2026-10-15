@@ -28,6 +28,7 @@ test('Docker and Vercel ignore configuration excludes nested private files and p
     'server/private/accounts.sqlite3', 'server/standalone/state/live.db', 'server/private/live.db-wal',
     'server/standalone/data/snapshot.json', 'server/auth/backups/snapshot.json',
     'data/migration-backups/snapshot.json',
+    '.brclio-pay-task-20261015/.env.brclio-pay', '.brclio-pay-task-20261015/skill.zip',
   ];
   for (const name of ['.dockerignore', '.vercelignore']) {
     const patterns = (await readFile(new URL(`../${name}`, import.meta.url), 'utf8')).split(/\r?\n/)
@@ -58,7 +59,7 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
         : 'public');
     }
   }
-  for (const name of ['.env', 'server/auth/config.js', 'server/auth/feedback.js', 'server/auth/sqlite-store.js', 'server/standalone/start.mjs', 'data/accounts.sqlite', 'data/accounts.sqlite-wal', 'data/migration-backups/private.json', 'backups/accounts.json', 'lib/diagnostic-sanitize.js', 'desktop/main.js', 'desktop/diagnostic-log.js', 'desktop/feedback-client.js', 'feedback/private-user/part-000.ndjson', 'state/accounts.json', 'test/example.js', 'README.md']) {
+  for (const name of ['.env', '.brclio-pay-task-20261015/.env.brclio-pay', 'server/auth/brclio-pay-client.js', 'server/auth/brclio-pay.js', 'api/brclio-payment.js', 'server/auth/config.js', 'server/auth/feedback.js', 'server/auth/sqlite-store.js', 'server/standalone/start.mjs', 'data/accounts.sqlite', 'data/accounts.sqlite-wal', 'data/migration-backups/private.json', 'backups/accounts.json', 'lib/diagnostic-sanitize.js', 'desktop/main.js', 'desktop/diagnostic-log.js', 'desktop/feedback-client.js', 'feedback/private-user/part-000.ndjson', 'state/accounts.json', 'test/example.js', 'README.md']) {
     await mkdir(path.dirname(path.join(root, name)), { recursive: true });
     await writeFile(path.join(root, name), 'private');
   }
@@ -159,7 +160,7 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
 });
 
 test('Vercel and Cloudflare import graphs remain independent of standalone SQLite and migration tools', async () => {
-  for (const entry of ['api/account.js', 'cloudflare/worker.js']) {
+  for (const entry of ['api/account.js', 'api/brclio-payment.js', 'cloudflare/worker.js']) {
     const bundle = await build({
       entryPoints: [fileURLToPath(new URL(`../${entry}`, import.meta.url))],
       bundle: true, write: false, metafile: true, platform: 'node', format: 'esm',

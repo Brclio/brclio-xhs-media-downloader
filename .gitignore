@@ -17,6 +17,7 @@ dist-web/
 .wrangler/
 .dev.vars
 .dev.vars.*
+/.brclio-pay-task-*/
 cloudflare/python/.venv/
 cloudflare/python/.python-worker-build/
 dist-android/

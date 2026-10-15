@@ -501,8 +501,8 @@ export class AccountClient {
   }
   getAccountAvatarOriginal(input = {}) { return this.avatarRequest('avatar-original', { expectedUserId: input.expectedUserId }); }
   commerceRequest(action, input = {}) {
-    if (!['reviews-public', 'profile-update', 'review-mine', 'review-submit', 'orders-mine', 'order-create'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
-    if (action === 'reviews-public') return this._request(action, input, { token: '', unsigned: true });
+    if (!['reviews-public', 'profile-update', 'review-mine', 'review-submit', 'orders-mine', 'order-create', 'payment-catalog', 'payment-create', 'payment-status'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
+    if (['reviews-public', 'payment-catalog'].includes(action)) return this._request(action, input, { token: '', unsigned: true });
     const token = this.credentials?.token;
     const serial = ['profile-update', 'review-submit'].includes(action) ? ++this._nicknameRequest : 0;
     return this._authenticatedRequest(action, input, input.expectedUserId).then(result => {

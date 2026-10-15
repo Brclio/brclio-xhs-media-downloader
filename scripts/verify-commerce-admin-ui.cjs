@@ -191,6 +191,25 @@ app.whenReady().then(async () => {
   await check("document.querySelector('#notice').textContent.includes('已经入账')", 'duplicate external payment rejected');
   assert.equal(Object.values(state.orders).filter(order => order.status === 'confirmed').length, 2);
 
+  // Online orders are visible in the original ledger, but their fulfillment
+  // cannot be redirected through manual receipts or activation-code linking.
+  for (const status of ['pending', 'confirmed']) {
+    const id = randomUUID(), paymentOrderId = `pay_${randomUUID().replaceAll('-', '')}`;
+    state.orders[id] = { id, userId: 'customer', planId: 'daily', planName: '日付在线会员', priceCents: 300,
+      amountCents: status === 'confirmed' ? 300 : null, status, paymentMethod: 'brclio_pay', source: 'brclio_pay',
+      paidAt: status === 'confirmed' ? date : null, confirmedAt: status === 'confirmed' ? date : null,
+      codeId: null, createdAt: date, entitlementSnapshot: { type: 'duration', days: 1, features: ['profile-download', 'watermark-free-video'] },
+      payment: { clientId: 'xhs-downloader', mode: 'live', currency: 'CNY', sku: 'daily', catalogVersion: 'fixture-online',
+        quotedAmount: '3.00', amount: '3.00', orderId: paymentOrderId, state: status === 'confirmed' ? 'paid' : 'ready',
+        quoteAccepted: true, status: status === 'confirmed' ? 'PAID' : 'PENDING', returnUrl: `${config.siteOrigin}/?payment_order=${id}` },
+      ...(status === 'confirmed' ? { confirmedBy: 'brclio-pay', transactionReference: '20261015123456789012', paymentKey: 'b'.repeat(64), reason: '隔离在线支付通知测试' } : {}) };
+    if (status === 'confirmed') state.paymentEvents[`evt_${paymentOrderId}`] = { orderId: id, paymentOrderId, at: date };
+    await fill('#order-query', id); await fill('#order-status', ''); await submit('#orders-filter-form');
+    await check(`document.querySelector('#orders-count').textContent.includes('1 笔') && document.querySelector('#orders-list').textContent.includes('Brclio Pay') && document.querySelector('#orders-list').textContent.includes(${JSON.stringify(id)})`, 'online receipt appears with its payment label');
+    assert.equal(await evaluate("document.querySelectorAll('#orders-list button').length"), 0, 'online receipt has no manual confirmation or activation linking action');
+    assert.ok(await evaluate(`document.querySelector('#orders-list').textContent.includes(${JSON.stringify(status === 'confirmed' ? '已自动开通，收款只读' : '等待支付通知自动核实')})`));
+  }
+
   await fill('#order-query', confirmedId); await fill('#order-status', ''); await submit('#orders-filter-form');
   await check("document.querySelector('#orders-count').textContent.includes('1 笔') && document.querySelector('#orders-list').textContent.includes('已确认，收款只读')", 'query finds immutable confirmed receipt');
   assert.equal(await evaluate('window.commerceXss'), undefined);
@@ -205,6 +224,6 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate("document.querySelector('#orders-list').textContent"), '', 'logout clears receipt data');
   assert.equal(await evaluate("document.querySelector('#revenue-summary').textContent"), '', 'logout clears revenue data');
   assert.deepEqual(errors, [], 'renderer has no console errors');
-  console.log(JSON.stringify({ ok: true, checks: ['server pagination and page jump', 'query/status/date filters', 'Shanghai receipt dates', 'actual receipt revenue', 'selected-plan issue automatically adds income without reconfirmation', 'historic selected-plan receipts automatically counted', 'direct membership still requires confirmation and manual receipt', 'link merges automatic receipt without duplicate income', 'durable code-link retry and audit once', 'durable uncertain-write retry', 'duplicate payment rejection', 'audit once', 'receipt does not change membership', 'escaped text', 'mobile layout', 'session cleanup'], screenshots: temporary }, null, 2));
+  console.log(JSON.stringify({ ok: true, checks: ['server pagination and page jump', 'query/status/date filters', 'Shanghai receipt dates', 'actual receipt revenue', 'selected-plan issue automatically adds income without reconfirmation', 'historic selected-plan receipts automatically counted', 'direct membership still requires confirmation and manual receipt', 'link merges automatic receipt without duplicate income', 'durable code-link retry and audit once', 'durable uncertain-write retry', 'duplicate payment rejection', 'audit once', 'receipt does not change membership', 'online receipts have labels and no manual fulfillment actions', 'escaped text', 'mobile layout', 'session cleanup'], screenshots: temporary }, null, 2));
   await finish(0);
 }).catch(error => finish(1, error));

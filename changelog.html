@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.12 改进实况整包导出：制作实况默认导出完整 PVT 包，支持整包隔空投送到 iPhone、0.5–8 秒成片、视频倍速和一致的封面预览；Android 沿用 v1.0.13。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.22 新增 Brclio Pay 在线会员支付，实时读取套餐并在核验付款后开通会员；原人工扫码和激活码继续可用，Android 保持 v1.0.15。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -68,7 +68,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次整理桌面工作区，新增 100 张内置头像与自定义头像，保留原有下载、登录和会员功能。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次新增在线会员支付，保留原人工扫码、激活码和已有会员权益。
             </p>
 
             <div class="release-hero-actions">
@@ -83,31 +83,31 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.21</strong>
-              <small>桌面新布局 · 100 张头像</small>
+              <strong>v2.0.22</strong>
+              <small>Brclio Pay · 在线会员支付</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
                 <strong>Web</strong>
-                <span>头像选择与原图上传</span>
+                <span>实时套餐与在线支付</span>
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>右上角个人菜单</span>
+                <span>会员页打开 HTTPS 收银台</span>
               </div>
               <div class="summary-stat">
                 <strong>1.0.15</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
-                <strong>10.13</strong>
+                <strong>10.15</strong>
                 <span>最近整理 · 2026</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 左侧保留三项主要工具，账号与会员等入口移至右上角。支持 100 张内置头像及 100MB 以内原图上传，界面使用压缩头像；Android 保持 v1.0.15。</p>
-            <a class="release-summary-link" href="#desktop-layout-avatars">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 确认当前报价后在线付款，核验完成后自动顺延会员；价格变化时重新确认。原人工扫码与激活码继续可用，Android 保持 v1.0.15。</p>
+            <a class="release-summary-link" href="#brclio-pay-membership">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -125,7 +125,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.21、头像、布局、实况" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.22、支付、会员、头像" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -139,6 +139,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#brclio-pay-membership"><span>v2.0.22</span><strong>在线会员支付</strong></a>
               <a href="#desktop-layout-avatars"><span>v2.0.21</span><strong>桌面布局与头像收藏</strong></a>
               <a href="#google-account-login"><span>v2.0.18</span><strong>Google 账号登录</strong></a>
               <a href="#local-membership-entitlement"><span>v2.0.16</span><strong>本地授权与故障续传</strong></a>
@@ -210,7 +211,19 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
-            <article id="desktop-layout-avatars" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+            <article id="brclio-pay-membership" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-15"><span>10.15</span><small>2026 · 会员支付</small></time></div>
+              <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.22</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">在线会员支付</span></div><h3>确认报价，在线开通会员</h3></div></header>
+                <p class="release-lead">软件账号会员页新增 Brclio Pay 在线购买入口。选择当前套餐并确认报价后打开 HTTPS 收银台，付款通知核验完成后自动顺延会员。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>读取当前可购买套餐</strong>会员页实时读取后端目录，价格变化时重新确认，已创建订单保留当时金额与会员规则。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>付款与会员状态分别确认</strong>返回页面会查询原订单；如果付款已完成但会员尚未开通，可继续刷新，不必重复付款。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>原购买方式继续可用</strong>保留人工扫码、核款发码和激活码兑换。在线套餐按次购买，不自动续费，已有会员期限和设备规则继续适用。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>桌面更新后使用新入口</strong>Mac / Windows 安装本版后可在会员页打开系统浏览器付款。Android 保持 1.0.15，通过现有浏览器账号入口使用网站新页面。</p></div>
+                </div>
+              </div>
+            </article>
+            <article id="desktop-layout-avatars" class="release-entry" data-release-platforms="web desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-13"><span>10.13</span><small>2026 · 工作区与头像</small></time></div>
               <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.21</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">布局与头像</span></div><h3>工作区更清楚，头像更有个性</h3></div></header>
                 <p class="release-lead">桌面左侧聚焦单篇下载、制作实况和主页下载，账号、会员、评价等入口收进右上角个人菜单。原有功能与任务状态继续保留。</p>

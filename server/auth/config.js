@@ -21,6 +21,16 @@ export function readConfig(env = process.env) {
     webParseProxySubscriptionUrl: env.WEB_PARSE_PROXY_SUBSCRIPTION_URL || '',
     entitlementPrivateKey: null,
     entitlementKeyId: env.AUTH_ENTITLEMENT_KEY_ID || 'v1',
+    // Server-only credentials. Payment validates these lazily so existing login,
+    // manual receipts and activation codes still work before rollout.
+    brclioPay: {
+      baseUrl: env.BRCLIO_PAY_BASE_URL || 'https://pay.bornforthis.cn',
+      clientId: env.BRCLIO_PAY_CLIENT_ID || 'xhs-downloader',
+      apiSecret: env.BRCLIO_PAY_API_SECRET || '',
+      webhookSecret: env.BRCLIO_PAY_WEBHOOK_SECRET || '',
+      mode: env.BRCLIO_PAY_MODE || 'live',
+      returnOrigin: env.AUTH_SITE_ORIGIN || '',
+    },
   };
   if (Buffer.byteLength(config.pepper) < 32) fail('SERVICE_NOT_CONFIGURED', '授权服务尚未配置。', 503);
   if (!Number.isInteger(config.deviceLimit) || config.deviceLimit < 1 || config.deviceLimit > 20) fail('SERVICE_NOT_CONFIGURED', '设备上限配置错误。', 503);

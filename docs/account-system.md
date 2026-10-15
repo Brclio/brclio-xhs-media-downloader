@@ -2,7 +2,7 @@
 
 ## 目录和部署边界
 
-当前正式托管使用 **Cloudflare Pages + Workers**，账号业务数据继续放在另一个不关联自动部署的 GitHub 私有仓库。仓库另保留旧 Vercel 兼容入口、独立服务器与 Electron；独立服务器新增 SQLite 自动初始化和 GitHub / SQLite 双向迁移，详见[服务器部署](server-deployment.md)。每套账号服务只使用一个权威存储，不做后台双写或自动同步。不接入支付系统、D1 或 Redis。正式部署与最新核验见 [Cloudflare 部署说明](cloudflare-deployment.md)；Cloudflare-only 方案不要求保留或恢复 Vercel，也不把旧平台作为解析或账号回退。
+当前正式托管使用 **Cloudflare Pages + Workers**，账号业务数据继续放在另一个不关联自动部署的 GitHub 私有仓库。仓库另保留旧 Vercel 兼容入口、独立服务器与 Electron；独立服务器保留 SQLite 自动初始化和 GitHub / SQLite 双向迁移，详见[服务器部署](server-deployment.md)。每套账号服务只使用一个权威存储，不做后台双写或自动同步。[Brclio Pay 接入](brclio-pay.md)复用原 GitHub 订单、会员和事务存储，不新增 D1 或 Redis。正式部署与最新核验见 [Cloudflare 部署说明](cloudflare-deployment.md)；Cloudflare-only 方案不要求保留或恢复 Vercel，也不把旧平台作为解析或账号回退。
 
 | 文件或目录 | 用途 | 发布到 |
 | --- | --- | --- |
