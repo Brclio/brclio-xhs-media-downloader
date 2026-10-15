@@ -10,6 +10,7 @@ import { createAccountService } from '../server/auth/service.js';
 import { readConfig } from '../server/auth/config.js';
 import { digest } from '../server/auth/crypto.js';
 import { createBrclioPayClient } from '../server/auth/brclio-pay-client.js';
+import { AccountError } from '../server/auth/errors.js';
 
 const DAY = 86_400_000;
 const PAY_CONFIG = { baseUrl: 'https://pay.bornforthis.cn', clientId: 'xhs-downloader', apiSecret: 'test-only-api-secret-'.repeat(3), webhookSecret: 'test-only-webhook-secret-'.repeat(3), mode: 'live', returnOrigin: 'https://xhs.download.brclio.com' };
@@ -23,8 +24,8 @@ function fixture({ sqlite = false } = {}) {
     state.sessions[digest(config.pepper, 'session', loginToken)] = { userId: id, client, revokedAt: null };
   }
   const faults = [], apiCalls = [], upstreamOrders = new Map();
-  let price = '3.00', version = 'catalog-v1', enabled = true, skuEnabled = true, beforeCreate = null, throwCreate = false, responseOverrides = {}, remoteStatus = 'PENDING';
-  const catalog = () => ({ clientId: 'xhs-downloader', mode: 'live', currency: 'CNY', enabled, version, skus: { daily: { subject: '日付', amount: price, enabled: skuEnabled }, monthly: { subject: '月付', amount: '19.90', entitlement: '30 天' }, unknown: { subject: '不可执行的未知套餐', amount: '1.00' } } });
+  let price = '3.00', version = 'catalog-v1', enabled = true, acceptingPayments = true, skuEnabled = true, beforeCreate = null, throwCreate = false, responseOverrides = {}, remoteStatus = 'PENDING';
+  const catalog = () => ({ clientId: 'xhs-downloader', mode: 'live', currency: 'CNY', enabled, acceptingPayments, version, skus: { daily: { subject: '日付', amount: price, enabled: skuEnabled }, monthly: { subject: '月付', amount: '19.90', entitlement: '30 天' }, unknown: { subject: '不可执行的未知套餐', amount: '1.00' } } });
   const upstream = {
     async catalog() { apiCalls.push('catalog'); return catalog(); },
     async createOrder(input) {
@@ -66,7 +67,7 @@ function fixture({ sqlite = false } = {}) {
     async mutate(callback) { return (sqliteStore || githubStore()).transaction(target => { callback(target); return { value: true }; }); },
     restart() { sqliteStore.close(); sqliteStore = new SqliteStateStore({ path: join(directory, 'accounts.sqlite'), openExisting: true }); },
     dispose() { sqliteStore?.close(); if (directory) rmSync(directory, { recursive: true, force: true }); },
-    set price(value) { price = value; }, set version(value) { version = value; }, set enabled(value) { enabled = value; }, set skuEnabled(value) { skuEnabled = value; }, set beforeCreate(value) { beforeCreate = value; }, set throwCreate(value) { throwCreate = value; }, set responseOverrides(value) { responseOverrides = value; }, set remoteStatus(value) { remoteStatus = value; },
+    set price(value) { price = value; }, set version(value) { version = value; }, set enabled(value) { enabled = value; }, set acceptingPayments(value) { acceptingPayments = value; }, set skuEnabled(value) { skuEnabled = value; }, set beforeCreate(value) { beforeCreate = value; }, set throwCreate(value) { throwCreate = value; }, set responseOverrides(value) { responseOverrides = value; }, set remoteStatus(value) { remoteStatus = value; },
     get clock() { return clock; }, advance(ms) { clock += ms; },
   };
 }
@@ -100,6 +101,60 @@ test('public catalog reads latest enabled fixed SKUs and actual local duration r
   assert.deepEqual(result.catalog.plans.map(item => item.id), ['monthly']);
   assert.equal(f.apiCalls.filter(call => call === 'catalog').length, 2);
   assert.ok(!JSON.stringify(result).includes(PAY_CONFIG.apiSecret));
+});
+
+test('upstream disabled code has a fixed public message while unexpected error bodies remain private', async () => {
+  const sentinel = 'private-upstream-diagnostic-fixture';
+  const disabled = createBrclioPayClient({ ...PAY_CONFIG, fetcher: async () => Response.json({ error: { code: 'PAYMENTS_DISABLED', message: sentinel }, secret: sentinel }, { status: 503 }) });
+  await assert.rejects(disabled.createOrder({ productOrderId: 'fixture', sku: 'daily', returnUrl: PAY_CONFIG.returnOrigin }), error => {
+    assert.equal(error.code, 'PAYMENT_SERVICE_DISABLED'); assert.equal(error.status, 503);
+    assert.match(error.message, /尚未启用在线收款/); assert.doesNotMatch(error.message, /private-upstream/);
+    return true;
+  });
+  for (const [status, body] of [[500, { error: { code: 'PAYMENTS_DISABLED', message: sentinel } }], [503, { error: { code: 'CONFIGURATION', message: sentinel } }], [401, { error: { code: 'UNAUTHORIZED', message: sentinel } }], [503, { message: sentinel }]]) {
+    const client = createBrclioPayClient({ ...PAY_CONFIG, fetcher: async () => Response.json(body, { status }) });
+    await assert.rejects(client.catalog(), error => error.code === 'PAYMENT_UNAVAILABLE' && !error.message.includes(sentinel));
+  }
+  for (const body of [sentinel, `${sentinel}${'x'.repeat(131_072)}`]) {
+    const client = createBrclioPayClient({ ...PAY_CONFIG, fetcher: async () => new Response(body, { status: 503 }) });
+    await assert.rejects(client.catalog(), error => error.code === 'PAYMENT_UNAVAILABLE' && !error.message.includes(sentinel));
+  }
+});
+
+test('global payment pause keeps catalog prices visible and rejects new orders before any durable write', async () => {
+  const f = fixture(), input = f.createInput();
+  f.acceptingPayments = false;
+  const { catalog } = await f.call('payment-catalog', {}, '');
+  assert.equal(catalog.enabled, true); assert.equal(catalog.acceptingPayments, false);
+  assert.equal(catalog.version, 'catalog-v1'); assert.equal(catalog.plans[0].amount, '3.00');
+  await assert.rejects(f.call('payment-create', input), { code: 'PAYMENT_SERVICE_DISABLED', status: 503 });
+  const state = await f.read();
+  assert.equal(Object.keys(state.orders).length, 0); assert.equal(Object.keys(state.operations).length, 0);
+  assert.equal(f.apiCalls.filter(call => call.create).length, 0);
+  f.acceptingPayments = true;
+  assert.ok((await f.call('payment-create', input)).checkoutUrl);
+  f.acceptingPayments = 'false';
+  await assert.rejects(f.call('payment-catalog', {}, ''), { code: 'PAYMENT_INVALID_CATALOG' });
+  f.acceptingPayments = undefined;
+  assert.equal(Object.hasOwn((await f.call('payment-catalog', {}, '')).catalog, 'acceptingPayments'), false, 'older center catalogs do not claim readiness without evidence');
+  assert.ok((await f.call('payment-create', f.createInput())).checkoutUrl, 'older center catalogs retain compatible attempt behavior');
+  f.enabled = false; f.acceptingPayments = true;
+  assert.equal((await f.call('payment-catalog', {}, '')).catalog.acceptingPayments, false, 'product pause also prevents payments');
+});
+
+test('payment pause after local order persistence keeps original request retryable and existing delivery available', async () => {
+  const f = fixture(), input = f.createInput();
+  f.beforeCreate = async () => { throw new AccountError('PAYMENT_SERVICE_DISABLED', '支付中心尚未启用在线收款。', 503); };
+  await assert.rejects(f.call('payment-create', input), { code: 'PAYMENT_SERVICE_DISABLED' });
+  const originalId = Object.keys((await f.read()).orders)[0];
+  f.beforeCreate = null;
+  const created = await f.call('payment-create', input);
+  assert.equal(created.order.id, originalId); assert.equal(Object.keys((await f.read()).orders).length, 1);
+  f.acceptingPayments = false; f.enabled = false;
+  assert.equal((await f.call('payment-status', { orderId: originalId, expectedUserId: f.userId })).paymentStatus, 'PENDING');
+  await f.service().receivePayment(f.event(created.order));
+  assert.equal((await f.read()).orders[originalId].status, 'confirmed');
+  assert.equal((await f.call('payment-create', input)).order.status, 'confirmed');
 });
 
 test('authenticated create persists user/quote/rules first, exposes only center checkout, and webhook atomically grants once', async () => {

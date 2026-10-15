@@ -31,11 +31,17 @@ export function createBrclioPayClient({ baseUrl = 'https://pay.bornforthis.cn', 
         headers: { 'Content-Type': 'application/json', 'X-Brclio-Client': clientId, 'X-Brclio-Timestamp': timestamp, 'X-Brclio-Nonce': nonce, 'X-Brclio-Signature': signature },
         ...(body ? { body } : {}),
       });
-      // Never relay upstream error bodies; they may contain internal diagnostics.
-      if (!response.ok) fail('PAYMENT_UNAVAILABLE', '支付中心暂时不可用，请保留本次请求并重试。', 503);
       const text = await response.text();
       if (Buffer.byteLength(text) > 131_072) fail('PAYMENT_UNAVAILABLE', '支付中心响应无效。', 503);
       const result = JSON.parse(text);
+      // Read only an allowlisted status/code; upstream messages and diagnostics
+      // must never reach users, including clients already installed on desktop.
+      if (!response.ok) {
+        if (response.status === 503 && result?.error?.code === 'PAYMENTS_DISABLED') {
+          fail('PAYMENT_SERVICE_DISABLED', '支付中心尚未启用在线收款，请稍后刷新报价或使用人工扫码。', 503);
+        }
+        fail('PAYMENT_UNAVAILABLE', '支付中心暂时不可用，请保留本次请求并重试。', 503);
+      }
       if (!result || typeof result !== 'object' || Array.isArray(result)) fail('PAYMENT_UNAVAILABLE', '支付中心响应无效。', 503);
       return result;
     } catch (error) {

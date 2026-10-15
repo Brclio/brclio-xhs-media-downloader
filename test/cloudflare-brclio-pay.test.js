@@ -24,6 +24,7 @@ test('production Worker and AccountRuntime sign current catalog requests and com
   delete state.paymentEvents;
   let catalog = { clientId: 'xhs-downloader', name: 'XHS fixture', enabled: true, mode: 'live', currency: 'CNY', version: 'catalog-one', skus: { daily: { subject: '日付', amount: '3.00' }, monthly: { subject: '月付', amount: '19.90' }, yearly: { subject: '年付', amount: '69.90', enabled: false } } };
   const paymentOrders = new Map(), external = [], apiNonces = new Set();
+  let rejectCreate = false;
   const bundle = await build({ entryPoints: [fileURLToPath(new URL('../cloudflare/worker.js', import.meta.url))], bundle: true, format: 'esm', write: false, platform: 'node', external: ['node:*', 'cloudflare:*'] });
   const runtime = new Miniflare(convertV4MiniflareOptions({
     modules: true, script: bundle.outputFiles[0].text,
@@ -44,6 +45,7 @@ test('production Worker and AccountRuntime sign current catalog requests and com
         if (url.pathname === '/api/v1/catalog') { assert.equal(request.method, 'GET'); assert.equal(body, ''); return Response.json(catalog); }
         if (url.pathname === '/api/v1/orders') {
           assert.equal(request.method, 'POST');
+          if (rejectCreate) return Response.json({ error: { code: 'PAYMENTS_DISABLED', message: 'private-disabled-diagnostic-fixture' } }, { status: 503 });
           const input = JSON.parse(body);
           assert.deepEqual(Object.keys(input).sort(), ['productOrderId', 'returnUrl', 'sku']);
           assert.equal(new URL(input.returnUrl).origin, origin);
@@ -109,6 +111,29 @@ test('production Worker and AccountRuntime sign current catalog requests and com
     const updated = await call('payment-catalog');
     assert.equal(updated.body.catalog.version, 'catalog-two'); assert.equal(updated.body.catalog.plans.find(plan => plan.id === 'monthly').priceCents, 2090);
     assert.equal(external.filter(request => request.path === '/api/v1/catalog').length, 2);
+  });
+
+  await t.test('readiness blocks fresh persistence and a paused upstream returns a sanitized actionable error to old desktop clients', async () => {
+    const before = writes, input = quoteInput();
+    catalog = { ...catalog, acceptingPayments: false };
+    const pausedCatalog = await call('payment-catalog');
+    assert.equal(pausedCatalog.body.catalog.acceptingPayments, false);
+    assert.equal(pausedCatalog.body.catalog.enabled, true);
+    const paused = await desktopCall('payment-create', input);
+    assert.equal(paused.response.status, 503); assert.equal(paused.body.error.code, 'PAYMENT_SERVICE_DISABLED');
+    assert.match(paused.body.error.message, /尚未启用在线收款/); assert.equal(writes, before);
+    catalog = { ...catalog, acceptingPayments: true };
+    rejectCreate = true;
+    const raced = await desktopCall('payment-create', input);
+    assert.equal(raced.response.status, 503); assert.equal(raced.body.error.code, 'PAYMENT_SERVICE_DISABLED');
+    assert.doesNotMatch(JSON.stringify(raced.body), /private-disabled-diagnostic-fixture/);
+    const businessOrder = Object.values(state.orders).find(order => order.userId === ownerId);
+    assert.ok(businessOrder); assert.equal(businessOrder.payment.orderId, null);
+    rejectCreate = false;
+    const recovered = await desktopCall('payment-create', input);
+    assert.equal(recovered.response.status, 200, JSON.stringify(recovered.body));
+    assert.equal(recovered.body.order.id, businessOrder.id); assert.equal(recovered.body.replayed, true);
+    assert.equal(Object.keys(state.orders).length, 1); assert.equal(state.users[ownerId].membership.type, 'none');
   });
 
   await t.test('browser identity and exact origin are required for purchases and desktop proofs remain required', async () => {

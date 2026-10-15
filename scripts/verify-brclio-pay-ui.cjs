@@ -19,7 +19,7 @@ if(document.getElementById('desktop-navigation'))document.getElementById('deskto
 if(document.getElementById('desktop-account-page'))document.getElementById('desktop-account-page').hidden=false;
 window.fixtureCalls=[]; window.fixtureOpened=[]; window.fixtureRefreshes=0;
 window.fixtureMode='quote'; window.fixtureStatus='PENDING'; window.fixtureConfirmed=false;
-window.fixtureCatalog={enabled:true,mode:'live',currency:'CNY',version:'fixture-1',plans:[{id:'monthly',name:'月付',days:30,priceCents:1990,amount:'19.90'}]};
+window.fixtureCatalog={enabled:true,acceptingPayments:!new URL(location.href).searchParams.has('paused'),mode:'live',currency:'CNY',version:'fixture-1',plans:[{id:'monthly',name:'月付',days:30,priceCents:1990,amount:'19.90'}]};
 window.fixtureState={configured:true,authenticated:true,verified:true,status:'ready',account:{user:{id:'a',email:'a@example.test',nickname:'测试账号'},membership:{type:'none',active:false},device:{status:'authorized'},serverTime:'2026-10-15T00:00:00Z'}};
 window.fixtureListeners=[];
 window.fixtureSetState=value=>{window.fixtureState=value;window.fixtureListeners.forEach(fn=>fn(value));};
@@ -34,6 +34,7 @@ if(action==='payment-catalog')return {ok:true,result:{catalog:structuredClone(wi
 if(action==='payment-create'){
 if(window.fixtureMode==='quote'){window.fixtureCatalog.version='fixture-2';window.fixtureCatalog.plans[0].amount='24.90';window.fixtureCatalog.plans[0].priceCents=2490;return {ok:false,error:{code:'QUOTE_CHANGED',message:'报价变化'}};}
 if(window.fixtureMode==='network')return {ok:false,error:{code:'PAYMENT_UNAVAILABLE',message:'网络结果未确认，请重试原订单'}};
+if(window.fixtureMode==='paused'){window.fixtureCatalog.acceptingPayments=false;return {ok:false,error:{code:'PAYMENT_SERVICE_DISABLED',message:'支付中心尚未启用在线收款，请稍后刷新报价或使用人工扫码。'}};}
 if(window.fixtureMode==='confirmed')return {ok:true,result:{order:{id:'${orderId}',status:'confirmed',paymentStatus:'PAID'}}};
 if(window.fixtureMode==='paid')return {ok:true,result:{order:{id:'${orderId}',status:'pending',paymentStatus:'PAID'}}};
 if(window.fixtureMode==='delayed')await new Promise(resolve=>window.fixtureRelease=resolve);
@@ -75,7 +76,7 @@ app.whenReady().then(async () => {
   win.webContents.session.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !details.url.startsWith(`${origin}/`) && !details.url.startsWith('data:') }));
   win.webContents.on('console-message', (_event, details) => { if (details.level === 'error' && !details.message.includes('ERR_BLOCKED_BY_CLIENT')) errors.push(details.message); });
   const evaluate = code => win.webContents.executeJavaScript(code, true);
-  const wait = condition => evaluate(`new Promise((resolve,reject)=>{const start=Date.now();const check=()=>{if(${condition})resolve();else if(Date.now()-start>5000)reject(new Error('Fixture condition timed out'));else setTimeout(check,10)};check();})`);
+  const wait = condition => evaluate(`new Promise((resolve,reject)=>{const start=Date.now();const check=()=>{if(${condition})resolve();else if(Date.now()-start>5000)reject(new Error(${JSON.stringify(`Fixture condition timed out: ${condition}`)}));else setTimeout(check,10)};check();})`);
   const click = id => evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
   await win.loadURL(`${origin}/?payment_order=${orderId}&payment_order_id=forged&product_order_id=forged&status=PAID`);
   await wait(`document.getElementById('membership-online-status')?.textContent.includes('尚未完成付款') && document.getElementById('membership-online-quote')?.textContent.includes('19.90')`);
@@ -90,12 +91,30 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate('window.fixtureOpened.length'), 0);
   await evaluate(`window.fixtureMode='network'`); await click('membership-online-pay');
   await wait(`document.getElementById('membership-online-status').textContent.includes('网络结果未确认')`);
-  await evaluate(`window.fixtureMode='success'`); await click('membership-online-pay');
+  await evaluate(`window.fixtureMode='paused'`); await click('membership-online-pay');
+  await wait(`document.getElementById('membership-online-pay').disabled && document.getElementById('membership-online-status').textContent.includes('尚未启用在线收款')`);
+  assert.equal(await evaluate(`document.getElementById('membership-online-pay').textContent`), '在线付款暂未开放');
+  assert.equal(await evaluate(`document.getElementById('membership-online-refresh').disabled`), false);
+  assert.equal(await evaluate(`document.getElementById('membership-online-plan').disabled`), true, 'original request must retain its plan');
+  await click('membership-online-refresh');
+  await wait(`!document.getElementById('membership-online-refresh').disabled`);
+  assert.equal(await evaluate(`document.getElementById('membership-online-pay').disabled`), true, 'refresh cannot bypass payment pause');
+  await evaluate(`window.fixtureCatalog.plans=[{id:'daily',name:'临时日付',days:1,priceCents:300,amount:'3.00'}]`);
+  await click('membership-online-refresh');
+  await wait(`!document.getElementById('membership-online-refresh').disabled`);
+  assert.equal(await evaluate(`document.getElementById('membership-online-plan').value`), 'daily');
+  assert.match(await evaluate(`document.getElementById('membership-online-quote').textContent`), /^月付 · ¥24\.90 · 30 天会员（原订单报价）/,
+    'a missing original SKU cannot borrow another SKU name for the retained draft quote');
+  await evaluate(`window.fixtureMode='success';window.fixtureCatalog.acceptingPayments=true;window.fixtureCatalog.version='fixture-3';window.fixtureCatalog.plans=[{id:'monthly',name:'更新月付',days:30,priceCents:2990,amount:'29.90'}];`);
+  await click('membership-online-refresh');
+  await wait(`!document.getElementById('membership-online-pay').disabled && document.getElementById('membership-online-status').textContent.includes('在线付款已恢复')`);
+  assert.match(await evaluate(`document.getElementById('membership-online-quote').textContent`), /^更新月付 · ¥24\.90 · 30 天会员（原订单报价）/);
+  await click('membership-online-pay');
   await wait('window.fixtureOpened.length===1');
   assert.equal(await evaluate(`new URL(window.fixtureOpened[0]).hash.startsWith('#token=')`), true);
   const requests = await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').map(item=>item.input)`);
-  assert.equal(requests.length, 3); assert.notEqual(requests[0].requestId, requests[1].requestId);
-  assert.deepEqual(requests[1], requests[2]); assert.equal(requests[1].amount, '24.90');
+  assert.equal(requests.length, 4); assert.notEqual(requests[0].requestId, requests[1].requestId);
+  assert.deepEqual(requests[1], requests[2]); assert.deepEqual(requests[1], requests[3]); assert.equal(requests[1].amount, '24.90');
   await evaluate(`document.getElementById('membership-online-payment').scrollIntoView({block:'start'})`);
   await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
   fs.writeFileSync(path.join(directory, 'online-desktop.png'), (await win.webContents.capturePage()).toPNG());
@@ -124,11 +143,24 @@ app.whenReady().then(async () => {
   await evaluate(`const next=structuredClone(window.fixtureState);next.account.user={id:'b',email:'b@example.test'};window.fixtureSetState(next);window.fixtureRelease();`);
   await wait(`document.getElementById('membership-online-pay').disabled`);
   assert.equal(await evaluate('window.fixtureOpened.length'), 1, 'late response cannot open a checkout after account changes');
+  await win.loadURL(`${origin}/?paused=1`);
+  await wait(`Boolean(document.getElementById('account-open-membership'))`);
+  await click('account-open-membership');
+  await wait(`document.getElementById('membership-online-quote')?.textContent.includes('尚未启用在线收款')`);
+  assert.equal(await evaluate(`document.getElementById('membership-online-pay').disabled`), true);
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 0, 'known disabled catalog never attempts an order');
+  await evaluate(`document.getElementById('membership-online-payment').scrollIntoView({block:'start'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+  fs.writeFileSync(path.join(directory, 'online-paused.png'), (await win.webContents.capturePage()).toPNG());
+  await evaluate(`window.fixtureCatalog.acceptingPayments=true`); await click('membership-online-refresh');
+  await wait(`!document.getElementById('membership-online-pay').disabled`);
   await win.loadURL(`${origin}/membership.html`);
   await wait(`document.querySelector('[data-plan="monthly"] [data-plan-price]').textContent==='19.90'`);
   assert.equal(await evaluate(`document.querySelector('[data-plan="daily"] [data-plan-price]').textContent`), '停售');
   assert.equal(await evaluate(`document.querySelector('[data-starting-price]').textContent`), '¥19.90');
+  await win.loadURL(`${origin}/membership.html?paused=1`);
+  await wait(`document.getElementById('membership-catalog-status').textContent.includes('尚未启用在线收款')`);
+  assert.equal(await evaluate(`document.querySelector('[data-plan="monthly"] [data-plan-price]').textContent`), '19.90', 'payment pause does not erase current pricing');
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ ok: true, checks: ['current online quote with manual QR preserved', 'quote change requires second click', 'PAYMENT_UNAVAILABLE create reuses request ID', 'single-order checkout fragment preserved', 'return parameters never grant rights', 'paid without committed webhook stays pending', 'confirmed order refreshes actual account', 'confirmed or paid retry without checkout URL queries status', 'late checkout discarded on account switch', 'marketing page uses enabled live catalog', '375px online layout'], screenshots: directory }));
+  console.log(JSON.stringify({ ok: true, checks: ['current online quote with manual QR preserved', 'quote change requires second click', 'PAYMENT_UNAVAILABLE create reuses request ID', 'payment pause blocks checkout and allows readiness refresh', 'removed draft SKU keeps its original plan name', 'recovery preserves original request and quoted amount', 'disabled catalog never creates an order', 'single-order checkout fragment preserved', 'return parameters never grant rights', 'paid without committed webhook stays pending', 'confirmed order refreshes actual account', 'confirmed or paid retry without checkout URL queries status', 'late checkout discarded on account switch', 'marketing page uses enabled live catalog and shows payment pause', '375px online layout'], screenshots: directory }));
   await finish(0);
 }).catch(error => void finish(1, error));

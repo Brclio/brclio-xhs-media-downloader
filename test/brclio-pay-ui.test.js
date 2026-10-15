@@ -32,8 +32,10 @@ test('checkout requires the exact HTTPS payment center and preserves its single-
 
 test('live online catalog rejects foreign currency, sandbox, unknown rights, duplicate SKUs and inconsistent price snapshots', () => {
   assert.deepEqual(paymentCatalog(catalog()), catalog());
+  assert.equal(paymentCatalog({ ...catalog(), acceptingPayments: false }).acceptingPayments, false);
+  assert.equal(paymentCatalog({ ...catalog(), acceptingPayments: true }).acceptingPayments, true);
   for (const patch of [{ currency: 'USD' }, { mode: 'sandbox' }, { version: null }, { plans: [{ ...catalog().plans[0], days: 31 }] },
-    { plans: [{ ...catalog().plans[0], amount: '19.91' }] }, { plans: [{ ...catalog().plans[0], id: 'permanent' }] }, { plans: [catalog().plans[0], catalog().plans[0]] }]) {
+    { acceptingPayments: 'false' }, { plans: [{ ...catalog().plans[0], amount: '19.91' }] }, { plans: [{ ...catalog().plans[0], id: 'permanent' }] }, { plans: [catalog().plans[0], catalog().plans[0]] }]) {
     assert.throws(() => paymentCatalog({ ...catalog(), ...patch }));
   }
   assert.equal(paymentCatalog({ ...catalog(), plans: [{ ...catalog().plans[0], priceCents: 6990, amount: '69.90' }] }).plans[0].priceCents, 6990);

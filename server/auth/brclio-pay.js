@@ -57,7 +57,7 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
   }
   async function catalog() {
     const result = await configured().catalog(), source = result.catalog || result;
-    if (source.clientId !== config.clientId || source.mode !== config.mode || source.currency !== 'CNY' || typeof source.enabled !== 'boolean' || typeof source.version !== 'string' || !source.version || source.version.length > 128 || !source.skus || typeof source.skus !== 'object' || Array.isArray(source.skus)) fail('PAYMENT_INVALID_CATALOG', '支付商品目录无效。', 502);
+    if (source.clientId !== config.clientId || source.mode !== config.mode || source.currency !== 'CNY' || typeof source.enabled !== 'boolean' || (source.acceptingPayments !== undefined && typeof source.acceptingPayments !== 'boolean') || typeof source.version !== 'string' || !source.version || source.version.length > 128 || !source.skus || typeof source.skus !== 'object' || Array.isArray(source.skus)) fail('PAYMENT_INVALID_CATALOG', '支付商品目录无效。', 502);
     const plans = [];
     for (const [id, item] of Object.entries(source.skus)) {
       const local = getMembershipPlan(id);
@@ -65,7 +65,7 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
       if (!item || typeof item.subject !== 'string' || !item.subject.trim() || item.subject.length > 120 || (item.enabled !== undefined && typeof item.enabled !== 'boolean') || (item.description !== undefined && typeof item.description !== 'string') || (item.entitlement !== undefined && typeof item.entitlement !== 'string')) fail('PAYMENT_INVALID_CATALOG', '支付商品目录无效。', 502);
       plans.push({ id, name: item.subject, days: local.days, priceCents: paymentAmountCents(item.amount), amount: item.amount, description: item.description || '', entitlement: item.entitlement || '' });
     }
-    return { enabled: source.enabled, mode: source.mode, currency: 'CNY', version: source.version, plans };
+    return { enabled: source.enabled, ...(source.acceptingPayments !== undefined ? { acceptingPayments: source.enabled && source.acceptingPayments } : {}), mode: source.mode, currency: 'CNY', version: source.version, plans };
   }
   function checkedResponse(result, order, { allowChangedAmount = false } = {}) {
     const payment = result?.order || result;
@@ -99,6 +99,7 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
       if (user.membership?.type === 'permanent') fail('ALREADY_PERMANENT', '您已是永久会员，无需购买时长套餐。', 409);
       const current = await catalog(), plan = current.plans.find(item => item.id === input.planId);
       if (!current.enabled || !plan) fail('PAYMENT_PRODUCT_DISABLED', '该套餐暂不可购买，请刷新商品目录。', 409);
+      if (current.acceptingPayments === false) fail('PAYMENT_SERVICE_DISABLED', '支付中心尚未启用在线收款，请稍后刷新报价或使用人工扫码。', 503);
       if (plan.amount !== input.amount || current.version !== input.catalogVersion) fail('QUOTE_CHANGED', '套餐报价已更新，请刷新并确认新报价后重新购买。', 409);
       const id = randomUUID();
       order = await store.transaction(state => {

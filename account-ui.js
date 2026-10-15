@@ -40,7 +40,7 @@ export function paymentCheckoutUrl(value) {
   return url.href;
 }
 export function paymentCatalog(value) {
-  if (!value || typeof value.enabled !== 'boolean' || value.mode !== 'live' || value.currency !== 'CNY' || !Array.isArray(value.plans) || !['string', 'number'].includes(typeof value.version)) {
+  if (!value || typeof value.enabled !== 'boolean' || (value.acceptingPayments !== undefined && typeof value.acceptingPayments !== 'boolean') || value.mode !== 'live' || value.currency !== 'CNY' || !Array.isArray(value.plans) || !['string', 'number'].includes(typeof value.version)) {
     throw new Error('在线商品目录无效，请稍后刷新。');
   }
   const seen = new Set();
@@ -192,27 +192,34 @@ export async function initializeAccountUI() {
     element('membership-go-redeem').hidden = permanent;
     element('membership-go-redeem').textContent = state?.authenticated ? '我已收到激活码，前往兑换' : '登录后兑换激活码';
     const onlinePlan = onlineCatalog?.plans.find(item => item.id === element('membership-online-plan').value);
+    const paymentsPaused = onlineCatalog?.acceptingPayments === false;
+    const draftPlan = onlineDraft && getMembershipPlan(onlineDraft.planId);
+    const draftCatalogPlan = onlineDraft && onlineCatalog?.plans.find(item => item.id === onlineDraft.planId);
     element('membership-online-payment').hidden = !bridge.commerceRequest;
     element('membership-online-plan').disabled = onlineBusy || catalogBusy || Boolean(onlineDraft);
-    element('membership-online-pay').disabled = !ready || !onlineCatalog?.enabled || !onlinePlan || catalogBusy || onlineBusy;
-    element('membership-online-pay').textContent = onlineBusy ? '正在创建付款订单…' : onlineDraft ? '重试原付款订单' : '前往 Brclio Pay 付款';
-    element('membership-online-refresh').disabled = catalogBusy || onlineBusy || Boolean(onlineDraft) || !ready;
+    element('membership-online-pay').disabled = !ready || !onlineCatalog?.enabled || paymentsPaused || (!onlinePlan && !onlineDraft) || catalogBusy || onlineBusy;
+    element('membership-online-pay').textContent = onlineBusy ? '正在创建付款订单…' : paymentsPaused ? '在线付款暂未开放' : onlineDraft ? '重试原付款订单' : '前往 Brclio Pay 付款';
+    element('membership-online-refresh').disabled = catalogBusy || onlineBusy || !ready;
     element('membership-online-check').hidden = !onlineOrderId;
     element('membership-online-check').disabled = !state?.authenticated || !state?.verified || onlineStatusBusy;
+    const quote = draftPlan ? `${draftCatalogPlan?.name || draftPlan.name} · ¥${onlineDraft.amount} · ${draftPlan.days} 天会员（原订单报价）`
+      : onlinePlan ? `${onlinePlan.name} · ¥${onlinePlan.amount} · ${onlinePlan.days} 天会员` : '';
     element('membership-online-quote').textContent = catalogBusy ? '正在读取最新在线报价…'
-      : onlinePlan ? `${onlinePlan.name} · ¥${onlinePlan.amount} · ${onlinePlan.days} 天会员`
-      : onlineCatalog && !onlineCatalog.enabled ? '在线购买暂未开放。' : '暂无可购买的在线套餐，请刷新报价。';
+      : onlineCatalog && !onlineCatalog.enabled ? '在线购买暂未开放。'
+      : paymentsPaused ? `${quote ? `${quote}。` : ''}支付中心尚未启用在线收款，请稍后刷新报价或使用人工扫码。`
+      : quote || '暂无可购买的在线套餐，请刷新报价。';
   };
   async function loadOnlineCatalog() {
-    if (!bridge.commerceRequest || !paymentUserId || !state?.verified || onlineDraft) return;
+    if (!bridge.commerceRequest || !paymentUserId || !state?.verified) return;
     const epoch = paymentEpoch, revision = ++catalogRevision;
+    const wasPaused = onlineCatalog?.acceptingPayments === false;
     catalogBusy = true; onlineCatalog = null; renderPurchase();
     try {
       const reply = await bridge.commerceRequest('payment-catalog', { expectedUserId: paymentUserId });
       if (epoch !== paymentEpoch || revision !== catalogRevision) return;
       if (!reply.ok) throw new Error(reply.error?.message || '暂时无法读取在线报价，请稍后刷新。');
       const catalog = paymentCatalog(reply.result.catalog), selector = element('membership-online-plan');
-      const selected = selector.value || 'monthly';
+      const selected = onlineDraft?.planId || selector.value || 'monthly';
       selector.replaceChildren(...catalog.plans.map(plan => {
         const option = document.createElement('option'); option.value = plan.id;
         option.textContent = `${plan.name} · ¥${plan.amount} · ${plan.days} 天`;
@@ -220,6 +227,11 @@ export async function initializeAccountUI() {
       }));
       if (catalog.plans.some(plan => plan.id === selected)) selector.value = selected;
       onlineCatalog = catalog;
+      if (wasPaused && catalog.acceptingPayments === true && catalog.enabled) {
+        element('membership-online-status').textContent = onlineDraft ? '在线付款已恢复，请重试原付款订单。' : '在线付款已恢复，请确认当前报价后付款。';
+      } else if (wasPaused && catalog.acceptingPayments === undefined && catalog.enabled) {
+        element('membership-online-status').textContent = onlineDraft ? '已刷新报价，请重试原付款订单核实收款状态。' : '已刷新报价，收款状态仍需在下单时核实。';
+      }
     } catch (error) {
       if (epoch === paymentEpoch && revision === catalogRevision) element('membership-online-status').textContent = error.message;
     } finally {
@@ -433,7 +445,7 @@ export async function initializeAccountUI() {
   element('membership-online-pay').addEventListener('click', async () => {
     if (onlineBusy || !state?.verified || !paymentUserId || state.account?.membership?.type === 'permanent') return;
     const plan = onlineCatalog?.plans.find(item => item.id === element('membership-online-plan').value);
-    if (!onlineCatalog?.enabled || !plan) return;
+    if (!onlineCatalog?.enabled || onlineCatalog.acceptingPayments === false || (!plan && !onlineDraft)) return;
     onlineDraft ||= { planId: plan.id, amount: plan.amount, catalogVersion: onlineCatalog.version,
       expectedUserId: paymentUserId, requestId: crypto.randomUUID() };
     const epoch = paymentEpoch;
@@ -462,6 +474,7 @@ export async function initializeAccountUI() {
         if (epoch === paymentEpoch) element('membership-online-status').textContent = '在线报价已变化。请核对新价格，再次点击付款以创建新订单。';
       } else {
         element('membership-online-status').textContent = error.message;
+        if (error.code === 'PAYMENT_SERVICE_DISABLED' && onlineCatalog) onlineCatalog = { ...onlineCatalog, acceptingPayments: false };
         if (['ACCOUNT_CHANGED', 'ALREADY_PERMANENT', 'INVALID_ORDER', 'REQUEST_ID_REUSED', 'PAYMENT_PRODUCT_DISABLED'].includes(error.code)) onlineDraft = null;
       }
     } finally { if (epoch === paymentEpoch) { onlineBusy = false; renderPurchase(); } }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.22 新增 Brclio Pay 在线会员支付，实时读取套餐并在核验付款后开通会员；原人工扫码和激活码继续可用，Android 保持 v1.0.15。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.23 完善在线付款暂停与恢复提示，刷新报价保留原订单请求和报价；原人工扫码和激活码继续可用，Android 保持 v1.0.15。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -68,7 +68,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次新增在线会员支付，保留原人工扫码、激活码和已有会员权益。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次完善在线付款暂停与恢复提示，刷新报价后可继续原付款请求，保留原人工扫码、激活码和已有会员权益。
             </p>
 
             <div class="release-hero-actions">
@@ -83,8 +83,8 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.22</strong>
-              <small>Brclio Pay · 在线会员支付</small>
+              <strong>v2.0.23</strong>
+              <small>Brclio Pay · 暂停与恢复提示</small>
             </div>
 
             <div class="summary-grid">
@@ -125,7 +125,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.22、支付、会员、头像" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.23、支付、会员、头像" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -139,6 +139,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#brclio-pay-readiness"><span>v2.0.23</span><strong>付款暂停与恢复</strong></a>
               <a href="#brclio-pay-membership"><span>v2.0.22</span><strong>在线会员支付</strong></a>
               <a href="#desktop-layout-avatars"><span>v2.0.21</span><strong>桌面布局与头像收藏</strong></a>
               <a href="#google-account-login"><span>v2.0.18</span><strong>Google 账号登录</strong></a>
@@ -211,7 +212,19 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
-            <article id="brclio-pay-membership" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+            <article id="brclio-pay-readiness" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-15"><span>10.15</span><small>2026 · 付款状态</small></time></div>
+              <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.23</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">暂停与恢复</span></div><h3>收款状态清楚，原订单可以继续</h3></div></header>
+                <p class="release-lead">在线收款暂停时保留最新套餐报价并明确提示；恢复后刷新报价即可继续，已有付款请求保留原订单与原报价。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>暂停时显示明确原因</strong>付款按钮随收款状态停用，会员价格页保留报价并展示人工扫码入口说明。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>恢复后继续原请求</strong>等待中的付款请求也能刷新报价；重试沿用原请求编号、套餐和金额，避免因刷新重复创建订单。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>兼容已安装版本</strong>后端提供固定的暂停提示，现有订单查询、付款核验和会员开通继续按服务端记录处理。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>更新桌面付款界面</strong>Mac / Windows 更新后使用新的按钮状态和恢复提示；Android 保持 1.0.15，浏览器账号页随网站更新。</p></div>
+                </div>
+              </div>
+            </article>
+            <article id="brclio-pay-membership" class="release-entry" data-release-platforms="web desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-15"><span>10.15</span><small>2026 · 会员支付</small></time></div>
               <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.22</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">在线会员支付</span></div><h3>确认报价，在线开通会员</h3></div></header>
                 <p class="release-lead">软件账号会员页新增 Brclio Pay 在线购买入口。选择当前套餐并确认报价后打开 HTTPS 收银台，付款通知核验完成后自动顺延会员。</p>
@@ -1842,7 +1855,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.13 · 桌面 v2.0.21 · Android v1.0.15。</p>
+        <p>网页版与客户端记录整理至 2026.10.15 · 桌面 v2.0.23 · Android v1.0.15。</p>
         <div class="footer-credits">
           <a
             class="design-credit"
