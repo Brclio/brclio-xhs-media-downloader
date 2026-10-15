@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.22",
+  "status": "published-and-production-read-only-verified",
+  "sourceSha": "f2e0271ff780b0c0e574b367172c5967f150ff7d",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.22",
+  "publishedAt": "2026-10-15T02:03:22Z",
+  "paymentConfigVersion": "356a8ce348c8bb2959a1fc7279dec457ad958622c5c311c3bc5bb6d7606e0b60",
+  "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+  "before": {
+    "workerVersion": "5171c1f5-e582-4360-98d4-1b810c4578e4",
+    "pages": {
+      "id": "8a1162f9-4f25-475f-8c38-483827d82668",
+      "url": "https://8a1162f9.brclio-xhs-pages.pages.dev",
+      "source": "b26d3ec"
+    },
+    "secretNamesCount": 24,
+    "secretNamesSha256": "a81530073a6a6ce8fa9a3d6d6b796308bc126a81f43190e308e142f6ddb60c1c"
+  },
+  "after": {
+    "workerVersion": "089c78dd-02af-45ae-a82e-78f228a33803",
+    "pagesDeploymentUrl": "https://7aec46f0.brclio-xhs-pages.pages.dev",
+    "secretNamesCount": 27,
+    "addedSecretNames": [
+      "BRCLIO_PAY_API_SECRET",
+      "BRCLIO_PAY_CLIENT_ID",
+      "BRCLIO_PAY_WEBHOOK_SECRET"
+    ],
+    "originalSecretNamesPreserved": true,
+    "secretNamesSha256": "4602c71c43716b1e498e9499b4def7f84f70ec931031fc93ae65fb6c9212b11c"
+  },
+  "scope": {
+    "storageProvider": "existing-private-github-repository",
+    "newStorageResources": false,
+    "newNamespaces": false,
+    "existingServiceAndDurableObjectBindingsUnchanged": true,
+    "deployTargets": [
+      "existing main Cloudflare Worker",
+      "existing Cloudflare Pages project",
+      "desktop v2.0.22 release"
+    ],
+    "untouchedTargets": [
+      "private Python Worker",
+      "subscription proxy Worker",
+      "Android APK",
+      "Vercel",
+      "payment center code"
+    ],
+    "androidVersion": "1.0.15",
+    "paymentOriginsAdded": []
+  },
+  "validation": {
+    "nativeCI": {
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38667649631",
+      "runId": 38667649631,
+      "conclusion": "success",
+      "jobs": [
+        "mac-arm64",
+        "mac-intel",
+        "windows-x64",
+        "Publish verified installers"
+      ],
+      "nativeInstallReplacementAndRelaunchVerifiedByCI": true
+    },
+    "publishedAssets": 11,
+    "publicInstallerProbes": 9,
+    "legacyUpdaterVerified": "1.8.13",
+    "previousUpdaterVerified": "2.0.21",
+    "paymentProductionChecks": {
+      "passed": 17,
+      "total": 17
+    },
+    "webAssetHashes": 112,
+    "aliasAssetHashes": 111,
+    "rendererChecks": 10,
+    "rendererScreenshots": 8,
+    "rendererWidths": [
+      1440,
+      375
+    ],
+    "canonicalOriginRestrictionsPreserved": true,
+    "sourceAndCredentialScanPassed": true,
+    "realPaymentVerified": false,
+    "productionEntitlementGrantVerified": false,
+    "productionAuthenticatedPurchaseVerified": false,
+    "agentCreatedProductionOrders": false,
+    "agentAccountWrites": false
+  },
+  "publicationNotes": [
+    "Anonymous metadata check through the configured proxy returned 403; direct anonymous verification passed all original assertions.",
+    "Production browser used a fresh profile and only read-only account actions; cookies and authorization were stripped and all purchase/login mutations blocked.",
+    "No production customer login, email, real order, valid paid webhook or charge was performed.",
+    "Native installation/relaunch proof is from isolated native CI upgrades; this task did not replace the user's current installed application."
+  ],
+  "evidenceFiles": [
+    "v2.0.22-publication-verification.json",
+    "v2.0.22-payment-production-verification.json",
+    "v2.0.22-web-production-verification.json",
+    "v2.0.22-pages-production-verification.json",
+    "v2.0.22-renderer-production-verification.json"
+  ]
+}

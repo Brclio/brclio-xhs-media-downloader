@@ -1,6 +1,6 @@
 # Brclio 小红书下载器
 
-v2.0.22 接入 Brclio Pay 在线会员支付。网页与新版 Mac / Windows 客户端从后端读取当前可购买套餐，在 HTTPS 收银台付款后由验签回调开通会员；改价时需重新确认，返回页不会自行授予权益。原人工扫码、激活码、登录和会员规则继续可用，正式业务存储仍是现有 GitHub 私有仓库。当前安装包发布与生产验收进度见[版本说明](docs/releases/v2.0.22.md)；Android 保持 1.0.15，浏览器账号页随网站更新。
+[v2.0.22 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.22)，接入 Brclio Pay 在线会员支付。网页与新版 Mac / Windows 客户端从后端读取当前可购买套餐，改价时需重新确认，返回页不会自行授予权益；付款由验签回调持久核实后开通。原人工扫码、激活码、登录和会员规则继续可用，正式业务存储仍是现有 GitHub 私有仓库。三平台原生门禁、11 个公开附件、主站与备用站部署及匿名生产检查通过，尚未执行真实扣款与生产权益开通验收。详见[版本说明](docs/releases/v2.0.22.md)、[公开发布核验](docs/releases/v2.0.22-publication-verification.json)和[操作审计](docs/releases/v2.0.22-operation-audit.json)。Android 保持 1.0.15，浏览器账号页随网站更新。
 
 桌面 v2.0.21 整理为三项主要工具与右上角个人菜单，并支持 100 张内置头像、100MB 以内原图上传和压缩头像显示。原图、缩略图及收藏信息保存至现有 GitHub 私有数据仓库，管理员可按页下载原图；现有登录、会员、下载和更新流程继续保留。详见[版本说明](docs/releases/v2.0.21.md)。
 

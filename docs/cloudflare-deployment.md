@@ -1,5 +1,11 @@
 # Cloudflare 部署与迁移核验
 
+## 2026-10-15：v2.0.22 Brclio Pay
+
+已部署现有主 Worker，版本为 `089c78dd-02af-45ae-a82e-78f228a33803`；Pages 部署为 [7aec46f0](https://7aec46f0.brclio-xhs-pages.pages.dev)。正式站点与备用站均返回版本 2.0.22。三项产品支付凭证通过部署时的 `--secrets-file` 添加到主 Worker Secret，原有 24 项 Secret 和所有现有变量保留；Pages 不保存支付凭证。
+
+账号、订单、付款去重、权益和审计仍使用同一 GitHub 私有仓库；既有 AccountRuntime / ParseRuntime、Python 与代理服务绑定保持一致，没有新增数据库、namespace 或存储资源。私有 Python、订阅代理、Android 与 Vercel 未重新部署。17 项正式支付检查、原有头像及资源一致性、匿名真实渲染器与同源边界通过；没有真实扣款、生产订单或生产会员开通测试。三平台 v2.0.22 安装包已独立通过原生门禁并公开，见[发布说明](releases/v2.0.22.md)与[操作审计](releases/v2.0.22-operation-audit.json)。
+
 ## 2026-10-12：v2.0.16 桌面本地会员授权
 
 主 Worker 已原子部署签名配置与账号代码，首次签名版本为 `a42c7a98-4cd1-4286-bc59-ee4ee8291e3f`；安装包公开后，主 Worker 静态资源更新至 `46da9491-0a7d-4c67-acda-2018e60ac33e`，Pages 更新至 [fb7fcda1](https://fb7fcda1.brclio-xhs-pages.pages.dev)。部署保留原平台变量与 Secret，复用已准备的签名密钥；私有 Python Worker 和订阅代理未重发。Mac / Windows [v2.0.16](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.16) 已通过三平台原生构建和发布门禁，Android 保持 1.0.15。
