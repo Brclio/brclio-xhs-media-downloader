@@ -10,6 +10,20 @@ export function accountError(code, message, status = 503) {
   return Object.assign(new Error(message), { code, status });
 }
 
+const PAYMENT_ORDER_ID = /^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i;
+const PAYMENT_USER_ID = /^[A-Za-z\d_-]{1,128}$/;
+
+/** Keep only product order references; payment-center URLs and secrets are never durable. */
+export function sanitizePendingPayments(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).slice(0, 1000).flatMap(([key, pending]) => {
+    if (!pending || typeof pending !== 'object' || typeof pending.userId !== 'string' || !PAYMENT_USER_ID.test(pending.userId)
+      || typeof pending.orderId !== 'string' || !PAYMENT_ORDER_ID.test(pending.orderId) || !/^[a-f\d]{64}:/.test(key)
+      || key !== `${key.slice(0, 64)}:${pending.userId}`) return [];
+    return [[key, { userId: pending.userId, orderId: pending.orderId }]];
+  }));
+}
+
 /** Raw hardware IDs remain inside this function, never persisted or transmitted. */
 export async function stableDeviceHash({ platform = process.platform, exec = execute } = {}) {
   let identifier;
@@ -68,6 +82,9 @@ export class SecureAccountStore {
         || !/^[a-f\d]{64}$/.test(saved.stableIdHash) || !Array.isArray(saved.pendingLogoutTokens)
         || saved.pendingLogoutTokens.some(token => typeof token !== 'string')
         || (saved.token != null && typeof saved.token !== 'string')) throw new Error('Invalid account credentials');
+      // Optional recovery metadata must not make otherwise valid login keys
+      // unreadable. Ignore malformed entries and strip any unexpected fields.
+      if (saved.pendingPayments !== undefined) saved.pendingPayments = sanitizePendingPayments(saved.pendingPayments);
     } catch (error) {
       // Only an absent account file means a new installation. An ENOENT from
       // the OS secret provider or a concurrent removal must not replace keys.
@@ -85,14 +102,16 @@ export class SecureAccountStore {
     const { privateKey, publicKey } = generateKeyPairSync('ed25519');
     const credentials = { version: 1, privateKey: privateKey.export({ type: 'pkcs8', format: 'pem' }),
       publicKey: publicKey.export({ type: 'spki', format: 'pem' }), stableIdHash,
-      token: null, pendingLogoutTokens: [], pendingRedemptions: {} };
+      token: null, pendingLogoutTokens: [], pendingRedemptions: {}, pendingPayments: {} };
     await this.save(credentials);
     return credentials;
   }
   async save(credentials) {
     await this.assertAvailable();
-    const ciphertext = this.asyncEncryption ? await this.safeStorage.encryptStringAsync(JSON.stringify(credentials))
-      : this.safeStorage.encryptString(JSON.stringify(credentials));
+    const serializable = credentials.pendingPayments === undefined ? credentials
+      : { ...credentials, pendingPayments: sanitizePendingPayments(credentials.pendingPayments) };
+    const ciphertext = this.asyncEncryption ? await this.safeStorage.encryptStringAsync(JSON.stringify(serializable))
+      : this.safeStorage.encryptString(JSON.stringify(serializable));
     await mkdir(path.dirname(this.filename), { recursive: true, mode: 0o700 });
     const temporary = `${this.filename}.${randomUUID()}.tmp`;
     try {

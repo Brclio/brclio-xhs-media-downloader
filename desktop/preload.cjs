@@ -41,11 +41,20 @@ contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
   loginAccountGoogle: () => ipcRenderer.invoke('desktop:account-google-login'),
   cancelAccountGoogleLogin: () => ipcRenderer.invoke('desktop:account-google-cancel'),
   commerceRequest: (action, input) => ipcRenderer.invoke('desktop:commerce-request', action, input),
+  getPendingPayment: () => ipcRenderer.invoke('desktop:pending-payment'),
+  clearPendingPayment: input => ipcRenderer.invoke('desktop:clear-pending-payment', input),
   selectAccountAvatar: input => ipcRenderer.invoke('desktop:avatar-select', input),
   uploadAccountAvatar: input => ipcRenderer.invoke('desktop:avatar-upload', input),
   getAccountAvatarThumbnail: input => ipcRenderer.invoke('desktop:avatar-thumbnail', input),
   getAccountAvatarOriginal: input => ipcRenderer.invoke('desktop:avatar-original', input),
   refreshAccount: () => ipcRenderer.invoke('desktop:account-refresh'),
+  refreshAccountPermissions: () => ipcRenderer.invoke('desktop:account-refresh-permissions'),
+  onAppFocus: (callback) => {
+    if (typeof callback !== 'function') throw new TypeError('callback must be a function');
+    const listener = () => callback();
+    ipcRenderer.on('desktop:app-focus', listener);
+    return () => ipcRenderer.removeListener('desktop:app-focus', listener);
+  },
   sendAccountCode: (email) => ipcRenderer.invoke('desktop:account-send-code', email),
   verifyAccountCode: (email, code) => ipcRenderer.invoke('desktop:account-verify-code', email, code),
   redeemAccountCode: (code) => ipcRenderer.invoke('desktop:account-redeem', code),

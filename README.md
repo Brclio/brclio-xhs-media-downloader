@@ -1,5 +1,7 @@
 # Brclio 小红书下载器
 
+[v2.0.24 版本说明](docs/releases/v2.0.24.md)：补齐在线付款等待、切回软件立即查单、确认后刷新账号与功能权限，以及重启恢复原账号的待核实订单。已安装的 v2.0.22 需安装新版；付款页返回网页不会更新旧程序，也不保证拉起桌面软件。Android 保持 1.0.15。
+
 [v2.0.23 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.23)：完善 Brclio Pay 在线收款暂停与恢复提示。暂停时保留报价并停用付款按钮，恢复后可刷新报价继续原请求；原请求编号、套餐与金额保持一致，原人工扫码与激活码继续可用。三平台原生安装升级与重启门禁、11 个公开附件及主站和备用站生产核验通过，见[操作审计](docs/releases/v2.0.23-operation-audit.json)。Android 保持 1.0.15，浏览器账号页随网站更新。
 
 [v2.0.22 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.22)，接入 Brclio Pay 在线会员支付。网页与新版 Mac / Windows 客户端从后端读取当前可购买套餐，改价时需重新确认，返回页不会自行授予权益；付款由验签回调持久核实后开通。原人工扫码、激活码、登录和会员规则继续可用，正式业务存储仍是现有 GitHub 私有仓库。三平台原生门禁、11 个公开附件、主站与备用站部署及匿名生产检查通过，该轮发布的匿名检查未包含真实扣款与生产权益开通，后续单笔验收范围见[接入记录](docs/brclio-pay.md)。详见[版本说明](docs/releases/v2.0.22.md)、[公开发布核验](docs/releases/v2.0.22-publication-verification.json)和[操作审计](docs/releases/v2.0.22-operation-audit.json)。Android 保持 1.0.15，浏览器账号页随网站更新。

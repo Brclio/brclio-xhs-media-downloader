@@ -1,5 +1,5 @@
 import { createHash, randomUUID, sign } from 'node:crypto';
-import { accountError } from './account-storage.js';
+import { accountError, sanitizePendingPayments } from './account-storage.js';
 import { KNOWN_FEATURES, PROTECTED_FEATURES } from '../lib/membership-policy.js';
 import { verifyEntitlement } from '../lib/entitlement.js';
 import { uploadAccountAvatarTransfer, fetchAccountAvatarThumbnail } from '../lib/account-avatar-transfer.js';
@@ -78,6 +78,7 @@ export class AccountClient {
     this._entitlementAnchors = new Map(); this._signedAuthorizationUsed = new Set();
     this._nicknameRevision = 0; this._nicknameRequest = 0; this._nicknameApplied = 0;
     this._avatarRevision = 0; this._avatarRequest = 0; this._avatarApplied = 0;
+    this._paymentCreateRevision = 0; this._pendingPaymentRevisions = new Map();
   }
   snapshot() {
     return structuredClone({ status: this.status, account: this.account, error: this.error,
@@ -191,6 +192,41 @@ export class AccountClient {
     if (!this.credentials?.token) return [];
     const features = PROTECTED_FEATURES.filter(feature => this.credentials.entitlements?.[feature]);
     return Promise.allSettled(features.map(feature => this.authorize(feature, { forceRemote: true })));
+  }
+  async refreshAccountPermissions() {
+    this._requireStorage();
+    const session = { token: this.credentials.token, generation: this._sessionGeneration, userId: this.account?.user?.id || '' };
+    if (!session.token || !session.userId) throw accountError('ACCOUNT_REQUIRED', '请先登录软件账号再刷新会员权益。', 401);
+    const assertCurrent = () => this._assertAuthorizationSession(session, { allowInvalidated: true });
+    // refresh and authorize each serialize their own disk writes. Do not put
+    // this whole operation in _command: signed grants must be able to save.
+    const fresh = await this.refresh();
+    assertCurrent();
+    const permissions = await Promise.all(PROTECTED_FEATURES.map(async feature => {
+      if (fresh.account?.features?.[feature]?.allowed === false) {
+        const device = fresh.account?.device;
+        const error = fresh.account?.membership?.active === false
+          ? { code: 'MEMBERSHIP_REQUIRED', message: '当前账号尚未获得有效会员权益。' }
+          : device?.status && device.status !== 'authorized'
+            ? { code: device.status === 'revoked' ? 'DEVICE_REVOKED' : 'DEVICE_LIMIT', message: device.message || '此设备尚未获得会员功能授权，请联系管理员。' }
+            : { code: 'AUTHORIZATION_DENIED', message: '当前账号或设备没有此功能的授权。' };
+        return { feature, authorized: false, error };
+      }
+      try {
+        assertCurrent();
+        await this.authorize(feature, { forceRemote: true, allowLocalFallback: false });
+        assertCurrent();
+        return { feature, authorized: true };
+      } catch (error) {
+        return { feature, authorized: false, error: { code: error.code || 'SERVICE_UNAVAILABLE', message: error.message || '会员功能授权暂时无法确认，请稍后重试。' } };
+      }
+    }));
+    assertCurrent();
+    // A server denial is a known permission state. Temporary or malformed
+    // responses remain unresolved and must not erase a pending paid order.
+    const complete = permissions.every(permission => permission.authorized || EXPIRED_SESSION_CODES.has(permission.error?.code)
+      || /^(?:ACCOUNT_|AUTHORIZATION_|DEVICE_|MEMBERSHIP_)/.test(permission.error?.code || ''));
+    return { permissions, complete };
   }
   async _request(action, input = {}, { token = this.credentials?.token || '', unsigned = false, allowClockRetry = true, assertSession, signal } = {}) {
     assertSession?.();
@@ -392,7 +428,7 @@ export class AccountClient {
     void this._cancelRemoteGoogleAttempt(attempt);
     return { cancelled: true, message: '已取消 Google 登录。' };
   }
-  async authorize(feature, { forceRemote = false } = {}) {
+  async authorize(feature, { forceRemote = false, allowLocalFallback = true } = {}) {
     if (!KNOWN_FEATURES.includes(feature)) throw accountError('FEATURE_UNKNOWN', '未知的授权功能。', 403);
     if (!PROTECTED_FEATURES.includes(feature)) return { authorized: true, free: true };
     this._requireStorage();
@@ -404,10 +440,10 @@ export class AccountClient {
       try { const local = this.checkLocalAuthorization(feature); if (local) return local; }
       catch { /* A missing or expired signed grant needs a fresh server grant. */ }
     }
-    const session = { token: this.credentials.token, generation: this._sessionGeneration, revision: this._authorizationRevision, userId: this.account?.user?.id || '' };
+    const session = { token: this.credentials.token, generation: this._sessionGeneration, revision: this._authorizationRevision, userId: this.account?.user?.id || '', allowLocalFallback };
     const pending = this._authorizations.get(feature);
     if (pending && pending.session.token === session.token && pending.session.generation === session.generation && pending.session.revision === session.revision
-      && pending.session.userId === session.userId) return pending.promise;
+      && pending.session.userId === session.userId && pending.session.allowLocalFallback === session.allowLocalFallback) return pending.promise;
     const entry = { session };
     entry.promise = this._authorize(feature, session).finally(() => {
       if (this._authorizations.get(feature) === entry) this._authorizations.delete(feature);
@@ -451,7 +487,7 @@ export class AccountClient {
     } catch (error) {
       // A delayed response must not overwrite the status of a replacement login.
       assertSession();
-      if (retryableAuthorizationError(error)) {
+      if (retryableAuthorizationError(error) && session.allowLocalFallback !== false) {
         try {
           const local = this.checkLocalAuthorization(feature);
           if (local) {
@@ -500,12 +536,74 @@ export class AccountClient {
     return fetchAccountAvatarThumbnail({ url: this.account.user.avatar.url, endpoint: this.endpoint, fetchImpl: this.fetchImpl, assertCurrent });
   }
   getAccountAvatarOriginal(input = {}) { return this.avatarRequest('avatar-original', { expectedUserId: input.expectedUserId }); }
+  _pendingPaymentKey(userId) {
+    return `${createHash('sha256').update(this.endpoint).digest('hex')}:${userId}`;
+  }
+  getPendingPayment() {
+    return this._command(() => {
+      this._requireStorage();
+      const userId = this.account?.user?.id;
+      if (!this.credentials.token || !userId) return null;
+      if (this.status !== 'ready') throw accountError('ACCOUNT_UNVERIFIED', '待核实订单仍已保留，请联网刷新当前账号后继续恢复。', 503);
+      const pending = sanitizePendingPayments(this.credentials.pendingPayments)[this._pendingPaymentKey(userId)];
+      return pending ? { ...pending } : null;
+    });
+  }
+  clearPendingPayment({ orderId, expectedUserId } = {}) {
+    return this._command(async () => {
+      this._requireStorage();
+      if (!this.credentials.token || !expectedUserId || this.account?.user?.id !== expectedUserId) {
+        throw accountError('SESSION_CHANGED', '软件账号已退出或切换，请切回原账号再重试。', 401);
+      }
+      if (this.status !== 'ready') throw accountError('ACCOUNT_UNVERIFIED', '待核实订单仍已保留，请联网确认账号与功能权限后重试。', 503);
+      const pendingPayments = sanitizePendingPayments(this.credentials.pendingPayments);
+      const key = this._pendingPaymentKey(expectedUserId);
+      if (pendingPayments[key]?.orderId !== orderId) return { cleared: false };
+      delete pendingPayments[key];
+      const next = { ...this.credentials, pendingPayments };
+      await this.store.save(next); this.credentials = next;
+      this._pendingPaymentRevisions.set(key, (this._pendingPaymentRevisions.get(key) || 0) + 1);
+      return { cleared: true };
+    });
+  }
+  async _rememberPendingPayment(result, session, { onlyIfAbsent = false } = {}) {
+    const { token, userId, generation } = session;
+    return this._command(async () => {
+      if (this.credentials?.token !== token || this.account?.user?.id !== userId || this._sessionGeneration !== generation) {
+        throw accountError('SESSION_CHANGED', '创建支付订单期间账号发生变化，请切回原账号再重试。', 401);
+      }
+      const key = this._pendingPaymentKey(userId);
+      const pendingPayments = sanitizePendingPayments(this.credentials.pendingPayments);
+      if (result.order?.userId && result.order.userId !== userId) throw accountError('PAYMENT_INVALID_ORDER', '支付订单不属于当前账号，请切回原账号重试。', 502);
+      if (session.createRevision !== this._paymentCreateRevision) {
+        if (onlyIfAbsent) return;
+        throw accountError('PAYMENT_REQUEST_SUPERSEDED', '已有更新的支付订单请求，请使用最新订单继续核实。', 409);
+      }
+      if (onlyIfAbsent && (pendingPayments[key]
+        || session.pendingRevision !== (this._pendingPaymentRevisions.get(key) || 0))) return;
+      const entry = sanitizePendingPayments({ [key]: { userId, orderId: result.order?.id } });
+      if (!entry[key]) throw accountError('PAYMENT_INVALID_ORDER', '支付服务返回的订单编号无效，请重试。', 502);
+      const next = { ...this.credentials, pendingPayments: { ...pendingPayments, ...entry } };
+      await this.store.save(next);
+      this.credentials = next;
+      this._pendingPaymentRevisions.set(key, (this._pendingPaymentRevisions.get(key) || 0) + 1);
+    });
+  }
   commerceRequest(action, input = {}) {
     if (!['reviews-public', 'profile-update', 'review-mine', 'review-submit', 'orders-mine', 'order-create', 'payment-catalog', 'payment-create', 'payment-status'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
     if (['reviews-public', 'payment-catalog'].includes(action)) return this._request(action, input, { token: '', unsigned: true });
     const token = this.credentials?.token;
+    if (action === 'payment-create' && token && this.account?.user?.id === input.expectedUserId) this._paymentCreateRevision++;
+    const paymentSession = { token, userId: input.expectedUserId, generation: this._sessionGeneration,
+      createRevision: this._paymentCreateRevision, pendingRevision: this._pendingPaymentRevisions.get(this._pendingPaymentKey(input.expectedUserId)) || 0 };
     const serial = ['profile-update', 'review-submit'].includes(action) ? ++this._nicknameRequest : 0;
-    return this._authenticatedRequest(action, input, input.expectedUserId).then(result => {
+    return this._authenticatedRequest(action, input, input.expectedUserId).then(async result => {
+      // Save before exposing checkout to the renderer so quitting from the
+      // browser never loses the product order. Confirmation alone does not
+      // clear it: the UI first refreshes account and feature permissions.
+      if (action === 'payment-create') await this._rememberPendingPayment(result, paymentSession);
+      if (action === 'payment-status' && result.order?.userId === input.expectedUserId && result.order.id === input.orderId
+        && ['pending', 'confirmed'].includes(result.order.status)) await this._rememberPendingPayment(result, paymentSession, { onlyIfAbsent: true });
       if (serial > this._nicknameApplied && result.profile?.nickname
         && this.credentials?.token === token && this.account?.user?.id === input.expectedUserId) {
         this._nicknameApplied = serial;

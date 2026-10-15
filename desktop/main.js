@@ -164,6 +164,8 @@ function registerIpc() {
   handle('desktop:account-google-login', accountAction(() => accountClient.loginWithGoogle(url => shell.openExternal(url))));
   handle('desktop:account-google-cancel', accountAction(() => accountClient.cancelGoogleLogin()));
   handle('desktop:commerce-request', accountAction((action, input = {}) => accountClient.commerceRequest(action, input)));
+  handle('desktop:pending-payment', accountAction(() => accountClient.getPendingPayment()));
+  handle('desktop:clear-pending-payment', accountAction(input => accountClient.clearPendingPayment(input)));
   handle('desktop:avatar-select', accountAction(input => accountClient.selectAccountAvatar(input)));
   handle('desktop:avatar-upload', accountAction(input => accountClient.uploadAccountAvatar(input)));
   handle('desktop:avatar-thumbnail', accountAction(input => accountClient.getAccountAvatarThumbnail(input)));
@@ -174,6 +176,7 @@ function registerIpc() {
     if (!accountClient.credentials) await accountClient.initialize();
     return accountClient.refresh();
   }));
+  handle('desktop:account-refresh-permissions', accountAction(() => accountClient.refreshAccountPermissions()));
   handle('desktop:account-send-code', accountAction((email) => {
     if (typeof email !== 'string' || email.length > 254) throw new Error('请输入有效邮箱。');
     return accountClient.sendCode(email);
@@ -318,6 +321,9 @@ async function createWindow() {
   mainWindow.webContents.on('unresponsive', () => diagnostic('renderer.unresponsive', {}, 'warn'));
   mainWindow.webContents.on('did-fail-load', (_event, code, description, url, isMainFrame) => diagnostic('renderer.load_failed', { code, description, url, isMainFrame }, 'error'));
   mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.on('focus', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('desktop:app-focus');
+  });
   // Start shutdown before destruction can reject the pending navigation.
   mainWindow.on('close', () => { if (!quitting) app.quit(); });
   mainWindow.on('closed', () => { installConfirmation.cancel(); mainWindow = null; if (!quitting) app.quit(); });

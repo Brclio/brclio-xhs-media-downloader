@@ -234,6 +234,29 @@ app.whenReady().then(async () => {
   const errors = [];
   win.webContents.on('console-message', event => { if (event.level === 'error') errors.push(event.message); });
   const evaluate = expression => win.webContents.executeJavaScript(expression);
+  const screenshot = async label => {
+    let frameTimer;
+    try {
+      await Promise.race([
+        evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))'),
+        new Promise((_resolve, reject) => {
+          frameTimer = setTimeout(() => reject(new Error(`Admin screenshot animation frames timed out: ${label}`)), 5000);
+        }),
+      ]);
+    } finally { clearTimeout(frameTimer); }
+    const png = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        win.webContents.removeListener('paint', paint);
+        reject(new Error(`Admin screenshot paint timed out: ${label}`));
+      }, 5000);
+      const paint = (_event, _dirty, frame) => {
+        if (frame.isEmpty()) return;
+        clearTimeout(timer); win.webContents.removeListener('paint', paint); resolve(frame.toPNG());
+      };
+      win.webContents.on('paint', paint); win.webContents.invalidate();
+    });
+    fs.writeFileSync(path.join(screenshots, `${label}.png`), png);
+  };
   async function check(expression, label) {
     for (let attempt = 0; attempt < 100; attempt += 1) {
       if (await evaluate(`!!(${expression})`)) return;
@@ -351,12 +374,12 @@ app.whenReady().then(async () => {
   assert.equal(JSON.stringify(state).includes(issuedRaw), false, 'targeted plaintext is not persisted');
   assert.equal(state.users.u1.membership.type, 'none', 'generation does not grant membership before redemption');
   const beforeMail = activationDeliveries.length;
-  fs.writeFileSync(path.join(screenshots, 'membership-email-generated.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('membership-email-generated');
   win.setContentSize(560, 1000); await pause(80);
   assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'email issue panel fits narrow display');
-  fs.writeFileSync(path.join(screenshots, 'membership-email-narrow.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('membership-email-narrow');
   await evaluate(`document.querySelector('#issue-preview').scrollIntoView({ block: 'start' })`);
-  fs.writeFileSync(path.join(screenshots, 'membership-email-preview-narrow.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('membership-email-preview-narrow');
   win.setContentSize(1280, 1000);
   await evaluate(`document.querySelector('#email-issue-panel').scrollIntoView({ block: 'start' })`);
   failNextActivation = true;
@@ -375,7 +398,7 @@ app.whenReady().then(async () => {
   assert.equal(Object.keys(state.codes).length, beforeIssue + 1, 'sending never generates another code');
   await click('#issue-send');
   assert.equal(activationDeliveries.length, beforeMail + 1, 'disabled sent button cannot repeat delivery');
-  fs.writeFileSync(path.join(screenshots, 'membership-email-sent.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('membership-email-sent');
   await fill('#code-query', 'student@example.test'); await click('#codes-filter-form button');
   await check(`document.querySelectorAll('.codes-table tbody tr').length === 1 && document.querySelector('.codes-table').textContent.includes('student@example.test')`, 'code records filter by recipient email');
   await click('#dismiss-codes'); await click('#dialog-confirm');
@@ -474,14 +497,14 @@ app.whenReady().then(async () => {
   assert.equal(state.audit.at(-1).reason, '复核日志并完成问题修复');
   await change('#feedback-status-filter', 'resolved'); await click('#feedback-filter-form button');
   await check(`document.querySelectorAll('.feedback-list-item').length === 1`, 'feedback server status filter');
-  fs.writeFileSync(path.join(screenshots, 'feedback.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('feedback');
   win.setContentSize(560, 1000); await pause(80);
   assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'feedback page fits narrow display');
   await evaluate(`document.querySelector('.feedback-conversation').scrollIntoView({ block: 'start' })`);
-  fs.writeFileSync(path.join(screenshots, 'feedback-narrow.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('feedback-narrow');
   win.setContentSize(360, 1000); await pause(80);
   assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'conversation and reply composer fit a phone width');
-  fs.writeFileSync(path.join(screenshots, 'feedback-phone.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('feedback-phone');
   win.setContentSize(1280, 1000);
   await click('#tab-avatars');
   await check(`document.querySelectorAll('.avatar-collection-table tbody tr').length === 20`, 'avatar collection is server paginated');
@@ -499,11 +522,11 @@ app.whenReady().then(async () => {
   await check(`document.querySelectorAll('.avatar-collection-table tbody tr').length === 20`, 'collection previous page restores bounded records');
   win.setContentSize(360, 1000); await pause(80);
   assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'original collection fits phone width');
-  fs.writeFileSync(path.join(screenshots, 'avatar-collection.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('avatar-collection');
   win.setContentSize(1280, 1000);
   await click('#tab-status');
   await check(`document.querySelector('#status-content').textContent.includes('连接或认证失败')`, 'configured but unavailable SMTP is visibly unsuccessful');
-  fs.writeFileSync(path.join(screenshots, 'status.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('status');
   await click('#tab-update-proxy');
   await check(`document.querySelector('#update-proxy-state').textContent === '尚未设置 · 直接连接' && !document.querySelector('#save-update-proxy').disabled`, 'initial update settings load without a stored subscription and state direct connection');
   assert.equal(await evaluate(`document.querySelector('#update-proxy-enabled').checked`), false, 'unconfigured updates stay direct until the administrator enables a subscription');
@@ -536,11 +559,11 @@ app.whenReady().then(async () => {
   assert.equal(JSON.stringify(state.audit).includes('fixture-secondary-network-secret'), false, 'audit hides credentials from every source');
   assert.equal(JSON.stringify(state.audit).includes('private-secondary'), false);
   assert.equal(await evaluate(`document.querySelector('#update-proxy-state').textContent`), '已启用更新代理');
-  fs.writeFileSync(path.join(screenshots, 'update-network.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('update-network');
   for (const width of [560, 360]) {
     win.setContentSize(width, 1000); await pause(80);
     assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), `update settings fit ${width}px display`);
-    fs.writeFileSync(path.join(screenshots, `update-network-${width}.png`), (await win.webContents.capturePage()).toPNG());
+    await screenshot(`update-network-${width}`);
   }
   win.setContentSize(1280, 1000);
   await evaluate(`document.querySelector('#update-proxy-enabled').checked = false`);
@@ -580,11 +603,11 @@ app.whenReady().then(async () => {
   assert.ok(state.webParseProxyConfig.subscriptionCiphertext); assert.equal(state.webParseProxyConfig.subscriptionUrl, undefined);
   assert.ok(!JSON.stringify(state.webParseProxyConfig).includes('fixture-web-network-secret')); assert.ok(!JSON.stringify(state.audit).includes('private-web-fixture'));
   assert.ok(!(await evaluate('document.body.textContent')).includes('fixture-web-network-secret'), 'administrator document does not retain submitted subscription credentials');
-  fs.writeFileSync(path.join(screenshots, 'web-fetch-network.png'), (await win.webContents.capturePage()).toPNG());
+  await screenshot('web-fetch-network');
   for (const width of [560, 360]) {
     win.setContentSize(width, 1000); await pause(80);
     assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), `web fetch settings fit ${width}px display`);
-    fs.writeFileSync(path.join(screenshots, `web-fetch-network-${width}.png`), (await win.webContents.capturePage()).toPNG());
+    await screenshot(`web-fetch-network-${width}`);
   }
   win.setContentSize(1280, 1000);
   await evaluate(`document.querySelector('#web-parse-proxy-enabled').checked = false`);
