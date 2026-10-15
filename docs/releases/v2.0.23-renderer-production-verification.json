@@ -1,0 +1,475 @@
+{
+  "ok": true,
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-10-15T10:41:28.486Z",
+  "expectedCatalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+  "catalog": {
+    "version": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+    "mode": "live",
+    "currency": "CNY",
+    "plans": [
+      {
+        "id": "daily",
+        "amount": "3.00",
+        "days": 1
+      },
+      {
+        "id": "monthly",
+        "amount": "19.90",
+        "days": 30
+      },
+      {
+        "id": "yearly",
+        "amount": "69.90",
+        "days": 365
+      }
+    ]
+  },
+  "checks": [
+    "Live membership renderer displays all three prices and days from the expected payment-center catalog.",
+    "membership desktop: no horizontal overflow",
+    "membership 375px: no horizontal overflow",
+    "Actual signed-out dialog keeps checkout disabled, login guidance visible, and manual plans/QR assets intact.",
+    "signed-out dialog desktop: no horizontal overflow",
+    "signed-out dialog 375px: no horizontal overflow",
+    "unsigned payment return 375px: no horizontal overflow",
+    "Forged payment return parameters are consumed without authentication, status lookup, checkout or entitlement.",
+    "Signed-out purchase guidance returns focus to the real account login form without submitting it.",
+    "Network allowlist admitted only public read-only account actions and static GETs; no cookies or mutations."
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/membership"
+    },
+    {
+      "method": "GET",
+      "path": "/site-navigation.js"
+    },
+    {
+      "method": "GET",
+      "path": "/membership.css"
+    },
+    {
+      "method": "GET",
+      "path": "/membership.js"
+    },
+    {
+      "method": "GET",
+      "path": "/site-navigation.css"
+    },
+    {
+      "method": "GET",
+      "path": "/site-header.css"
+    },
+    {
+      "method": "GET",
+      "path": "/site-header.js"
+    },
+    {
+      "method": "GET",
+      "path": "/aiyc.svg"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/membership-plans.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/browser-account.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/account-avatar-transfer.js"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "payment-catalog"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "payment-catalog"
+    },
+    {
+      "method": "GET",
+      "path": "/"
+    },
+    {
+      "method": "GET",
+      "path": "/site-navigation.js"
+    },
+    {
+      "method": "GET",
+      "path": "/style.css"
+    },
+    {
+      "method": "GET",
+      "path": "/visit-counter.css"
+    },
+    {
+      "method": "GET",
+      "path": "/support.css"
+    },
+    {
+      "method": "GET",
+      "path": "/desktop-ui.css"
+    },
+    {
+      "method": "GET",
+      "path": "/account-ui.css"
+    },
+    {
+      "method": "GET",
+      "path": "/commerce-ui.css"
+    },
+    {
+      "method": "GET",
+      "path": "/site-navigation.css"
+    },
+    {
+      "method": "GET",
+      "path": "/site-header.css"
+    },
+    {
+      "method": "GET",
+      "path": "/app.js"
+    },
+    {
+      "method": "GET",
+      "path": "/account-ui.js"
+    },
+    {
+      "method": "GET",
+      "path": "/site-header.js"
+    },
+    {
+      "method": "GET",
+      "path": "/aiyc.svg"
+    },
+    {
+      "method": "GET",
+      "path": "/visit-counter.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/archive.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/clipboard.js"
+    },
+    {
+      "method": "GET",
+      "path": "/desktop-ui.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/media-tracks.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/image-dimensions.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/browser-account.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/parse-verification.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/membership-plans.js"
+    },
+    {
+      "method": "GET",
+      "path": "/commerce-ui.js"
+    },
+    {
+      "method": "GET",
+      "path": "/avatar-ui.js"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/ip-explorer.jpg"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/wechat-tip-qr.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/alipay-tip-qr.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/wechat-personal-qr.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/wechat-official-account-qr.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/wechat-video-channel-qr-cropped.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/ip-portrait.jpg"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/account-avatar-transfer.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/avatar-client.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/review-nicknames.js"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/membership/wechat-pay.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/membership/wechat-contact.png"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "reviews-public"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "me"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "google-config"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "me"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/membership/alipay.png"
+    },
+    {
+      "method": "GET",
+      "path": "/"
+    },
+    {
+      "method": "GET",
+      "path": "/site-navigation.js"
+    },
+    {
+      "method": "GET",
+      "path": "/style.css"
+    },
+    {
+      "method": "GET",
+      "path": "/visit-counter.css"
+    },
+    {
+      "method": "GET",
+      "path": "/support.css"
+    },
+    {
+      "method": "GET",
+      "path": "/desktop-ui.css"
+    },
+    {
+      "method": "GET",
+      "path": "/account-ui.css"
+    },
+    {
+      "method": "GET",
+      "path": "/commerce-ui.css"
+    },
+    {
+      "method": "GET",
+      "path": "/site-navigation.css"
+    },
+    {
+      "method": "GET",
+      "path": "/site-header.css"
+    },
+    {
+      "method": "GET",
+      "path": "/app.js"
+    },
+    {
+      "method": "GET",
+      "path": "/account-ui.js"
+    },
+    {
+      "method": "GET",
+      "path": "/site-header.js"
+    },
+    {
+      "method": "GET",
+      "path": "/aiyc.svg"
+    },
+    {
+      "method": "GET",
+      "path": "/visit-counter.js"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/ip-explorer.jpg"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/wechat-tip-qr.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/alipay-tip-qr.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/wechat-personal-qr.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/wechat-official-account-qr.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/wechat-video-channel-qr-cropped.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/support/ip-portrait.jpg"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/archive.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/clipboard.js"
+    },
+    {
+      "method": "GET",
+      "path": "/desktop-ui.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/media-tracks.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/image-dimensions.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/browser-account.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/parse-verification.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/membership-plans.js"
+    },
+    {
+      "method": "GET",
+      "path": "/commerce-ui.js"
+    },
+    {
+      "method": "GET",
+      "path": "/avatar-ui.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/avatar-client.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/account-avatar-transfer.js"
+    },
+    {
+      "method": "GET",
+      "path": "/lib/review-nicknames.js"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/membership/wechat-pay.png"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/membership/wechat-contact.png"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "reviews-public"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "me"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "google-config"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account",
+      "action": "me"
+    }
+  ],
+  "blocked": [
+    {
+      "method": "GET",
+      "path": "[cross-origin]"
+    },
+    {
+      "method": "GET",
+      "path": "[cross-origin]"
+    },
+    {
+      "method": "GET",
+      "path": "[cross-origin]"
+    },
+    {
+      "method": "GET",
+      "path": "[cross-origin]"
+    },
+    {
+      "method": "GET",
+      "path": "[cross-origin]"
+    }
+  ],
+  "screenshots": [
+    "01-membership-desktop-hero.png",
+    "02-membership-desktop-prices.png",
+    "03-membership-mobile-prices.png",
+    "04-membership-mobile-hero.png",
+    "05-signed-out-dialog-desktop.png",
+    "06-signed-out-dialog-mobile.png",
+    "07-payment-return-mobile.png",
+    "08-login-guidance-mobile.png"
+  ],
+  "rendererErrors": [],
+  "profileCleaned": true,
+  "authenticatedPurchaseVerified": false,
+  "realPaymentVerified": false,
+  "productionEntitlementGrantVerified": false,
+  "sourceSha": "ec8a1a682932c9866964d355790e4fed57c7c194",
+  "screenshotsStoredLocally": true
+}

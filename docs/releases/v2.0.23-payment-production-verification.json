@@ -1,0 +1,161 @@
+{
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-10-15T10:40:51.265Z",
+  "passed": 17,
+  "total": 17,
+  "ok": true,
+  "realMediaChecks": false,
+  "results": [
+    {
+      "name": "payment/health",
+      "ok": true,
+      "status": 200,
+      "durationMs": 1918
+    },
+    {
+      "name": "payment/home",
+      "ok": true,
+      "status": 200,
+      "durationMs": 236
+    },
+    {
+      "name": "payment/return-reference-is-static",
+      "ok": true,
+      "status": 200,
+      "durationMs": 235
+    },
+    {
+      "name": "payment/static/membership-page",
+      "ok": true,
+      "status": 200,
+      "durationMs": 228
+    },
+    {
+      "name": "payment/static/account-ui",
+      "ok": true,
+      "status": 200,
+      "durationMs": 384
+    },
+    {
+      "name": "payment/static/membership-ui",
+      "ok": true,
+      "status": 200,
+      "durationMs": 215
+    },
+    {
+      "name": "payment/static/browser-account",
+      "ok": true,
+      "status": 200,
+      "durationMs": 249
+    },
+    {
+      "name": "payment/static/manual-commerce-preserved",
+      "ok": true,
+      "status": 200,
+      "durationMs": 235
+    },
+    {
+      "name": "payment/live-signed-catalog",
+      "ok": true,
+      "status": 200,
+      "durationMs": 1639
+    },
+    {
+      "name": "payment/anonymous-order-denied",
+      "ok": true,
+      "status": 401,
+      "durationMs": 1001
+    },
+    {
+      "name": "payment/anonymous-status-denied",
+      "ok": true,
+      "status": 401,
+      "durationMs": 1275
+    },
+    {
+      "name": "payment/webhook/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 329
+    },
+    {
+      "name": "payment/webhook/content-type",
+      "ok": true,
+      "status": 415,
+      "durationMs": 316
+    },
+    {
+      "name": "payment/webhook/query",
+      "ok": true,
+      "status": 400,
+      "durationMs": 405
+    },
+    {
+      "name": "payment/webhook/oversize",
+      "ok": true,
+      "status": 413,
+      "durationMs": 320
+    },
+    {
+      "name": "payment/webhook/unsigned",
+      "ok": true,
+      "status": 401,
+      "durationMs": 310
+    },
+    {
+      "name": "payment/webhook/wrong-signature",
+      "ok": true,
+      "status": 401,
+      "durationMs": 418
+    }
+  ],
+  "sourceSha": "ec8a1a682932c9866964d355790e4fed57c7c194",
+  "expectedCatalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+  "deployment": {
+    "version": "2.0.23",
+    "deploymentId": "b5e72f1c-6de0-4c29-9525-c3050daac376"
+  },
+  "sourceAssets": [
+    {
+      "path": "/account-ui.js",
+      "sha256": "839cc15c1482ed2a6c04f52a550497b519860c08c26661800b050a66466f1a5f"
+    },
+    {
+      "path": "/membership.js",
+      "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4"
+    },
+    {
+      "path": "/lib/browser-account.js",
+      "sha256": "d736e1905ad3418f99b26e5783a2b7a5029b2237278b2bdef89c9da81fbeccd9"
+    },
+    {
+      "path": "/commerce-ui.js",
+      "sha256": "47c251acddedfa81ebd7b92db78acd0e102530dfaed6bf802bfadf2f47f5d5ef"
+    }
+  ],
+  "catalog": {
+    "version": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+    "mode": "live",
+    "currency": "CNY",
+    "plans": [
+      {
+        "id": "daily",
+        "amount": "3.00",
+        "days": 1
+      },
+      {
+        "id": "monthly",
+        "amount": "19.90",
+        "days": 30
+      },
+      {
+        "id": "yearly",
+        "amount": "69.90",
+        "days": 365
+      }
+    ]
+  },
+  "authenticatedPurchaseVerified": false,
+  "realPaymentVerified": false,
+  "productionEntitlementGrantVerified": false
+}

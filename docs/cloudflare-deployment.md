@@ -1,5 +1,13 @@
 # Cloudflare 部署与迁移核验
 
+## 2026-10-15：v2.0.23 在线付款恢复
+
+本任务部署主 Worker `b5e72f1c-6de0-4c29-9525-c3050daac376` 与 Pages [4593162d](https://4593162d.brclio-xhs-pages.pages.dev)，来源为 `ec8a1a682932c9866964d355790e4fed57c7c194`。主站、备用站、Worker 与该次 Pages 入口均确认 2.0.23、相同 Worker ID 及正常在线收款目录；四入口 16 项关键文件哈希比对通过。Worker 入口在本机直连超时后通过现有网络代理核验，HTTPS 证书校验保留。
+
+主站 112 个与备用站 115 个资源哈希匹配，58 项匿名边界、17 项支付及 10 项真实渲染器检查通过。27 项 Secret 名称、既有 Durable Object namespace 与服务绑定、Pages 配置均保持一致。Python 与订阅代理的修改时间未变，Android 原 4 个附件及桌面 v2.0.22 原 11 个附件摘要未变。支付中心在等待原生 CI 期间另有一次独立部署，本任务未部署或修改该 Worker；之后再次核对产品目录版本及收款状态正常。前后观测分别见[操作审计](releases/v2.0.23-operation-audit.json)。
+
+桌面三平台原生门禁全部通过并已公开 v2.0.23；Intel 首次截图取图报错后，对同一源码重跑失败作业成功，所有原门禁保留。未由本任务重发 Python、代理、Android 或 Vercel，未新增存储资源、进行新实付或开通生产会员，也未替换用户当前安装的应用。
+
 ## 2026-10-15：v2.0.22 Brclio Pay
 
 已部署现有主 Worker，版本为 `089c78dd-02af-45ae-a82e-78f228a33803`；Pages 部署为 [7aec46f0](https://7aec46f0.brclio-xhs-pages.pages.dev)。正式站点与备用站均返回版本 2.0.22。三项产品支付凭证通过部署时的 `--secrets-file` 添加到主 Worker Secret，原有 24 项 Secret 和所有现有变量保留；Pages 不保存支付凭证。

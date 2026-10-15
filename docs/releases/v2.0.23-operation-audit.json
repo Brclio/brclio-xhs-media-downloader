@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.23",
+  "status": "published-and-production-read-only-verified",
+  "sourceSha": "ec8a1a682932c9866964d355790e4fed57c7c194",
+  "verifiedAt": "2026-10-15T10:45:24.204373+00:00",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.23",
+  "publishedAt": "2026-10-15T10:36:31Z",
+  "before": {
+    "workerVersion": "3f9b7432-e366-4124-b1fa-3f9472df2c5c",
+    "pagesDeploymentId": "a3cdb62a-b320-4225-8e52-76169956d8ee"
+  },
+  "after": {
+    "workerVersion": "b5e72f1c-6de0-4c29-9525-c3050daac376",
+    "pagesDeploymentId": "4593162d-580e-42d7-9cf8-143b10dff25c",
+    "pagesDeploymentUrl": "https://4593162d.brclio-xhs-pages.pages.dev"
+  },
+  "configurationAudit": {
+    "secretNamesCount": 27,
+    "secretNamesUnchanged": true,
+    "secretNamesSha256": "3c8c28105d2cb3bc40d8b8e19fb35567afca5f5ce8e70b848122ab2fe9ecfacc",
+    "secretValuesReadOrWritten": false,
+    "mainBindingsUnchanged": true,
+    "existingNamespacesCount": 3,
+    "namespaceInventoryUnchanged": true,
+    "pagesDeploymentConfigUnchanged": true,
+    "workerInventoryUnchanged": true,
+    "unchangedOtherWorkers": [
+      "brclio-xhs-python",
+      "brclio-xhs-subscription-proxy"
+    ],
+    "independentPaymentCenterUpdateObserved": {
+      "beforeModifiedAt": "2026-10-15T09:46:38.070836Z",
+      "afterModifiedAt": "2026-10-15T10:19:37.519818Z",
+      "latestDeployment": {
+        "id": "86070936-2d15-45ee-b83c-eb3da2b9d068",
+        "source": "wrangler",
+        "strategy": "percentage",
+        "versions": [
+          {
+            "version_id": "1de0ff55-2ed9-42d3-8dc4-f7133dd001c2",
+            "percentage": 100
+          }
+        ],
+        "created_on": "2026-10-15T10:19:35.698146Z"
+      },
+      "performedByThisReleaseTask": false,
+      "actorAttribution": "Not established; separately observed during native CI waiting.",
+      "productCatalogVersionAndAcceptingPaymentsVerifiedAfterward": true
+    }
+  },
+  "scope": {
+    "storageProvider": "existing-private-github-repository",
+    "newStorageResources": false,
+    "deployTargets": [
+      "existing main Cloudflare Worker",
+      "existing Cloudflare Pages project",
+      "desktop v2.0.23 release"
+    ],
+    "targetsNotDeployedByThisTask": [
+      "private Python Worker",
+      "subscription proxy Worker",
+      "payment center Worker",
+      "Vercel",
+      "Android release APK"
+    ],
+    "androidVersion": "1.0.15",
+    "previousDesktopReleaseAssetsUnchanged": true,
+    "androidReleaseAssetsUnchanged": true,
+    "productionOrdersCreated": false,
+    "productionAccountWrites": false
+  },
+  "validation": {
+    "local": {
+      "node": {
+        "passed": 1736,
+        "skipped": 13,
+        "failed": 0
+      },
+      "python": {
+        "passed": 47,
+        "failed": 0
+      },
+      "electronPaymentUI": {
+        "passed": 15,
+        "failed": 0
+      },
+      "finalTargetedChecks": 110,
+      "workerDryRun": "passed",
+      "publicAssetCredentialScan": "passed",
+      "adminRendererRecheck": {
+        "result": "PASS",
+        "fixtureCalls": 98,
+        "fixtureWrites": 24,
+        "productionWrites": false
+      }
+    },
+    "nativeCI": {
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/38717478981",
+      "workflowSha": "ec8a1a682932c9866964d355790e4fed57c7c194",
+      "event": "push",
+      "conclusion": "success",
+      "jobs": [
+        "mac-intel",
+        "mac-arm64",
+        "windows-x64",
+        "Publish verified installers"
+      ],
+      "nativeClipboardVerified": true
+    },
+    "ciRetries": [
+      {
+        "runId": 38717478981,
+        "attempt": 1,
+        "platform": "mac-intel",
+        "step": "Verify private avatar collection and existing account administration",
+        "error": "UnknownVizError",
+        "businessAssertionFailureReported": false,
+        "publication": "skipped"
+      },
+      {
+        "runId": 38717478981,
+        "attempt": 2,
+        "sourceUnchanged": true,
+        "retryScope": "failed jobs only",
+        "allAcceptanceGatesPreserved": true
+      }
+    ],
+    "nativeInstallReplacementAndRelaunchVerifiedByCI": true,
+    "publishedAssets": 11,
+    "publicInstallerProbes": 9,
+    "legacyAndPreviousUpdaterVerified": [
+      "1.8.13",
+      "2.0.22"
+    ],
+    "paymentProductionChecks": {
+      "passed": 17,
+      "total": 17
+    },
+    "cloudflareProductionChecks": {
+      "passed": 58,
+      "total": 58
+    },
+    "webAssetHashes": 112,
+    "pagesAssetHashes": 115,
+    "rendererChecks": 10,
+    "rendererScreenshots": 8,
+    "entrances": [
+      {
+        "origin": "https://xhs.download.brclio.com",
+        "version": "2.0.23",
+        "deploymentId": "b5e72f1c-6de0-4c29-9525-c3050daac376",
+        "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+        "enabled": true,
+        "acceptingPayments": true,
+        "assets": [
+          {
+            "path": "account-ui.js",
+            "sha256": "839cc15c1482ed2a6c04f52a550497b519860c08c26661800b050a66466f1a5f",
+            "matchesBuild": true
+          },
+          {
+            "path": "membership.js",
+            "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4",
+            "matchesBuild": true
+          },
+          {
+            "path": "download.html",
+            "sha256": "a62b894fcbb3ae353adc0a386afb10f2c2407571148b09aa446dc80d90611823",
+            "matchesBuild": true
+          },
+          {
+            "path": "changelog.html",
+            "sha256": "7aac5bdbae9000b87ee96179ecb2e14b63e86013afdf1eb60bc9697f02493560",
+            "matchesBuild": true
+          }
+        ],
+        "accountWrites": false,
+        "network": "direct HTTPS"
+      },
+      {
+        "origin": "https://brclio-xhs-pages.pages.dev",
+        "version": "2.0.23",
+        "deploymentId": "b5e72f1c-6de0-4c29-9525-c3050daac376",
+        "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+        "enabled": true,
+        "acceptingPayments": true,
+        "assets": [
+          {
+            "path": "account-ui.js",
+            "sha256": "839cc15c1482ed2a6c04f52a550497b519860c08c26661800b050a66466f1a5f",
+            "matchesBuild": true
+          },
+          {
+            "path": "membership.js",
+            "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4",
+            "matchesBuild": true
+          },
+          {
+            "path": "download.html",
+            "sha256": "a62b894fcbb3ae353adc0a386afb10f2c2407571148b09aa446dc80d90611823",
+            "matchesBuild": true
+          },
+          {
+            "path": "changelog.html",
+            "sha256": "7aac5bdbae9000b87ee96179ecb2e14b63e86013afdf1eb60bc9697f02493560",
+            "matchesBuild": true
+          }
+        ],
+        "accountWrites": false,
+        "network": "direct HTTPS"
+      },
+      {
+        "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+        "version": "2.0.23",
+        "deploymentId": "b5e72f1c-6de0-4c29-9525-c3050daac376",
+        "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+        "enabled": true,
+        "acceptingPayments": true,
+        "assets": [
+          {
+            "path": "account-ui.js",
+            "sha256": "839cc15c1482ed2a6c04f52a550497b519860c08c26661800b050a66466f1a5f",
+            "matchesBuild": true
+          },
+          {
+            "path": "membership.js",
+            "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4",
+            "matchesBuild": true
+          },
+          {
+            "path": "download.html",
+            "sha256": "a62b894fcbb3ae353adc0a386afb10f2c2407571148b09aa446dc80d90611823",
+            "matchesBuild": true
+          },
+          {
+            "path": "changelog.html",
+            "sha256": "7aac5bdbae9000b87ee96179ecb2e14b63e86013afdf1eb60bc9697f02493560",
+            "matchesBuild": true
+          }
+        ],
+        "accountWrites": false,
+        "network": "configured proxy with normal TLS verification"
+      },
+      {
+        "origin": "https://4593162d.brclio-xhs-pages.pages.dev",
+        "version": "2.0.23",
+        "deploymentId": "b5e72f1c-6de0-4c29-9525-c3050daac376",
+        "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+        "enabled": true,
+        "acceptingPayments": true,
+        "assets": [
+          {
+            "path": "account-ui.js",
+            "sha256": "839cc15c1482ed2a6c04f52a550497b519860c08c26661800b050a66466f1a5f",
+            "matchesBuild": true
+          },
+          {
+            "path": "membership.js",
+            "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4",
+            "matchesBuild": true
+          },
+          {
+            "path": "download.html",
+            "sha256": "a62b894fcbb3ae353adc0a386afb10f2c2407571148b09aa446dc80d90611823",
+            "matchesBuild": true
+          },
+          {
+            "path": "changelog.html",
+            "sha256": "7aac5bdbae9000b87ee96179ecb2e14b63e86013afdf1eb60bc9697f02493560",
+            "matchesBuild": true
+          }
+        ],
+        "accountWrites": false,
+        "network": "direct HTTPS"
+      }
+    ],
+    "realPaymentVerifiedThisRelease": false,
+    "productionEntitlementGrantVerifiedThisRelease": false,
+    "usersInstalledApplicationReplaced": false
+  },
+  "evidenceFiles": [
+    "v2.0.23-publication-verification.json",
+    "v2.0.23-payment-production-verification.json",
+    "v2.0.23-cloudflare-production-verification.json",
+    "v2.0.23-web-production-verification.json",
+    "v2.0.23-pages-production-verification.json",
+    "v2.0.23-renderer-production-verification.json"
+  ],
+  "publicationNotes": [
+    "Intel attempt 1 failed in the screenshot CopyFromSurface path with UnknownVizError. The unchanged source passed every original gate in attempt 2.",
+    "The local direct workers.dev connection timed out. Its health, catalog and four asset hashes passed through the configured proxy with normal TLS verification.",
+    "A separate payment-center deployment at 10:19 UTC was observed while native CI was running. This release task did not deploy that Worker; the live product catalog was reverified afterward.",
+    "No new real payment, production entitlement grant or replacement of the users installed application was performed."
+  ]
+}

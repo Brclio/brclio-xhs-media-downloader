@@ -1,6 +1,6 @@
 # Brclio 小红书下载器 · 桌面版
 
-[v2.0.23 版本说明](../docs/releases/v2.0.23.md)：完善 Brclio Pay 在线收款暂停与恢复提示。暂停时保留报价并停用付款按钮，恢复后可刷新报价继续原请求；原请求编号、套餐与金额保持一致，原人工扫码与激活码继续可用。Android 保持 1.0.15，浏览器账号页随网站更新。
+[v2.0.23 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.23)：完善 Brclio Pay 在线收款暂停与恢复提示。暂停时保留报价并停用付款按钮，恢复后可刷新报价继续原请求；原请求编号、套餐与金额保持一致，原人工扫码与激活码继续可用。三平台原生安装升级与重启门禁、11 个公开附件及主站和备用站生产核验通过，见[操作审计](../docs/releases/v2.0.23-operation-audit.json)。Android 保持 1.0.15，浏览器账号页随网站更新。
 
 [v2.0.22 已正式发布](https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.22)，在账号会员页增加 Brclio Pay 在线购买入口：读取当前启用套餐，打开系统浏览器中的 HTTPS 收银台，付款通知经后端核验并持久保存后开通会员。报价变化时需要重新确认，已支付但尚未开通时可继续查询原订单；原人工扫码和激活码方式保留。三平台安装升级与重新启动门禁、公开附件及更新入口核验通过，见 [v2.0.22 版本说明](../docs/releases/v2.0.22.md)。
 
