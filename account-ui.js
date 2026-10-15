@@ -531,7 +531,7 @@ export async function initializeAccountUI() {
     if (pageInactive || wakeBusy || Date.now() - lastWake < 250) return;
     lastWake = Date.now(); wakeBusy = true;
     try {
-      if (state?.authenticated && !state.verified) {
+      if (!state?.verified && (state?.authenticated || state?.status === 'service_unavailable')) {
         const refreshed = await bridge.refreshAccount();
         if (refreshed?.state) render(refreshed.state);
       }

@@ -85,6 +85,81 @@ test('preparation leaves current app untouched, verifies source and staged copy,
   assert.equal((await lstat(f.current)).ino, before.ino);
 });
 
+test('a transient busy DMG detach retries normally before preparing replacement', async t => {
+  const f = await fixture(t), before = await lstat(f.current), pauses = [], ejects = [];
+  const run = f.dependencies.run;
+  const prepared = await prepareMacUpdate(f.options, { ...f.dependencies, sleep: async ms => pauses.push(ms),
+    run: async (command, args, options) => {
+      if (command === '/usr/bin/hdiutil' && args[0] === 'detach') {
+        ejects.push({ args, options });
+        if (ejects.length < 3) throw Object.assign(new Error('DMG is still busy'), { code: 16, stderr: 'hdiutil: Resource busy' });
+      }
+      return run(command, args, options);
+    } });
+  assert.deepEqual(pauses, [1000, 3000]);
+  assert.equal(ejects.length, 3);
+  for (const eject of ejects) {
+    assert.deepEqual(eject.args, ['detach', path.join(path.dirname(prepared.resultPath), 'mount')]);
+    assert.equal(eject.options.timeout, 30000);
+  }
+  assert.equal((await lstat(f.current)).ino, before.ino, 'No replacement happens during detach retries');
+  assert.equal(JSON.parse(await readFile(prepared.resultPath, 'utf8')).status, 'prepared');
+  await prepared.dispose();
+});
+
+test('busy DMG detach exhaustion preserves the failure and never prepares or starts replacement', async t => {
+  const f = await fixture(t), before = await readFile(path.join(f.current, 'Contents/Info.plist')), pauses = [], failures = [];
+  const run = f.dependencies.run;
+  await assert.rejects(prepareMacUpdate(f.options, { ...f.dependencies, sleep: async ms => pauses.push(ms),
+    run: async (command, args, options) => {
+      if (command === '/usr/bin/hdiutil' && args[0] === 'detach') {
+        assert.equal(args.length, 2, 'Ejection must remain a normal detach of exactly one mount');
+        const error = Object.assign(new Error(`busy attempt ${failures.length + 1}`), { code: 16, stderr: 'hdiutil: Resource busy' });
+        failures.push(error); throw error;
+      }
+      return run(command, args, options);
+    }, spawn: () => assert.fail('An attached installer must not start a replacement helper'),
+  }), error => error === failures.at(-1));
+  assert.equal(failures.length, 3, 'Failure cleanup cannot reset the bounded retry budget');
+  assert.deepEqual(pauses, [1000, 3000]);
+  assert.deepEqual(await readFile(path.join(f.current, 'Contents/Info.plist')), before);
+  assert.equal((await readdir(f.root)).some(name => name.startsWith('.brclio-update-')), false);
+  const [work] = await readdir(f.options.cacheDirectory);
+  assert.equal(JSON.parse(await readFile(path.join(f.options.cacheDirectory, work, 'install-result.json'), 'utf8')).status, 'checking');
+  assert.equal((await lstat(path.join(f.options.cacheDirectory, work, 'mount'))).isDirectory(), true, 'Retain the failed mount path for recovery');
+});
+
+test('detach retry requires both the busy exit code and diagnostic and never retries other commands', async t => {
+  for (const [code, stderr] of [[16, 'Permission denied'], [1, 'Resource busy']]) await t.test(`${code}: ${stderr}`, async t => {
+    const f = await fixture(t), pauses = [];
+    const run = f.dependencies.run;
+    const failure = Object.assign(new Error('non-retryable detach failure'), { code, stderr });
+    let detachCalls = 0;
+    await assert.rejects(prepareMacUpdate(f.options, { ...f.dependencies, sleep: async ms => pauses.push(ms),
+      run: async (command, args, options) => {
+        if (command === '/usr/bin/hdiutil' && args[0] === 'detach' && ++detachCalls === 1) throw failure;
+        return run(command, args, options);
+      } }), error => error === failure);
+    assert.deepEqual(pauses, [], 'A non-busy failure gets no timed retry');
+    assert.equal(detachCalls, 2, 'The existing failure cleanup gets one normal detach attempt');
+    assert.equal((await readdir(f.options.cacheDirectory)).length, 0);
+  });
+  await t.test('a busy copy failure is not retried', async t => {
+    const f = await fixture(t), pauses = [];
+    const run = f.dependencies.run;
+    const failure = Object.assign(new Error('copy is busy'), { code: 16, stderr: 'Resource busy' });
+    let copies = 0;
+    await assert.rejects(prepareMacUpdate(f.options, { ...f.dependencies, sleep: async ms => pauses.push(ms),
+      run: async (command, args, options) => {
+        if (command === '/usr/bin/ditto') { copies++; throw failure; }
+        return run(command, args, options);
+      } }), error => error === failure);
+    assert.equal(copies, 1);
+    assert.deepEqual(pauses, []);
+    assert.equal(f.calls.filter(call => call.args[0] === 'detach').length, 1, 'Failure cleanup detaches only this transaction mount');
+  });
+});
+
 test('a failed progress window prevents starting an invisible overwrite installation', async t => {
   const f = await fixture(t);
   await assert.rejects(prepareMacUpdate(f.options, { ...f.dependencies, startProgress: async () => {

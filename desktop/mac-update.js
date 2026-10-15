@@ -13,6 +13,7 @@ const nativeFs = process.versions.electron ? createRequire(import.meta.url)('ori
 const { constants } = nativeFs;
 const { access, chmod, copyFile, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, writeFile } = nativeFs.promises;
 const APP_ID = 'cn.bornforthis.xhs-downloader';
+const DETACH_RETRY_DELAYS = [1000, 3000];
 const fail = (code, message, cause) => { throw Object.assign(new Error(message, cause ? { cause } : undefined), { code }); };
 const contained = (parent, child) => child === parent || child.startsWith(`${parent}${path.sep}`);
 
@@ -293,10 +294,29 @@ export async function prepareMacUpdate({ installerPath, currentAppPath, expected
   await mkdir(cache, { recursive: true, mode: 0o700 }); cache = await realpath(cache);
   if (contained(current, cache)) fail('MAC_UPDATE_PATH', '更新缓存不能放在待替换应用内部。');
   let stageDirectory, work, mountpoint, mounted = false, committed = false, launching = false, disposed = false;
-  let child, childExited, childStopped = true, progressWindow;
+  let child, childExited, childStopped = true, progressWindow, detachFailure;
   const detach = async () => {
     if (!mounted) return;
-    await run('/usr/bin/hdiutil', ['detach', mountpoint], { timeout: 30000 }); mounted = false;
+    if (detachFailure) throw detachFailure;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await run('/usr/bin/hdiutil', ['detach', mountpoint], { timeout: 30000 });
+        mounted = false;
+        return;
+      } catch (error) {
+        // DiskImages can briefly retain the copied bundle. Retry only an
+        // explicit busy eject of this transaction's private mount; never force
+        // unmount or continue toward replacement while it is still mounted.
+        if (error.code !== 16 || !/resource busy/i.test(error.stderr || '')) throw error;
+        if (attempt === DETACH_RETRY_DELAYS.length) {
+          // The outer cleanup must retain this mount and the original failure,
+          // rather than starting another retry budget after exhaustion.
+          detachFailure = error;
+          throw error;
+        }
+        await (dependencies.sleep || delay)(DETACH_RETRY_DELAYS[attempt]);
+      }
+    }
   };
   try {
     try { stageDirectory = await mkdtemp(path.join(parent, '.brclio-update-')); await chmod(stageDirectory, 0o700); }
