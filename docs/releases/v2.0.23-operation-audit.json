@@ -277,7 +277,8 @@
     ],
     "realPaymentVerifiedThisRelease": false,
     "productionEntitlementGrantVerifiedThisRelease": false,
-    "usersInstalledApplicationReplaced": false
+    "usersInstalledApplicationReplaced": false,
+    "releasePresentationVerified": true
   },
   "evidenceFiles": [
     "v2.0.23-publication-verification.json",
@@ -285,12 +286,24 @@
     "v2.0.23-cloudflare-production-verification.json",
     "v2.0.23-web-production-verification.json",
     "v2.0.23-pages-production-verification.json",
-    "v2.0.23-renderer-production-verification.json"
+    "v2.0.23-renderer-production-verification.json",
+    "v2.0.23-release-presentation-verification.json"
   ],
   "publicationNotes": [
     "Intel attempt 1 failed in the screenshot CopyFromSurface path with UnknownVizError. The unchanged source passed every original gate in attempt 2.",
     "The local direct workers.dev connection timed out. Its health, catalog and four asset hashes passed through the configured proxy with normal TLS verification.",
     "A separate payment-center deployment at 10:19 UTC was observed while native CI was running. This release task did not deploy that Worker; the live product catalog was reverified afterward.",
     "No new real payment, production entitlement grant or replacement of the users installed application was performed."
-  ]
+  ],
+  "githubWrites": {
+    "sourceCommit": "ec8a1a682932c9866964d355790e4fed57c7c194",
+    "sourceBranch": "main",
+    "newTag": "v2.0.23",
+    "releaseAssets": 11,
+    "releaseTitleAndBodySynchronized": true,
+    "evidenceDocumentationPushedToMain": true,
+    "publishedTagsMoved": false,
+    "previousReleaseAssetsModified": false,
+    "androidReleaseModified": false
+  }
 }
