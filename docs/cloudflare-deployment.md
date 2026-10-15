@@ -1,5 +1,13 @@
 # Cloudflare 部署与迁移核验
 
+## 2026-10-15：v2.0.25 付款等待与重启恢复
+
+来源 `53e0c78f5172abf7a9e3a93e6fcaa6a1b610f4a9` 已部署到主 Worker `991f23e0-1398-4b69-a6b3-9db521899efe` 和 Pages [658621a8](https://658621a8.brclio-xhs-pages.pages.dev)。正式域名、备用站、Worker 和本次 Pages 入口均返回 2.0.25、相同 Worker ID 与正常收款目录，20 项关键文件哈希通过。主站 112 个与备用站 116 个资源哈希匹配；58 项匿名接口、17 项支付和 10 项匿名真实渲染器检查通过。
+
+27 项 Secret 名称、3 个既有 namespace、服务绑定及 Pages 配置不变，Python、订阅代理、支付中心的修改时间均未变；Android 原 4 个附件及桌面 v2.0.23 原 11 个附件摘要未变。只部署本产品主 Worker 与 Pages，没有新增存储资源或更新其他 Worker/Vercel/Android；生产检查未创建真实订单、实付或权益。
+
+三平台桌面安装升级、自动重启及新增支付恢复界面门禁均通过，公开安装包已核验。v2.0.24 候选未发布/未部署，原标签不移动；v2.0.25 发布作业因上传后读 GitHub 状态连接中断，复用同一源码只重跑发布步骤成功。GitHub 下载域名与 Worker 入口通过现有网络代理补核验，保留正常 HTTPS 校验。分阶段证据见[操作审计](releases/v2.0.25-operation-audit.json)。
+
 ## 2026-10-15：v2.0.23 在线付款恢复
 
 本任务部署主 Worker `b5e72f1c-6de0-4c29-9525-c3050daac376` 与 Pages [4593162d](https://4593162d.brclio-xhs-pages.pages.dev)，来源为 `ec8a1a682932c9866964d355790e4fed57c7c194`。主站、备用站、Worker 与该次 Pages 入口均确认 2.0.23、相同 Worker ID 及正常在线收款目录；四入口 16 项关键文件哈希比对通过。Worker 入口在本机直连超时后通过现有网络代理核验，HTTPS 证书校验保留。
