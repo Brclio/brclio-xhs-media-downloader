@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.25",
+  "sourceSha": "53e0c78f5172abf7a9e3a93e6fcaa6a1b610f4a9",
+  "verifiedAt": "2026-10-15T12:27:47.773Z",
+  "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.25",
+  "title": "v2.0.25：付款等待、权益刷新与订单恢复",
+  "releaseBodyMatchesDocumentation": true,
+  "assetIdsBytesAndDigestsUnchanged": true,
+  "latestTag": "v2.0.25",
+  "assets": [
+    {
+      "id": 643751368,
+      "name": "Brclio-XHS-2.0.25-mac-arm64.dmg",
+      "size": 168454099,
+      "digest": "sha256:ef61a49ddd7988db171302b6d18409164544088160ca66062d459924b5d792e2"
+    },
+    {
+      "id": 643751361,
+      "name": "Brclio-XHS-2.0.25-mac-arm64.zip",
+      "size": 169373339,
+      "digest": "sha256:20418b6de050663ca22d8f667136172dfb40f4376bed6b0909454dc875c1229c"
+    },
+    {
+      "id": 643751357,
+      "name": "Brclio-XHS-2.0.25-mac-x64.dmg",
+      "size": 176164832,
+      "digest": "sha256:1b7413aa79c6641fb14f285e692c99ffd94ac2e2079284937fb34e353ef28bda"
+    },
+    {
+      "id": 643751356,
+      "name": "Brclio-XHS-2.0.25-mac-x64.zip",
+      "size": 177169035,
+      "digest": "sha256:5cd0d3b2ec57a4499825b9a3562a0284071db08e0a9cfe90a21f95ea023a766d"
+    },
+    {
+      "id": 643751358,
+      "name": "Brclio-XHS-2.0.25-windows-x64-portable.exe",
+      "size": 147248951,
+      "digest": "sha256:5f19733811934a9e25ad5289bc6f9483a9aa1629332d6180cefae37303f51d6c"
+    },
+    {
+      "id": 643751631,
+      "name": "Brclio-XHS-2.0.25-windows-x64-setup.exe",
+      "size": 147487451,
+      "digest": "sha256:b5f3f9f79e58757d55808a906f227d5c5ebf0b788573099184aafc38e3473955"
+    },
+    {
+      "id": 643751850,
+      "name": "build-evidence.json",
+      "size": 7006,
+      "digest": "sha256:156c188e5ea1683b33c26d0054b9fccc20ee7a58f130ab8a55e537e5e40b8d7c"
+    },
+    {
+      "id": 643751852,
+      "name": "SHA256SUMS.txt",
+      "size": 915,
+      "digest": "sha256:440953698cb7d0577637df196bdfabda4428a16a4f3d42bb1fa2a57dbb268535"
+    },
+    {
+      "id": 643751842,
+      "name": "XHS-Downloader-2.0.25-mac-arm64.dmg",
+      "size": 168454099,
+      "digest": "sha256:ef61a49ddd7988db171302b6d18409164544088160ca66062d459924b5d792e2"
+    },
+    {
+      "id": 643751882,
+      "name": "XHS-Downloader-2.0.25-mac-x64.dmg",
+      "size": 176164832,
+      "digest": "sha256:1b7413aa79c6641fb14f285e692c99ffd94ac2e2079284937fb34e353ef28bda"
+    },
+    {
+      "id": 643751886,
+      "name": "XHS-Downloader-2.0.25-windows-x64-setup.exe",
+      "size": 147487451,
+      "digest": "sha256:b5f3f9f79e58757d55808a906f227d5c5ebf0b788573099184aafc38e3473955"
+    }
+  ]
+}

@@ -1564,7 +1564,8 @@
       "secondAttempt": "failed publisher job only; success",
       "sourceUnchanged": true,
       "nativeAcceptanceGatesPreserved": true
-    }
+    },
+    "releasePresentationVerified": true
   },
   "requirements": {
     "orderWaiting": "Automatic bounded polling; PAID with pending business order never grants rights; retains original quote.",
@@ -1603,10 +1604,11 @@
     "sourceBranch": "main",
     "newTag": "v2.0.25",
     "releaseAssets": 11,
-    "releaseTitleAndBodySynchronized": false,
-    "evidenceDocumentationPushedToMain": false,
+    "releaseTitleAndBodySynchronized": true,
+    "evidenceDocumentationPushedToMain": true,
     "publishedTagsMoved": false,
     "previousReleaseAssetsModified": false,
-    "androidReleaseModified": false
+    "androidReleaseModified": false,
+    "evidenceDocumentationCommit": "2f93b19632d3d2c7b8dc4832d20cbfb04f4e8333"
   }
 }
