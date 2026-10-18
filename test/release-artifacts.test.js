@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { validateArtifacts, createCompatibilityAssets, formatReleaseNotes, verifyReleaseTag, prepareDraftRelease, releaseApiError } from '../scripts/publish-desktop-release.mjs';
+import { validateArtifacts, createCompatibilityAssets, formatReleaseNotes, verifyReleaseTag, prepareDraftRelease, releaseApiError, createReleaseApi } from '../scripts/publish-desktop-release.mjs';
 
 const version = '1.7.1';
 const sourceSha = 'a'.repeat(40);
@@ -105,6 +105,100 @@ test('GitHub failure diagnostics retain only a bounded message and request ID wi
   assert.ok(error.message.length < 400);
   const malformed = await releaseApiError(new Response('not JSON', { status: 502 }), { endpoint: 'releases' });
   assert.equal(malformed.message, 'GitHub GET releases: HTTP 502');
+});
+
+test('post-upload release GET retries a temporary HTTP error and socket closure before reading the same draft', async () => {
+  const calls = [], delays = [], token = 'isolated-publisher-api-fixture';
+  const api = createReleaseApi({ token, sleep: async ms => delays.push(ms), fetchImpl: async (url, options) => {
+    calls.push({ url, options });
+    if (calls.length === 1) return Response.json({ message: 'Temporary failure' }, { status: 503 });
+    if (calls.length === 2) throw Object.assign(new TypeError('fetch failed'), { cause: { code: 'UND_ERR_SOCKET' } });
+    return Response.json({ id: 12, draft: true, assets: [] });
+  } });
+  assert.deepEqual(await api('releases/12'), { id: 12, draft: true, assets: [] });
+  assert.deepEqual(delays, [1000, 2000]);
+  assert.equal(calls.length, 3);
+  for (const { url, options } of calls) {
+    assert.equal(url, 'https://api.github.com/repos/Brclio/brclio-xhs-media-downloader/releases/12');
+    assert.equal(options.method, 'GET'); assert.equal(options.headers.Authorization, `Bearer ${token}`);
+    assert.equal(options.headers['X-GitHub-Api-Version'], '2022-11-28');
+    assert.ok(options.signal instanceof AbortSignal);
+  }
+  assert.equal(new Set(calls.map(call => call.options.signal)).size, 3, 'every attempt has a fresh timeout');
+});
+
+test('release GET retries are bounded for timeout, HTTP overload and rate limits with safe diagnostics', async () => {
+  for (const mode of ['timeout', 'http', 'rate-limit']) {
+    let attempts = 0; const delays = [], token = 'isolated-secret-redaction-fixture';
+    const api = createReleaseApi({ token, sleep: async ms => delays.push(ms), fetchImpl: async () => {
+      attempts++;
+      if (mode === 'timeout') throw Object.assign(new Error(`Timeout containing ${token}`), { name: 'TimeoutError', cause: { private: token } });
+      return Response.json({ message: `Unavailable ${token}`, private: token }, { status: mode === 'http' ? 502 : 429,
+        headers: { 'x-github-request-id': 'SAFE:123', ...(mode === 'rate-limit' ? { 'retry-after': '3600' } : {}) } });
+    } });
+    await assert.rejects(api('releases/12'), error => {
+      assert.doesNotMatch(error.message, new RegExp(token));
+      assert.equal(error.cause, undefined);
+      assert.match(error.message, mode === 'timeout' ? /network request failed$/ : /HTTP (502|429) \[request SAFE:123\]: Unavailable \[REDACTED\]$/);
+      return true;
+    });
+    assert.equal(attempts, 3);
+    assert.deepEqual(delays, mode === 'rate-limit' ? [30000, 30000] : [1000, 2000]);
+  }
+});
+
+test('release GET does not retry authorization, missing tags, conflicts or nontransient HTTP failures', async () => {
+  for (const status of [401, 403, 404, 409, 422, 501]) {
+    let attempts = 0;
+    const api = createReleaseApi({ token: 'fixture', sleep: async () => assert.fail('must not retry'), fetchImpl: async () => {
+      attempts++; return Response.json({ message: 'Denied' }, { status });
+    } });
+    await assert.rejects(api('git/ref/tags/v2.0.26'), new RegExp(`HTTP ${status}`));
+    assert.equal(attempts, 1);
+  }
+});
+
+test('release GET retries a broken response stream but refuses malformed successful JSON', async () => {
+  let attempts = 0; const delays = [];
+  const api = createReleaseApi({ token: 'fixture', sleep: async ms => delays.push(ms), fetchImpl: async () => {
+    attempts++;
+    if (attempts === 1) return { ok: true, json: async () => { throw Object.assign(new TypeError('terminated'), { cause: { code: 'UND_ERR_SOCKET' } }); } };
+    return Response.json({ draft: true });
+  } });
+  assert.deepEqual(await api('releases/12'), { draft: true });
+  assert.equal(attempts, 2); assert.deepEqual(delays, [1000]);
+  attempts = 0;
+  const invalid = createReleaseApi({ token: 'fixture-secret', sleep: async () => assert.fail('invalid JSON must not retry'), fetchImpl: async () => {
+    attempts++; return new Response('malformed fixture-secret JSON');
+  } });
+  await assert.rejects(invalid('releases/12'), { message: 'GitHub GET releases/12: invalid JSON response' });
+  assert.equal(attempts, 1);
+});
+
+test('draft creation and publication POST/PATCH are never automatically replayed after uncertain failures', async () => {
+  for (const method of ['POST', 'PATCH']) for (const failure of ['network', 'http', 'body']) {
+    let attempts = 0; const token = 'write-once-secret-fixture', body = JSON.stringify({ draft: method === 'POST' });
+    const api = createReleaseApi({ token, sleep: async () => assert.fail('writes must not retry'), fetchImpl: async (_url, options) => {
+      attempts++; assert.equal(options.method, method); assert.equal(options.body, body);
+      if (failure === 'network') throw new TypeError(`Network diagnostic ${token}`);
+      if (failure === 'body') return { ok: true, json: async () => { throw new TypeError(`Stream diagnostic ${token}`); } };
+      return Response.json({ message: `Temporary ${token}` }, { status: 503 });
+    } });
+    await assert.rejects(api(method === 'POST' ? 'releases' : 'releases/12', { method, body }), error => !error.message.includes(token));
+    assert.equal(attempts, 1);
+  }
+});
+
+test('a successful retried metadata read still enforces the exact source tag before any release write', async () => {
+  const calls = [];
+  const api = createReleaseApi({ token: 'fixture', sleep: async () => {}, fetchImpl: async (url, options) => {
+    calls.push({ url, method: options.method });
+    if (calls.length === 1) return Response.json({}, { status: 504 });
+    return Response.json({ ref: `refs/tags/${tag}`, object: { type: 'commit', sha: 'b'.repeat(40) } });
+  } });
+  await assert.rejects(prepareDraftRelease(api, draftOptions), /Remote release tag must match/);
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every(call => call.method === 'GET' && call.url.endsWith(`git/ref/tags/${tag}`)));
 });
 
 async function fixture(t) {

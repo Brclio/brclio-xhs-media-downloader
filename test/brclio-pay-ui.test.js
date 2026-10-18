@@ -53,13 +53,13 @@ test('desktop payment requests retain the existing signed-user proof and reject 
       assert.equal(verify(null, Buffer.from(`${body.action}\n${timestamp}\n${nonce}\n${JSON.stringify(body.input)}\ntoken-a`), publicKey, Buffer.from(signature, 'base64')), true);
       assert.equal(init.headers.Authorization, 'Bearer token-a');
     }
-    return Response.json({ ok: true, catalog: catalog(), order: { id: orderId, status: 'pending' } });
+    return Response.json({ ok: true, catalog: catalog(), order: { id: orderId, userId: 'a', status: 'pending' } });
   } });
   client.credentials = { privateKey, publicKey, token: 'token-a', pendingLogoutTokens: [], pendingRedemptions: {} }; client.account = account('a'); client.status = 'ready';
-  for (const action of ['payment-catalog', 'payment-create', 'payment-status']) await client.commerceRequest(action, { expectedUserId: 'a', orderId });
-  await assert.rejects(client.commerceRequest('payment-create', { expectedUserId: 'b' }), { code: 'SESSION_CHANGED' });
+  for (const action of ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']) await client.commerceRequest(action, { expectedUserId: 'a', orderId });
+  for (const action of ['payment-create', 'payment-resume', 'payment-status']) await assert.rejects(client.commerceRequest(action, { expectedUserId: 'b', orderId }), { code: 'SESSION_CHANGED' });
   assert.throws(() => client.commerceRequest('payment-admin'), { code: 'UNKNOWN_ACTION' });
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
 });
 
 test('browser payment requests use same-origin cookies, preserve uncertain identity and stop during pending logout', async () => {
@@ -69,15 +69,15 @@ test('browser payment requests use same-origin cookies, preserve uncertain ident
     assert.equal(init.credentials, 'same-origin'); assert.equal(init.cache, 'no-store');
     assert.equal(body.input.client, 'browser');
     if (offline) throw new Error('offline');
-    return Response.json({ ok: true, account: account('a'), catalog: catalog() });
+    return Response.json({ ok: true, account: account('a'), catalog: catalog(), order: { id: orderId, userId: 'a', status: 'pending' } });
   } });
   await bridge.verifyAccountCode('a@example.test', '123456');
-  for (const action of ['payment-catalog', 'payment-create', 'payment-status']) assert.equal((await bridge.commerceRequest(action, { expectedUserId: 'a', orderId })).ok, true);
+  for (const action of ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']) assert.equal((await bridge.commerceRequest(action, { expectedUserId: 'a', orderId })).ok, true);
   offline = true;
   const failed = await bridge.commerceRequest('payment-create', { expectedUserId: 'a', requestId: 'repeat-original-order' });
   assert.equal(failed.ok, false); assert.equal(failed.state.verified, true);
   await bridge.logoutAccount(); const count = calls.length;
-  for (const action of ['payment-create', 'payment-status']) assert.equal((await bridge.commerceRequest(action, { expectedUserId: 'a' })).ok, false);
+  for (const action of ['payment-create', 'payment-resume', 'payment-status']) assert.equal((await bridge.commerceRequest(action, { expectedUserId: 'a', orderId })).ok, false);
   assert.equal(calls.length, count);
   assert.equal((await bridge.commerceRequest('payment-admin')).ok, false);
 });

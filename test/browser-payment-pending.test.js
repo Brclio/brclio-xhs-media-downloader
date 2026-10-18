@@ -37,6 +37,7 @@ function fixture() {
     if (request.action === 'logout') { cookieUser = null; return success({ revoked: true }); }
     if (request.action === 'me') return cookieUser ? success({ account: account(cookieUser) }) : Response.json({ ok: false }, { status: 401 });
     if (request.action === 'payment-create') return success({ order: { id: nextOrder, userId: cookieUser, status: orderStatus }, checkoutUrl: CHECKOUT });
+    if (request.action === 'payment-resume') return success({ order: { id: request.input.orderId, userId: cookieUser, status: orderStatus }, checkoutUrl: CHECKOUT });
     if (request.action === 'payment-status') return success({ order: { id: request.input.orderId, userId: cookieUser, status: orderStatus }, paymentStatus });
     throw new Error(`Unexpected test request ${request.action}`);
   };
@@ -200,4 +201,69 @@ test('a browser identity made temporarily unverified reports retry instead of cl
   assert.equal(f.values.size, 1);
   f.handler(null); await f.bridge.refreshAccount();
   assert.deepEqual((await f.bridge.getPendingPayment()).result, { userId: 'user-a', orderId: ORDER_A });
+});
+
+test('browser resumes the persisted product order after restart without creating or saving checkout credentials', async () => {
+  const f = fixture(); await f.bridge.getAccountState();
+  await f.bridge.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  const restarted = f.make(); await restarted.getAccountState();
+  const resumed = await restarted.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A });
+  assert.equal(resumed.ok, true); assert.equal(resumed.result.checkoutUrl, CHECKOUT);
+  assert.deepEqual((await restarted.getPendingPayment()).result, { userId: 'user-a', orderId: ORDER_A });
+  assert.equal(f.requests.filter(request => request.action === 'payment-create').length, 1);
+  assert.deepEqual(f.requests.find(request => request.action === 'payment-resume').input, { expectedUserId: 'user-a', orderId: ORDER_A, client: 'browser' });
+  assert.doesNotMatch([...f.values.values()].join(''), /checkout|token|pay\.bornforthis/);
+  await restarted.clearPendingPayment({ expectedUserId: 'user-a', orderId: ORDER_A });
+  assert.equal((await restarted.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A })).ok, true);
+  assert.deepEqual((await restarted.getPendingPayment()).result, { userId: 'user-a', orderId: ORDER_A });
+});
+
+test('late browser resume cannot expose checkout or overwrite a newer order or resurrect a cleared reference', async () => {
+  const f = fixture(); await f.bridge.getAccountState();
+  await f.bridge.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  let held = deferred();
+  f.handler(request => request.action === 'payment-resume' ? held.promise : null);
+  const oldResume = f.bridge.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A }); await tick();
+  f.order(ORDER_B); await f.bridge.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  held.resolve(f.success({ order: { id: ORDER_A, userId: 'user-a', status: 'pending' }, checkoutUrl: CHECKOUT }));
+  assert.equal((await oldResume).error.code, 'PAYMENT_REQUEST_SUPERSEDED');
+  assert.deepEqual((await f.bridge.getPendingPayment()).result, { userId: 'user-a', orderId: ORDER_B });
+  held = deferred();
+  const clearedResume = f.bridge.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_B }); await tick();
+  await f.bridge.clearPendingPayment({ expectedUserId: 'user-a', orderId: ORDER_B });
+  held.resolve(f.success({ order: { id: ORDER_B, userId: 'user-a', status: 'pending' }, checkoutUrl: CHECKOUT }));
+  assert.equal((await clearedResume).error.code, 'PAYMENT_REQUEST_SUPERSEDED');
+  assert.equal((await f.bridge.getPendingPayment()).result, null);
+});
+
+test('browser resume rejects mismatched responses, replacement tracking and switched sessions before returning checkout', async () => {
+  const f = fixture(); await f.bridge.getAccountState();
+  for (const order of [{ id: ORDER_B, userId: 'user-a', status: 'pending' }, { id: ORDER_A, userId: 'user-b', status: 'pending' }, { id: ORDER_A, status: 'pending' }]) {
+    f.handler(request => request.action === 'payment-resume' ? f.success({ order, checkoutUrl: CHECKOUT }) : null);
+    const reply = await f.bridge.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A });
+    assert.equal(reply.ok, false); assert.equal(reply.error.code, 'PAYMENT_INVALID_ORDER');
+    assert.equal((await f.bridge.getPendingPayment()).result, null);
+  }
+  f.handler(null); f.order(ORDER_B); await f.bridge.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  const otherOrder = await f.bridge.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A });
+  assert.equal(otherOrder.error.code, 'PAYMENT_REQUEST_SUPERSEDED');
+  const held = deferred();
+  f.handler(request => request.action === 'payment-resume' ? held.promise : null);
+  const switching = f.bridge.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_B }); await tick();
+  await f.bridge.verifyAccountCode('user-b@example.test', '123456');
+  held.resolve(f.success({ order: { id: ORDER_B, userId: 'user-a', status: 'pending' }, checkoutUrl: CHECKOUT }));
+  assert.equal((await switching).ok, false);
+  assert.equal((await f.bridge.getPendingPayment()).result, null);
+});
+
+test('browser resume reports blocked recovery storage while retaining its order in the current page', async () => {
+  const f = fixture(); await f.bridge.getAccountState(); f.fail('all');
+  const resumed = await f.bridge.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A });
+  assert.equal(resumed.ok, true); assert.equal(resumed.result.checkoutUrl, CHECKOUT);
+  assert.equal(resumed.recovery.persistent, false); assert.equal(resumed.recovery.error.code, 'PAYMENT_RECOVERY_STORAGE_UNAVAILABLE');
+  assert.deepEqual((await f.bridge.getPendingPayment()).result, { userId: 'user-a', orderId: ORDER_A });
+  assert.equal(f.values.size, 0);
+  f.fail('');
+  assert.equal((await f.bridge.getPendingPayment()).recovery.persistent, true);
+  assert.doesNotMatch([...f.values.values()].join(''), /checkout|token|pay\.bornforthis/);
 });

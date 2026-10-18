@@ -117,7 +117,7 @@ export async function initializeAccountUI() {
         <p class="membership-small">价格从支付中心实时读取。按次购买，不自动续费；付款经服务端核实后开通，已有未到期时长顺延，设备授权规则保持不变。桌面付款后请主动切回软件核实；收银台返回网页不保证拉起客户端，也不会更新本机旧版本。</p>
         <label>在线套餐 <select id="membership-online-plan" aria-describedby="membership-online-quote"></select></label>
         <p id="membership-online-quote" class="membership-amount">请刷新在线商品目录。</p>
-        <div class="account-google-actions"><button id="membership-online-pay" class="button button-primary" type="button" disabled>前往 Brclio Pay 付款</button><button id="membership-online-refresh" class="button button-secondary" type="button">刷新在线报价</button><button id="membership-online-check" class="button button-secondary" type="button" hidden>查询付款与权益状态</button></div>
+        <div class="account-google-actions"><button id="membership-online-pay" class="button button-primary" type="button" disabled>前往 Brclio Pay 付款</button><button id="membership-online-restart" class="button button-secondary" type="button" hidden>重新下单</button><button id="membership-online-refresh" class="button button-secondary" type="button">刷新在线报价</button><button id="membership-online-check" class="button button-secondary" type="button" hidden>查询付款与权益状态</button></div>
         <p id="membership-online-status" class="membership-small" role="status" aria-live="polite"></p>
       </section>
       <fieldset class="membership-plans"><legend>人工扫码套餐</legend><div class="membership-plan-options">${MEMBERSHIP_PLANS.map(plan => `
@@ -218,12 +218,16 @@ export async function initializeAccountUI() {
     const draftCatalogPlan = onlineDraft && onlineCatalog?.plans.find(item => item.id === onlineDraft.planId);
     element('membership-online-payment').hidden = !bridge.commerceRequest;
     const waiting = Boolean(recoveryState?.orderId && !['confirmed', 'closed'].includes(recoveryState.phase));
+    const canResume = waiting && ['waiting', 'retry'].includes(recoveryState.phase)
+      && !['PAID', 'CLOSED'].includes(recoveryState.paymentStatus) && recoveryState.order?.status !== 'confirmed';
     element('membership-online-plan').disabled = waiting || onlineBusy || catalogBusy || Boolean(onlineDraft);
-    element('membership-online-pay').disabled = waiting || !ready || !onlineCatalog?.enabled || paymentsPaused || (!onlinePlan && !onlineDraft) || catalogBusy || onlineBusy;
-    element('membership-online-pay').textContent = onlineBusy ? '正在创建付款订单…' : waiting ? '等待付款与权益确认' : paymentsPaused ? '在线付款暂未开放' : onlineDraft ? '重试原付款订单' : '前往 Brclio Pay 付款';
+    element('membership-online-pay').disabled = !ready || onlineBusy || onlineStatusBusy || (waiting ? !canResume : !onlineCatalog?.enabled || paymentsPaused || (!onlinePlan && !onlineDraft) || catalogBusy);
+    element('membership-online-pay').textContent = onlineBusy ? '正在处理付款订单…' : canResume ? '继续支付原订单' : waiting ? '等待付款与权益确认' : paymentsPaused ? '在线付款暂未开放' : onlineDraft ? '重试原付款订单' : '前往 Brclio Pay 付款';
+    element('membership-online-restart').hidden = !waiting;
+    element('membership-online-restart').disabled = !ready || !canResume || onlineBusy || onlineStatusBusy || catalogBusy;
     element('membership-online-refresh').disabled = catalogBusy || onlineBusy || !ready;
     element('membership-online-check').hidden = !onlineOrderId;
-    element('membership-online-check').disabled = !state?.authenticated || onlineStatusBusy;
+    element('membership-online-check').disabled = !state?.authenticated || onlineStatusBusy || onlineBusy;
     const quote = waiting ? onlineQuote ? `${onlineQuote.name} · ¥${onlineQuote.amount} · ${onlineQuote.days} 天会员（原订单报价）` : '已恢复待核实订单，正在读取原订单报价。'
       : draftPlan ? `${draftCatalogPlan?.name || draftPlan.name} · ¥${onlineDraft.amount} · ${draftPlan.days} 天会员（原订单报价）`
       : onlinePlan ? `${onlinePlan.name} · ¥${onlinePlan.amount} · ${onlinePlan.days} 天会员` : '';
@@ -447,8 +451,47 @@ export async function initializeAccountUI() {
   element('membership-online-refresh').addEventListener('click', () => void loadOnlineCatalog());
   element('membership-online-check').addEventListener('click', () => void checkOnlineOrder());
   element('membership-online-plan').addEventListener('change', renderPurchase);
+  element('membership-online-restart').addEventListener('click', async () => {
+    if (onlineBusy || onlineStatusBusy || !state?.verified || !paymentUserId) return;
+    const epoch = paymentEpoch;
+    onlineBusy = true; renderPurchase();
+    try {
+      if (!await recovery.restart() || epoch !== paymentEpoch) return;
+      onlineDraft = null;
+      await loadOnlineCatalog();
+    } finally { if (epoch === paymentEpoch) { onlineBusy = false; renderPurchase(); } }
+  });
   element('membership-online-pay').addEventListener('click', async () => {
-    if (onlineBusy || !state?.verified || !paymentUserId || state.account?.membership?.type === 'permanent') return;
+    if (onlineBusy || onlineStatusBusy || !state?.verified || !paymentUserId || state.account?.membership?.type === 'permanent') return;
+    const pending = recovery.snapshot();
+    if (pending.orderId && !['confirmed', 'closed'].includes(pending.phase)) {
+      const epoch = paymentEpoch;
+      onlineBusy = true; renderPurchase();
+      try {
+        await recovery.check();
+        if (epoch !== paymentEpoch) return;
+        const checked = recovery.snapshot();
+        if (checked.orderId !== pending.orderId || checked.phase !== 'waiting' || checked.paymentStatus !== 'PENDING') return;
+        const reply = await bridge.commerceRequest('payment-resume', { orderId: pending.orderId, expectedUserId: paymentUserId });
+        if (epoch !== paymentEpoch || recovery.snapshot().orderId !== pending.orderId) return;
+        if (!reply.ok) throw new Error(reply.error?.message || '暂时无法打开原订单，请稍后重试。');
+        const order = reply.result?.order;
+        if (order?.id !== pending.orderId || (order.userId && order.userId !== paymentUserId)
+          || !['pending', 'confirmed'].includes(order.status)) throw new Error('原订单返回异常，请重新查询付款状态。');
+        recovery.observe(reply.result);
+        const current = recovery.snapshot();
+        if (order.status === 'confirmed' || ['PAID', 'CLOSED'].includes(reply.result.paymentStatus || order.paymentStatus)
+          || ['confirmed', 'confirming', 'refreshing', 'closed'].includes(current.phase) || current.paymentStatus === 'PAID') {
+          await recovery.check(); return;
+        }
+        const checkoutUrl = paymentCheckoutUrl(reply.result.checkoutUrl);
+        if (isDesktop) window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+        else window.location.assign(checkoutUrl);
+      } catch (error) {
+        if (epoch === paymentEpoch) element('membership-online-status').textContent = error.message;
+      } finally { if (epoch === paymentEpoch) { onlineBusy = false; renderPurchase(); } }
+      return;
+    }
     const plan = onlineCatalog?.plans.find(item => item.id === element('membership-online-plan').value);
     if (!onlineCatalog?.enabled || onlineCatalog.acceptingPayments === false || (!plan && !onlineDraft)) return;
     onlineDraft ||= { planId: plan.id, amount: plan.amount, catalogVersion: onlineCatalog.version,
@@ -467,7 +510,8 @@ export async function initializeAccountUI() {
       onlineQuote = { name: order.planName || onlineCatalog?.plans.find(item => item.id === onlineDraft.planId)?.name || quotedPlan.name,
         amount: Number.isSafeInteger(order.priceCents) ? (order.priceCents / 100).toFixed(2) : onlineDraft.amount, days: quotedPlan.days };
       if (order.status === 'confirmed' || ['PAID', 'CLOSED'].includes(reply.result.paymentStatus || order.paymentStatus)) {
-        onlineDraft = null; recovery.track(order.id, { persistent: reply.recovery?.persistent !== false }); await recovery.check(); return;
+        onlineDraft = null; recovery.track(order.id, { persistent: reply.recovery?.persistent !== false });
+        recovery.observe(reply.result); await recovery.check(); return;
       }
       const checkoutUrl = paymentCheckoutUrl(reply.result.checkoutUrl);
       onlineDraft = null;

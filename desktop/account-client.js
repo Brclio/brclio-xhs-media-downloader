@@ -566,12 +566,15 @@ export class AccountClient {
       return { cleared: true };
     });
   }
-  async _rememberPendingPayment(result, session, { onlyIfAbsent = false } = {}) {
+  async _rememberPendingPayment(result, session, { onlyIfAbsent = false, resume = false } = {}) {
     const { token, userId, generation } = session;
-    return this._command(async () => {
+    const assertSession = () => {
       if (this.credentials?.token !== token || this.account?.user?.id !== userId || this._sessionGeneration !== generation) {
         throw accountError('SESSION_CHANGED', '创建支付订单期间账号发生变化，请切回原账号再重试。', 401);
       }
+    };
+    return this._command(async () => {
+      assertSession();
       const key = this._pendingPaymentKey(userId);
       const pendingPayments = sanitizePendingPayments(this.credentials.pendingPayments);
       if (result.order?.userId && result.order.userId !== userId) throw accountError('PAYMENT_INVALID_ORDER', '支付订单不属于当前账号，请切回原账号重试。', 502);
@@ -579,6 +582,11 @@ export class AccountClient {
         if (onlyIfAbsent) return;
         throw accountError('PAYMENT_REQUEST_SUPERSEDED', '已有更新的支付订单请求，请使用最新订单继续核实。', 409);
       }
+      if (resume && (session.pendingRevision !== (this._pendingPaymentRevisions.get(key) || 0)
+        || (pendingPayments[key] && pendingPayments[key].orderId !== result.order?.id))) {
+        throw accountError('PAYMENT_REQUEST_SUPERSEDED', '已有更新的支付订单操作，请使用最新订单继续核实。', 409);
+      }
+      if (resume && pendingPayments[key]) return;
       if (onlyIfAbsent && (pendingPayments[key]
         || session.pendingRevision !== (this._pendingPaymentRevisions.get(key) || 0))) return;
       const entry = sanitizePendingPayments({ [key]: { userId, orderId: result.order?.id } });
@@ -587,10 +595,14 @@ export class AccountClient {
       await this.store.save(next);
       this.credentials = next;
       this._pendingPaymentRevisions.set(key, (this._pendingPaymentRevisions.get(key) || 0) + 1);
+      assertSession();
+      if (!onlyIfAbsent && session.createRevision !== this._paymentCreateRevision) {
+        throw accountError('PAYMENT_REQUEST_SUPERSEDED', '已有更新的支付订单请求，请使用最新订单继续核实。', 409);
+      }
     });
   }
   commerceRequest(action, input = {}) {
-    if (!['reviews-public', 'profile-update', 'review-mine', 'review-submit', 'orders-mine', 'order-create', 'payment-catalog', 'payment-create', 'payment-status'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
+    if (!['reviews-public', 'profile-update', 'review-mine', 'review-submit', 'orders-mine', 'order-create', 'payment-catalog', 'payment-create', 'payment-resume', 'payment-status'].includes(action)) throw accountError('UNKNOWN_ACTION', '无效的评价或订单操作。', 400);
     if (['reviews-public', 'payment-catalog'].includes(action)) return this._request(action, input, { token: '', unsigned: true });
     const token = this.credentials?.token;
     if (action === 'payment-create' && token && this.account?.user?.id === input.expectedUserId) this._paymentCreateRevision++;
@@ -602,6 +614,12 @@ export class AccountClient {
       // browser never loses the product order. Confirmation alone does not
       // clear it: the UI first refreshes account and feature permissions.
       if (action === 'payment-create') await this._rememberPendingPayment(result, paymentSession);
+      if (action === 'payment-resume') {
+        if (result.order?.userId !== input.expectedUserId || result.order?.id !== input.orderId || !['pending', 'confirmed'].includes(result.order?.status)) {
+          throw accountError('PAYMENT_INVALID_ORDER', '支付服务返回的订单不符，请重试。', 502);
+        }
+        await this._rememberPendingPayment(result, paymentSession, { resume: true });
+      }
       if (action === 'payment-status' && result.order?.userId === input.expectedUserId && result.order.id === input.orderId
         && ['pending', 'confirmed'].includes(result.order.status)) await this._rememberPendingPayment(result, paymentSession, { onlyIfAbsent: true });
       if (serial > this._nicknameApplied && result.profile?.nickname

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.26",
+  "baseSha": "293185a7c508ade44db95207c5bc85e5683af5e5",
+  "checkedAt": "2026-10-18T23:39:05.726371+00:00",
+  "status": "preflight-only",
+  "local": {
+    "nodePassed": 1826,
+    "nodeSkipped": 13,
+    "nodeFailed": 0,
+    "pythonPassed": 47,
+    "independentPaymentTestsPassed": 107,
+    "releaseArtifactTestsPassed": 49,
+    "realChromiumPaymentMembershipCommerce": "PASS",
+    "nativeAccountStorage": "PASS",
+    "profileEntitlementScenarios": 4,
+    "profileEntitlementTests": 8,
+    "screenshotsReviewed": 17,
+    "workerDryRun": "PASS",
+    "publicAssetsCredentialPatterns": "PASS",
+    "webNavigationChecksPassed": 12,
+    "productionVerifierAnonymousChecksPrepared": 18
+  },
+  "configuration": {
+    "existingCloudflareAccountVerified": true,
+    "wranglerConfigurationUnchanged": true,
+    "productionSecretCount": 27,
+    "productionSecretValuesReadOrWritten": false,
+    "existingNamespaceCount": 3,
+    "newStorageResources": false,
+    "storageProvider": "existing-private-github-repository",
+    "targets": [
+      "desktop-v2.0.26",
+      "existing main Worker",
+      "existing Pages project"
+    ],
+    "otherWorkersNotToDeploy": [
+      "brclio-xhs-python",
+      "brclio-xhs-subscription-proxy",
+      "brclio-pay"
+    ],
+    "androidVersionUnchanged": "1.0.15"
+  },
+  "productionOrdersCreated": false,
+  "realPaymentsAttempted": false,
+  "productionEntitlementGrantsAttempted": false,
+  "installedUserApplicationReplaced": false
+}

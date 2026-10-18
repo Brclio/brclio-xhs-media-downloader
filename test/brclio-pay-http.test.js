@@ -91,7 +91,7 @@ test('webhook leaves retryable processing failures non-2xx and hides unexpected 
 test('payment actions preserve browser cookie origin checks and desktop bearer proofs', async () => {
   const browserToken = 'b'.repeat(43), adminToken = 'a'.repeat(43), desktopToken = 'd'.repeat(43);
   const cookie = `${ADMIN_COOKIE}=${adminToken}; ${BROWSER_COOKIE}=${browserToken}`;
-  for (const action of ['payment-catalog', 'payment-create', 'payment-status']) {
+  for (const action of ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']) {
     const accepted = await account({ action, headers: { origin, cookie } });
     assert.equal(accepted.code, 200); assert.equal(accepted.calls[0].client, 'browser'); assert.equal(accepted.calls[0].token, browserToken);
     for (const headers of [{ cookie }, { cookie, origin: `${origin}.evil.test` }, { cookie, origin, 'sec-fetch-site': 'cross-site' }]) {

@@ -183,6 +183,50 @@ export async function releaseApiError(response, { method = 'GET', endpoint, toke
   return new Error(`GitHub ${method} ${endpoint}: HTTP ${response.status}${request}${message ? `: ${message}` : ''}`);
 }
 
+const TRANSIENT_HTTP_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+const TRANSIENT_NETWORK_CODE = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ENETUNREACH', 'EHOSTUNREACH',
+  'UND_ERR_SOCKET', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT']);
+const transientNetworkError = error => ['TypeError', 'TimeoutError', 'AbortError'].includes(error?.name)
+  || TRANSIENT_NETWORK_CODE.has(error?.code) || TRANSIENT_NETWORK_CODE.has(error?.cause?.code);
+
+export function createReleaseApi({ token, fetchImpl = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
+  return async (endpoint, options = {}) => {
+    const method = (options.method || 'GET').toUpperCase();
+    const attempts = method === 'GET' ? 3 : 1;
+    const retry = async (attempt, response) => {
+      // Release responses are small; cancel failed HTTP bodies so a retry does
+      // not leave a connection occupied. Honor bounded numeric rate-limit waits.
+      await response?.body?.cancel().catch(() => {});
+      const retryAfter = response?.headers?.get('retry-after');
+      const wait = /^\d+$/.test(retryAfter || '') ? Math.min(Number(retryAfter) * 1000, 30_000) : 0;
+      await sleep(Math.max(1000 * (attempt + 1), wait));
+    };
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      let response;
+      try {
+        response = await fetchImpl(`https://api.github.com/repos/${REPOSITORY}/${endpoint}`, {
+          ...options, method, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000)
+        });
+      } catch (error) {
+        if (attempt + 1 < attempts && transientNetworkError(error)) { await retry(attempt); continue; }
+        // Fetch diagnostics can contain credentials, request headers or signed
+        // URLs. Keep only the operation name, never the original error/cause.
+        throw new Error(`GitHub ${method} ${endpoint}: network request failed`);
+      }
+      if (!response.ok) {
+        if (attempt + 1 < attempts && TRANSIENT_HTTP_STATUS.has(response.status)) { await retry(attempt, response); continue; }
+        throw await releaseApiError(response, { method, endpoint, token });
+      }
+      try { return await response.json(); }
+      catch (error) {
+        if (attempt + 1 < attempts && transientNetworkError(error)) { await retry(attempt, response); continue; }
+        throw new Error(`GitHub ${method} ${endpoint}: invalid JSON response`);
+      }
+    }
+  };
+}
+
 export async function publishRelease() {
   assert.equal(process.env.GITHUB_REPOSITORY, REPOSITORY);
   assert.equal(process.env.GITHUB_REF_TYPE, 'tag');
@@ -195,14 +239,7 @@ export async function publishRelease() {
   const notes = await readFile(`docs/releases/${tag}.md`, 'utf8');
   const { name: releaseName, body: releaseBody } = formatReleaseNotes(notes, tag);
   assert.ok(process.env.GH_TOKEN, 'GitHub release token is required');
-  const api = async (endpoint, options = {}) => {
-    const response = await fetch(`https://api.github.com/repos/${REPOSITORY}/${endpoint}`, {
-      ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${process.env.GH_TOKEN}`,
-        'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000)
-    });
-    if (!response.ok) throw await releaseApiError(response, { method: options.method || 'GET', endpoint, token: process.env.GH_TOKEN });
-    return response.json();
-  };
+  const api = createReleaseApi({ token: process.env.GH_TOKEN });
   let release = await prepareDraftRelease(api, { tag, sourceSha, name: releaseName, body: releaseBody });
   const compatibilityAssets = await createCompatibilityAssets(directory, { version: pkg.version, files });
   const publishedFiles = [...files, ...compatibilityAssets].sort((a, b) => a.name.localeCompare(b.name));

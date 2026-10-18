@@ -85,6 +85,150 @@ test('an opened checkout waits, polls the same order, and focus checks immediate
   f.recovery.dispose(); assert.equal(f.timers.size, 0);
 });
 
+test('explicit reorder freshly checks an unpaid order and releases only its local recovery reference', async () => {
+  const f = fixture();
+  f.recovery.track(orderId);
+  await f.recovery.check();
+  assert.equal(await f.recovery.restart(), true);
+  assert.equal(f.count('payment-status'), 2, 'reorder cannot rely on the last poll');
+  assert.equal(f.count('clearPendingPayment'), 1);
+  assert.equal(f.count('payment-create'), 0, 'the current quote must be reviewed before a new purchase');
+  assert.equal(f.last().orderId, null);
+  assert.equal(f.last().phase, 'idle');
+  assert.equal(f.last().paymentStatus, null);
+  assert.equal(f.data.pending, null);
+  assert.equal(f.timers.size, 0);
+  assert.match(f.last().message, /旧订单未关闭/);
+  assert.equal(f.confirmed.length, 0);
+  f.recovery.dispose();
+});
+
+test('reorder preserves an order paid since the previous poll, including an incomplete entitlement refresh', async () => {
+  for (const confirmed of [false, true]) {
+    const f = fixture();
+    f.recovery.track(orderId); await f.recovery.check();
+    f.data.status = 'PAID';
+    if (confirmed) {
+      f.data.orderStatus = 'confirmed';
+      f.data.permissionsWork = async () => ({ ok: false, error: { code: 'SERVICE_UNAVAILABLE' } });
+    }
+    assert.equal(await f.recovery.restart(), false);
+    assert.equal(f.last().orderId, orderId);
+    assert.equal(f.last().paymentStatus, 'PAID');
+    assert.equal(f.count('clearPendingPayment'), 0);
+    assert.ok(f.data.pending);
+    f.recovery.dispose();
+  }
+});
+
+test('a paid resume response stays protected through status failure and an older unpaid response', async () => {
+  const f = fixture(); f.recovery.track(orderId); await f.recovery.check();
+  assert.equal(f.recovery.observe({ order: { id: orderId, userId: 'a', status: 'pending' }, paymentStatus: 'PAID' }), true);
+  f.data.statusWork = async () => ({ ok: false, error: { code: 'PAYMENT_UNAVAILABLE' } });
+  await f.recovery.check();
+  assert.equal(f.last().paymentStatus, 'PAID');
+  assert.equal(f.last().phase, 'retry');
+  delete f.data.statusWork;
+  assert.equal(await f.recovery.restart(), false, 'a later PENDING cannot undo the paid observation');
+  assert.equal(f.last().paymentStatus, 'PAID');
+  assert.equal(f.last().phase, 'confirming');
+  assert.equal(f.count('clearPendingPayment'), 0);
+  assert.equal(f.last().orderId, orderId);
+  f.recovery.dispose();
+});
+
+test('observed committed orders cannot regress or accept another order or owner', async () => {
+  const f = fixture(); f.recovery.track(orderId);
+  for (const order of [{ id: secondOrderId, userId: 'a', status: 'confirmed' }, { id: orderId, userId: 'b', status: 'confirmed' }]) {
+    assert.equal(f.recovery.observe({ order, paymentStatus: 'PAID' }), false);
+    assert.equal(f.last().paymentStatus, null);
+  }
+  f.recovery.observe({ order: { id: orderId, userId: 'a', status: 'confirmed' }, paymentStatus: 'PAID' });
+  await f.recovery.check();
+  assert.equal(f.last().phase, 'confirmed', 'the committed order refreshes rights even when an older poll returns pending');
+  assert.equal(f.count('refreshAccountPermissions'), 1);
+  assert.equal(f.confirmed.length, 1);
+  f.recovery.dispose();
+});
+
+test('restored paid business snapshots take precedence over a stale provider status', async () => {
+  const f = fixture(); f.recovery.track(orderId);
+  f.data.statusWork = async () => ({ ok: true, result: {
+    order: { id: orderId, userId: 'a', status: 'pending', paymentStatus: 'PAID' }, paymentStatus: 'PENDING',
+  } });
+  assert.equal(await f.recovery.restart(), false);
+  assert.equal(f.last().paymentStatus, 'PAID');
+  assert.equal(f.last().phase, 'confirming');
+  assert.equal(f.count('clearPendingPayment'), 0);
+  f.recovery.dispose();
+});
+
+test('reorder never abandons an unknown status or a failed status request', async () => {
+  for (const reply of [
+    { ok: false, error: { code: 'PAYMENT_UNAVAILABLE', message: 'fixture offline' } },
+    { ok: true, result: { order: { id: orderId, status: 'pending' } } },
+  ]) {
+    const f = fixture();
+    f.recovery.track(orderId); await f.recovery.check();
+    f.data.statusWork = async () => reply;
+    assert.equal(await f.recovery.restart(), false);
+    assert.equal(f.count('clearPendingPayment'), 0);
+    assert.equal(f.last().orderId, orderId);
+    assert.ok(f.data.pending);
+    f.recovery.dispose();
+  }
+});
+
+test('concurrent reorder clicks share the status check and reference removal, with polling paused during removal', async () => {
+  const f = fixture(), hold = deferred();
+  f.recovery.track(orderId);
+  f.data.clearWork = () => hold.promise;
+  const first = f.recovery.restart(), second = f.recovery.restart();
+  assert.equal(first, second);
+  await settle();
+  assert.equal(f.count('payment-status'), 1);
+  assert.equal(f.count('clearPendingPayment'), 1);
+  assert.equal(f.last().busy, true);
+  assert.equal(f.timers.size, 0);
+  await f.recovery.focus();
+  assert.equal(f.count('payment-status'), 1, 'focus cannot race with removing the old reference');
+  hold.resolve({ ok: true, result: { cleared: true } });
+  assert.equal(await first, true);
+  assert.equal(await second, true);
+  assert.equal(f.last().phase, 'idle');
+  f.recovery.dispose();
+});
+
+test('reorder keeps the original order when its local reference cannot be removed', async () => {
+  for (const reply of [{ ok: false }, { ok: true, result: { cleared: false } }]) {
+    const f = fixture(); f.recovery.track(orderId);
+    f.data.clearWork = async () => reply;
+    assert.equal(await f.recovery.restart(), false);
+    assert.equal(f.last().orderId, orderId);
+    assert.equal(f.last().phase, 'retry');
+    assert.equal(f.last().busy, false);
+    assert.ok(f.timers.size);
+    f.recovery.dispose();
+  }
+});
+
+test('late reorder responses cannot release another account or a newer tracked order', async () => {
+  for (const change of ['account', 'order']) {
+    const f = fixture(), hold = deferred();
+    f.recovery.track(orderId);
+    f.data.statusWork = () => hold.promise;
+    const work = f.recovery.restart();
+    if (change === 'account') f.recovery.setAccount(accountState('b'));
+    else f.recovery.track(secondOrderId);
+    hold.resolve({ ok: true, result: { order: { id: orderId, status: 'pending' }, paymentStatus: 'PENDING' } });
+    assert.equal(await work, false);
+    assert.equal(f.count('clearPendingPayment'), 0);
+    assert.equal(f.last().ownerId, change === 'account' ? 'b' : 'a');
+    assert.equal(f.last().orderId, change === 'account' ? null : secondOrderId);
+    f.recovery.dispose();
+  }
+});
+
 test('PAID remains confirming until the business order and fresh account permissions are confirmed', async () => {
   const f = fixture(); f.recovery.track(orderId); f.data.status = 'PAID';
   await f.recovery.check(); await settle();

@@ -573,7 +573,7 @@ export function createAccountService({ store, mailer, config, now = Date.now, fe
       if (typeof action !== 'string' || action.length > 80 || !input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_REQUEST', '请求格式无效。');
       const request = { action, input, token, proof, ip, client, googleBinding };
       let result;
-      if (['payment-catalog', 'payment-create', 'payment-status'].includes(action)) result = await paymentService.execute(request);
+      if (['payment-catalog', 'payment-create', 'payment-resume', 'payment-status'].includes(action)) result = await paymentService.execute(request);
       else if (action.startsWith('avatar-') || action.startsWith('admin-avatar-')) result = await avatarService.execute(request);
       else if (action.startsWith('google-')) result = await googleService.execute(request);
       else if (['profile-update', 'reviews-public', 'review-mine', 'review-submit', 'order-create', 'orders-mine', 'admin-orders', 'admin-record-order', 'admin-link-order-code', 'admin-revenue'].includes(action)) result = await commerceService.execute(request);

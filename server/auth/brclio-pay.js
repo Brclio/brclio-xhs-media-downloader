@@ -118,8 +118,19 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
         return { value: structuredClone(created) };
       });
     }
+    return synchronizeCheckout(request, user, order, Boolean(prior));
+  }
+  async function resume(request) {
+    const { state } = await store.read(), { user } = identity(state, request);
+    const order = uuid(request.input.orderId) ? owns(state.orders, request.input.orderId) : null;
+    if (!order || order.userId !== user.id || order.source !== 'brclio_pay') fail('ORDER_NOT_FOUND', '没有找到当前账号的支付订单。', 404);
+    // The persisted business order is the idempotency key at the payment center.
+    // Recovery needs no renderer request ID and can never create another sale.
+    return synchronizeCheckout(request, user, order, true);
+  }
+  async function synchronizeCheckout(request, user, order, replayed) {
+    if (order.status === 'confirmed' || ['PAID', 'CLOSED'].includes(order.payment.status)) return { order: brclioOrderView(order), replayed: true };
     if (order.payment.state === 'quote_changed') fail('QUOTE_CHANGED', '套餐报价已更新，请刷新并确认新报价后使用新订单购买。', 409);
-    if (order.status === 'confirmed') return { order: brclioOrderView(order), replayed: true };
     const result = await configured().createOrder({ productOrderId: order.id, sku: order.planId, returnUrl: order.payment.returnUrl });
     const authoritative = checkedResponse(result, order, { allowChangedAmount: true });
     const quoteMatches = authoritative.sku === order.planId && authoritative.amount === order.payment.quotedAmount;
@@ -128,17 +139,21 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
       identity(state, request);
       const current = owns(state.orders, order.id);
       if (!current || current.userId !== user.id || current.source !== 'brclio_pay' || (current.payment.orderId && current.payment.orderId !== authoritative.id)) fail('PAYMENT_INVALID_ORDER', '业务订单记录不符。', 503);
-      if (current.status === 'confirmed') return { changed: false, value: structuredClone(current) };
+      if (current.status === 'confirmed' || ['PAID', 'CLOSED'].includes(current.payment.status) || current.payment.state === 'quote_changed') return { changed: false, value: structuredClone(current) };
       current.priceCents = paymentAmountCents(authoritative.amount);
       Object.assign(current.payment, { orderId: authoritative.id, sku: authoritative.sku, amount: authoritative.amount, status: authoritative.status, quoteAccepted: quoteMatches, state: quoteMatches ? 'ready' : 'quote_changed' });
       return { value: structuredClone(current) };
     });
     if (!saved.payment.quoteAccepted) fail('QUOTE_CHANGED', '套餐报价已更新，请刷新并确认新报价后使用新订单购买。', 409);
-    return { order: brclioOrderView(saved), ...(checkoutUrl && saved.status !== 'confirmed' ? { checkoutUrl } : {}), replayed: Boolean(prior) };
+    return { order: brclioOrderView(saved), ...(checkoutUrl && saved.status !== 'confirmed' && saved.payment.status === 'PENDING' ? { checkoutUrl } : {}), replayed };
   }
   async function status(request) {
     const { state } = await store.read(), { user } = identity(state, request), order = owns(state.orders, request.input.orderId);
     if (!order || order.userId !== user.id || order.source !== 'brclio_pay') fail('ORDER_NOT_FOUND', '没有找到当前账号的支付订单。', 404);
+    if (order.status === 'confirmed' || ['PAID', 'CLOSED'].includes(order.payment.status)) {
+      const view = brclioOrderView(order);
+      return { order: view, paymentStatus: view.paymentStatus };
+    }
     if (!order.payment.orderId) return { order: brclioOrderView(order), paymentStatus: 'PENDING' };
     const payment = checkedResponse(await configured().getOrder(order.payment.orderId), order);
     // Querying or returning from checkout never grants membership. Only the
@@ -175,5 +190,5 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
       return { value: { received: true, replayed: false } };
     });
   }
-  return { execute: request => request.action === 'payment-catalog' ? catalog().then(value => ({ catalog: value })) : request.action === 'payment-create' ? create(request) : status(request), receivePayment };
+  return { execute: request => request.action === 'payment-catalog' ? catalog().then(value => ({ catalog: value })) : request.action === 'payment-create' ? create(request) : request.action === 'payment-resume' ? resume(request) : status(request), receivePayment };
 }

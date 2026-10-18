@@ -59,6 +59,7 @@ async function fixture(t) {
       if (holdPayment) await holdPayment;
       return success({ order: { id: nextOrder, status: 'pending', userId: sessions.get(token) }, checkoutUrl: CHECKOUT });
     }
+    if (request.action === 'payment-resume') return success({ order: { id: request.input.orderId, status: 'pending', userId: sessions.get(token) }, checkoutUrl: CHECKOUT });
     if (request.action === 'payment-status') return success({ order: { id: request.input.orderId, userId: sessions.get(token), status: 'confirmed' }, paymentStatus: 'PAID' });
     throw new Error(`Unexpected test request: ${request.action}`);
   } };
@@ -173,6 +174,80 @@ test('reverse-arriving desktop creates expose only the latest request and keep i
   release(Response.json({ ok: true, order: { id: ORDER_A, userId: 'user-a', status: 'pending' }, checkoutUrl: CHECKOUT }));
   await assert.rejects(older, { code: 'PAYMENT_REQUEST_SUPERSEDED' });
   assert.deepEqual(await f.client.getPendingPayment(), { userId: 'user-a', orderId: ORDER_B });
+});
+
+test('desktop resumes an existing order after verified restart and persists only its scoped reference', async t => {
+  const f = await fixture(t);
+  await f.client.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  const restarted = new AccountClient(f.config);
+  await restarted.initialize(); await restarted.refresh();
+  const resumed = await restarted.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A });
+  assert.equal(resumed.checkoutUrl, CHECKOUT);
+  assert.deepEqual(await restarted.getPendingPayment(), { userId: 'user-a', orderId: ORDER_A });
+  assert.equal(f.requests.filter(request => request.action === 'payment-create').length, 1);
+  assert.deepEqual(f.requests.find(request => request.action === 'payment-resume').input, { expectedUserId: 'user-a', orderId: ORDER_A });
+  assert.doesNotMatch(f.safeStorage.decryptString(await readFile(f.store.filename)), /never-persist-checkout-secret|pay\.bornforthis/);
+  await restarted.clearPendingPayment({ expectedUserId: 'user-a', orderId: ORDER_A });
+  await restarted.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A });
+  assert.deepEqual(await restarted.getPendingPayment(), { userId: 'user-a', orderId: ORDER_A });
+});
+
+test('late desktop resume cannot return checkout for a newer or cleared pending order', async t => {
+  const f = await fixture(t);
+  await f.client.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  let release;
+  f.handler(request => request.action === 'payment-resume' ? new Promise(resolve => { release = resolve; }) : null);
+  const oldResume = f.client.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A });
+  f.order(ORDER_B); await f.client.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  release(Response.json({ ok: true, order: { id: ORDER_A, userId: 'user-a', status: 'pending' }, checkoutUrl: CHECKOUT }));
+  await assert.rejects(oldResume, { code: 'PAYMENT_REQUEST_SUPERSEDED' });
+  assert.deepEqual(await f.client.getPendingPayment(), { userId: 'user-a', orderId: ORDER_B });
+  const clearedResume = f.client.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_B });
+  await f.client.clearPendingPayment({ expectedUserId: 'user-a', orderId: ORDER_B });
+  release(Response.json({ ok: true, order: { id: ORDER_B, userId: 'user-a', status: 'pending' }, checkoutUrl: CHECKOUT }));
+  await assert.rejects(clearedResume, { code: 'PAYMENT_REQUEST_SUPERSEDED' });
+  assert.equal(await f.client.getPendingPayment(), null);
+});
+
+test('desktop resume validates response ownership and preserves newer tracking and replacement sessions', async t => {
+  const f = await fixture(t);
+  for (const order of [{ id: ORDER_B, userId: 'user-a', status: 'pending' }, { id: ORDER_A, userId: 'user-b', status: 'pending' }, { id: ORDER_A, status: 'pending' }]) {
+    f.handler(request => request.action === 'payment-resume' ? Response.json({ ok: true, order, checkoutUrl: CHECKOUT }) : null);
+    await assert.rejects(f.client.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A }), { code: 'PAYMENT_INVALID_ORDER' });
+    assert.equal(await f.client.getPendingPayment(), null);
+  }
+  f.handler(null); f.order(ORDER_B); await f.client.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  await assert.rejects(f.client.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A }), { code: 'PAYMENT_REQUEST_SUPERSEDED' });
+  let release;
+  f.handler(request => request.action === 'payment-resume' ? new Promise(resolve => { release = resolve; }) : null);
+  const switching = f.client.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_B });
+  await f.login('user-a');
+  release(Response.json({ ok: true, order: { id: ORDER_B, userId: 'user-a', status: 'pending' }, checkoutUrl: CHECKOUT }));
+  await assert.rejects(switching, { code: 'SESSION_CHANGED' });
+});
+
+test('desktop resume waits for durable recovery storage and suppresses checkout when a newer create starts during save', async t => {
+  const f = await fixture(t), save = f.store.save.bind(f.store);
+  let release, started;
+  const saving = new Promise(resolve => { started = resolve; });
+  const held = new Promise(resolve => { release = resolve; });
+  f.store.save = async value => {
+    if (value.pendingPayments?.[paymentKey('user-a')]?.orderId === ORDER_A) { started(); await held; }
+    return save(value);
+  };
+  const resuming = f.client.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A });
+  const rejected = assert.rejects(resuming, { code: 'PAYMENT_REQUEST_SUPERSEDED' });
+  await saving;
+  f.order(ORDER_B);
+  const creating = f.client.commerceRequest('payment-create', { expectedUserId: 'user-a' });
+  release();
+  await Promise.all([rejected, creating]);
+  assert.deepEqual(await f.client.getPendingPayment(), { userId: 'user-a', orderId: ORDER_B });
+  assert.equal((await f.store.load()).pendingPayments[paymentKey('user-a')].orderId, ORDER_B);
+  await f.client.clearPendingPayment({ expectedUserId: 'user-a', orderId: ORDER_B });
+  f.store.save = async () => { throw Object.assign(new Error('Secure storage unavailable'), { code: 'SECURE_STORAGE_UNAVAILABLE' }); };
+  await assert.rejects(f.client.commerceRequest('payment-resume', { expectedUserId: 'user-a', orderId: ORDER_A }), { code: 'SECURE_STORAGE_UNAVAILABLE' });
+  assert.equal(await f.client.getPendingPayment(), null);
 });
 
 test('pending recovery sanitization strips URL/token fields and ignores malformed optional records without replacing account keys', async t => {

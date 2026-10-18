@@ -263,6 +263,131 @@ test('create idempotency survives uncertain upstream calls and storage commit re
   assert.ok(retried.checkoutUrl);
 });
 
+for (const sqlite of [false, true]) test(`owned payment resume reuses persisted orders without request IDs after ${sqlite ? 'SQLite restart' : 'service recreation'}`, async () => {
+  const f = fixture({ sqlite });
+  try {
+    await f.initialize();
+    f.throwCreate = true;
+    await assert.rejects(f.call('payment-create', f.createInput()));
+    const orderId = Object.keys((await f.read()).orders)[0];
+    if (sqlite) f.restart();
+    f.throwCreate = false;
+    const resumed = await f.call('payment-resume', { orderId, expectedUserId: f.userId });
+    assert.equal(resumed.order.id, orderId); assert.ok(resumed.checkoutUrl);
+    f.price = '7.00'; f.version = 'catalog-new'; f.enabled = false; f.acceptingPayments = false;
+    const callsBefore = f.apiCalls.length;
+    const again = await f.call('payment-resume', { orderId, expectedUserId: f.userId });
+    assert.equal(again.order.paymentOrderId, resumed.order.paymentOrderId);
+    assert.equal(again.order.priceCents, 300); assert.ok(again.checkoutUrl);
+    assert.deepEqual(f.apiCalls.slice(callsBefore).map(call => call.create.productOrderId), [orderId]);
+    const state = await f.read();
+    assert.equal(Object.keys(state.orders).length, 1); assert.equal(Object.keys(state.operations).length, 1);
+    assert.equal(state.users[f.userId].membership.type, 'none');
+    assert.doesNotMatch(JSON.stringify(state), /test_checkout_token/);
+  } finally { f.dispose(); }
+});
+
+test('resume accepts only an authenticated owner of an existing online business order', async () => {
+  const f = fixture(), created = await f.call('payment-create', f.createInput());
+  const input = { orderId: created.order.id, expectedUserId: f.userId };
+  const manual = await f.call('order-create', { planId: 'daily', paymentMethod: 'alipay', expectedUserId: f.userId, requestId: randomUUID() });
+  const callsBefore = f.apiCalls.length;
+  await assert.rejects(f.call('payment-resume', input, ''), { code: 'ACCOUNT_REQUIRED' });
+  await assert.rejects(f.call('payment-resume', { ...input, expectedUserId: f.otherId }), { code: 'ACCOUNT_CHANGED' });
+  await assert.rejects(f.call('payment-resume', { ...input, expectedUserId: f.otherId }, f.otherToken), { code: 'ORDER_NOT_FOUND' });
+  await assert.rejects(f.call('payment-resume', input, f.adminToken, 'admin'), { code: 'USER_SESSION_REQUIRED' });
+  for (const orderId of [randomUUID(), '__proto__', manual.order.id]) {
+    await assert.rejects(f.call('payment-resume', { orderId, expectedUserId: f.userId }), { code: 'ORDER_NOT_FOUND' });
+  }
+  assert.equal(f.apiCalls.length, callsBefore);
+});
+
+test('resume never exposes checkout for paid, closed or webhook-confirmed orders and never grants on a provider lookup', async () => {
+  for (const paymentStatus of ['PAID', 'CLOSED']) {
+    const f = fixture(), created = await f.call('payment-create', f.createInput());
+    f.responseOverrides = { status: paymentStatus };
+    const input = { orderId: created.order.id, expectedUserId: f.userId };
+    const resumed = await f.call('payment-resume', input);
+    assert.equal(resumed.checkoutUrl, undefined); assert.equal(resumed.order.paymentStatus, paymentStatus);
+    assert.equal(resumed.order.status, 'pending'); assert.equal((await f.read()).users[f.userId].membership.type, 'none');
+    const count = f.apiCalls.length;
+    assert.equal((await f.call('payment-resume', input)).checkoutUrl, undefined);
+    assert.equal(f.apiCalls.length, count, 'persisted terminal payment state cannot reopen checkout');
+  }
+  const f = fixture(), created = await f.call('payment-create', f.createInput());
+  f.beforeCreate = () => f.service().receivePayment(f.event(created.order));
+  const resumed = await f.call('payment-resume', { orderId: created.order.id, expectedUserId: f.userId });
+  assert.equal(resumed.checkoutUrl, undefined); assert.equal(resumed.order.status, 'confirmed');
+  assert.equal((await f.read()).users[f.userId].membership.expiresAt, new Date(f.clock + DAY).toISOString());
+  const count = f.apiCalls.length;
+  assert.equal((await f.call('payment-resume', { orderId: created.order.id, expectedUserId: f.userId })).checkoutUrl, undefined);
+  assert.equal(f.apiCalls.length, count);
+});
+
+test('late resume cannot downgrade a terminal provider state or return its stale checkout', async () => {
+  const f = fixture(), created = await f.call('payment-create', f.createInput());
+  f.beforeCreate = () => f.mutate(state => { state.orders[created.order.id].payment.status = 'CLOSED'; });
+  const resumed = await f.call('payment-resume', { orderId: created.order.id, expectedUserId: f.userId });
+  assert.equal(resumed.checkoutUrl, undefined); assert.equal(resumed.order.paymentStatus, 'CLOSED');
+  assert.equal((await f.read()).orders[created.order.id].payment.status, 'CLOSED');
+});
+
+test('persisted paid, closed and confirmed payment states remain terminal for status and resume after SQLite restart', async () => {
+  for (const terminal of ['PAID', 'CLOSED', 'confirmed']) {
+    const f = fixture({ sqlite: true });
+    try {
+      await f.initialize();
+      const created = await f.call('payment-create', f.createInput());
+      const input = { orderId: created.order.id, expectedUserId: f.userId };
+      if (terminal === 'confirmed') await f.service().receivePayment(f.event(created.order));
+      else {
+        f.responseOverrides = { status: terminal };
+        await f.call('payment-resume', input);
+      }
+      f.restart(); f.responseOverrides = {}; f.remoteStatus = 'PENDING';
+      const count = f.apiCalls.length, status = await f.call('payment-status', input);
+      assert.equal(status.paymentStatus, terminal === 'confirmed' ? 'PAID' : terminal);
+      assert.equal(status.order.paymentStatus, status.paymentStatus);
+      assert.equal((await f.call('payment-resume', input)).checkoutUrl, undefined);
+      assert.equal(f.apiCalls.length, count, 'durable terminal state must not be replaced by a stale upstream response');
+    } finally { f.dispose(); }
+  }
+});
+
+test('resume enforces the saved quote, exact provider identity and current session after upstream returns', async () => {
+  const f = fixture(), created = await f.call('payment-create', f.createInput());
+  const input = { orderId: created.order.id, expectedUserId: f.userId };
+  for (const responseOverrides of [{ id: `pay_${'f'.repeat(32)}` }, { productOrderId: randomUUID() }, { mode: 'sandbox' }, { currency: 'USD' }]) {
+    f.responseOverrides = responseOverrides;
+    await assert.rejects(f.call('payment-resume', input), { code: 'PAYMENT_INVALID_ORDER' });
+  }
+  f.responseOverrides = { amount: '4.00' };
+  await assert.rejects(f.call('payment-resume', input), { code: 'QUOTE_CHANGED' });
+  const changed = (await f.read()).orders[created.order.id];
+  assert.equal(changed.payment.quoteAccepted, false);
+  await assert.rejects(f.service().receivePayment(f.event({ ...created.order, priceCents: 400 })), { code: 'PAYMENT_ORDER_NOT_READY' });
+  const count = f.apiCalls.length;
+  await assert.rejects(f.call('payment-resume', input), { code: 'QUOTE_CHANGED' });
+  assert.equal(f.apiCalls.length, count);
+  const revoked = fixture(), pending = await revoked.call('payment-create', revoked.createInput());
+  revoked.beforeCreate = () => revoked.mutate(state => { state.sessions[digest(revoked.config.pepper, 'session', revoked.token)].revokedAt = new Date(revoked.clock).toISOString(); });
+  await assert.rejects(revoked.call('payment-resume', { orderId: pending.order.id, expectedUserId: revoked.userId }), { code: 'SESSION_REVOKED' });
+});
+
+test('resume with failed or uncertain snapshot persistence withholds checkout and safely retries the same order', async () => {
+  for (const fault of ['fail', 'commit-lost']) {
+    const f = fixture(), created = await f.call('payment-create', f.createInput());
+    const input = { orderId: created.order.id, expectedUserId: f.userId };
+    f.faults.push(fault);
+    await assert.rejects(f.call('payment-resume', input), { code: fault === 'fail' ? 'STORAGE_UNAVAILABLE' : 'STORAGE_WRITE_UNCERTAIN' });
+    const retried = await f.call('payment-resume', input);
+    assert.equal(retried.order.id, created.order.id); assert.equal(retried.order.paymentOrderId, created.order.paymentOrderId); assert.ok(retried.checkoutUrl);
+    const state = await f.read();
+    assert.equal(Object.keys(state.orders).length, 1); assert.equal(Object.keys(state.operations).length, 1);
+    assert.equal(state.users[f.userId].membership.type, 'none');
+  }
+});
+
 test('lookup refuses another account and forged upstream order/product/environment/currency', async () => {
   const f = fixture(), created = await f.call('payment-create', f.createInput());
   await assert.rejects(f.call('payment-status', { orderId: created.order.id, expectedUserId: f.otherId }, f.otherToken), { code: 'ORDER_NOT_FOUND' });

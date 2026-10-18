@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.25 增加付款等待、切回查单、账号与功能权限刷新，以及重启恢复待核实订单。Android 保持 v1.0.15。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.26 增加未支付订单继续支付与重新下单，保留已付款和状态不确定的原订单。Android 保持 v1.0.15。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -68,7 +68,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次补齐付款后的自动核实与重启恢复，付款后主动切回软件即可查询，权益确认后同步账号与功能权限。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次补齐未支付订单的继续付款与重新下单入口，已付款或暂时无法核实时继续保留原单。
             </p>
 
             <div class="release-hero-actions">
@@ -83,31 +83,31 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.25</strong>
-              <small>Brclio Pay · 付款等待与恢复</small>
+              <strong>v2.0.26</strong>
+              <small>Brclio Pay · 未支付订单恢复</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
                 <strong>Web</strong>
-                <span>实时套餐与在线支付</span>
+                <span>实时套餐与原单恢复</span>
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>会员页打开 HTTPS 收银台</span>
+                <span>继续支付与重新下单</span>
               </div>
               <div class="summary-stat">
                 <strong>1.0.15</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
-                <strong>10.15</strong>
+                <strong>10.19</strong>
                 <span>最近整理 · 2026</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 确认当前报价后在线付款，核验完成后自动顺延会员；价格变化时重新确认。原人工扫码与激活码继续可用，Android 保持 v1.0.15。</p>
-            <a class="release-summary-link" href="#brclio-pay-membership">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 未支付订单可继续原单或重新选择套餐。重新下单不会关闭旧单，请勿重复付款；已付款与状态不确定时保留原单。Android 保持 v1.0.15。</p>
+            <a class="release-summary-link" href="#brclio-pay-unpaid-retry">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -125,7 +125,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.25、付款、恢复、会员" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.26、继续支付、重新下单" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -139,6 +139,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#brclio-pay-unpaid-retry"><span>v2.0.26</span><strong>继续支付与重新下单</strong></a>
               <a href="#brclio-pay-recovery"><span>v2.0.25</span><strong>付款等待与恢复</strong></a>
               <a href="#brclio-pay-readiness"><span>v2.0.23</span><strong>付款暂停与恢复</strong></a>
               <a href="#brclio-pay-membership"><span>v2.0.22</span><strong>在线会员支付</strong></a>
@@ -213,7 +214,19 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
-            <article id="brclio-pay-recovery" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+            <article id="brclio-pay-unpaid-retry" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-19"><span>10.19</span><small>2026 · 订单恢复</small></time></div>
+              <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.26</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">未支付订单恢复</span></div><h3>还没完成付款，可以继续原单或重新下单</h3></div></header>
+                <p class="release-lead">修复未支付订单一直停留在等待状态的问题。核实订单后可继续原收银台，也可重新选择套餐；已付款、权益确认中或暂时无法核实时继续保留原单。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>继续支付同一个订单</strong>点击「继续支付原订单」查询状态并恢复原收银台，重启后也能恢复，不会因重新打开付款页再建一笔订单。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>重新选择当前套餐</strong>点击「重新下单」，实时核实未支付并更新本机记录后恢复套餐选择；核对新报价并再次付款才会创建新单。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>已付款与不确定状态保留原单</strong>付款确认中、查单失败或保存失败时继续核实，迟到响应不会覆盖已知付款结果或其他账号的订单。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>请勿在新旧订单重复付款</strong>重新下单不会关闭旧支付订单，旧单后续付款仍按原规则入账。Mac / Windows 需升级安装，Android 保持 1.0.15。</p></div>
+                </div>
+              </div>
+            </article>
+            <article id="brclio-pay-recovery" class="release-entry" data-release-platforms="web desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-15"><span>10.15</span><small>2026 · 付款恢复</small></time></div>
               <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.25</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">付款等待与恢复</span></div><h3>付款后切回软件，继续核实原订单</h3></div></header>
                 <p class="release-lead">订单创建后进入等待状态，自动查询付款与权益。主动切回软件会立即查单；会员开通后刷新账号及功能权限，重启后继续恢复原账号的待核实订单。</p>
@@ -1868,7 +1881,7 @@
           <span class="footer-mark" aria-hidden="true">↓</span>
           <strong>每次改变，都讲清楚。</strong>
         </div>
-        <p>网页版与客户端记录整理至 2026.10.15 · 桌面 v2.0.25 · Android v1.0.15。</p>
+        <p>网页版与客户端记录整理至 2026.10.19 · 桌面 v2.0.26 · Android v1.0.15。</p>
         <div class="footer-credits">
           <a
             class="design-credit"

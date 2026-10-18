@@ -51,6 +51,16 @@ function apiFixture({ action, input = {}, proof }, headers) {
     return success({ enabled: true });
   }
   if (action === 'me') return { status: 401, body: { ok: false, error: { code: 'ACCOUNT_REQUIRED', message: '请先登录。' }, serverTime: at } };
+  if (action === 'payment-catalog') {
+    assert.equal(headers.authorization, undefined, 'Public payment catalog must not send an account token');
+    assert.equal(proof, undefined, 'Public payment catalog must not send a device proof');
+    assert.deepEqual(input, { client: 'browser' });
+    return success({ catalog: { enabled: true, acceptingPayments: true, mode: 'live', currency: 'CNY', version: 'navigation-fixture-1', plans: [
+      { id: 'daily', name: '日付', days: 1, priceCents: 300, amount: '3.00' },
+      { id: 'monthly', name: '月付', days: 30, priceCents: 1990, amount: '19.90' },
+      { id: 'yearly', name: '年付', days: 365, priceCents: 6990, amount: '69.90' },
+    ] } });
+  }
   if (action === 'reviews-public') return success({ reviews: [], summary: { count: 0, averageRating: 0 }, page: 1, pageSize: 6, total: 0, totalPages: 1 });
   if (action === 'feedback-public-list') {
     const filtered = issues.filter(item => (!input.status || input.status === 'all' || (input.status === 'unresolved' ? item.status === 'new' : item.status === input.status))
@@ -419,7 +429,8 @@ app.whenReady().then(async () => {
   assert.deepEqual(rendererErrors, [], 'no application console errors');
   assert.ok(apiCalls.some(call => call.action === 'me'), 'anonymous account fixture exercised');
   assert.ok(apiCalls.some(call => call.action === 'google-config'), 'public Google configuration fixture exercised');
-  assert.ok(apiCalls.every(call => ['me', 'google-config', 'reviews-public', 'feedback-public-list', 'feedback-public-detail'].includes(call.action)), 'only read-only local API operations occur');
+  assert.ok(apiCalls.some(call => call.action === 'payment-catalog'), 'public payment catalog fixture exercised');
+  assert.ok(apiCalls.every(call => ['me', 'google-config', 'payment-catalog', 'reviews-public', 'feedback-public-list', 'feedback-public-detail'].includes(call.action)), 'only read-only local API operations occur');
   console.log(JSON.stringify({ result: 'PASS', scope: 'real Chromium, dist-web via local HTTP fixture; external network blocked; disposable profile', reducedMotion, viewTransitions, checks, screenshots, blockedRequestCount: blockedRequests.length, apiActions: [...new Set(apiCalls.map(call => call.action))] }));
   await finish(0);
 }).catch(error => finish(1, error));

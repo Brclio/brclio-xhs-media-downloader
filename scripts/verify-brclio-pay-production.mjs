@@ -72,9 +72,9 @@ export function buildPaymentChecks({ baseUrl, sourceSha, catalogVersion }, metad
   }, { allowRedirect: true });
   for (const [name, path, markers] of [
     ['membership-page', '/membership', ['membership-catalog-status', 'Brclio Pay', '人工扫码']],
-    ['account-ui', '/account-ui.js', ['membership-online-pay', 'payment_order', 'payment-catalog', 'payment-create']],
+    ['account-ui', '/account-ui.js', ['membership-online-pay', 'membership-online-restart', 'payment_order', 'payment-catalog', 'payment-create', 'payment-resume']],
     ['membership-ui', '/membership.js', ['payment-catalog', 'catalog.plans']],
-    ['browser-account', '/lib/browser-account.js', ['payment-catalog', 'payment-create', 'payment-status']],
+    ['browser-account', '/lib/browser-account.js', ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']],
     ['manual-commerce-preserved', '/commerce-ui.js', ['wechat:', 'alipay:', 'activation_code:', 'brclio_pay:']],
   ]) add(`payment/static/${name}`, path, {}, response => {
     requireCheck(response.status === 200 && response.bytes.length > 0, 'Payment static asset was unavailable.');
@@ -96,6 +96,7 @@ export function buildPaymentChecks({ baseUrl, sourceSha, catalogVersion }, metad
   });
   add('payment/anonymous-order-denied', '/api/account', { ...jsonRequest({ action: 'payment-create', input: { client: 'browser', expectedUserId: FIXTURE_ID, requestId: 'anonymous-production-verification', planId: 'daily', amount: '3.00', catalogVersion: 'anonymous-production-verification' } }), headers: { ...JSON_HEADERS, Origin: baseUrl } }, response => json(response, 401, 'ACCOUNT_REQUIRED'));
   add('payment/anonymous-status-denied', '/api/account', { ...jsonRequest({ action: 'payment-status', input: { client: 'browser', expectedUserId: FIXTURE_ID, orderId: FIXTURE_ID, success: true, status: 'PAID' } }), headers: { ...JSON_HEADERS, Origin: baseUrl } }, response => json(response, 401, 'ACCOUNT_REQUIRED'));
+  add('payment/anonymous-resume-denied', '/api/account', { ...jsonRequest({ action: 'payment-resume', input: { client: 'browser', expectedUserId: FIXTURE_ID, orderId: FIXTURE_ID } }), headers: { ...JSON_HEADERS, Origin: baseUrl } }, response => json(response, 401, 'ACCOUNT_REQUIRED'));
   for (const [name, path, init, status, code] of [
     ['method', '/api/brclio-payment', {}, 405, 'METHOD_NOT_ALLOWED'],
     ['content-type', '/api/brclio-payment', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: '{}' }, 415, 'UNSUPPORTED_MEDIA_TYPE'],
