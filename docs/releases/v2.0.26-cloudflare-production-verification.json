@@ -1,0 +1,360 @@
+{
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-10-19T00:00:48.513Z",
+  "passed": 58,
+  "total": 58,
+  "ok": true,
+  "realMediaChecks": false,
+  "results": [
+    {
+      "name": "static/home",
+      "ok": true,
+      "status": 200,
+      "durationMs": 2400
+    },
+    {
+      "name": "static/changelog",
+      "ok": true,
+      "status": 200,
+      "durationMs": 709
+    },
+    {
+      "name": "static/feedback-board",
+      "ok": true,
+      "status": 200,
+      "durationMs": 467
+    },
+    {
+      "name": "static/feedback-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 487
+    },
+    {
+      "name": "static/feedback-style",
+      "ok": true,
+      "status": 200,
+      "durationMs": 367
+    },
+    {
+      "name": "static/main-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 417
+    },
+    {
+      "name": "static/main-style",
+      "ok": true,
+      "status": 200,
+      "durationMs": 515
+    },
+    {
+      "name": "static/account-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 276
+    },
+    {
+      "name": "static/reviews-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 471
+    },
+    {
+      "name": "static/reviews-style",
+      "ok": true,
+      "status": 200,
+      "durationMs": 480
+    },
+    {
+      "name": "static/review-nicknames-module",
+      "ok": true,
+      "status": 200,
+      "durationMs": 525
+    },
+    {
+      "name": "static/browser-account-module",
+      "ok": true,
+      "status": 200,
+      "durationMs": 409
+    },
+    {
+      "name": "static/archive-module",
+      "ok": true,
+      "status": 200,
+      "durationMs": 307
+    },
+    {
+      "name": "static/favicon",
+      "ok": true,
+      "status": 200,
+      "durationMs": 520
+    },
+    {
+      "name": "static/admin",
+      "ok": true,
+      "status": 200,
+      "durationMs": 1286
+    },
+    {
+      "name": "static/admin-trailing-slash",
+      "ok": true,
+      "status": 200,
+      "durationMs": 733
+    },
+    {
+      "name": "static/admin-script",
+      "ok": true,
+      "status": 200,
+      "durationMs": 1310
+    },
+    {
+      "name": "static/admin-style",
+      "ok": true,
+      "status": 200,
+      "durationMs": 507
+    },
+    {
+      "name": "node/parse/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 748
+    },
+    {
+      "name": "node/parse/empty",
+      "ok": true,
+      "status": 400,
+      "durationMs": 361
+    },
+    {
+      "name": "node/parse/malformed",
+      "ok": true,
+      "status": 400,
+      "durationMs": 454
+    },
+    {
+      "name": "node/parse/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 327
+    },
+    {
+      "name": "node/parse/input-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 495
+    },
+    {
+      "name": "node/parse/direct-image",
+      "ok": true,
+      "status": 200,
+      "durationMs": 499
+    },
+    {
+      "name": "node/image/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 431
+    },
+    {
+      "name": "node/image/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 504
+    },
+    {
+      "name": "node/video/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 199
+    },
+    {
+      "name": "node/video/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 199
+    },
+    {
+      "name": "node/image/invalid-token",
+      "ok": true,
+      "status": 400,
+      "durationMs": 196
+    },
+    {
+      "name": "node/video/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 298
+    },
+    {
+      "name": "node/video/invalid-range",
+      "ok": true,
+      "status": 400,
+      "durationMs": 199
+    },
+    {
+      "name": "node/video/oversize-range",
+      "ok": true,
+      "status": 413,
+      "durationMs": 328
+    },
+    {
+      "name": "node/video/original-meta-denied",
+      "ok": true,
+      "status": 403,
+      "durationMs": 521
+    },
+    {
+      "name": "node/video/original-chunk-denied",
+      "ok": true,
+      "status": 403,
+      "durationMs": 525
+    },
+    {
+      "name": "python/parse/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 1219
+    },
+    {
+      "name": "python/parse/empty",
+      "ok": true,
+      "status": 400,
+      "durationMs": 355
+    },
+    {
+      "name": "python/parse/malformed",
+      "ok": true,
+      "status": 400,
+      "durationMs": 332
+    },
+    {
+      "name": "python/parse/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 490
+    },
+    {
+      "name": "python/parse/input-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 315
+    },
+    {
+      "name": "python/parse/direct-image",
+      "ok": true,
+      "status": 200,
+      "durationMs": 433
+    },
+    {
+      "name": "python/image/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 1257
+    },
+    {
+      "name": "python/image/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 316
+    },
+    {
+      "name": "python/video/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 210
+    },
+    {
+      "name": "python/video/missing-input",
+      "ok": true,
+      "status": 400,
+      "durationMs": 494
+    },
+    {
+      "name": "python/image/invalid-token",
+      "ok": true,
+      "status": 400,
+      "durationMs": 346
+    },
+    {
+      "name": "python/video/untrusted-url",
+      "ok": true,
+      "status": 400,
+      "durationMs": 524
+    },
+    {
+      "name": "python/video/invalid-range",
+      "ok": true,
+      "status": 400,
+      "durationMs": 524
+    },
+    {
+      "name": "python/video/oversize-range",
+      "ok": true,
+      "status": 413,
+      "durationMs": 213
+    },
+    {
+      "name": "python/video/original-meta-denied",
+      "ok": true,
+      "status": 403,
+      "durationMs": 486
+    },
+    {
+      "name": "python/video/original-chunk-denied",
+      "ok": true,
+      "status": 403,
+      "durationMs": 349
+    },
+    {
+      "name": "member-video/guest-resolve",
+      "ok": true,
+      "status": 401,
+      "durationMs": 308
+    },
+    {
+      "name": "member-video/guest-ticket-meta",
+      "ok": true,
+      "status": 401,
+      "durationMs": 308
+    },
+    {
+      "name": "member-video/guest-ticket-chunk",
+      "ok": true,
+      "status": 401,
+      "durationMs": 435
+    },
+    {
+      "name": "account/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 534
+    },
+    {
+      "name": "account/content-type",
+      "ok": true,
+      "status": 415,
+      "durationMs": 515
+    },
+    {
+      "name": "account/malformed",
+      "ok": true,
+      "status": 400,
+      "durationMs": 524
+    },
+    {
+      "name": "account/invalid-shape",
+      "ok": true,
+      "status": 400,
+      "durationMs": 523
+    },
+    {
+      "name": "account/body-size",
+      "ok": true,
+      "status": 413,
+      "durationMs": 702
+    }
+  ],
+  "version": "2.0.26",
+  "sourceSha": "482e1a91c625d2f751bd242ff687da6d3f42e330"
+}

@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "release": "v2.0.26",
+  "recordedAt": "2026-10-18T23:43:05Z",
+  "clientTimezone": "Asia/Shanghai",
+  "recordedAtClientTime": "2026-10-19T07:43:05+08:00",
+  "releaseTagCommit": "482e1a91c625d2f751bd242ff687da6d3f42e330",
+  "overallResult": "PASS",
+  "verificationTarget": "Local working-tree source and the generated dist-web site over local fixture HTTP; source blobs listed below match the final release tag at evidence recording.",
+  "runs": [
+    {
+      "name": "paymentUi",
+      "command": "env -u ELECTRON_RUN_AS_NODE ./node_modules/.bin/electron scripts/verify-brclio-pay-ui.cjs",
+      "observedExitCode": 0,
+      "result": "PASS",
+      "logPath": "/tmp/xhs-v2.0.26-ui-payment.log",
+      "logSha256": "99b96b4790ca4870c4bac13f3d18ca5706fa403ef0f8e601411fe406a433f547",
+      "output": {
+        "ok": true,
+        "checks": [
+          "current online quote with manual QR preserved",
+          "quote change requires second click",
+          "PAYMENT_UNAVAILABLE create reuses request ID",
+          "payment pause blocks checkout and allows readiness refresh",
+          "removed draft SKU keeps its original plan name",
+          "recovery preserves original request and quoted amount",
+          "disabled catalog never creates an order",
+          "single-order checkout fragment preserved",
+          "return parameters never grant rights",
+          "back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant",
+          "paid without committed webhook stays pending and automatically polls",
+          "native app focus immediately checks pending order",
+          "confirmed order refreshes account and feature rights before clearing recovery",
+          "fresh account rights reach app listeners and member badge",
+          "renderer restart restores saved pending order without another create or checkout",
+          "unpaid recovery resumes the original order with a fresh checkout token",
+          "restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID",
+          "status and checkout failures retain the original order",
+          "PAID restart and PAID resume followed by network failure block both purchase actions",
+          "confirmed recovery after a failed PAID check refreshes rights without another checkout or create",
+          "confirmed or paid retry without checkout URL queries status",
+          "late created or resumed checkout discarded on account switch",
+          "browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout",
+          "marketing page uses enabled live catalog and shows payment pause",
+          "375px online layout including unpaid restart control"
+        ],
+        "screenshots": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-pay-ui-UDh8Mi"
+      }
+    },
+    {
+      "name": "membershipUi",
+      "command": "env -u ELECTRON_RUN_AS_NODE ./node_modules/.bin/electron scripts/verify-membership-ui.cjs",
+      "observedExitCode": 0,
+      "result": "PASS",
+      "logPath": "/tmp/xhs-v2.0.26-ui-membership.log",
+      "logSha256": "94dcfca4c3f62922244c4111f6005910d73e05747b648052e829c63861125582",
+      "output": {
+        "ok": true,
+        "checks": [
+          "logged-out guidance",
+          "plan prices and durations",
+          "payment method switching",
+          "all QR images load and decode as images",
+          "copy success/failure",
+          "no implicit purchase requests",
+          "native focus trap and Escape",
+          "offline/storage errors",
+          "permanent member guard",
+          "account switch",
+          "mobile layout",
+          "redeem failure/success",
+          "browser account mount"
+        ],
+        "screenshots": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-membership-ui-NWcarn/screenshots"
+      }
+    },
+    {
+      "name": "commerceUi",
+      "command": "env -u ELECTRON_RUN_AS_NODE ./node_modules/.bin/electron scripts/verify-commerce-ui.cjs",
+      "observedExitCode": 0,
+      "result": "PASS",
+      "logPath": "/tmp/xhs-v2.0.26-ui-commerce.log",
+      "logSha256": "811174bdf1526db49f2e9b62216d3912b168e95ec038fc806c7634017bbdd8e6",
+      "output": {
+        "ok": true,
+        "checks": [
+          "public pagination and rating",
+          "XSS rendered as text",
+          "1000 built-in random nicknames and custom nickname",
+          "uncertain nickname save retries same requestId",
+          "nickname change updates existing review without another comment",
+          "review body preserves phone URL order and whitespace with email masked",
+          "web account nickname link closes dialog and focuses visible form",
+          "desktop account nickname link switches real reviews tab and focuses visible form",
+          "all personal order pages",
+          "payment report creates pending order",
+          "uncertain evaluation retries same requestId",
+          "single evaluation locks composer",
+          "375px and 900px layout",
+          "late private response and nickname save after logout discarded",
+          "desktop bridge and account switching",
+          "private evaluation read failure retains retry",
+          "old payment result after re-login cannot overwrite new request"
+        ],
+        "screenshots": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-commerce-ui-hyPmAJ"
+      }
+    },
+    {
+      "name": "nativeAccountStorage",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/verify-account-storage.mjs",
+      "observedExitCode": 0,
+      "result": "PASS",
+      "logPath": "/tmp/xhs-v2.0.26-ui-account.log",
+      "logSha256": "05812449b333c6df0b29497e855621ede6338a7ec11e7fb9b98e13857c55a281",
+      "output": {
+        "passed": true,
+        "platform": "darwin",
+        "nativeSafeStorage": true,
+        "separateProcessRelaunch": true,
+        "stableDeviceIdentity": true,
+        "signedEntitlements": true,
+        "offlineSignedRelaunch": true,
+        "backgroundFailureTolerated": true,
+        "authoritativeInvalidationPersisted": true,
+        "legacyAccountUpgrade": true,
+        "serverTransport": "mock",
+        "osRebootTested": false,
+        "installerUpgradeTested": false
+      }
+    },
+    {
+      "name": "profileEntitlement",
+      "command": "env -u ELECTRON_RUN_AS_NODE node scripts/verify-profile-entitlement.mjs",
+      "observedExitCode": 0,
+      "result": "PASS",
+      "logPath": "/tmp/xhs-v2.0.26-ui-entitlement-fixed.log",
+      "logSha256": "0a01f8e22a23bbc88a10beab4e397e3d4166b1d312e21e9613dfc00a984c96a2",
+      "output": {
+        "passed": true,
+        "durationMs": 18808,
+        "scenarios": 4,
+        "testCount": 8,
+        "bulkNotes": 130,
+        "bulkImages": 390,
+        "storageFailureAfterNotes": 101,
+        "signedLocalAuthorization": true,
+        "backgroundRefreshFailureTolerated": true,
+        "membershipExpiryStopsDownloads": true,
+        "authoritativeRevocationStopsDownloads": true,
+        "renewalResumesVerifiedFiles": true,
+        "externalRequests": 0,
+        "transport": "mock",
+        "credentialStore": "isolated-memory",
+        "nativeInstallerTested": false,
+        "tests": "/Users/bornforthis/Github/WebSite/xhs-images-video-vercel-downloader/test/profile-entitlement.test.js"
+      }
+    },
+    {
+      "name": "webNavigation",
+      "command": "env -u ELECTRON_RUN_AS_NODE npm run web:verify:navigation",
+      "observedExitCode": 0,
+      "result": "PASS",
+      "logPath": "/tmp/xhs-v2.0.26-ui-navigation-fixed-rerun.log",
+      "logSha256": "ca917d233c18a49a937e33b19e409b49d193dbf28113007685c0ca3daa934d60",
+      "output": {
+        "result": "PASS",
+        "scope": "real Chromium, dist-web via local HTTP fixture; external network blocked; disposable profile",
+        "reducedMotion": true,
+        "viewTransitions": 0,
+        "checks": [
+          "navigation hover/focus prefetches first destination without running it or leaving home",
+          "latest rapid navigation wins; destination script and in-page anchor",
+          "home input and DOM retained across route changes",
+          "in-flight local parse updates its detached page and retains results on return",
+          "live File, decoded image and settings retained; product tabs/presentation; Back/Forward and hash",
+          "first and cached classic/module initialization; independent QR dialogs; membership plans",
+          "changelog filters/query, cached reset/resume, history and saved reading position after anchor",
+          "anonymous feedback filters/detail/draft; account query opens cached homepage dialog",
+          "mobile Enter/Escape/menu focus/navigation; reduced-motion anchors; no overflow",
+          "direct learning URL can enter homepage and initialize its module/account UI without reload",
+          "failed first page load preserves old document, URL and draft; retry recovers",
+          "failed stylesheet and script fetches preserve old route; independent retries initialize destination"
+        ],
+        "screenshots": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-web-navigation-G8qolK/screenshots",
+        "blockedRequestCount": 5,
+        "apiActions": [
+          "reviews-public",
+          "me",
+          "google-config",
+          "payment-catalog",
+          "feedback-public-list",
+          "feedback-public-detail"
+        ]
+      }
+    }
+  ],
+  "screenshotQa": {
+    "result": "PASS",
+    "reviewedImageCount": 21,
+    "reviewedDirectories": [
+      "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-pay-ui-UDh8Mi",
+      "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-membership-ui-NWcarn/screenshots",
+      "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-commerce-ui-hyPmAJ",
+      "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-web-navigation-G8qolK/screenshots"
+    ],
+    "findings": [
+      "Payment continuation, restart, quote refresh and status controls fit the desktop and 375px dialog without horizontal overflow.",
+      "Membership plan cards, email copy controls, payment and contact QR images, logged-out guidance, permanent membership guard and redemption success render legibly.",
+      "Reviews and nickname settings fit desktop, 900px and 375px widths; the XSS fixture appears as literal text.",
+      "Returned home draft, retained live image/settings, mobile learning anchor and recovered membership route render correctly after navigation."
+    ],
+    "committedEvidenceCandidates": [
+      {
+        "path": "docs/releases/v2.0.26-validation/payment-pending-desktop.png",
+        "sourcePath": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-pay-ui-UDh8Mi/online-desktop.png",
+        "sha256": "5e5deb6509ebd4f8b28968e2756e5b31d0ab8c6203f89aa2d3aa7586ef68eb57",
+        "bytes": 457827,
+        "viewportCssPixels": {
+          "width": 1280,
+          "height": 928
+        },
+        "account": "a@example.test (isolated fixture)",
+        "orderId": "12345678-1234-1234-1234-123456789abc (isolated fixture)",
+        "visualQa": "PASS: original-order continuation and restart controls remain legible and fit within the dialog.",
+        "copyMethod": "Byte-for-byte PNG copy; no image edits.",
+        "rasterPixelSize": {
+          "width": 2560,
+          "height": 1856
+        },
+        "deviceScaleFactor": 2
+      },
+      {
+        "path": "docs/releases/v2.0.26-validation/payment-pending-mobile-375.png",
+        "sourcePath": "/var/folders/79/fn404q5x0t13d1jb18505sxw0000gn/T/brclio-pay-ui-UDh8Mi/online-mobile.png",
+        "sha256": "8fccc7ee95a7aa59c14813b035eacc3a0b5147856915bfa2cba57da6e7c8582f",
+        "bytes": 213450,
+        "viewportCssPixels": {
+          "width": 375,
+          "height": 812
+        },
+        "account": "a@example.test (isolated fixture)",
+        "orderId": "12345678-1234-1234-1234-123456789abc (isolated fixture)",
+        "visualQa": "PASS: original-order continuation and restart controls remain legible and fit within the dialog.",
+        "copyMethod": "Byte-for-byte PNG copy; no image edits.",
+        "rasterPixelSize": {
+          "width": 750,
+          "height": 1624
+        },
+        "deviceScaleFactor": 2
+      }
+    ]
+  },
+  "sourceBlobs": [
+    {
+      "path": "account-ui.js",
+      "gitBlob": "007d36ae7389d842116e6d6a9ca4f8ae3b696c8e",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "lib/payment-recovery.js",
+      "gitBlob": "ed279bb802ebbf1a4cc9c9217d0d78aa15fef581",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "lib/browser-account.js",
+      "gitBlob": "fbec18643bf0fac00a638328436fbb92f149c3d6",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "membership.js",
+      "gitBlob": "5407b9af98f8212bc7a9d5b961cf96bbc786c38a",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "commerce-ui.js",
+      "gitBlob": "a0ae10bb13737d25ae878395e7adbe6a03ef0668",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "scripts/verify-brclio-pay-ui.cjs",
+      "gitBlob": "531ac90bbb57b867be81134fe4cf1812cb102fcc",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "scripts/verify-membership-ui.cjs",
+      "gitBlob": "f1223afcc281a7f7182e616f8a6f164b81dcfdc4",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "scripts/verify-commerce-ui.cjs",
+      "gitBlob": "71c4fc8608acfafe4561458a7992d7ee05ccebd0",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "scripts/verify-account-storage.mjs",
+      "gitBlob": "f270f8314fd0fa13e9c55d64db28e9ac40916d41",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "scripts/verify-profile-entitlement.mjs",
+      "gitBlob": "a2e048f39d6d4084cb26bbfbd96a7560d27437a3",
+      "matchesReleaseTagAtRecording": true
+    },
+    {
+      "path": "scripts/verify-web-navigation.cjs",
+      "gitBlob": "2e4386120e77e5b8b348833aafa3038627d8c4ce",
+      "matchesReleaseTagAtRecording": true
+    }
+  ],
+  "resolvedFixtureIssues": [
+    {
+      "file": "scripts/verify-profile-entitlement.mjs",
+      "issue": "A fixed requirement of three passing tests rejected a successful expanded suite.",
+      "fix": "Read TAP summary and top-level plan counts dynamically, require every test to pass and reject failure, cancellation, skips, TODOs or empty results.",
+      "historicalFailureLog": "/tmp/xhs-v2.0.26-ui-entitlement.log",
+      "verifiedCounts": {
+        "scenarios": 4,
+        "tests": 8
+      }
+    },
+    {
+      "file": "scripts/verify-web-navigation.cjs",
+      "issue": "Navigation fixture lacked the public payment-catalog read used by membership initialization.",
+      "fix": "Add a valid local three-plan catalog with browser client input; preserve token/proof absence assertions and the read-only API allowlist.",
+      "historicalFailureLog": "/Users/bornforthis/Github/WebSite/xhs-images-video-vercel-downloader/.brclio-pay-task-release-v2.0.26-20261019/web-navigation.log",
+      "initialFixtureInputCorrectionLog": "/tmp/xhs-v2.0.26-ui-navigation-fixed.log"
+    }
+  ],
+  "boundaries": {
+    "productionAccountOrPaymentWrites": false,
+    "realPaymentsCreatedOrCharged": false,
+    "productionCollectionSettingsChanged": false,
+    "externalNavigationAndNetwork": "UI harnesses block external network; account and entitlement transports are isolated mocks.",
+    "profilesAndAccounts": "Disposable Electron/browser profiles and fake accounts only.",
+    "nativeStorage": "Account storage verification uses real OS safeStorage against a disposable local account store and two fresh Electron processes.",
+    "screenshotSafety": "Copied images use a@example.test, a deterministic fixture order and fixture catalog prices. No real payer identity, checkout token, account credential or transaction data is shown. The desktop capture includes a partial rendering of the existing public manual-payment QR artwork already shipped with the product; no live payment page was opened.",
+    "notProvenByThisReport": [
+      "Live production payment success",
+      "Published installer availability",
+      "Installed client or relaunch of a packaged release",
+      "OS reboot",
+      "Installer upgrade",
+      "Windows execution on this macOS host"
+    ]
+  },
+  "tagObjectSha": "5b4f1d06a823f68a95fe25d6181dc7e687539979"
+}

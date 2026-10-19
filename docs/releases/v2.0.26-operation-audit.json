@@ -1,0 +1,586 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.26",
+  "status": "published-and-production-read-only-verified",
+  "sourceSha": "482e1a91c625d2f751bd242ff687da6d3f42e330",
+  "verifiedAt": "2026-10-19T00:08:46.993449+00:00",
+  "clientTimezone": "Asia/Shanghai",
+  "releaseDateClientTime": "2026-10-19",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.26",
+  "publishedAt": "2026-10-18T23:53:47Z",
+  "before": {
+    "observedAt": "2026-10-18T23:23:23.328357+00:00",
+    "workerVersion": "991f23e0-1398-4b69-a6b3-9db521899efe",
+    "pagesDeploymentId": "658621a8-6ea0-4efa-8db8-02c4820daea2"
+  },
+  "after": {
+    "observedAt": "2026-10-19T00:01:09.505409+00:00",
+    "workerVersion": "ade1e861-258c-440c-8aab-e34fdb0294c0",
+    "pagesDeploymentId": "812b2461-2092-49e5-9570-ae5498aebf1f",
+    "pagesDeploymentUrl": "https://812b2461.brclio-xhs-pages.pages.dev"
+  },
+  "configurationAudit": {
+    "secretNamesCount": 27,
+    "secretNamesUnchanged": true,
+    "secretNamesSha256": "3c8c28105d2cb3bc40d8b8e19fb35567afca5f5ce8e70b848122ab2fe9ecfacc",
+    "secretValuesReadOrWritten": false,
+    "mainBindingsUnchanged": true,
+    "mainBindingsSha256": "eb1bc255754ab805b28632923b9ca17cbd61491163e997671f9d030c27789ed5",
+    "existingNamespacesCount": 3,
+    "namespaceInventoryUnchanged": true,
+    "namespaceInventorySha256": "23c3ff2e4838204e59b623068727044f9886d35109e6268cc123a4e918018b8f",
+    "pagesProjectDomainsAndDeploymentConfigUnchanged": true,
+    "pagesDeploymentConfigSha256": "6aa5f2710caaa2b4aa1d9ce9a9e4d8e71d109c4de086b7b86019544fc8ec793b",
+    "workerInventoryUnchanged": true,
+    "unchangedOtherWorkers": [
+      {
+        "name": "brclio-pay",
+        "modifiedAtBefore": "2026-10-18T12:20:57.784782Z",
+        "modifiedAtAfter": "2026-10-18T12:20:57.784782Z"
+      },
+      {
+        "name": "brclio-xhs-python",
+        "modifiedAtBefore": "2026-10-11T05:13:13.699754Z",
+        "modifiedAtAfter": "2026-10-11T05:13:13.699754Z"
+      },
+      {
+        "name": "brclio-xhs-subscription-proxy",
+        "modifiedAtBefore": "2026-10-11T13:22:34.610713Z",
+        "modifiedAtAfter": "2026-10-11T13:22:34.610713Z"
+      }
+    ],
+    "paymentCenterWorkerUnchanged": true
+  },
+  "scope": {
+    "storageProvider": "existing-private-github-repository",
+    "newStorageResources": false,
+    "deployTargets": [
+      "existing main Cloudflare Worker",
+      "existing Cloudflare Pages project",
+      "desktop v2.0.26 release"
+    ],
+    "targetsNotDeployedByThisTask": [
+      "private Python Worker",
+      "subscription proxy Worker",
+      "payment center Worker",
+      "Vercel",
+      "Android APK"
+    ],
+    "androidVersion": "1.0.15",
+    "historicalReleaseAssets": {
+      "android": {
+        "tag": "android-v1.0.15",
+        "releaseId": 409044762,
+        "assetCount": 4,
+        "idsSizesAndDigestsUnchanged": true,
+        "assets": [
+          {
+            "id": 628351603,
+            "name": "Brclio-XHS-Android-1.0.15-release.apk",
+            "size": 73153114,
+            "digest": "sha256:1d385fe4366d60af5c3d0168c3f8f24e70eb0ebbd3d82cc5048487a0a22ccb0a"
+          },
+          {
+            "id": 628351605,
+            "name": "Brclio-XHS-Android-1.0.15-release.apk.sha256",
+            "size": 104,
+            "digest": "sha256:67727b81b4e8c4086da28fff15a28879e843aea700fb0f56b037e114dbbd52c8"
+          },
+          {
+            "id": 628351604,
+            "name": "SHA256SUMS.txt",
+            "size": 104,
+            "digest": "sha256:67727b81b4e8c4086da28fff15a28879e843aea700fb0f56b037e114dbbd52c8"
+          },
+          {
+            "id": 628351609,
+            "name": "android-update.json",
+            "size": 2583,
+            "digest": "sha256:87b452dca58b997d9ae1811151cdcffb5274bc6641d271d745e85fbca057629f"
+          }
+        ]
+      },
+      "previousDesktop": {
+        "tag": "v2.0.25",
+        "releaseId": 413761486,
+        "assetCount": 11,
+        "idsSizesAndDigestsUnchanged": true,
+        "assets": [
+          {
+            "id": 643751368,
+            "name": "Brclio-XHS-2.0.25-mac-arm64.dmg",
+            "size": 168454099,
+            "digest": "sha256:ef61a49ddd7988db171302b6d18409164544088160ca66062d459924b5d792e2"
+          },
+          {
+            "id": 643751361,
+            "name": "Brclio-XHS-2.0.25-mac-arm64.zip",
+            "size": 169373339,
+            "digest": "sha256:20418b6de050663ca22d8f667136172dfb40f4376bed6b0909454dc875c1229c"
+          },
+          {
+            "id": 643751357,
+            "name": "Brclio-XHS-2.0.25-mac-x64.dmg",
+            "size": 176164832,
+            "digest": "sha256:1b7413aa79c6641fb14f285e692c99ffd94ac2e2079284937fb34e353ef28bda"
+          },
+          {
+            "id": 643751356,
+            "name": "Brclio-XHS-2.0.25-mac-x64.zip",
+            "size": 177169035,
+            "digest": "sha256:5cd0d3b2ec57a4499825b9a3562a0284071db08e0a9cfe90a21f95ea023a766d"
+          },
+          {
+            "id": 643751358,
+            "name": "Brclio-XHS-2.0.25-windows-x64-portable.exe",
+            "size": 147248951,
+            "digest": "sha256:5f19733811934a9e25ad5289bc6f9483a9aa1629332d6180cefae37303f51d6c"
+          },
+          {
+            "id": 643751631,
+            "name": "Brclio-XHS-2.0.25-windows-x64-setup.exe",
+            "size": 147487451,
+            "digest": "sha256:b5f3f9f79e58757d55808a906f227d5c5ebf0b788573099184aafc38e3473955"
+          },
+          {
+            "id": 643751852,
+            "name": "SHA256SUMS.txt",
+            "size": 915,
+            "digest": "sha256:440953698cb7d0577637df196bdfabda4428a16a4f3d42bb1fa2a57dbb268535"
+          },
+          {
+            "id": 643751842,
+            "name": "XHS-Downloader-2.0.25-mac-arm64.dmg",
+            "size": 168454099,
+            "digest": "sha256:ef61a49ddd7988db171302b6d18409164544088160ca66062d459924b5d792e2"
+          },
+          {
+            "id": 643751882,
+            "name": "XHS-Downloader-2.0.25-mac-x64.dmg",
+            "size": 176164832,
+            "digest": "sha256:1b7413aa79c6641fb14f285e692c99ffd94ac2e2079284937fb34e353ef28bda"
+          },
+          {
+            "id": 643751886,
+            "name": "XHS-Downloader-2.0.25-windows-x64-setup.exe",
+            "size": 147487451,
+            "digest": "sha256:b5f3f9f79e58757d55808a906f227d5c5ebf0b788573099184aafc38e3473955"
+          },
+          {
+            "id": 643751850,
+            "name": "build-evidence.json",
+            "size": 7006,
+            "digest": "sha256:156c188e5ea1683b33c26d0054b9fccc20ee7a58f130ab8a55e537e5e40b8d7c"
+          }
+        ]
+      }
+    },
+    "productionOrdersCreated": false,
+    "productionAccountWrites": false,
+    "realPaymentsAttempted": false,
+    "productionEntitlementGrantsAttempted": false,
+    "usersInstalledApplicationReplaced": false
+  },
+  "stages": {
+    "localPreflight": {
+      "completed": true,
+      "nodePassed": 1826,
+      "nodeSkipped": 13,
+      "nodeFailed": 0,
+      "pythonPassed": 47,
+      "independentPaymentTestsPassed": 107,
+      "reviewedLocalUiScreenshots": 21,
+      "webNavigationChecksPassed": 12,
+      "readinessDoesNotProvePublicationOrProductionPayment": true
+    },
+    "nativeCI": {
+      "completed": true,
+      "sourceSha": "482e1a91c625d2f751bd242ff687da6d3f42e330",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39177451336",
+      "attempt": 1,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "mac-arm64",
+          "status": "completed",
+          "conclusion": "success",
+          "requiredSuccessfulGates": [
+            "Verify packaged source, native runtime, installers, and checksums",
+            "Exercise real Electron main process, bridge, and both download engines",
+            "Verify payment waiting, focus recovery and refreshed account permissions",
+            "Verify native credential encryption across two app processes",
+            "Build complete Mac installers with ad hoc code signatures",
+            "Verify native Mac replacement and rollback in temporary signed apps"
+          ],
+          "successfulSteps": 41,
+          "conditionalSkippedSteps": 4
+        },
+        {
+          "name": "windows-x64",
+          "status": "completed",
+          "conclusion": "success",
+          "requiredSuccessfulGates": [
+            "Verify packaged source, native runtime, installers, and checksums",
+            "Exercise real Electron main process, bridge, and both download engines",
+            "Verify payment waiting, focus recovery and refreshed account permissions",
+            "Verify native credential encryption across two app processes",
+            "Build complete Windows installers with bundled Python",
+            "Verify real Windows installed and portable upgrades from published v1.8.17"
+          ],
+          "successfulSteps": 40,
+          "conditionalSkippedSteps": 5
+        },
+        {
+          "name": "mac-intel",
+          "status": "completed",
+          "conclusion": "success",
+          "requiredSuccessfulGates": [
+            "Verify packaged source, native runtime, installers, and checksums",
+            "Exercise real Electron main process, bridge, and both download engines",
+            "Verify payment waiting, focus recovery and refreshed account permissions",
+            "Verify native credential encryption across two app processes",
+            "Build complete Mac installers with ad hoc code signatures",
+            "Verify native Mac replacement and rollback in temporary signed apps"
+          ],
+          "successfulSteps": 41,
+          "conditionalSkippedSteps": 4
+        },
+        {
+          "name": "Publish verified installers",
+          "status": "completed",
+          "conclusion": "success",
+          "requiredSuccessfulGates": [],
+          "successfulSteps": 8,
+          "conditionalSkippedSteps": 0
+        }
+      ],
+      "installReplacementAndRelaunchVerifiedInIsolatedCIRunners": true,
+      "usersCurrentInstallationChanged": false
+    },
+    "installerPublication": {
+      "completed": true,
+      "assetCount": 11,
+      "publicInstallerProbes": 9,
+      "sourceSha": "482e1a91c625d2f751bd242ff687da6d3f42e330",
+      "remoteDigestsVerified": true,
+      "compatibilityAliasesVerified": true,
+      "publicManifestsVerified": true,
+      "anonymousUpdaterVisible": true,
+      "legacyUpdaterVersion": "1.8.13",
+      "previousUpdaterVersions": [
+        "2.0.25"
+      ]
+    },
+    "websiteDeployment": {
+      "completed": true,
+      "sourceSha": "482e1a91c625d2f751bd242ff687da6d3f42e330",
+      "workerVersion": "ade1e861-258c-440c-8aab-e34fdb0294c0",
+      "pagesDeploymentId": "812b2461-2092-49e5-9570-ae5498aebf1f",
+      "pagesCommitDirty": true,
+      "pagesWorkingTreeEvidence": {
+        "taggedProductConfigurationMatchesReleaseTag": true,
+        "checkedTaggedPaths": 583,
+        "checkedTaggedPathInventorySha256": "501e4aa2a85027d3e50bba5514fb702f3231d6efa2d826d19b98c3103aaa1856",
+        "untrackedEvidenceFilesObservedAtAudit": [
+          "docs/releases/v2.0.26-cloudflare-production-verification.json",
+          "docs/releases/v2.0.26-local-ui-verification.json",
+          "docs/releases/v2.0.26-pages-production-verification.json",
+          "docs/releases/v2.0.26-payment-production-verification.json",
+          "docs/releases/v2.0.26-publication-verification.json",
+          "docs/releases/v2.0.26-renderer-production-verification.json",
+          "docs/releases/v2.0.26-validation/payment-pending-desktop.png",
+          "docs/releases/v2.0.26-validation/payment-pending-mobile-375.png",
+          "docs/releases/v2.0.26-web-production-verification.json"
+        ],
+        "deployedStaticHashesVerifiedSeparately": true
+      },
+      "pagesDirtyMetadataExplanation": "The deployment operator reported untracked local/public verification JSON and PNG evidence. The audit independently compares all tagged product/configuration files with v2.0.26 and verifies actual deployed static hashes; Pages commit_dirty is preserved as reported, while native CI build evidence separately requires sourceDirty=false.",
+      "mainAssetHashes": 112,
+      "pagesAssetHashes": 116
+    },
+    "productionReadOnlyVerification": {
+      "completed": true,
+      "paymentChecks": {
+        "passed": 18,
+        "total": 18
+      },
+      "cloudflareChecks": {
+        "passed": 58,
+        "total": 58
+      },
+      "rendererChecks": 10,
+      "rendererScreenshotsCaptured": 8,
+      "rendererScreenshotsReviewed": 8,
+      "rendererVisualInspection": {
+        "result": "PASS",
+        "reviewedScreenshots": [
+          "01-membership-desktop-hero.png",
+          "02-membership-desktop-prices.png",
+          "03-membership-mobile-prices.png",
+          "04-membership-mobile-hero.png",
+          "05-signed-out-dialog-desktop.png",
+          "06-signed-out-dialog-mobile.png",
+          "07-payment-return-mobile.png",
+          "08-login-guidance-mobile.png"
+        ],
+        "horizontalOverflowObserved": false,
+        "priceMismatchObserved": false,
+        "findings": [
+          "Desktop and 375px membership pages render without horizontal overflow; the catalog prices and durations match the visible cards.",
+          "Signed-out desktop/mobile dialogs show disabled checkout and quote controls, manual plan cards and login guidance without overlap.",
+          "The unsigned payment return remains signed out; the login guidance focuses the visible account form without submitting it."
+        ]
+      },
+      "entrances": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "version": "2.0.26",
+          "deploymentId": "ade1e861-258c-440c-8aab-e34fdb0294c0",
+          "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+          "enabled": true,
+          "acceptingPayments": true,
+          "assets": [
+            {
+              "path": "account-ui.js",
+              "sha256": "2e9e19dced3732ea4e6a539b4a2d42f9a4917d22fd960eee3b07385d55ae1540",
+              "matchesBuild": true
+            },
+            {
+              "path": "membership.js",
+              "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4",
+              "matchesBuild": true
+            },
+            {
+              "path": "lib/payment-recovery.js",
+              "sha256": "f01d0344915f06addd4533bf1dfd5970024addf1f5fd4d239b1d8fffc549beb0",
+              "matchesBuild": true
+            },
+            {
+              "path": "download.html",
+              "sha256": "a1020c69f411c246efbf5efe5da101a986b6492f80b3a6580c889837307b5123",
+              "matchesBuild": true
+            },
+            {
+              "path": "changelog.html",
+              "sha256": "b53994b6c0ea669fe3df3d0a00fe3bfe818a3f7faf54c4921b549a75da373cee",
+              "matchesBuild": true
+            }
+          ],
+          "accountWrites": false,
+          "network": "direct HTTPS"
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "version": "2.0.26",
+          "deploymentId": "ade1e861-258c-440c-8aab-e34fdb0294c0",
+          "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+          "enabled": true,
+          "acceptingPayments": true,
+          "assets": [
+            {
+              "path": "account-ui.js",
+              "sha256": "2e9e19dced3732ea4e6a539b4a2d42f9a4917d22fd960eee3b07385d55ae1540",
+              "matchesBuild": true
+            },
+            {
+              "path": "membership.js",
+              "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4",
+              "matchesBuild": true
+            },
+            {
+              "path": "lib/payment-recovery.js",
+              "sha256": "f01d0344915f06addd4533bf1dfd5970024addf1f5fd4d239b1d8fffc549beb0",
+              "matchesBuild": true
+            },
+            {
+              "path": "download.html",
+              "sha256": "a1020c69f411c246efbf5efe5da101a986b6492f80b3a6580c889837307b5123",
+              "matchesBuild": true
+            },
+            {
+              "path": "changelog.html",
+              "sha256": "b53994b6c0ea669fe3df3d0a00fe3bfe818a3f7faf54c4921b549a75da373cee",
+              "matchesBuild": true
+            }
+          ],
+          "accountWrites": false,
+          "network": "direct HTTPS"
+        },
+        {
+          "origin": "https://brclio-xhs-downloader.brclio-xhs.workers.dev",
+          "version": "2.0.26",
+          "deploymentId": "ade1e861-258c-440c-8aab-e34fdb0294c0",
+          "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+          "enabled": true,
+          "acceptingPayments": true,
+          "assets": [
+            {
+              "path": "account-ui.js",
+              "sha256": "2e9e19dced3732ea4e6a539b4a2d42f9a4917d22fd960eee3b07385d55ae1540",
+              "matchesBuild": true
+            },
+            {
+              "path": "membership.js",
+              "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4",
+              "matchesBuild": true
+            },
+            {
+              "path": "lib/payment-recovery.js",
+              "sha256": "f01d0344915f06addd4533bf1dfd5970024addf1f5fd4d239b1d8fffc549beb0",
+              "matchesBuild": true
+            },
+            {
+              "path": "download.html",
+              "sha256": "a1020c69f411c246efbf5efe5da101a986b6492f80b3a6580c889837307b5123",
+              "matchesBuild": true
+            },
+            {
+              "path": "changelog.html",
+              "sha256": "b53994b6c0ea669fe3df3d0a00fe3bfe818a3f7faf54c4921b549a75da373cee",
+              "matchesBuild": true
+            }
+          ],
+          "accountWrites": false,
+          "network": "configured proxy with normal TLS verification"
+        },
+        {
+          "origin": "https://812b2461.brclio-xhs-pages.pages.dev",
+          "version": "2.0.26",
+          "deploymentId": "ade1e861-258c-440c-8aab-e34fdb0294c0",
+          "catalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+          "enabled": true,
+          "acceptingPayments": true,
+          "assets": [
+            {
+              "path": "account-ui.js",
+              "sha256": "2e9e19dced3732ea4e6a539b4a2d42f9a4917d22fd960eee3b07385d55ae1540",
+              "matchesBuild": true
+            },
+            {
+              "path": "membership.js",
+              "sha256": "eb77e694fac6fdcb364fa1ba7e482903d57bc867ed6f05a95254b48c955516a4",
+              "matchesBuild": true
+            },
+            {
+              "path": "lib/payment-recovery.js",
+              "sha256": "f01d0344915f06addd4533bf1dfd5970024addf1f5fd4d239b1d8fffc549beb0",
+              "matchesBuild": true
+            },
+            {
+              "path": "download.html",
+              "sha256": "a1020c69f411c246efbf5efe5da101a986b6492f80b3a6580c889837307b5123",
+              "matchesBuild": true
+            },
+            {
+              "path": "changelog.html",
+              "sha256": "b53994b6c0ea669fe3df3d0a00fe3bfe818a3f7faf54c4921b549a75da373cee",
+              "matchesBuild": true
+            }
+          ],
+          "accountWrites": false,
+          "network": "direct HTTPS"
+        }
+      ],
+      "authenticatedPurchaseVerified": false,
+      "realPaymentVerified": false,
+      "productionEntitlementGrantVerified": false
+    }
+  },
+  "requirements": {
+    "continueOriginalUnpaidOrder": "Owner-authenticated resume reuses the persisted business order and obtains checkout without creating a second sale or storing its token.",
+    "explicitReorder": "Fresh PENDING status and successful local-reference removal restore current plan selection; a separate explicit purchase creates the new order.",
+    "oldOrderBoundary": "Reorder does not close the old payment order. The UI warns against paying both; a later valid old-order payment remains fulfillable using its original snapshot and webhook deduplication.",
+    "paidAndUncertainStates": "PAID/confirmed observations cannot regress; pending fulfillment, network failures and storage failures retain recovery. Only verified durable webhook fulfillment grants membership.",
+    "lateResponseAndAccountIsolation": "Endpoint/account/session and operation revisions protect replacement orders and prevent late checkout exposure after account changes or local clear.",
+    "oldClientBoundary": "Mac/Windows v2.0.25 and earlier require the v2.0.26 installer. Web return does not update or guarantee reopening an installed client. Android APK remains v1.0.15."
+  },
+  "evidenceFiles": [
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/before.json",
+      "sha256": "40d02371edf55eea1e82ad598f8c8d77020c1e4e0acc172362d88a63b5a0158d",
+      "bytes": 10731
+    },
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/after.json",
+      "sha256": "03ab2ddfe2ba855e2f9f68d736ce6ffd4ca8e4b5d148af2c8804bf2ed6142bbb",
+      "bytes": 10811
+    },
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/android-before.json",
+      "sha256": "8828c5563188e2dd86ef557776d396481c0763dfbfd8f9cd3f22db69e9899389",
+      "bytes": 12251
+    },
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/android-after.json",
+      "sha256": "8828c5563188e2dd86ef557776d396481c0763dfbfd8f9cd3f22db69e9899389",
+      "bytes": 12251
+    },
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/desktop-previous-before.json",
+      "sha256": "b75db314f74ecd6e89c5408f781a81384bf64f9889c8f8218fd055e1b1ab49df",
+      "bytes": 26714
+    },
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/desktop-previous-after.json",
+      "sha256": "b75db314f74ecd6e89c5408f781a81384bf64f9889c8f8218fd055e1b1ab49df",
+      "bytes": 26714
+    },
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/ci-gates.json",
+      "sha256": "9728fa417b6e86288788766b4ffd5328960a28c16493e68e02711e7db81fbd18",
+      "bytes": 28927
+    },
+    {
+      "path": "docs/releases/v2.0.26-publication-verification.json",
+      "sha256": "b93b21a91199393b1cb9292ac23ead2436e458f03fb2d1efec22cb48a44c136c",
+      "bytes": 4788
+    },
+    {
+      "path": "docs/releases/v2.0.26-payment-production-verification.json",
+      "sha256": "eb78e21c85249c24493d48def5334ec850bb134e986462f3d0826da681412c1f",
+      "bytes": 3719
+    },
+    {
+      "path": "docs/releases/v2.0.26-cloudflare-production-verification.json",
+      "sha256": "a4d0db8589244edef7bb6fb25330ac9bd41fc21d5cc465e881c71b1c18736f08",
+      "bytes": 7016
+    },
+    {
+      "path": "docs/releases/v2.0.26-web-production-verification.json",
+      "sha256": "01f61568a2063ac7b6c9376547c4297f6710e324851928540a4be3b767aa2f31",
+      "bytes": 31186
+    },
+    {
+      "path": "docs/releases/v2.0.26-pages-production-verification.json",
+      "sha256": "3f421fdecbc5cf5cfcc637c1b55d436eacbf2f0a6ac1b0dae984fb885fbd2a12",
+      "bytes": 31612
+    },
+    {
+      "path": "docs/releases/v2.0.26-renderer-production-verification.json",
+      "sha256": "366730670d3793dbc3d7553191b9036c262834f80af440cf92bc13846816b501",
+      "bytes": 11861
+    },
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/live-entrances.json",
+      "sha256": "3c8b7706a24af53c96ef5f995c25cc823f7e12bce26663aaa161c4d1a0c88613",
+      "bytes": 4876
+    },
+    {
+      "path": ".brclio-pay-task-release-v2.0.26-20261019/preflight.json",
+      "sha256": "f22b1ecbce7992c6a468fdc5fc1f9f0325c7531deb6090b0f636b74986e55470",
+      "bytes": 1498
+    },
+    {
+      "path": "docs/releases/v2.0.26-local-ui-verification.json",
+      "sha256": "0c0f8485094a4908a7cc3d9db7280c4e26afc6486fe4b53cbcac4623f20cf1ff",
+      "bytes": 16451
+    }
+  ],
+  "githubWrites": {
+    "sourceCommit": "482e1a91c625d2f751bd242ff687da6d3f42e330",
+    "sourceTag": "v2.0.26",
+    "publishedReleaseAssets": 11,
+    "previousReleaseAssetsModified": false,
+    "androidReleaseAssetsModified": false
+  }
+}
