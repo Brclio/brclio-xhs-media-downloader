@@ -144,6 +144,46 @@ test('development registration never replaces an installed protocol handler; pac
   assert.match(main, /handle\('desktop:open-payment-checkout'/);
 });
 
+test('Windows portable protocol registration uses the verified stable launcher with spaces, never its extracted runtime', () => {
+  const launcher = 'C:\\Users\\Example User\\Downloads\\Brclio XHS Portable.exe';
+  const runtime = 'C:\\Users\\Example User\\AppData\\Local\\Temp\\brclio-extracted\\Brclio XHS.exe';
+  const calls = [], checked = [];
+  const app = { isPackaged: true, setAsDefaultProtocolClient: (...args) => { calls.push(args); return true; } };
+  const options = { platform: 'win32', execPath: runtime, env: { PORTABLE_EXECUTABLE_FILE: launcher,
+    PORTABLE_EXECUTABLE_DIR: 'C:\\Users\\Example User\\Downloads' }, isFile: file => { checked.push(file); return true; } };
+  assert.equal(registerPaymentReturnProtocol(app, options), true);
+  assert.deepEqual(checked, [launcher]);
+  assert.deepEqual(calls, [['brclio-xhs', launcher, []]]);
+  assert.equal(registerPaymentReturnProtocol({ isPackaged: false, setAsDefaultProtocolClient: () => assert.fail('Development cannot register a portable launcher') }, options), false);
+});
+
+test('invalid or absent portable launcher refuses registration without falling back to the temporary runtime', () => {
+  const runtime = 'C:\\Temp\\brclio-extracted\\Brclio XHS.exe';
+  const app = { isPackaged: true, setAsDefaultProtocolClient: () => assert.fail('Invalid portable metadata must never register a handler') };
+  for (const env of [
+    { PORTABLE_EXECUTABLE_DIR: 'C:\\Downloads' }, { PORTABLE_EXECUTABLE_FILE: '' },
+    { PORTABLE_EXECUTABLE_FILE: 'Brclio.exe' }, { PORTABLE_EXECUTABLE_FILE: '\\Downloads\\Brclio.exe' },
+    { PORTABLE_EXECUTABLE_FILE: 'https://example.test/Brclio.exe' },
+    { PORTABLE_EXECUTABLE_FILE: 'C:\\Downloads\\Brclio.exe --argument' },
+    { PORTABLE_EXECUTABLE_FILE: 'C:\\Downloads\\Brclio.exe\n' },
+    { PORTABLE_EXECUTABLE_FILE: 'C:\\Downloads\\"Brclio".exe' },
+    { PORTABLE_EXECUTABLE_FILE: 'C:\\Downloads\\Brclio.cmd' },
+    { PORTABLE_EXECUTABLE_FILE: runtime },
+    { PORTABLE_EXECUTABLE_FILE: 'C:\\Downloads\\Brclio.exe', PORTABLE_EXECUTABLE_DIR: 'C:\\Temp' },
+  ]) assert.equal(registerPaymentReturnProtocol(app, { platform: 'win32', execPath: runtime, env, isFile: () => true }), false);
+  for (const isFile of [() => false, () => { throw Error('not accessible'); }]) {
+    assert.equal(registerPaymentReturnProtocol(app, { platform: 'win32', execPath: runtime,
+      env: { PORTABLE_EXECUTABLE_FILE: 'C:\\Downloads\\Brclio.exe' }, isFile }), false);
+  }
+});
+
+test('normal Windows installation and Mac registration preserve the default executable registration', () => {
+  const calls = [], app = { isPackaged: true, setAsDefaultProtocolClient: (...args) => { calls.push(args); return true; } };
+  assert.equal(registerPaymentReturnProtocol(app, { platform: 'win32', env: {} }), true);
+  assert.equal(registerPaymentReturnProtocol(app, { platform: 'darwin', env: { PORTABLE_EXECUTABLE_FILE: 'unrelated' } }), true);
+  assert.deepEqual(calls, [['brclio-xhs'], ['brclio-xhs']]);
+});
+
 test('preload exposes narrow native checkout and detachable hint listeners without leaking the IPC event', async () => {
   const source = await readFile(new URL('../desktop/preload.cjs', import.meta.url), 'utf8');
   const calls = [], listeners = new Set(); let bridge;

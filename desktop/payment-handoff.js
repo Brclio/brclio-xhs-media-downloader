@@ -1,4 +1,7 @@
 // Native payment navigation carries only an order hint. It never confirms payment.
+import { statSync } from 'node:fs';
+import { win32 } from 'node:path';
+
 export const PAYMENT_RETURN_SCHEME = 'brclio-xhs';
 export const PAYMENT_RETURN_EVENT = 'desktop:payment-return';
 const orderIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
@@ -119,9 +122,27 @@ export function createPaymentReturnHandoff({ getWindow, now = Date.now }) {
   };
 }
 
-export function registerPaymentReturnProtocol(app) {
+export function registerPaymentReturnProtocol(app, {
+  platform = process.platform, env = process.env, execPath = process.execPath,
+  isFile = file => statSync(file).isFile(),
+} = {}) {
   // Development/test Electron must not replace the installed app's OS handler.
   if (!app.isPackaged) return false;
-  try { return app.setAsDefaultProtocolClient(PAYMENT_RETURN_SCHEME); }
+  try {
+    if (platform === 'win32' && ('PORTABLE_EXECUTABLE_FILE' in env || 'PORTABLE_EXECUTABLE_DIR' in env)) {
+      // electron-builder removes the extracted runtime after the launcher exits.
+      // Its stable outer EXE forwards protocol arguments into the next runtime.
+      const launcher = env.PORTABLE_EXECUTABLE_FILE, directory = env.PORTABLE_EXECUTABLE_DIR;
+      if (typeof launcher !== 'string' || launcher.length > 32767
+        || !/^(?:[a-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])/i.test(launcher)
+        || /[<>"|?*\u0000-\u001f\u007f]/u.test(launcher) || win32.extname(launcher).toLowerCase() !== '.exe'
+        || win32.normalize(launcher).toLowerCase() === win32.normalize(execPath).toLowerCase()
+        || (directory !== undefined && (typeof directory !== 'string'
+          || win32.dirname(win32.normalize(launcher)).toLowerCase() !== win32.normalize(directory).toLowerCase()))
+        || !isFile(launcher)) return false;
+      return app.setAsDefaultProtocolClient(PAYMENT_RETURN_SCHEME, launcher, []);
+    }
+    return app.setAsDefaultProtocolClient(PAYMENT_RETURN_SCHEME);
+  }
   catch { return false; }
 }

@@ -526,6 +526,8 @@ export async function initializeAccountUI() {
   });
   element('membership-close').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
+    // A queued close from the previous opening must not cover a new checkout.
+    if (dialog.open) return;
     const parent = document.getElementById('browser-account-dialog');
     if (returnToAccountDialog && parent && !parent.open && !pageInactive) parent.showModal();
     returnToAccountDialog = false;
@@ -538,14 +540,15 @@ export async function initializeAccountUI() {
     catch { if (checkoutMemory === saved) { browserOpenError = '系统未允许复制。请设置默认浏览器后重试打开原收银台。'; renderPurchase(); } }
   });
   dialog.addEventListener('change', renderPurchase);
-  element('membership-go-login').addEventListener('click', () => {
+  function returnToAccount(target) {
+    returnToAccountDialog = false;
     dialog.close();
-    (state?.authenticated ? element('account-refresh') : element('account-email')).focus();
-  });
-  element('membership-go-redeem').addEventListener('click', () => {
-    dialog.close();
-    (state?.authenticated ? element('account-activation') : element('account-email')).focus();
-  });
+    const parent = document.getElementById('browser-account-dialog');
+    if (!isDesktop && parent && !parent.open && !pageInactive) parent.showModal();
+    target.focus();
+  }
+  element('membership-go-login').addEventListener('click', () => returnToAccount(state?.authenticated ? element('account-refresh') : element('account-email')));
+  element('membership-go-redeem').addEventListener('click', () => returnToAccount(state?.authenticated ? element('account-activation') : element('account-email')));
   element('membership-online-refresh').addEventListener('click', () => {
     if (['restoring', 'restore-retry'].includes(recovery.snapshot().phase)) void recovery.focus();
     void loadOnlineCatalog();

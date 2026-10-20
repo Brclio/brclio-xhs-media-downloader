@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.28",
+  "status": "superseded-unpublished",
+  "sourceCommit": "d3f53f6d0cb7b9b0a72aaaf5bbe0ac1d1d92ddba",
+  "tagImmutable": true,
+  "workflowRunId": 39463922497,
+  "workflowRunUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39463922497",
+  "workflowConclusion": "cancelled",
+  "reason": "旧 membership renderer 断言需更新，并补充浏览器父层对话框焦点修正。",
+  "published": false,
+  "productionChanged": false,
+  "replacementVersion": "2.0.29"
+}

@@ -145,7 +145,8 @@ app.whenReady().then(async () => {
   await evaluate(`document.querySelector('input[name="membership-online-method"][value="wechat"]').click()`);
   await wait(`!document.getElementById('membership-online-method').disabled`);
   assert.equal((await snapshot()).provider, 'wechat');
-  assert.match((await snapshot()).help, /Native.*另一台设备/);
+  assert.match((await snapshot()).help, /在浏览器显示二维码.*手机微信扫一扫/);
+  assert.doesNotMatch((await snapshot()).help, /长按|H5|App/);
   assert.equal((await snapshot()).noManual, true);
   assert.deepEqual(await evaluate(`window.fixtureCalls.filter(([action])=>['payment-create','order-create','redeem'].includes(action))`), [], 'Browsing online providers and plans cannot create a purchase or grant rights');
   await setState({ ...signedIn, account: { ...signedIn.account, user: { id: 'another-id', email: 'another@example.test' } } });
@@ -223,11 +224,84 @@ app.whenReady().then(async () => {
   assert.deepEqual(await evaluate(`window.fixtureCalls.filter(([action])=>action==='redeem')`), [['redeem', 'INVALID'], ['redeem', 'Brclio-TEST-ONLY']]);
   await capture('membership-redeemed');
 
-  // Browser login now shares the account UI, inside its closed account dialog.
-  await evaluate(`document.getElementById('software-account').remove(); delete window.xhsDesktop; import('/account-ui.js').then(module => module.initializeAccountUI())`);
+  // Browser login uses the real browser bridge and native parent/payment modals.
+  // All responses are local; no authentication or business write is performed.
+  await evaluate(`document.getElementById('membership-dialog').remove();document.getElementById('software-account').remove();delete window.xhsDesktop;document.body.classList.remove('is-desktop');
+    window.fixtureBrowserAccount=null;window.fixtureBrowserCalls=[];
+    window.fetch=async (_url,options)=>{const {action,input}=JSON.parse(options.body);window.fixtureBrowserCalls.push({action,input});
+      if(action==='me')return new Response(JSON.stringify(window.fixtureBrowserAccount?{ok:true,account:window.fixtureBrowserAccount}:{ok:false,error:{code:'ACCOUNT_REQUIRED',message:'请先登录。'}}),{status:window.fixtureBrowserAccount?200:401});
+      if(action==='google-config')return new Response(JSON.stringify({ok:true,enabled:false}));
+      if(action==='reviews-public')return new Response(JSON.stringify({ok:true,reviews:[],summary:{count:0,averageRating:null},page:1,total:0,totalPages:1}));
+      if(action==='review-mine')return new Response(JSON.stringify({ok:true,review:null}));
+      if(action==='orders-mine')return new Response(JSON.stringify({ok:true,orders:[],page:1,total:0,totalPages:1}));
+      if(action==='payment-catalog')return new Response(JSON.stringify({ok:true,catalog:{enabled:true,mode:'live',currency:'CNY',version:'browser-membership-focus',plans:[{id:'monthly',name:'月付',days:30,priceCents:1990,amount:'19.90'}]}}));
+      throw new Error('Unexpected browser membership fixture operation: '+action);
+    };import('/account-ui.js').then(module=>module.initializeAccountUI())`);
   assert.equal(await evaluate(`Boolean(document.querySelector('#browser-account-mount #software-account'))`), true);
   assert.equal(await evaluate(`document.getElementById('browser-account-dialog').open`), false);
+  await click('browser-account-open');
+  await wait(`document.getElementById('browser-account-dialog').open`);
+  await click('account-open-membership');
+  await settle();
+  assert.equal(await evaluate(`document.getElementById('membership-dialog').open`), true);
+  assert.equal(await evaluate(`document.getElementById('browser-account-dialog').open`), false, 'Only the payment modal remains open while purchasing');
+  await click('membership-go-login');
+  await settle();
+  const browserLoginFocus = await evaluate(`({parentOpen:document.getElementById('browser-account-dialog').open,purchaseOpen:document.getElementById('membership-dialog').open,focus:document.activeElement.id,focusVisible:Boolean(document.activeElement.getClientRects().length),openDialogs:Array.from(document.querySelectorAll('dialog[open]')).map(item=>item.id)})`);
+  assert.equal(browserLoginFocus.parentOpen, true, 'Returning to login restores the browser account modal');
+  assert.equal(browserLoginFocus.purchaseOpen, false);
+  assert.equal(browserLoginFocus.focusVisible, true);
+  assert.equal(browserLoginFocus.focus, 'account-email', `Browser login must focus its visible email field after parent restoration: ${JSON.stringify(browserLoginFocus)}`);
+  assert.deepEqual(browserLoginFocus.openDialogs, ['browser-account-dialog']);
+  await capture('browser-login-focus-restored');
+
+  await evaluate(`window.fixtureBrowserAccount=${JSON.stringify(signedIn.account)};import('/lib/browser-account.js').then(module=>module.getAccountBridge().refreshAccount())`);
+  await wait(`document.getElementById('account-login-form').hidden&&!document.getElementById('account-refresh').disabled`);
+  const browserModalState = () => evaluate(`({parentOpen:document.getElementById('browser-account-dialog').open,purchaseOpen:document.getElementById('membership-dialog').open,focus:document.activeElement.id,focusVisible:Boolean(document.activeElement.getClientRects().length),modals:Array.from(document.querySelectorAll('dialog:modal')).map(item=>item.id)})`);
+  const assertBrowserTarget = async (target, reason) => {
+    await settle();
+    const state = await browserModalState();
+    assert.equal(state.parentOpen, true, `${reason}: account parent is restored`);
+    assert.equal(state.purchaseOpen, false, `${reason}: purchase modal closes`);
+    assert.deepEqual(state.modals, ['browser-account-dialog'], `${reason}: one active modal`);
+    assert.equal(state.focusVisible, true, `${reason}: focused field is visible`);
+    assert.equal(state.focus, target, `${reason}: ${JSON.stringify(state)}`);
+  };
+  await click('account-open-membership');
+  await click('membership-go-login');
+  await assertBrowserTarget('account-refresh', 'Authenticated login guidance');
+  await click('account-open-membership');
+  await click('membership-go-redeem');
+  await assertBrowserTarget('account-activation', 'Existing activation code redemption');
+  await capture('browser-redeem-focus-restored');
+
+  await click('account-open-membership');
+  await click('membership-close');
+  await settle();
+  assert.equal((await browserModalState()).parentOpen, true, 'Normal close restores the parent account modal');
+  assert.deepEqual((await browserModalState()).modals, ['browser-account-dialog']);
+  await click('account-open-membership');
+  win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+  win.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+  await settle();
+  assert.equal((await browserModalState()).parentOpen, true, 'Escape restores the parent account modal');
+  assert.deepEqual((await browserModalState()).modals, ['browser-account-dialog']);
+
+  await click('account-open-membership');
+  // Both actions intentionally share one task so the earlier queued close
+  // event arrives only after the purchase modal has been opened again.
+  await evaluate(`document.getElementById('membership-close').click();document.getElementById('account-open-membership').click()`);
+  await settle();
+  const rapidlyReopened = await browserModalState();
+  assert.equal(rapidlyReopened.purchaseOpen, true);
+  assert.equal(rapidlyReopened.parentOpen, false, `An old close event cannot reopen the parent over a new purchase: ${JSON.stringify(rapidlyReopened)}`);
+  assert.deepEqual(rapidlyReopened.modals, ['membership-dialog']);
+  await capture('browser-rapid-purchase-reopen');
+  await click('membership-close');
+  await settle();
+  assert.deepEqual((await browserModalState()).modals, ['browser-account-dialog'], 'The new purchase still restores its parent when closed later');
+  assert.deepEqual(await evaluate(`window.fixtureBrowserCalls.filter(item=>['payment-create','order-create','redeem','send-code','verify-code'].includes(item.action))`), [], 'Browser modal navigation never creates a purchase, redeems a code or sends mail');
   assert.deepEqual(rendererErrors, []);
-  console.log(JSON.stringify({ ok: true, checks: ['logged-out guidance', 'online plan prices and durations', 'Alipay default and Native Wechat selection', 'manual QR plans email-copy and payment-report absent', 'no implicit purchase requests', 'native focus trap and Escape', 'offline/storage errors', 'permanent member guard', 'account switch', 'mobile layout', 'existing activation redeem failure/success', 'browser account mount'], screenshots }, null, 2));
+  console.log(JSON.stringify({ ok: true, checks: ['logged-out guidance', 'online plan prices and durations', 'Alipay default and Wechat QR guidance', 'manual QR plans email-copy and payment-report absent', 'no implicit purchase requests', 'native focus trap and Escape', 'offline/storage errors', 'permanent member guard', 'account switch', 'mobile layout', 'existing activation redeem failure/success', 'browser account mount', 'browser signed-out login restores visible email focus', 'browser authenticated login restores refresh focus', 'browser activation navigation restores visible code focus', 'browser normal close and Escape restore only the parent modal', 'queued old close cannot reopen the parent over a newer purchase'], screenshots }, null, 2));
   await finish(0);
 }).catch(error => finish(1, error));
