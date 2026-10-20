@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/api/*", "/admin*", "/__internal/*", "/assets/membership/alipay.png", "/assets/membership/wechat-pay.png"],
+  "include": ["/api/*", "/admin*", "/__internal/*", "/assets/membership/alipay.png", "/assets/membership/wechat-pay.png", "/payment-return", "/payment-return.html"],
   "exclude": []
 }

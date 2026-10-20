@@ -12,6 +12,14 @@ export default {
       // host/origin, trusted IP, cookies, redirects and binary ranges must survive.
       return env.APP.fetch(request);
     }
+    if (pathname === '/payment-return' || pathname === '/payment-return.html') {
+      const response = await env.ASSETS.fetch(request), headers = new Headers(response.headers);
+      headers.set('Cache-Control', 'no-store');
+      headers.set('X-Content-Type-Options', 'nosniff');
+      headers.set('X-Frame-Options', 'DENY');
+      headers.set('Referrer-Policy', 'no-referrer');
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    }
     return env.ASSETS.fetch(request);
   },
 };

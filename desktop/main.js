@@ -22,6 +22,7 @@ import { MacUpdateHistory } from './mac-update-history.js';
 import { NativeImageClipboard } from './image-clipboard.js';
 import { writeImageFiles, writeSingleImage } from './native-clipboard.js';
 import { NativeVideoDownload } from './native-video-download.js';
+import { createPaymentCheckoutOpener, createPaymentReturnHandoff, registerPaymentReturnProtocol } from './payment-handoff.js';
 
 const APP_NAME = 'Brclio 小红书下载器';
 // Keep package.productName / app.name stable: Electron uses it for the data
@@ -52,6 +53,13 @@ let quitting = false;
 let shutdownComplete = false;
 const installConfirmation = new InstallConfirmation();
 const startupReadyAbort = new AbortController();
+const paymentReturnHandoff = createPaymentReturnHandoff({ getWindow: () => mainWindow });
+const openPaymentCheckout = createPaymentCheckoutOpener({
+  openExternal: (url, options) => shell.openExternal(url, options),
+  getAccountState: () => accountClient?.snapshot(),
+  getPendingPayment: () => accountClient?.getPendingPayment(),
+  getSessionGeneration: () => accountClient?._sessionGeneration,
+});
 const selectedDirectories = new Set();
 const diagnostic = (event, details, level = 'info') => { void diagnostics?.record(event, details, level); };
 const appInfo = () => ({ name: APP_NAME, version: app.getVersion(), platform: process.platform, arch: process.arch,
@@ -166,6 +174,10 @@ function registerIpc() {
   handle('desktop:commerce-request', accountAction((action, input = {}) => accountClient.commerceRequest(action, input)));
   handle('desktop:pending-payment', accountAction(() => accountClient.getPendingPayment()));
   handle('desktop:clear-pending-payment', accountAction(input => accountClient.clearPendingPayment(input)));
+  handle('desktop:open-payment-checkout', input => openPaymentCheckout(input));
+  handle('desktop:payment-return-ready', () => { paymentReturnHandoff.rendererReady(); return { ok: true }; });
+  handle('desktop:payment-return-unsubscribe', () => { paymentReturnHandoff.rendererLoading(); return { ok: true }; });
+  handle('desktop:payment-return-ack', input => ({ ok: true, received: paymentReturnHandoff.acknowledge(input?.orderId) }));
   handle('desktop:avatar-select', accountAction(input => accountClient.selectAccountAvatar(input)));
   handle('desktop:avatar-upload', accountAction(input => accountClient.uploadAccountAvatar(input)));
   handle('desktop:avatar-thumbnail', accountAction(input => accountClient.getAccountAvatarThumbnail(input)));
@@ -312,11 +324,12 @@ async function createWindow() {
   });
   mainWindow.webContents.on('will-attach-webview', (event) => event.preventDefault());
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    paymentReturnHandoff.rendererLoading();
     installConfirmation.cancel();
     diagnostic('renderer.process_gone', details, 'error');
   });
   mainWindow.webContents.on('did-start-navigation', (_event, _url, isInPlace, isMainFrame) => {
-    if (isMainFrame && !isInPlace) installConfirmation.cancel();
+    if (isMainFrame && !isInPlace) { installConfirmation.cancel(); paymentReturnHandoff.rendererLoading(); }
   });
   mainWindow.webContents.on('unresponsive', () => diagnostic('renderer.unresponsive', {}, 'warn'));
   mainWindow.webContents.on('did-fail-load', (_event, code, description, url, isMainFrame) => diagnostic('renderer.load_failed', { code, description, url, isMainFrame }, 'error'));
@@ -335,6 +348,7 @@ async function boot() {
   try { await diagnostics.initialize(); } catch (error) { diagnostics.lastError = error.code || 'LOG_INITIALIZE_FAILED'; }
   diagnostic('app.started', appInfo());
   app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: app.getVersion() });
+  registerPaymentReturnProtocol(app);
   if (process.platform === 'darwin') {
     Menu.setApplicationMenu(Menu.buildFromTemplate([
       { label: APP_NAME, submenu: [
@@ -545,7 +559,13 @@ app.on('child-process-gone', (_event, details) => diagnostic('app.child_process_
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on('second-instance', () => {
+  // Register before app.whenReady: macOS can deliver a cold-launch URL earlier.
+  app.on('open-url', (event, url) => {
+    if (paymentReturnHandoff.receiveUrl(url)) event.preventDefault();
+  });
+  paymentReturnHandoff.receiveArguments(process.argv);
+  app.on('second-instance', (_event, commandLine) => {
+    paymentReturnHandoff.receiveArguments(commandLine);
     if (mainWindow?.isMinimized()) mainWindow.restore();
     mainWindow?.focus();
   });
@@ -554,6 +574,7 @@ else {
     event.preventDefault();
     if (quitting) return;
     quitting = true;
+    paymentReturnHandoff.dispose();
     startupReadyAbort.abort();
     accountClient?.cancelGoogleLogin();
     videoDownload?.cancelAll();

@@ -47,7 +47,7 @@ test('gateway leaves binary ranges, admin redirects and security headers untouch
 
 test('route manifest guards internal and retired QR paths alongside API/admin and static fallback never calls APP', async () => {
   const routes = JSON.parse(await readFile(new URL('../cloudflare/pages/_routes.json', import.meta.url), 'utf8'));
-  assert.deepEqual(routes, { version: 1, include: ['/api/*', '/admin*', '/__internal/*', '/assets/membership/alipay.png', '/assets/membership/wechat-pay.png'], exclude: [] });
+  assert.deepEqual(routes, { version: 1, include: ['/api/*', '/admin*', '/__internal/*', '/assets/membership/alipay.png', '/assets/membership/wechat-pay.png', '/payment-return', '/payment-return.html'], exclude: [] });
   for (const urlPath of ['/', '/app.js', '/style.css', '/changelog', '/download', '/download.html', '/download.css', '/download.js', '/product', '/product.html', '/product.css', '/product.js', '/feedback', '/feedback.html', '/feedback.css', '/feedback.js', '/assets/downloads/hero.webp', '/assets/example.png', '/assets/membership/wechat-contact.png']) {
     const request = new Request(`https://xhs.example.test${urlPath}`);
     const result = new Response('static');
@@ -55,6 +55,16 @@ test('route manifest guards internal and retired QR paths alongside API/admin an
       APP: { fetch() { assert.fail('Static fallback called APP'); } },
       ASSETS: { fetch(req) { assert.equal(req, request); return result; } },
     }), result);
+  }
+});
+
+test('Pages serves desktop payment returns without APP or browser authentication and prevents cached or framed returns', async () => {
+  for (const path of ['/payment-return?payment_order=fixture&client=desktop', '/payment-return.html']) {
+    const response = await gateway.fetch(new Request(`https://xhs.example.test${path}`), { APP: { fetch() { assert.fail('Payment return must not request account authentication'); } }, ASSETS: { fetch: () => new Response('return page', { headers: { 'Cache-Control': 'public, max-age=60', 'Content-Type': 'text/html' } }) } });
+    assert.equal(response.status, 200); assert.equal(await response.text(), 'return page');
+    assert.equal(response.headers.get('cache-control'), 'no-store'); assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+    assert.equal(response.headers.get('x-frame-options'), 'DENY'); assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(response.headers.get('set-cookie'), null);
   }
 });
 

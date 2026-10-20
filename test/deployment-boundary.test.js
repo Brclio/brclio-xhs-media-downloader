@@ -93,6 +93,9 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   for (const name of ['feedback.html', 'feedback.css', 'feedback.js']) {
     assert.ok(files.includes(name), `public feedback board asset is included: ${name}`);
   }
+  for (const name of ['payment-return.html', 'payment-return.css', 'payment-return.js']) {
+    assert.ok(files.includes(name), `the session-free desktop payment return is public: ${name}`);
+  }
   assert.ok(!files.some(name => /server|desktop\/|\.env|README|test\//.test(name)));
   assert.ok(!files.some(name => /feedback\/|state\/|diagnostic-sanitize/.test(name)), 'private business files and server privacy logic never become static URLs');
   assert.ok(!files.some(name => /data\/|backups\/|\.sqlite(?:-|$)/.test(name)), 'SQLite databases, WAL and migration snapshots are never public');

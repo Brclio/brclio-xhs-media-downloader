@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+let paymentReturnSubscribers = 0;
 
 contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
   saveVideo: (input) => ipcRenderer.invoke('desktop:save-video', input),
@@ -43,6 +44,22 @@ contextBridge.exposeInMainWorld('xhsDesktop', Object.freeze({
   commerceRequest: (action, input) => ipcRenderer.invoke('desktop:commerce-request', action, input),
   getPendingPayment: () => ipcRenderer.invoke('desktop:pending-payment'),
   clearPendingPayment: input => ipcRenderer.invoke('desktop:clear-pending-payment', input),
+  openPaymentCheckout: input => ipcRenderer.invoke('desktop:open-payment-checkout', input),
+  onPaymentReturn: callback => {
+    if (typeof callback !== 'function') throw new TypeError('callback must be a function');
+    const listener = (_event, hint) => {
+      try { callback({ orderId: hint?.orderId }); }
+      finally { void ipcRenderer.invoke('desktop:payment-return-ack', { orderId: hint?.orderId }).catch(() => {}); }
+    };
+    ipcRenderer.on('desktop:payment-return', listener);
+    if (++paymentReturnSubscribers === 1) void ipcRenderer.invoke('desktop:payment-return-ready').catch(() => {});
+    let active = true;
+    return () => {
+      if (!active) return; active = false;
+      ipcRenderer.removeListener('desktop:payment-return', listener);
+      if (--paymentReturnSubscribers === 0) void ipcRenderer.invoke('desktop:payment-return-unsubscribe').catch(() => {});
+    };
+  },
   selectAccountAvatar: input => ipcRenderer.invoke('desktop:avatar-select', input),
   uploadAccountAvatar: input => ipcRenderer.invoke('desktop:avatar-upload', input),
   getAccountAvatarThumbnail: input => ipcRenderer.invoke('desktop:avatar-thumbnail', input),

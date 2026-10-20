@@ -18,6 +18,7 @@ async function fixture(t, options = {}) {
   await mkdir(path.join(staticRoot, 'admin'));
   await writeFile(path.join(staticRoot, 'index.html'), '<h1>Public website</h1>');
   await writeFile(path.join(staticRoot, 'feedback.html'), '<h1>Feedback</h1>');
+  await writeFile(path.join(staticRoot, 'payment-return.html'), '<h1>Return to desktop</h1>');
   await writeFile(path.join(staticRoot, 'admin/index.html'), '<h1>Admin</h1>');
   await writeFile(path.join(staticRoot, 'assets/sample.svg'), '<svg/>');
   await writeFile(path.join(directory, 'private.svg'), 'PRIVATE ACCOUNT DATA');
@@ -62,6 +63,17 @@ test('standalone serves the public build, clean URLs, HEAD and secured admin pag
   const head = await fetch(server.base, { method: 'HEAD' });
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
   assert.equal((await fetch(server.base, { method: 'POST' })).status, 405);
+});
+
+test('standalone payment returns require no browser account and retain private navigation headers', async t => {
+  const server = await fixture(t);
+  for (const target of ['/payment-return?payment_order=fixture&client=desktop', '/payment-return.html']) {
+    const response = await fetch(server.base + target);
+    assert.equal(response.status, 200); assert.match(await response.text(), /Return to desktop/);
+    assert.equal(response.headers.get('cache-control'), 'no-store'); assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+    assert.equal(response.headers.get('x-frame-options'), 'DENY'); assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(response.headers.get('set-cookie'), null);
+  }
 });
 
 test('standalone refuses private paths, traversal, dotfiles and all symlink components', async t => {

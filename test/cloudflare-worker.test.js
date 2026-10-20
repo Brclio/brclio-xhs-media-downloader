@@ -26,6 +26,17 @@ test('retired manual payment codes return 404 before any static asset fallback',
   }
 });
 
+test('desktop payment returns preserve their static response with private navigation headers and no account request', async () => {
+  for (const path of ['/payment-return?payment_order=fixture&client=desktop', '/payment-return.html']) {
+    const response = await worker.fetch(request(path), { ASSETS: { fetch: () => new Response('return page', { headers: { 'Cache-Control': 'public, max-age=60', 'Content-Type': 'text/html' } }) },
+      ACCOUNT_RUNTIME: { get() { assert.fail('Payment return must not enter account authentication'); } } });
+    assert.equal(response.status, 200); assert.equal(await response.text(), 'return page');
+    assert.equal(response.headers.get('cache-control'), 'no-store'); assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+    assert.equal(response.headers.get('x-frame-options'), 'DENY'); assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(response.headers.get('set-cookie'), null);
+  }
+});
+
 test('real Node routes retain method guards, parsing results and HEAD semantics', async () => {
   for (const [path, method, allow] of [
     ['/api/parse', 'GET', 'POST'], ['/api/image', 'POST', 'GET'],
@@ -219,7 +230,7 @@ test('unknown APIs never fall through to assets; admin pages retain security hea
 
 test('static asset routing sends the private namespace to the Worker before any HTML fallback', async () => {
   const config = JSON.parse(await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
-  assert.deepEqual(config.assets.run_worker_first, ['/api/*', '/admin*', '/__internal/*', '/assets/membership/alipay.png', '/assets/membership/wechat-pay.png']);
+  assert.deepEqual(config.assets.run_worker_first, ['/api/*', '/admin*', '/__internal/*', '/assets/membership/alipay.png', '/assets/membership/wechat-pay.png', '/payment-return', '/payment-return.html']);
   const fail = () => assert.fail('Public internal route reached a private binding or static fallback');
   const env = { ASSETS: { fetch: fail }, ACCOUNT_RUNTIME: { idFromName: fail }, PARSE_RUNTIME: { idFromName: fail } };
   for (const method of ['GET', 'HEAD', 'POST']) for (const pathname of ['/__internal/',

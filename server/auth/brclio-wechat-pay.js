@@ -4,6 +4,7 @@ import { PROTECTED_FEATURES } from '../../lib/membership-policy.js';
 import { fail } from './errors.js';
 import { createBrclioWechatPayClient, verifyBrclioWechatPayEvent } from './brclio-wechat-pay-client.js';
 import { hasWechatTransaction, normalizePaymentReference } from './payment-reference.js';
+import { paymentReturnUrl } from './payment-return-url.js';
 
 const CLIENT_ID = 'p-2bb6d77a673327a2f8d881bac2d4fe26';
 const CENTER = 'https://paywc.bornforthis.cn';
@@ -138,7 +139,7 @@ export function createBrclioWechatPayService({ store, now = Date.now, authentica
     if (!plan || input.amount !== plan.amount || input.catalogVersion !== quote.version) fail('QUOTE_CHANGED', '套餐报价已更新，请刷新并确认当前报价。', 409);
     const order = await store.transaction(current => {
       validateBrclioWechatPayState(current);
-      const { user: owner } = identity(current, request), prior = own(current.operations, key);
+      const { user: owner, session } = identity(current, request), prior = own(current.operations, key);
       if (prior) {
         if (prior.inputHash !== inputHash) fail('REQUEST_ID_REUSED', '该请求 ID 已用于其他操作，请重新发起。', 409);
         const existing = own(current.orders, prior.result?.orderId);
@@ -148,7 +149,7 @@ export function createBrclioWechatPayService({ store, now = Date.now, authentica
       if (owner.membership?.type === 'permanent') fail('ALREADY_PERMANENT', '您已是永久会员，无需购买时长套餐。', 409);
       const id = randomUUID(), created = { id, userId: owner.id, planId: plan.id, planName: plan.name, priceCents: plan.priceCents, amountCents: null, status: 'pending', paymentMethod: SOURCE, source: SOURCE, paidAt: null, createdAt: iso(now()), confirmedAt: null, codeId: null,
         entitlementSnapshot: { type: 'duration', days: plan.days, features: [...new Set([...protectedFeatures, 'watermark-free-video'])] },
-        payment: { centerOrigin: CENTER, clientId: CLIENT_ID, userId: owner.id, merchantOrderId: id, sku: plan.id, quantity: 1, total: plan.priceCents, currency: 'CNY', catalogVersion: quote.version, returnUrl: `${config.returnOrigin}/?payment_order=${encodeURIComponent(id)}`, orderId: null, state: 'creating', status: 'PENDING' } };
+        payment: { centerOrigin: CENTER, clientId: CLIENT_ID, userId: owner.id, merchantOrderId: id, sku: plan.id, quantity: 1, total: plan.priceCents, currency: 'CNY', catalogVersion: quote.version, returnUrl: paymentReturnUrl(config.returnOrigin, id, session.client), orderId: null, state: 'creating', status: 'PENDING' } };
       current.orders[id] = created;
       current.operations[key] = { actorId: owner.id, action: request.action, inputHash, at: iso(now()), result: { orderId: id } };
       return { value: structuredClone(created) };

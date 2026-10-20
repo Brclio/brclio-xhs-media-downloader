@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!-- Brclio Design System app template, adapted for a private order return. -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>返回客户端 · Brclio 小红书下载器</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="stylesheet" href="./payment-return.css">
+  <script type="module" src="./payment-return.js"></script>
+</head>
+<body>
+  <div class="return-shell">
+    <header class="return-header"><a class="brand" href="/" aria-label="Brclio 小红书下载器首页">Brclio<span>小红书下载器</span></a><span class="return-caption">会员订单</span></header>
+    <main class="return-main" aria-labelledby="return-title">
+      <span class="return-mark" aria-hidden="true">↗</span>
+      <p class="return-eyebrow">回到下单的地方</p>
+      <h1 id="return-title">回到客户端，核实付款</h1>
+      <p id="return-description" class="return-description">无需在浏览器登录，客户端会用原账号核实付款与会员状态。</p>
+      <div class="return-actions">
+        <a id="return-open-client" class="return-button" hidden>打开客户端<span aria-hidden="true">↗</span></a>
+        <a id="return-view-web" class="return-web" href="/?account=open">在网页登录查看<span aria-hidden="true">→</span></a>
+      </div>
+      <p id="return-status" class="return-status" role="status" aria-live="polite">付款结果以账号中的订单状态为准，请勿重复付款。</p>
+      <noscript><p class="return-status">请手动切回客户端查看会员订单，或点击「在网页登录查看」。请勿重复付款。</p></noscript>
+    </main>
+    <footer class="return-footer">Brclio · 每一份会员权益，都有据可查。</footer>
+  </div>
+</body>
+</html>

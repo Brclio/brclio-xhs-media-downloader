@@ -1,6 +1,6 @@
 {
   "name": "brclio-xhs-media-downloader",
-  "version": "2.0.27",
+  "version": "2.0.28",
   "private": true,
   "type": "module",
   "description": "Brclio 小红书下载器：网页、Mac、Windows 与 Android 客户端；桌面版支持主页批量下载和自定义间隔",
@@ -77,6 +77,15 @@
       "buildResources": "desktop/resources"
     },
     "beforePack": "scripts/check-desktop-runtime.cjs",
+    "protocols": [
+      {
+        "name": "Brclio payment return",
+        "schemes": [
+          "brclio-xhs"
+        ],
+        "role": "Viewer"
+      }
+    ],
     "files": [
       "package.json",
       "index.html",
@@ -88,6 +97,9 @@
       "learn.html",
       "vip.html",
       "membership.html",
+      "payment-return.html",
+      "payment-return.js",
+      "payment-return.css",
       "*.css",
       "site-header.js",
       "!feedback.css",

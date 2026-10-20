@@ -3,6 +3,7 @@ import { getMembershipPlan } from '../../lib/membership-plans.js';
 import { PROTECTED_FEATURES } from '../../lib/membership-policy.js';
 import { fail } from './errors.js';
 import { createBrclioPayClient, paymentAmountCents, verifyBrclioPayEvent } from './brclio-pay-client.js';
+import { paymentReturnUrl } from './payment-return-url.js';
 
 const DAY = 86_400_000;
 const owns = (object, key) => Object.hasOwn(object, key) ? object[key] : undefined;
@@ -104,7 +105,7 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
       const id = randomUUID();
       order = await store.transaction(state => {
         validateBrclioPayState(state);
-        const { user: currentUser } = identity(state, request), existing = owns(state.operations, key);
+        const { user: currentUser, session } = identity(state, request), existing = owns(state.operations, key);
         if (existing) {
           if (existing.inputHash !== inputHash) fail('REQUEST_ID_REUSED', '该请求 ID 已用于其他操作，请重新发起。', 409);
           return { changed: false, value: structuredClone(owns(state.orders, existing.result.orderId)) };
@@ -112,7 +113,7 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
         if (currentUser.membership?.type === 'permanent') fail('ALREADY_PERMANENT', '您已是永久会员，无需购买时长套餐。', 409);
         const created = { id, userId: currentUser.id, planId: plan.id, planName: plan.name, priceCents: plan.priceCents, amountCents: null, status: 'pending', paymentMethod: 'brclio_pay', paidAt: null, createdAt: iso(now()), confirmedAt: null, codeId: null, source: 'brclio_pay',
           entitlementSnapshot: { type: 'duration', days: plan.days, features: [...new Set([...protectedFeatures, 'watermark-free-video'])] },
-          payment: { clientId: config.clientId, mode: config.mode, currency: 'CNY', sku: plan.id, catalogVersion: current.version, quotedAmount: plan.amount, amount: plan.amount, orderId: null, state: 'creating', quoteAccepted: false, status: 'PENDING', returnUrl: `${config.returnOrigin}/?payment_order=${encodeURIComponent(id)}` } };
+          payment: { clientId: config.clientId, mode: config.mode, currency: 'CNY', sku: plan.id, catalogVersion: current.version, quotedAmount: plan.amount, amount: plan.amount, orderId: null, state: 'creating', quoteAccepted: false, status: 'PENDING', returnUrl: paymentReturnUrl(config.returnOrigin, id, session.client) } };
         state.orders[id] = created;
         state.operations[key] = { actorId: currentUser.id, action: request.action, inputHash, at: iso(now()), result: { orderId: id } };
         return { value: structuredClone(created) };

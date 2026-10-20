@@ -121,6 +121,11 @@ async function staticFile(root, pathname, req, res) {
         res.setHeader('Referrer-Policy', 'no-referrer');
         res.setHeader('Content-Security-Policy', ADMIN_CSP);
       }
+      if (relative === 'payment-return.html') {
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('Referrer-Policy', 'no-referrer');
+        res.setHeader('X-Frame-Options', 'DENY');
+      }
       if (req.method === 'HEAD') res.end();
       else await new Promise((resolve, reject) => {
         const stream = file.createReadStream({ autoClose: false });

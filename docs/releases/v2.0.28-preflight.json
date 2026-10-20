@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.28",
+  "stage": "preflight-only",
+  "checkedAt": "2026-10-20T17:09:21.520Z",
+  "baseCommit": "7d02bb6660d82505a04760c8eaed4ccf964bc867",
+  "workingTreeDirty": true,
+  "changes": [
+    "Native awaited checkout open with visible same-order retry/copy fallback",
+    "Authenticated-session desktop HTTPS return page without browser login or session transfer",
+    "Registered client handoff carrying only a UUID; cold/warm delivery and identity/order guards",
+    "Foreground tail status recheck, fast paid confirmation and persistent successful membership result",
+    "Single checkout modal, plan cards, order receipt, clear waiting/failure/success states and original-price lock"
+  ],
+  "local": {
+    "node": {
+      "tests": 1912,
+      "passed": 1899,
+      "skipped": 13,
+      "failed": 0
+    },
+    "python": {
+      "passed": 47,
+      "failed": 0
+    },
+    "recoveryAndUIFocused": {
+      "passed": 53,
+      "failed": 0,
+      "command": "node --test test/payment-recovery.test.js test/payment-recovery-review.test.js test/payment-recovery-foreground.test.js test/brclio-pay-ui.test.js"
+    },
+    "chromiumPayment": {
+      "passed": 40,
+      "failed": 0,
+      "screenshotsReviewed": 13
+    },
+    "nativeHandoffPackagingStartup": {
+      "focusedTests": 86,
+      "realElectronStartup": true,
+      "networkAttempts": 0
+    },
+    "returnPage": {
+      "dedicatedTests": 8,
+      "boundaryAndBackendTests": 85,
+      "realBrowserDesktopAnd375px": true,
+      "accountApiRequests": 0
+    },
+    "cloudflareWorkerDryRun": true,
+    "pagesBuild": true,
+    "sourceSecretScan": {
+      "checkedAt": "2026-10-20T17:07:35.076Z",
+      "sourceFilesChecked": 883,
+      "businessCredentialMatches": 0,
+      "temporaryManagementTokenMatches": 0,
+      "privateCredentialMode": "600",
+      "buildFiles": 430
+    }
+  },
+  "externalPreflight": {
+    "allChecksPassed": true,
+    "fixedAccountId": "c8b059429c868f6d0e528f9e10325f46",
+    "secretNameCount": 31,
+    "secretValuesRead": false,
+    "mainVersion": "e8d3c6c7-25ea-4428-ac9e-dd2cf3a19f3e",
+    "existingBindingsPreserved": true,
+    "newStorageResources": false,
+    "privateBusinessDataWrites": false
+  },
+  "sourceSha256": {
+    "lib/payment-recovery.js": "8a94b14f2091673ed892997d3030d359e1529c5bb93c71c0d39a95310b0ddad9",
+    "test/payment-recovery.test.js": "9f4be4aa86aafb348a50e0f233478f58dbe2b3c41fa7ea9dc9ab0523c8c7bac5",
+    "test/payment-recovery-foreground.test.js": "3cb39829ebac56f4151d59efed570e46fc1cbb9915fd48e564fc414e285a8bf7",
+    "scripts/verify-brclio-pay-ui.cjs": "8e71237c348f39684bfdff973ff9fac9f90d9fe4a83c65d97e2477e4aae3d6f7",
+    "account-ui.js": "b4ed97757a1d32a63b4f15807ba6a2a06f022ed79ef37c38d4e2936a99cc2741",
+    "account-ui.css": "dd670d5b6a9830912f28e184c44080a500bd238eda8f1978075aa8c0db7ed95a"
+  },
+  "screenshots": [
+    {
+      "path": "docs/releases/v2.0.28-validation/payment-selection-wechat-desktop.png",
+      "sha256": "775aed193a42ae15a13bd64fb23a2bda322d166d7b95cf40a1584aeba8b5e474",
+      "isolatedFixture": true,
+      "visuallyReviewed": true
+    },
+    {
+      "path": "docs/releases/v2.0.28-validation/payment-open-error-desktop.png",
+      "sha256": "2031801c2e9dc4fd1d3b43d22bf0aeaa135d260bc4fc60077618ae3961770bfc",
+      "isolatedFixture": true,
+      "visuallyReviewed": true
+    },
+    {
+      "path": "docs/releases/v2.0.28-validation/payment-success-mobile.png",
+      "sha256": "773b411977c455658e0ac5455f4405b658594597b00276a2800e71d89624529e",
+      "isolatedFixture": true,
+      "visuallyReviewed": true
+    }
+  ],
+  "notYetVerified": {
+    "nativePublishedInstallers": true,
+    "publicAttachments": true,
+    "productionDeployment": true,
+    "actualUserInstalledClient": true,
+    "actualOSBrowserAndSchemeHandoff": true,
+    "realPaymentAfterChanges": true
+  },
+  "limits": "Local real renderer screenshots use isolated synthetic accounts and quote changes, not a production purchase. Native OS acceptance, public release/deployment and user-installed behavior are distinct stages. Existing paid membership is preserved."
+}

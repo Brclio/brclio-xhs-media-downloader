@@ -12,7 +12,7 @@
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none",
-    "run_worker_first": ["/api/*", "/admin*", "/__internal/*", "/assets/membership/alipay.png", "/assets/membership/wechat-pay.png"]
+    "run_worker_first": ["/api/*", "/admin*", "/__internal/*", "/assets/membership/alipay.png", "/assets/membership/wechat-pay.png", "/payment-return", "/payment-return.html"]
   },
   "services": [
     { "binding": "PYTHON_API", "service": "brclio-xhs-python" },

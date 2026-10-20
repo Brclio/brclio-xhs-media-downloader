@@ -108,25 +108,48 @@ export async function initializeAccountUI() {
     </div>
     <p class="account-scope">单篇原图、实况与播放视频免费下载；无水印原视频为会员权益，主页批量下载还需要已授权设备。原视频需由笔记页面提供，作者写入画面的水印可能仍保留。会员状态变化不会删除已有文件或任务记录。</p>
     <dialog id="membership-dialog" class="membership-dialog" aria-labelledby="membership-title" aria-describedby="membership-description">
-      <div class="membership-dialog-heading">
+      <header class="membership-dialog-heading">
         <div><span class="account-eyebrow">BRCLIO MEMBERSHIP</span><h2 id="membership-title">开通会员</h2></div>
         <button id="membership-close" class="membership-close" type="button" aria-label="关闭开通会员窗口" autofocus>×</button>
-      </div>
-      <p id="membership-description" class="membership-description">解锁无水印原视频下载与主页批量下载。选择支付宝或微信在线付款，服务端核实后自动开通。</p>
-      <div id="membership-login-guidance" class="membership-login-guidance"><p id="membership-login-message">请先登录软件账号，付款将绑定该账号。</p><button id="membership-go-login" class="button button-primary" type="button">前往登录 / 注册</button></div>
-      <section id="membership-online-payment" class="membership-payment-note" aria-labelledby="membership-online-title" hidden>
-        <h3 id="membership-online-title">选择套餐并付款</h3>
-        <p id="membership-online-account" class="membership-small"></p>
-        <fieldset id="membership-online-method" class="membership-methods" aria-describedby="membership-online-method-help"><legend>在线付款方式</legend><div class="membership-method-options"><label><input type="radio" name="membership-online-method" value="alipay" checked><span>支付宝</span></label><label><input type="radio" name="membership-online-method" value="wechat"><span>微信支付</span></label></div></fieldset>
-        <p id="membership-online-method-help" class="membership-small">选择付款方式后核对该渠道的套餐报价。</p>
-        <label>在线套餐 <select id="membership-online-plan" aria-describedby="membership-online-quote"></select></label>
-        <p id="membership-online-quote" class="membership-amount">请刷新在线商品目录。</p>
-        <p id="membership-online-price-note" class="membership-small">支付宝价格从支付中心实时读取。</p>
-        <div class="account-google-actions"><button id="membership-online-pay" class="button button-primary" type="button" disabled>前往 Brclio Pay 付款</button><button id="membership-online-restart" class="button button-secondary" type="button" hidden>重新下单</button><button id="membership-online-refresh" class="button button-secondary" type="button">刷新在线报价</button><button id="membership-online-check" class="button button-secondary" type="button" hidden>查询付款与权益状态</button></div>
-        <p id="membership-online-status" class="membership-small" role="status" aria-live="polite"></p>
-        <p class="membership-small">按次购买，不自动续费；已有未到期时长顺延。付款后请切回软件查询权益，返回页面不代表已开通；设备授权规则保持不变。</p>
+      </header>
+      <p id="membership-description" class="membership-description">好用的工具，陪你多做一点。</p>
+      <div class="membership-benefits"><span><b aria-hidden="true">↙</b> 无水印原视频</span><span><b aria-hidden="true">▦</b> 主页批量下载</span><span>按次购买 · 不自动续费</span></div>
+      <div id="membership-login-guidance" class="membership-login-guidance"><div><strong id="membership-login-title">先登录，再开通</strong><p id="membership-login-message">会员将绑定你的软件账号。</p></div><div class="membership-login-actions"><a id="membership-return-client" class="button button-secondary" hidden>返回客户端核实</a><button id="membership-go-login" class="button button-primary" type="button">前往登录 / 注册</button></div></div>
+      <section id="membership-online-payment" class="membership-checkout" aria-labelledby="membership-online-title" hidden>
+        <div id="membership-choices" class="membership-choices">
+          <div class="membership-section-heading"><h3 id="membership-online-title">选择会员时长</h3><button id="membership-online-refresh" class="membership-text-button" type="button">刷新报价 ↻</button></div>
+          <fieldset id="membership-plan-cards" class="membership-plan-cards" aria-label="会员时长"></fieldset>
+          <select id="membership-online-plan" aria-label="在线套餐" hidden></select>
+          <fieldset id="membership-online-method" class="membership-methods" aria-describedby="membership-online-method-help"><legend>付款方式</legend><div class="membership-method-options"><label><input type="radio" name="membership-online-method" value="alipay" checked><span class="membership-provider-mark is-alipay" aria-hidden="true">支</span><span>支付宝<small>安全在线付款</small></span><b class="membership-radio-mark" aria-hidden="true"></b></label><label><input type="radio" name="membership-online-method" value="wechat"><span class="membership-provider-mark is-wechat" aria-hidden="true">微</span><span>微信支付<small>手机微信扫码</small></span><b class="membership-radio-mark" aria-hidden="true"></b></label></div></fieldset>
+          <p id="membership-online-method-help" class="membership-small"></p>
+          <p id="membership-online-price-note" class="membership-small membership-price-source"></p>
+        </div>
+        <div id="membership-progress" class="membership-progress" hidden>
+          <span id="membership-progress-symbol" class="membership-progress-symbol" aria-hidden="true">↗</span>
+          <span id="membership-progress-eyebrow" class="account-eyebrow">PAYMENT IN PROGRESS</span>
+          <h3 id="membership-progress-title" tabindex="-1">在浏览器中完成付款</h3>
+          <p id="membership-progress-message">付款后返回这里，会员状态会自动更新。</p>
+          <ol class="membership-steps" aria-label="开通进度"><li id="membership-step-pay"><span>1</span>完成付款</li><li id="membership-step-confirm"><span>2</span>核实订单</li><li id="membership-step-ready"><span>3</span>会员生效</li></ol>
+          <p id="membership-completed-expiry" class="membership-completed-expiry" hidden></p>
+        </div>
+        <aside class="membership-receipt" aria-label="本次开通信息">
+          <span id="membership-summary-label" class="membership-receipt-label">本次开通</span>
+          <p id="membership-summary-plan" class="membership-summary-plan">选择会员套餐</p>
+          <div id="membership-summary-total" class="membership-summary-total"><span>¥</span><strong id="membership-summary-amount">—</strong></div>
+          <p id="membership-summary-duration" class="membership-summary-duration">价格以当前渠道报价为准</p>
+          <div class="membership-receipt-rule"></div>
+          <span class="membership-receipt-label">会员账号</span><p id="membership-online-account" class="membership-receipt-account"></p>
+          <p id="membership-summary-provider" class="membership-small">支付宝在线付款</p>
+          <p id="membership-online-quote" class="membership-small membership-receipt-quote" aria-live="polite">请先登录查看在线报价。</p>
+        </aside>
+        <div class="membership-checkout-bottom">
+          <p id="membership-online-status" class="membership-status" role="status" aria-live="polite"></p>
+          <p id="membership-open-error" class="membership-open-error" role="alert" hidden></p>
+          <div class="membership-checkout-actions"><button id="membership-online-pay" class="button button-primary" type="button" disabled>前往 Brclio Pay 付款</button><button id="membership-online-check" class="button button-secondary" type="button" hidden>刷新付款状态</button><button id="membership-copy-checkout" class="button button-secondary" type="button" hidden>复制付款链接</button><button id="membership-success-done" class="button button-primary" type="button" hidden>完成，开始使用</button></div>
+          <div class="membership-purchase-notes"><p id="membership-purchase-note">已有会员时长会顺延；付款由服务端核实后自动开通。</p><button id="membership-online-restart" class="membership-text-button" type="button" hidden>更换套餐</button></div>
+        </div>
       </section>
-      <div class="membership-dialog-footer"><p>已有激活码可在「账号与会员」兑换。</p><button id="membership-go-redeem" class="button button-secondary" type="button">已有激活码，前往兑换</button></div>
+      <footer class="membership-dialog-footer"><span>已有激活码？</span><button id="membership-go-redeem" class="membership-text-button" type="button">前往兑换 →</button></footer>
     </dialog>`;
   const isDesktop = Boolean(window.xhsDesktop?.getAccountState);
   const mount = document.getElementById(isDesktop ? 'desktop-account-mount' : 'browser-account-mount');
@@ -141,7 +164,9 @@ export async function initializeAccountUI() {
   let paymentUserId = null, paymentEpoch = 0;
   let onlineCatalog = null, catalogBusy = false, catalogRevision = 0, onlineDraft = null, onlineBusy = false, onlineProvider = 'alipay';
   let onlineOrderId = paymentReturn, onlineStatusBusy = false, returnCheckedUserId = null;
-  let recoveryState = null, recoveryOwner = null, onlineQuote = null, wakeBusy = false, pageInactive = false, lastWake = -Infinity;
+  let recoveryState = null, recoveryOwner = null, onlineQuote = null, wakeBusy = false, wakeAgain = false, pageInactive = false, lastWake = -Infinity;
+  let checkoutMemory = null, browserOpenError = '', completedState = null, returnToAccountDialog = false;
+  let nativePaymentReturn = null, nativeReturnBusy = false;
   const recovery = createPaymentRecovery({ bridge,
     onChange: value => {
       recoveryState = value;
@@ -149,32 +174,70 @@ export async function initializeAccountUI() {
         const provider = paymentOrderProvider(value.order);
         if (provider !== onlineProvider) {
           onlineProvider = provider; onlineCatalog = null; catalogBusy = false; catalogRevision++;
-          panel.querySelector(`input[name="membership-online-method"][value="${provider}"]`).checked = true;
+          element('membership-online-method').querySelector(`input[value="${provider}"]`).checked = true;
           queueMicrotask(() => void loadOnlineCatalog());
         }
       }
-      if (value.phase === 'idle') onlineQuote = null;
+      if (value.phase === 'idle') { onlineQuote = null; completedState = null; checkoutMemory = null; browserOpenError = ''; }
+      if (['confirmed', 'closed'].includes(value.phase)) { checkoutMemory = null; browserOpenError = ''; }
       if (value.order?.planId && getMembershipPlan(value.order.planId) && Number.isSafeInteger(value.order.priceCents)) {
         const plan = getMembershipPlan(value.order.planId);
         onlineQuote = { name: value.order.planName || plan.name, amount: (value.order.priceCents / 100).toFixed(2), days: plan.days };
       }
       onlineOrderId = value.orderId || (paymentReturn && !returnCheckedUserId ? paymentReturn : null);
       onlineStatusBusy = value.busy;
-      if (value.message || value.phase === 'idle') element('membership-online-status').textContent = value.message
+      if (value.message || value.phase === 'idle') element('membership-online-status').textContent = value.message.replace(/订单 [a-f0-9-]{36}/g, '该订单')
         + (value.persistent === false ? ' 此浏览器暂时无法保存恢复记录，请保留付款页面；关闭后可在「我的全部订单」核实。' : '');
       renderPurchase();
     },
     onConfirmed: value => {
+      completedState = value.state; onlineDraft = null; browserOpenError = ''; checkoutMemory = null;
       render(value.state);
+      if (dialog.open) element('membership-progress-title').focus({ preventScroll: true });
       window.dispatchEvent(new CustomEvent('brclio-orders-changed'));
     },
   });
   const dialog = element('membership-dialog');
+  // The purchase flow owns one modal. Keeping it outside the account dialog
+  // also keeps a focused payment result visible when the account panel updates.
+  document.body.append(dialog);
+  function renderPlanCards() {
+    const plans = onlineCatalog?.plans || ['daily', 'monthly', 'yearly'].map(id => ({ ...getMembershipPlan(id), amount: null }));
+    element('membership-plan-cards').replaceChildren(...plans.map(plan => {
+      const label = document.createElement('label'); label.className = 'membership-plan-choice';
+      label.innerHTML = '<input type="radio" name="membership-online-plan-choice"><span class="membership-plan-name"></span><strong class="membership-plan-price"></strong><span class="membership-plan-duration"></span><span class="membership-plan-check" aria-hidden="true">✓</span>';
+      const input = label.querySelector('input'); input.value = plan.id;
+      label.querySelector('.membership-plan-name').textContent = ({ daily: '日会员', monthly: '月会员', yearly: '年会员' })[plan.id] || plan.name;
+      label.querySelector('.membership-plan-price').textContent = plan.amount ? `¥${plan.amount}` : '—';
+      label.querySelector('.membership-plan-duration').textContent = `${plan.days} 天有效`;
+      input.addEventListener('change', () => { if (!element('membership-online-plan').disabled) { element('membership-online-plan').value = input.value; renderPurchase(); } });
+      return label;
+    }));
+  }
+  renderPlanCards();
+  function showMembership({ fresh = false } = {}) {
+    if (fresh && !dialog.open) recovery.dismissResult?.();
+    const parent = document.getElementById('browser-account-dialog');
+    if (parent?.open) { returnToAccountDialog = true; parent.close(); }
+    renderPurchase(); if (!dialog.open) dialog.showModal();
+  }
+  async function openCheckout(checkoutUrl, orderId, epoch) {
+    checkoutMemory = { checkoutUrl, orderId, ownerId: paymentUserId }; browserOpenError = '';
+    if (isDesktop) {
+      const reply = await bridge.openPaymentCheckout?.({ checkoutUrl, orderId, expectedUserId: paymentUserId });
+      const latest = recovery.snapshot();
+      if (epoch !== paymentEpoch || latest.orderId !== orderId || ['confirmed', 'closed', 'confirming', 'refreshing'].includes(latest.phase) || latest.paymentStatus === 'PAID') return;
+      if (!reply?.ok) {
+        browserOpenError = reply?.error?.message || '当前客户端无法打开收银台，请更新客户端或检查系统默认浏览器后重试。';
+        throw new Error(browserOpenError);
+      }
+    } else window.location.assign(checkoutUrl);
+  }
   const renderPurchase = () => {
     const email = state?.authenticated ? state.account?.user?.email || '' : '';
     const permanent = Boolean(state?.authenticated && state?.verified && state.account?.membership?.type === 'permanent');
     const ready = Boolean(email && state?.verified && state?.configured && !permanent);
-    element('membership-online-account').textContent = email ? `会员账号：${email}` : '登录软件账号后选择套餐，付款将绑定该账号。';
+    element('membership-online-account').textContent = email || '尚未登录';
     element('membership-login-guidance').hidden = ready && Boolean(bridge.commerceRequest);
     element('membership-login-message').textContent = permanent ? '当前账号已拥有永久会员，无需购买这些套餐。'
       : state?.authenticated
@@ -182,7 +245,13 @@ export async function initializeAccountUI() {
       : '请先登录软件账号，付款将绑定该账号。首次验证邮箱会自动注册。';
     element('membership-go-login').textContent = permanent ? '返回账号与会员' : state?.authenticated ? '返回账号页刷新权益' : '前往登录 / 注册';
     element('membership-go-redeem').hidden = permanent;
-    element('membership-go-redeem').textContent = state?.authenticated ? '已有激活码，前往兑换' : '登录后兑换已有激活码';
+    element('membership-go-redeem').textContent = state?.authenticated ? '前往兑换 →' : '登录后兑换 →';
+    const legacyDesktopReturn = Boolean(!isDesktop && paymentReturn && !state?.authenticated);
+    element('membership-return-client').hidden = !legacyDesktopReturn;
+    if (legacyDesktopReturn) {
+      element('membership-return-client').href = `brclio-xhs://payment-return?order_id=${encodeURIComponent(paymentReturn)}`;
+      element('membership-login-message').textContent = '在客户端付款？可直接返回原客户端核实，无需在此重新登录。网页订单请登录付款时的账号。';
+    }
     const onlinePlan = onlineCatalog?.plans.find(item => item.id === element('membership-online-plan').value);
     const paymentsPaused = onlineCatalog?.acceptingPayments === false;
     const draftPlan = onlineDraft && getMembershipPlan(onlineDraft.planId);
@@ -194,27 +263,74 @@ export async function initializeAccountUI() {
       && !['PAID', 'CLOSED'].includes(recoveryState.paymentStatus) && recoveryState.order?.status !== 'confirmed';
     element('membership-online-method').disabled = !ready || restoring || waiting || onlineBusy || onlineStatusBusy || catalogBusy || Boolean(onlineDraft);
     element('membership-online-price-note').textContent = onlineProvider === 'wechat'
-      ? '微信价格按已登记的人民币套餐展示，下单时由支付中心核对金额。'
-      : '支付宝价格从支付中心实时读取。';
+      ? '人民币计价，下单前会再次核对金额。'
+      : '价格与当前收银台保持一致。';
     element('membership-online-method-help').textContent = (onlineProvider === 'wechat'
-      ? '微信在线付款仅支持 Native 扫码。请在另一台设备显示收银台二维码，再用手机微信扫一扫；当前手机付款也需要另一台设备配合。'
-      : '选择付款方式后核对该渠道的套餐报价。')
+      ? (isDesktop ? '在浏览器显示二维码，用手机微信扫一扫。' : '需要另一台设备显示二维码，再用手机微信扫码。')
+      : (isDesktop ? '将在系统默认浏览器中打开支付宝收银台。' : '将在安全收银台完成付款。'))
       + (restoring ? ' 正在恢复原付款记录，完成前暂不能切换渠道或创建新订单。' : waiting ? ' 已锁定原订单付款方式，请先核实原订单；请勿重复付款。' : onlineDraft ? ' 上次创建结果尚未确认，请重试原付款订单。' : '');
     element('membership-online-plan').disabled = !ready || restoring || waiting || onlineBusy || catalogBusy || Boolean(onlineDraft);
     element('membership-online-pay').disabled = !ready || restoring || onlineBusy || onlineStatusBusy || (waiting ? !canResume : !onlineCatalog?.enabled || paymentsPaused || (!onlinePlan && !onlineDraft) || catalogBusy);
-    element('membership-online-pay').textContent = restoring ? '等待恢复原付款订单' : onlineBusy ? '正在处理付款订单…' : canResume ? '继续支付原订单' : waiting ? '等待付款与权益确认' : paymentsPaused ? '在线付款暂未开放' : onlineDraft ? '重试原付款订单' : '前往 Brclio Pay 付款';
+    element('membership-online-pay').textContent = restoring ? '等待恢复原付款订单' : onlineBusy ? '正在处理付款订单…' : onlineStatusBusy && waiting ? '正在核实订单…' : canResume ? '继续支付原订单' : waiting ? '等待付款与权益确认' : paymentsPaused ? '在线付款暂未开放' : onlineDraft ? '重试原付款订单' : '前往 Brclio Pay 付款';
     element('membership-online-restart').hidden = !waiting;
     element('membership-online-restart').disabled = !ready || !canResume || onlineBusy || onlineStatusBusy || catalogBusy;
     element('membership-online-refresh').disabled = catalogBusy || onlineBusy || !ready;
     element('membership-online-check').hidden = !onlineOrderId;
     element('membership-online-check').disabled = !state?.authenticated || onlineStatusBusy || onlineBusy;
-    const quote = waiting ? onlineQuote ? `${onlineQuote.name} · ¥${onlineQuote.amount} · ${onlineQuote.days} 天会员（原订单报价）` : '已恢复待核实订单，正在读取原订单报价。'
+    const quote = (waiting || recoveryState?.phase === 'confirmed') ? onlineQuote ? `${onlineQuote.name} · ¥${onlineQuote.amount} · ${onlineQuote.days} 天会员（原订单报价）` : '已恢复待核实订单，正在读取原订单报价。'
       : draftPlan ? `${draftCatalogPlan?.name || draftPlan.name} · ¥${onlineDraft.amount} · ${draftPlan.days} 天会员（原订单报价）`
       : onlinePlan ? `${onlinePlan.name} · ¥${onlinePlan.amount} · ${onlinePlan.days} 天会员` : '';
     element('membership-online-quote').textContent = catalogBusy ? (onlineProvider === 'wechat' ? '正在读取已登记的微信套餐…' : '正在读取最新在线报价…')
       : onlineCatalog && !onlineCatalog.enabled ? '在线购买暂未开放。'
       : paymentsPaused ? `${quote ? `${quote}。` : ''}该渠道尚未启用在线收款，请稍后刷新报价。`
-      : quote || '暂无可购买的在线套餐，请刷新报价。';
+      : quote || (!ready ? '登录后查看当前渠道报价' : '暂无可购买的在线套餐，请刷新报价。');
+    const phase = recoveryState?.phase || 'idle';
+    const done = phase === 'confirmed';
+    const creating = onlineBusy && !waiting && !done;
+    const showingProgress = done || restoring || waiting || creating;
+    const activeAccount = (recoveryState?.completedAccount || completedState || state)?.account;
+    const selectedQuote = (waiting || done) ? onlineQuote : onlineDraft && draftPlan
+      ? { name: draftCatalogPlan?.name || draftPlan.name, amount: onlineDraft.amount, days: draftPlan.days }
+      : onlinePlan;
+    dialog.dataset.paymentPhase = done ? 'confirmed' : showingProgress ? phase : 'selection';
+    element('membership-title').textContent = done ? '开通结果' : showingProgress ? '付款与会员' : '开通会员';
+    element('membership-choices').hidden = showingProgress;
+    element('membership-progress').hidden = !showingProgress;
+    element('membership-login-guidance').hidden = done || ready && Boolean(bridge.commerceRequest);
+    element('membership-plan-cards').disabled = element('membership-online-plan').disabled;
+    element('membership-plan-cards').querySelectorAll('input').forEach(input => { input.checked = input.value === element('membership-online-plan').value; });
+    element('membership-summary-plan').textContent = selectedQuote ? `${({ daily: '日会员', monthly: '月会员', yearly: '年会员' })[recoveryState?.order?.planId || onlineDraft?.planId || onlinePlan?.id] || selectedQuote.name}` : '选择会员套餐';
+    element('membership-summary-amount').textContent = selectedQuote?.amount || '—';
+    element('membership-summary-duration').textContent = selectedQuote ? `${selectedQuote.days} 天 · 一次付款` : '登录后查看当前渠道报价';
+    element('membership-summary-provider').textContent = onlineProvider === 'wechat' ? '微信支付 · 在线收银台' : '支付宝 · 在线收银台';
+    element('membership-summary-label').textContent = done ? '本次开通已确认' : waiting ? '原订单已保留' : '本次开通';
+    const paid = done || ['confirming', 'refreshing'].includes(phase) || recoveryState?.paymentStatus === 'PAID';
+    const active = activeAccount?.membership?.active;
+    element('membership-progress-symbol').textContent = done ? '✓' : browserOpenError ? '!' : paid || creating || restoring ? '···' : '↗';
+    element('membership-progress-eyebrow').textContent = done ? 'READY TO GO' : paid ? 'CONFIRMING MEMBERSHIP' : 'YOUR ORDER IS SAFE';
+    element('membership-progress-title').textContent = done ? active ? '会员已开通' : '付款已确认' : restoring ? '正在恢复原订单' : creating ? '正在准备收银台' : browserOpenError ? '收银台尚未打开' : paid ? '正在确认会员权益' : '在浏览器中完成付款';
+    element('membership-progress-message').textContent = done ? !active ? '账号已刷新，该次会员时长现已到期。' : recoveryState?.permissions?.some(item => !item.authorized) ? '会员已生效；当前设备的功能仍按授权限制执行。' : '账号与功能权限已更新，现在就可以使用。'
+      : restoring ? '正在核实上次的付款记录，完成后继续。'
+      : creating ? '正在安全保存本次订单，请稍候。'
+      : browserOpenError ? '原订单已保留，请重试打开或复制付款链接。'
+      : paid ? '正在同步账号与功能权限，请勿重复付款。'
+      : isDesktop ? '付款后返回客户端，结果会自动显示在这里。无需登录网页账号。' : '请完成原订单付款；返回后会自动核实开通结果。';
+    element('membership-step-pay').classList.toggle('is-done', paid);
+    element('membership-step-confirm').classList.toggle('is-current', paid && !done);
+    element('membership-step-confirm').classList.toggle('is-done', done);
+    element('membership-step-ready').classList.toggle('is-done', done);
+    element('membership-step-pay').classList.toggle('is-current', !paid);
+    element('membership-completed-expiry').hidden = !done || !active;
+    element('membership-completed-expiry').textContent = activeAccount?.membership?.type === 'permanent' ? '永久会员 · 无到期时间' : activeAccount?.membership?.expiresAt ? `有效期至 ${dateLabel(activeAccount.membership.expiresAt)}` : '';
+    element('membership-online-pay').hidden = done;
+    element('membership-online-check').hidden = done || !onlineOrderId;
+    element('membership-success-done').hidden = !done;
+    element('membership-online-restart').hidden = done || !waiting;
+    element('membership-open-error').hidden = !browserOpenError;
+    element('membership-open-error').textContent = browserOpenError;
+    element('membership-copy-checkout').hidden = !browserOpenError || !checkoutMemory || checkoutMemory.ownerId !== paymentUserId;
+    element('membership-copy-checkout').disabled = onlineBusy || onlineStatusBusy;
+    element('membership-purchase-note').textContent = done ? '会员状态已同步，无需关闭窗口后再刷新。' : waiting && canResume ? '更换套餐不会关闭旧订单，请勿在新旧订单中重复付款。' : '已有会员时长会顺延；按次购买，不自动续费。';
   };
   async function loadOnlineCatalog() {
     if (!bridge.commerceRequest || !paymentUserId || !state?.verified) return;
@@ -233,7 +349,7 @@ export async function initializeAccountUI() {
         return option;
       }));
       if (catalog.plans.some(plan => plan.id === selected)) selector.value = selected;
-      onlineCatalog = catalog;
+      onlineCatalog = catalog; renderPlanCards();
       if (wasPaused && catalog.acceptingPayments === true && catalog.enabled) {
         element('membership-online-status').textContent = onlineDraft ? '在线付款已恢复，请重试原付款订单。' : '在线付款已恢复，请确认当前报价后付款。';
       } else if (wasPaused && catalog.acceptingPayments === undefined && catalog.enabled) {
@@ -277,13 +393,15 @@ export async function initializeAccountUI() {
     state = value;
     recovery.setAccount(value);
     if (paymentUserId !== (value.authenticated ? value.account?.user?.id : null)) {
+      if (paymentUserId) nativePaymentReturn = null;
       paymentEpoch++;
       recoveryOwner = null;
       paymentUserId = value.authenticated ? value.account?.user?.id : null;
       onlineCatalog = null; onlineDraft = null; onlineBusy = false; catalogBusy = false; onlineStatusBusy = false;
-      onlineProvider = 'alipay'; panel.querySelector('input[name="membership-online-method"][value="alipay"]').checked = true;
+      completedState = null; checkoutMemory = null; browserOpenError = '';
+      onlineProvider = 'alipay'; element('membership-online-method').querySelector('input[value="alipay"]').checked = true;
       catalogRevision++;
-      element('membership-online-plan').replaceChildren();
+      element('membership-online-plan').replaceChildren(); renderPlanCards();
       element('membership-online-status').textContent = onlineOrderId ? '登录付款时使用的软件账号后，可查询该订单的付款与权益状态。' : '';
     }
     commerce?.updateAccount(value);
@@ -321,6 +439,7 @@ export async function initializeAccountUI() {
     else if (value.pendingLogout) notice('已退出本机登录，服务器会话撤销等待联网重试。设备名额不会释放。');
     else if (['initializing', 'secure_storage_unavailable'].includes(previousStatus)) notice('');
     updateButtons();
+    if (nativePaymentReturn && value.authenticated && value.verified) queueMicrotask(() => void processNativePaymentReturn());
     if (paymentReturn && paymentUserId && value.verified && returnCheckedUserId !== paymentUserId) {
       returnCheckedUserId = paymentUserId;
       recoveryOwner = paymentUserId;
@@ -403,9 +522,21 @@ export async function initializeAccountUI() {
     if (isDesktop && tab) { event.preventDefault(); tab.click(); }
   });
   element('account-open-membership').addEventListener('click', () => {
-    renderPurchase(); if (!dialog.open) dialog.showModal(); void loadOnlineCatalog();
+    showMembership({ fresh: true }); void loadOnlineCatalog();
   });
   element('membership-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => {
+    const parent = document.getElementById('browser-account-dialog');
+    if (returnToAccountDialog && parent && !parent.open && !pageInactive) parent.showModal();
+    returnToAccountDialog = false;
+  });
+  element('membership-success-done').addEventListener('click', () => { returnToAccountDialog = false; dialog.close(); if (isDesktop) document.getElementById('single-note-tab')?.click(); });
+  element('membership-copy-checkout').addEventListener('click', async () => {
+    const saved = checkoutMemory;
+    if (!saved || saved.ownerId !== paymentUserId || saved.orderId !== recovery.snapshot().orderId || ['confirmed', 'closed'].includes(recovery.snapshot().phase)) return;
+    try { await window.navigator.clipboard.writeText(saved.checkoutUrl); if (checkoutMemory === saved) { browserOpenError = '付款链接已复制，可粘贴到浏览器打开。请只支付这笔原订单。'; renderPurchase(); } }
+    catch { if (checkoutMemory === saved) { browserOpenError = '系统未允许复制。请设置默认浏览器后重试打开原收银台。'; renderPurchase(); } }
+  });
   dialog.addEventListener('change', renderPurchase);
   element('membership-go-login').addEventListener('click', () => {
     dialog.close();
@@ -421,9 +552,9 @@ export async function initializeAccountUI() {
   });
   element('membership-online-check').addEventListener('click', () => void checkOnlineOrder());
   element('membership-online-plan').addEventListener('change', renderPurchase);
-  panel.querySelectorAll('input[name="membership-online-method"]').forEach(input => input.addEventListener('change', () => {
+  element('membership-online-method').querySelectorAll('input[name="membership-online-method"]').forEach(input => input.addEventListener('change', () => {
     if (element('membership-online-method').disabled) {
-      panel.querySelector(`input[name="membership-online-method"][value="${onlineProvider}"]`).checked = true; return;
+      element('membership-online-method').querySelector(`input[value="${onlineProvider}"]`).checked = true; return;
     }
     onlineProvider = input.value;
     element('membership-online-status').textContent = '';
@@ -464,8 +595,7 @@ export async function initializeAccountUI() {
           await recovery.check(); return;
         }
         const checkoutUrl = paymentCheckoutUrl(reply.result.checkoutUrl, paymentOrderProvider(order));
-        if (isDesktop) window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-        else window.location.assign(checkoutUrl);
+        await openCheckout(checkoutUrl, pending.orderId, epoch);
       } catch (error) {
         if (epoch === paymentEpoch) element('membership-online-status').textContent = error.message;
       } finally { if (epoch === paymentEpoch) { onlineBusy = false; renderPurchase(); } }
@@ -497,8 +627,7 @@ export async function initializeAccountUI() {
       recovery.track(order.id, { persistent: reply.recovery?.persistent !== false });
       recovery.observe(reply.result);
       window.dispatchEvent(new CustomEvent('brclio-orders-changed'));
-      if (isDesktop) window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-      else window.location.assign(checkoutUrl);
+      await openCheckout(checkoutUrl, order.id, epoch);
     } catch (error) {
       if (epoch !== paymentEpoch) return;
       if (error.code === 'QUOTE_CHANGED') {
@@ -514,6 +643,40 @@ export async function initializeAccountUI() {
     } finally { if (epoch === paymentEpoch) { onlineBusy = false; renderPurchase(); } }
   });
   const unsubscribe = bridge.onAccountUpdate(render);
+  async function processNativePaymentReturn() {
+    if (nativeReturnBusy || !nativePaymentReturn || pageInactive || !paymentUserId || !state?.authenticated || !state.verified) return;
+    const orderId = nativePaymentReturn, epoch = paymentEpoch, ownerId = paymentUserId;
+    nativeReturnBusy = true;
+    try {
+      let current = recovery.snapshot();
+      // A hint cannot replace an already tracked order, including an old
+      // success screen, or revive an order after the user selected a new one.
+      if (current.orderId && current.orderId !== orderId) { if (nativePaymentReturn === orderId) nativePaymentReturn = null; return; }
+      if (!current.orderId) {
+        const saved = await bridge.getPendingPayment?.();
+        if (pageInactive || epoch !== paymentEpoch || ownerId !== paymentUserId) return;
+        current = recovery.snapshot();
+        if (current.orderId && current.orderId !== orderId) { if (nativePaymentReturn === orderId) nativePaymentReturn = null; return; }
+        if (!saved?.ok) return;
+        if (saved.result?.userId !== ownerId || saved.result?.orderId !== orderId) { if (nativePaymentReturn === orderId) nativePaymentReturn = null; return; }
+        if (!current.orderId) recovery.track(orderId, { persistent: saved.recovery?.persistent !== false });
+      }
+      if (pageInactive || epoch !== paymentEpoch || recovery.snapshot().orderId !== orderId) return;
+      if (nativePaymentReturn === orderId) nativePaymentReturn = null;
+      // The URL is a wake-up hint only. The original authenticated account
+      // and its saved order still require a fresh signed server status.
+      showMembership(); recovery.setForeground?.(true); await recovery.focus();
+    } catch { /* A temporary read failure leaves the hint for a later focus. */ }
+    finally {
+      nativeReturnBusy = false;
+      if (nativePaymentReturn && nativePaymentReturn !== orderId && !pageInactive) queueMicrotask(() => void processNativePaymentReturn());
+    }
+  }
+  const unsubscribePaymentReturn = bridge.onPaymentReturn?.(hint => {
+    if (pageInactive || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(hint?.orderId || '')) return;
+    // Cold-launch events can arrive before the first getAccountState resolves.
+    nativePaymentReturn = hint.orderId; void processNativePaymentReturn();
+  });
   const browserDialog = document.getElementById('browser-account-dialog');
   document.getElementById('browser-account-open')?.addEventListener('click', () => void openAccountUI());
   document.getElementById('browser-account-close')?.addEventListener('click', () => browserDialog?.close());
@@ -526,13 +689,18 @@ export async function initializeAccountUI() {
     if (typeof unsubscribe === 'function') unsubscribe();
     recovery.dispose();
     if (typeof unsubscribeFocus === 'function') unsubscribeFocus();
+    if (typeof unsubscribePaymentReturn === 'function') unsubscribePaymentReturn();
+    window.removeEventListener('blur', pausePayment);
     window.removeEventListener('focus', wakePayment);
     window.removeEventListener('online', wakePayment);
     document.removeEventListener('visibilitychange', wakeVisible);
     window.removeEventListener('pageshow', wakeRestored);
   });
   async function wakePayment() {
-    if (pageInactive || wakeBusy || Date.now() - lastWake < 250) return;
+    if (pageInactive) return;
+    recovery.setForeground?.(true);
+    if (wakeBusy) { wakeAgain = true; return; }
+    if (Date.now() - lastWake < 250) return;
     lastWake = Date.now(); wakeBusy = true;
     try {
       if (!state?.verified && (state?.authenticated || state?.status === 'service_unavailable')) {
@@ -540,23 +708,30 @@ export async function initializeAccountUI() {
         if (refreshed?.state) render(refreshed.state);
       }
       await recovery.focus();
+      await processNativePaymentReturn();
     } catch { /* The persisted order remains available for the next focus or retry. */ }
-    finally { wakeBusy = false; }
+    finally {
+      wakeBusy = false;
+      if (wakeAgain && !pageInactive) { wakeAgain = false; lastWake = -Infinity; queueMicrotask(() => void wakePayment()); }
+    }
   }
-  const wakeVisible = () => { if (!document.hidden) void wakePayment(); };
+  const pausePayment = () => recovery.setForeground?.(false);
+  const wakeVisible = () => { recovery.setForeground?.(!document.hidden); if (!document.hidden) void wakePayment(); };
   const wakeRestored = event => { if (event.persisted) { lastWake = -Infinity; void wakePayment(); } };
   const unsubscribeFocus = bridge.onAppFocus?.(() => void wakePayment());
   window.addEventListener('focus', wakePayment);
+  window.addEventListener('blur', pausePayment);
   window.addEventListener('online', wakePayment);
   document.addEventListener('visibilitychange', wakeVisible);
   window.addEventListener('pageshow', wakeRestored);
+  recovery.setForeground?.(!document.hidden);
   try { render(await bridge.getAccountState()); }
   catch { notice('无法读取软件账号，请重新打开应用。', true); }
   if (paymentReturn) {
     const browserDialog = document.getElementById('browser-account-dialog');
     if (isDesktop) document.getElementById('account-tab')?.click();
     else if (browserDialog && !browserDialog.open) browserDialog.showModal();
-    if (!dialog.open) dialog.showModal();
+    showMembership();
     if (paymentUserId && state?.verified) void loadOnlineCatalog();
   }
   try { const reply = await bridge.getAccountGoogleConfig?.(); googleEnabled = reply?.ok === true && reply.result?.enabled === true; updateButtons(); } catch {}

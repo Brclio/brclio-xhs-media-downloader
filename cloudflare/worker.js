@@ -43,6 +43,12 @@ function applySecurityHeaders(response, pathname) {
     headers.set('Referrer-Policy', 'no-referrer');
     headers.set('Content-Security-Policy', ADMIN_CSP);
   }
+  if (pathname === '/payment-return' || pathname === '/payment-return.html') {
+    headers.set('Cache-Control', 'no-store');
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('X-Frame-Options', 'DENY');
+    headers.set('Referrer-Policy', 'no-referrer');
+  }
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 

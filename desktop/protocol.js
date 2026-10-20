@@ -19,6 +19,7 @@ const STATIC_FILES = new Set([
   'learn.html', 'learn.css', 'learn.js',
   'vip.html', 'vip.css', 'vip.js',
   'membership.html', 'membership.css', 'membership.js',
+  'payment-return.html', 'payment-return.css', 'payment-return.js',
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'lib/parse-verification.js',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'avatar-ui.js', 'commerce-ui.js', 'commerce-ui.css', 'lib/browser-account.js', 'lib/payment-recovery.js', 'lib/avatar-client.js', 'lib/account-avatar-transfer.js', 'assets/avatars/manifest.json', 'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/review-nicknames.js'

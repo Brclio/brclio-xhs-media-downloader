@@ -21,8 +21,8 @@ document.querySelectorAll('.desktop-page, #single-note-panel, #profile-panel').f
 if(document.getElementById('desktop-navigation'))document.getElementById('desktop-navigation').hidden=false;
 if(document.getElementById('desktop-account-page'))document.getElementById('desktop-account-page').hidden=false;
 }
-window.fixtureCalls=[]; window.fixtureOpened=[]; window.fixtureRefreshes=0;window.fixturePermissionRefreshes=0;window.fixtureClears=0;
-window.fixtureMode='quote'; window.fixtureStatus='PENDING'; window.fixtureConfirmed=false;
+window.fixtureCalls=[]; window.fixtureOpened=[];window.fixtureOpenCalls=[];window.fixtureCopied=[];window.fixtureOpenFails=false; window.fixtureRefreshes=0;window.fixturePermissionRefreshes=0;window.fixtureClears=0;
+window.fixtureMode='quote'; window.fixtureConfirmed=new URL(location.href).searchParams.has('cold-handoff');window.fixtureStatus=window.fixtureConfirmed?'PAID':'PENDING';
 window.fixtureOrderId='${orderId}';window.fixtureResumeMode='success';window.fixtureStatusFailure=false;
 window.fixturePendingDelay=new URL(location.href).searchParams.has('delayed-restore');window.fixturePendingFailure=false;
 window.fixtureCatalog={enabled:true,acceptingPayments:!new URL(location.href).searchParams.has('paused'),mode:'live',currency:'CNY',version:'fixture-1',plans:[{id:'monthly',name:'月付',days:30,priceCents:1990,amount:'19.90'}]};
@@ -32,11 +32,15 @@ window.fixtureListeners=[];
 window.fixtureSetState=value=>{window.fixtureState=value;window.fixtureListeners.forEach(fn=>fn(value));};
 window.fixtureAccountEvents=[];window.addEventListener('brclio-account-update',event=>window.fixtureAccountEvents.push(structuredClone(event.detail)));
 window.fixtureFocusListeners=[];window.fixtureFocus=()=>window.fixtureFocusListeners.forEach(fn=>fn());
+window.fixtureReturnListeners=[];window.fixtureReturn=hint=>Promise.all(window.fixtureReturnListeners.map(fn=>fn(hint)));
 window.fixturePersist=(id,userId=window.fixtureState.account.user.id,quote)=>{sessionStorage.setItem('fixture-pending-payment',JSON.stringify({userId,orderId:id}));if(quote)sessionStorage.setItem('fixture-order-quote',JSON.stringify({planId:quote.planId,priceCents:Number(quote.amount.replace('.','')),planName:(quote.provider==='wechat'?window.fixtureWechatCatalog:window.fixtureCatalog).plans.find(plan=>plan.id===quote.planId)?.name||'月付',...(quote.provider==='wechat'?{source:'brclio_wechat',paymentMethod:'brclio_wechat',provider:'wechat'}:{})}));};
 window.open=url=>{window.fixtureOpened.push(url);return null;};
+Object.defineProperty(navigator,'clipboard',{value:{writeText:async value=>{window.fixtureCopied.push(value);}}});
 window.xhsDesktop={
-getAccountState:async()=>window.fixtureState,onAccountUpdate:fn=>{window.fixtureListeners.push(fn);return()=>{};},
+getAccountState:async()=>{if(new URL(location.href).searchParams.has('cold-handoff'))await new Promise(resolve=>window.fixtureReleaseState=resolve);return window.fixtureState;},onAccountUpdate:fn=>{window.fixtureListeners.push(fn);return()=>{};},
 onAppFocus:fn=>{window.fixtureFocusListeners.push(fn);return()=>{window.fixtureFocusListeners=window.fixtureFocusListeners.filter(value=>value!==fn);};},
+onPaymentReturn:fn=>{window.fixtureReturnListeners.push(fn);if(new URL(location.href).searchParams.has('cold-handoff'))queueMicrotask(()=>{void fn({orderId:'${orderId}'});});return()=>{window.fixtureReturnListeners=window.fixtureReturnListeners.filter(value=>value!==fn);};},
+openPaymentCheckout:async input=>{window.fixtureOpenCalls.push(structuredClone(input));if(window.fixtureOpenHoldOnce){window.fixtureOpenHoldOnce=false;await new Promise(resolve=>window.fixtureReleaseOpen=resolve);}if(window.fixtureOpenFails)return {ok:false,error:{code:'OPEN_FAILED',message:'系统默认浏览器尚未打开，请重试原订单或复制付款链接。'}};window.fixtureOpened.push(input.checkoutUrl);return {ok:true};},
 getPendingPayment:async()=>{const reply={ok:true,result:JSON.parse(sessionStorage.getItem('fixture-pending-payment')||'null'),state:structuredClone(window.fixtureState)};if(window.fixturePendingDelay)await new Promise(resolve=>window.fixtureReleasePending=resolve);return window.fixturePendingFailure?{ok:false,error:{code:'SERVICE_UNAVAILABLE',message:'fixture pending record unavailable'}}:reply;},
 clearPendingPayment:async input=>{const saved=JSON.parse(sessionStorage.getItem('fixture-pending-payment')||'null');const cleared=saved?.userId===input.expectedUserId&&saved?.orderId===input.orderId;if(cleared){window.fixtureClears++;sessionStorage.removeItem('fixture-pending-payment');}return {ok:true,result:{cleared},state:window.fixtureState};},
 getAccountGoogleConfig:async()=>({ok:true,result:{enabled:false}}),
@@ -66,7 +70,9 @@ return {ok:true,result:{order:{id:input.orderId,userId:input.expectedUserId,stat
 }
 if(action==='payment-status'){
 if(window.fixtureStatusFailure)return {ok:false,error:{code:'PAYMENT_UNAVAILABLE',message:'暂时无法核实订单，原订单已保留。'}};
-return {ok:true,result:{order:{id:input.orderId,userId:'a',status:window.fixtureConfirmed?'confirmed':'pending',...JSON.parse(sessionStorage.getItem('fixture-order-quote')||'{"planId":"monthly","planName":"月付","priceCents":1990}')},paymentStatus:window.fixtureStatus}};
+const result={ok:true,result:{order:{id:input.orderId,userId:'a',status:window.fixtureConfirmed?'confirmed':'pending',...JSON.parse(sessionStorage.getItem('fixture-order-quote')||'{"planId":"monthly","planName":"月付","priceCents":1990}')},paymentStatus:window.fixtureStatus}};
+if(window.fixtureStatusHoldOnce){window.fixtureStatusHoldOnce=false;await new Promise(resolve=>window.fixtureReleaseStatus=resolve);}
+return result;
 }
 if(action==='orders-mine')return {ok:true,result:{orders:[],page:1,total:0,totalPages:1}};
 if(action==='reviews-public')return {ok:true,result:{reviews:[],page:1,total:0,totalPages:1,summary:{count:0,averageRating:null}}};
@@ -97,7 +103,7 @@ async function finish(code, error) {
   if (server?.listening) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
   app.exit(code);
 }
-const timeout = setTimeout(() => void finish(1, new Error('BRCLIO_PAY_UI_TIMEOUT')), 55_000);
+const timeout = setTimeout(() => void finish(1, new Error('BRCLIO_PAY_UI_TIMEOUT')), 75_000);
 app.whenReady().then(async () => {
   server = createServer((req, res) => {
     const url = new URL(req.url, 'http://fixture.invalid');
@@ -122,6 +128,22 @@ app.whenReady().then(async () => {
   const evaluate = code => win.webContents.executeJavaScript(code, true);
   const wait = (condition, timeoutMs = 5000) => evaluate(`new Promise((resolve,reject)=>{const start=Date.now();const check=()=>{if(${condition})resolve();else if(Date.now()-start>${timeoutMs})reject(new Error(${JSON.stringify(`Fixture condition timed out (${timeoutMs}ms): ${condition}`)}+' '+JSON.stringify({url:location.href,status:document.getElementById('membership-online-status')?.textContent,quote:document.getElementById('membership-online-quote')?.textContent,calls:window.fixtureCalls?.map(item=>item.action)})));else setTimeout(check,10)};check();})`);
   const click = id => evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
+  const screenshotStates = [];
+  const captureState = async (name, width) => {
+    win.setContentSize(width, width === 375 ? 812 : 960);
+    if (name.startsWith('payment-selection-')) {
+      await wait(`document.getElementById('membership-dialog').dataset.paymentPhase==='selection'&&!document.getElementById('membership-online-pay').disabled&&!document.getElementById('membership-online-method').disabled&&!document.getElementById('membership-online-refresh').disabled&&document.getElementById('membership-online-status').textContent===''&&Number(getComputedStyle(document.getElementById('membership-online-pay')).opacity)>=0.999`);
+    }
+    await evaluate(`document.getElementById('membership-dialog').scrollTop=0;new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+    assert.equal(await evaluate(`(()=>{const d=document.getElementById('membership-dialog');return d.scrollWidth>d.clientWidth+1})()`), false, `${name} has no horizontal overflow`);
+    screenshotStates.push({ name, width, ...await evaluate(`({phase:document.getElementById('membership-dialog').dataset.paymentPhase,payDisabled:document.getElementById('membership-online-pay').disabled,payActuallyDisabled:document.getElementById('membership-online-pay').matches(':disabled'),payBackground:getComputedStyle(document.getElementById('membership-online-pay')).backgroundColor,methodDisabled:document.getElementById('membership-online-method').disabled,refreshDisabled:document.getElementById('membership-online-refresh').disabled,payOpacity:getComputedStyle(document.getElementById('membership-online-pay')).opacity,amount:document.getElementById('membership-summary-amount').textContent,quote:document.getElementById('membership-online-quote').textContent})`) });
+    fs.writeFileSync(path.join(directory, `${name}.png`), (await win.webContents.capturePage()).toPNG());
+  };
+  const acknowledgeAndReopen = async () => {
+    await wait(`document.getElementById('membership-dialog').dataset.paymentPhase==='confirmed'&&!document.getElementById('membership-online-check').disabled`);
+    await click('membership-success-done'); await click('account-open-membership');
+    await wait(`document.getElementById('membership-dialog').dataset.paymentPhase==='selection'&&!document.getElementById('membership-online-pay').disabled`);
+  };
   await win.loadURL(`${origin}/?payment_order=${orderId}&payment_order_id=forged&product_order_id=forged&status=PAID`);
   await wait(`document.getElementById('membership-online-status')?.textContent.includes('尚未完成付款') && document.getElementById('membership-online-quote')?.textContent.includes('19.90') && !document.getElementById('membership-online-pay').disabled`);
   assert.equal(await evaluate(`new URL(location.href).searchParams.has('payment_order')`), false);
@@ -136,6 +158,8 @@ app.whenReady().then(async () => {
   await evaluate(`window.fixtureStatus='CLOSED'`); await click('membership-online-check');
   await wait(`document.getElementById('membership-online-status').textContent.includes('已关闭')&&!document.getElementById('membership-online-pay').disabled`);
   assert.equal(await evaluate('window.fixtureRefreshes'), 0, 'closed returned order cannot grant membership');
+  await click('membership-close'); await click('account-open-membership');
+  await wait(`document.getElementById('membership-dialog').dataset.paymentPhase==='selection'&&!document.getElementById('membership-online-pay').disabled`);
   await evaluate(`window.fixtureStatus='PENDING'`);
   await click('membership-online-pay');
   await wait(`document.getElementById('membership-online-status').textContent.includes('核对新价格')`);
@@ -163,6 +187,7 @@ app.whenReady().then(async () => {
   assert.match(await evaluate(`document.getElementById('membership-online-quote').textContent`), /^更新月付 · ¥24\.90 · 30 天会员（原订单报价）/);
   await click('membership-online-pay');
   await wait('window.fixtureOpened.length===1');
+  assert.equal(await evaluate(`window.fixtureOpenCalls.length`), 1, 'desktop checkout uses the verified native shell adapter');
   assert.equal(await evaluate(`new URL(window.fixtureOpened[0]).hash.startsWith('#token=')`), true);
   assert.match(await evaluate(`document.getElementById('membership-online-quote').textContent`), /¥24\.90.*原订单报价/, 'waiting checkout retains its accepted order quote');
   assert.doesNotMatch(await evaluate(`document.getElementById('membership-online-quote').textContent`), /¥29\.90/, 'current catalog cannot replace a pending order price');
@@ -206,9 +231,22 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.getElementById('account-badge').classList.contains('is-member')`), true);
   assert.equal(await evaluate('window.fixtureClears'), 1);
   assert.equal(await evaluate(`sessionStorage.getItem('fixture-pending-payment')`), null);
+  assert.equal(await evaluate(`document.getElementById('membership-dialog').open`), true, 'success appears in the existing open payment dialog');
+  assert.equal(await evaluate(`document.getElementById('membership-dialog').dataset.paymentPhase`), 'confirmed');
+  assert.equal(await evaluate(`document.getElementById('membership-progress-title').textContent`), '会员已开通');
+  assert.equal(await evaluate(`document.getElementById('membership-completed-expiry').hidden`), false);
+  assert.match(await evaluate(`document.getElementById('membership-completed-expiry').textContent`), /2026/);
+  assert.equal(await evaluate(`document.getElementById('membership-choices').hidden`), true);
+  assert.equal(await evaluate(`document.getElementById('membership-online-pay').hidden`), true);
+  assert.equal(await evaluate(`document.getElementById('membership-summary-amount').textContent`), '24.90', 'the successful receipt shows its accepted order amount');
+  assert.match(await evaluate(`document.getElementById('membership-online-quote').textContent`), /¥24\.90.*原订单报价/, 'the successful detail keeps the accepted order quote');
+  assert.doesNotMatch(await evaluate(`document.getElementById('membership-online-quote').textContent`), /¥29\.90/, 'a newer catalog cannot replace the successful order amount');
+  await captureState('payment-success-desktop', 1280); await captureState('payment-success-mobile', 375); win.setContentSize(1280,960);
+  await acknowledgeAndReopen();
   await evaluate(`window.fixtureMode='confirmed'`); await click('membership-online-pay');
   await wait('window.fixtureRefreshes===2');
   assert.equal(await evaluate('window.fixtureOpened.length'), 1, 'confirmed retry without URL goes to status query');
+  await acknowledgeAndReopen();
   await evaluate(`window.fixtureMode='paid';window.fixtureConfirmed=false`); await click('membership-online-pay');
   await wait(`document.getElementById('membership-online-status').textContent.includes('权益确认中')`);
   assert.equal(await evaluate('window.fixtureRefreshes'), 2);
@@ -330,9 +368,12 @@ app.whenReady().then(async () => {
   await evaluate(`document.querySelector('input[name="membership-online-method"][value="wechat"]').click()`);
   await wait(`window.fixtureCalls.some(item=>item.action==='payment-catalog'&&item.input.provider==='wechat')&&!document.getElementById('membership-online-method').disabled`);
   assert.equal(await evaluate(`document.querySelectorAll('#membership-online-plan option').length`), 3, 'Wechat loads its own registered catalog');
-  assert.match(await evaluate(`document.getElementById('membership-online-price-note').textContent`), /已登记/);
-  assert.match(await evaluate(`document.getElementById('membership-online-method-help').textContent`), /Native.*另一台设备/);
+  assert.match(await evaluate(`document.getElementById('membership-online-price-note').textContent`), /人民币.*核对金额/);
+  assert.match(await evaluate(`document.getElementById('membership-online-method-help').textContent`), /浏览器.*二维码.*手机微信/);
   assert.doesNotMatch(await evaluate(`document.getElementById('membership-online-method-help').textContent`), /长按|H5|App/);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('input[name="membership-online-plan-choice"]')).map(input=>input.value)`), ['daily','monthly','yearly']);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.membership-plan-choice .membership-plan-price')).map(element=>element.textContent)`), ['¥3.00','¥19.90','¥69.90']);
+  await captureState('payment-selection-wechat-desktop',1280); await captureState('payment-selection-wechat-mobile',375); win.setContentSize(1280,960);
   await evaluate(`window.fixtureMode='network'`); await click('membership-online-pay');
   await wait(`document.getElementById('membership-online-status').textContent.includes('网络结果未确认')`);
   assert.equal(await evaluate(`document.getElementById('membership-online-method').disabled`), true, 'uncertain creation freezes the channel to preserve the original request');
@@ -348,7 +389,7 @@ app.whenReady().then(async () => {
   win.setContentSize(375, 812);
   await evaluate(`document.getElementById('membership-online-payment').scrollIntoView({block:'start'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
   assert.equal(await evaluate(`(()=>{const d=document.getElementById('membership-dialog');return d.scrollWidth>d.clientWidth+1})()`), false, 'Wechat payment choices and Native guidance fit a mobile viewport');
-  assert.match(await evaluate(`document.getElementById('membership-online-method-help').textContent`), /当前手机付款也需要另一台设备配合/);
+  assert.match(await evaluate(`document.getElementById('membership-online-method-help').textContent`), /二维码.*手机微信/);
   fs.writeFileSync(path.join(directory, 'wechat-online-mobile.png'), (await win.webContents.capturePage()).toPNG());
   win.setContentSize(1280, 960);
   await win.loadURL(`${origin}/`);
@@ -361,6 +402,74 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`window.fixtureCalls.find(item=>item.action==='payment-resume').input.provider`), undefined, 'recovery lets the backend choose the saved order provider');
   assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 0);
   assert.equal(await evaluate(`window.fixtureState.account.membership.active`), false);
+  await win.loadURL(`${origin}/?native-open-error=1`);
+  await wait(`window.fixtureCalls.some(item=>item.action==='payment-status')&&!document.getElementById('membership-online-pay').disabled`);
+  await click('account-open-membership');
+  await wait(`!document.getElementById('membership-online-pay').disabled`);
+  await evaluate(`window.fixtureOpenFails=true`); await click('membership-online-pay');
+  await wait(`!document.getElementById('membership-open-error').hidden&&!document.getElementById('membership-online-pay').disabled`);
+  assert.equal(await evaluate(`document.getElementById('membership-progress-title').textContent`), '收银台尚未打开');
+  assert.match(await evaluate(`document.getElementById('membership-open-error').textContent`), /重试原订单.*复制付款链接/);
+  assert.equal(await evaluate(`document.getElementById('membership-copy-checkout').hidden`), false);
+  assert.equal(await evaluate(`JSON.parse(sessionStorage.getItem('fixture-pending-payment')).orderId`), orderId);
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 0, 'native open failure cannot create a replacement order');
+  assert.equal(await evaluate(`window.fixtureOpened.length`), 0);
+  await captureState('payment-open-error-desktop',1280); await captureState('payment-open-error-mobile',375); win.setContentSize(1280,960);
+  await click('membership-copy-checkout');
+  await wait(`document.getElementById('membership-open-error').textContent.includes('付款链接已复制')`);
+  assert.equal(await evaluate(`window.fixtureCopied.length`), 1);
+  assert.equal(await evaluate(`new URL(window.fixtureCopied[0]).origin`), 'https://paywc.bornforthis.cn');
+  await evaluate(`window.fixtureOpenFails=false`); await click('membership-online-pay');
+  await wait(`window.fixtureOpened.length===1&&!document.getElementById('membership-online-check').disabled`);
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 0);
+  assert.equal(await evaluate(`window.fixtureOpenCalls.every(input=>input.orderId==='${orderId}'&&input.expectedUserId==='a')`), true, 'OS retry retains the same owner and business order');
+  const beforeForeignHint = await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-status').length`);
+  await evaluate(`window.fixtureReturn({orderId:'${replacementOrderId}'})`);
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-status').length`), beforeForeignHint, 'a return for an unsaved order cannot query or replace the active purchase');
+  await evaluate(`window.dispatchEvent(new Event('blur'));window.fixtureStatusHoldOnce=true`); await click('membership-online-check');
+  await wait(`Boolean(window.fixtureReleaseStatus)`);
+  await evaluate(`window.fixtureConfirmed=true;window.fixtureStatus='PAID';window.fixtureReturned=window.fixtureReturn({orderId:'${orderId}'});window.fixtureReleaseStatus();`);
+  await wait(`document.getElementById('membership-dialog').dataset.paymentPhase==='confirmed'&&!document.getElementById('membership-online-check').disabled`);
+  assert.equal(await evaluate(`document.getElementById('membership-dialog').open`), true);
+  assert.equal(await evaluate(`document.getElementById('membership-progress-title').textContent`), '会员已开通');
+  assert.match(await evaluate(`document.getElementById('membership-completed-expiry').textContent`), /2026/);
+  assert.equal(await evaluate(`document.getElementById('account-badge').classList.contains('is-member')`), true, 'fresh account membership is rendered while the success dialog remains open');
+  assert.equal(await evaluate(`window.fixtureState.account.features['profile-download'].allowed`), true);
+  assert.equal(await evaluate(`window.fixtureOpened.length`), 1, 'a paid deep return rechecks rights without reopening checkout');
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 0);
+  assert.equal(await evaluate(`sessionStorage.getItem('fixture-pending-payment')`), null);
+  await evaluate(`window.fixtureReturn({orderId:'${orderId}'})`);
+  assert.equal(await evaluate(`document.getElementById('membership-dialog').dataset.paymentPhase`), 'confirmed', 'duplicate verified return keeps the successful result visible');
+  assert.equal(await evaluate(`window.fixtureClears`), 1);
+  await captureState('payment-return-success-desktop',1280); await captureState('payment-return-success-mobile',375); win.setContentSize(1280,960);
+  await evaluate(`window.fixturePersist('${orderId}','a',{planId:'monthly',amount:'19.90',provider:'wechat'})`);
+  await win.loadURL(`${origin}/?cold-handoff=1`);
+  await wait(`Boolean(window.fixtureReleaseState)`);
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-status').length`), 0, 'a cold-start hint waits for the initial verified account state');
+  await evaluate(`window.fixtureReleaseState()`);
+  await wait(`document.getElementById('membership-dialog').open&&document.getElementById('membership-dialog').dataset.paymentPhase==='confirmed'&&!document.getElementById('membership-online-check').disabled`);
+  assert.equal(await evaluate(`document.getElementById('membership-progress-title').textContent`), '会员已开通', 'an immediately delivered cold-start hint is replayed after identity initializes');
+  assert.equal(await evaluate(`window.fixtureOpened.length`), 0);
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 0);
+  assert.equal(await evaluate(`window.fixtureClears`), 1);
+  await captureState('payment-cold-handoff-success-mobile',375); win.setContentSize(1280,960);
+  await evaluate(`window.fixturePersist('${orderId}','a',{planId:'monthly',amount:'19.90',provider:'wechat'})`);
+  await win.loadURL(`${origin}/?late-open-failure=1`);
+  await wait(`window.fixtureCalls.some(item=>item.action==='payment-status')&&!document.getElementById('membership-online-pay').disabled`);
+  await click('account-open-membership'); await wait(`!document.getElementById('membership-online-pay').disabled`);
+  await evaluate(`window.fixtureOpenFails=true;window.fixtureOpenHoldOnce=true`); await click('membership-online-pay');
+  await wait(`Boolean(window.fixtureReleaseOpen)`);
+  await evaluate(`window.fixtureConfirmed=true;window.fixtureStatus='PAID';window.fixtureReturned=window.fixtureReturn({orderId:'${orderId}'})`);
+  await wait(`document.getElementById('membership-dialog').dataset.paymentPhase==='confirmed'`);
+  await evaluate(`window.fixtureReleaseOpen()`);
+  await wait(`!document.getElementById('membership-online-check').disabled`);
+  assert.equal(await evaluate(`document.getElementById('membership-progress-title').textContent`), '会员已开通');
+  assert.equal(await evaluate(`document.getElementById('membership-open-error').hidden`), true, 'a late OS open failure cannot overwrite a verified successful result');
+  assert.equal(await evaluate(`document.getElementById('membership-copy-checkout').hidden`), true);
+  assert.equal(await evaluate(`window.fixtureOpened.length`), 0);
+  assert.equal(await evaluate(`window.fixtureClears`), 1);
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 0);
+  await evaluate(`window.fixturePersist('${orderId}','a',{planId:'monthly',amount:'19.90',provider:'wechat'})`);
   await win.loadURL(`${origin}/?delayed-restore=1`);
   await wait(`Boolean(window.fixtureReleasePending)`); await click('account-open-membership');
   await wait(`document.getElementById('membership-online-quote').textContent.includes('19.90')&&!document.getElementById('membership-online-refresh').disabled`);
@@ -394,6 +503,20 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-status').length`), 0, 'old-owner lookup cannot query its order after an account switch');
   assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 0);
   await evaluate(`sessionStorage.removeItem('fixture-pending-payment');sessionStorage.removeItem('fixture-order-quote')`);
+  await win.loadURL(`${origin}/?old-hint-new-order=1`);
+  await wait(`document.getElementById('account-badge')?.textContent.includes('普通用户')`); await click('account-open-membership');
+  await wait(`!document.getElementById('membership-online-pay').disabled`);
+  await evaluate(`window.fixturePersist('${orderId}','a',{planId:'monthly',amount:'19.90'});window.fixturePendingDelay=true;void window.fixtureReturn({orderId:'${orderId}'});`);
+  await wait(`Boolean(window.fixtureReleasePending)`);
+  await evaluate(`window.fixturePendingDelay=false;window.fixtureMode='success';window.fixtureOrderId='${replacementOrderId}'`);
+  await click('membership-online-pay'); await wait(`window.fixtureOpened.length===1&&!document.getElementById('membership-online-pay').disabled`);
+  assert.equal(await evaluate(`JSON.parse(sessionStorage.getItem('fixture-pending-payment')).orderId`), replacementOrderId);
+  await evaluate(`window.fixtureReleasePending();new Promise(resolve=>setTimeout(resolve,30))`);
+  assert.equal(await evaluate(`JSON.parse(sessionStorage.getItem('fixture-pending-payment')).orderId`), replacementOrderId, 'a delayed old-hint lookup cannot replace the newer purchase reference');
+  assert.equal(await evaluate(`window.fixtureCalls.some(item=>item.action==='payment-status'&&item.input.orderId==='${orderId}')`), false, 'the obsolete hint cannot start an old-order status check after a newer order is active');
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 1);
+  assert.equal(await evaluate(`window.fixtureOpened.length`), 1);
+  await evaluate(`sessionStorage.removeItem('fixture-pending-payment');sessionStorage.removeItem('fixture-order-quote')`);
   await win.loadURL(`${origin}/?browser-offline=1`);
   await wait(`window.fixtureAccountEvents.at(-1)?.status==='service_unavailable'&&!window.fixtureAccountEvents.at(-1)?.authenticated`);
   assert.equal(await evaluate(`Boolean(window.xhsDesktop)`), false, 'offline identity recovery uses the actual browser account bridge');
@@ -423,6 +546,7 @@ app.whenReady().then(async () => {
   await wait(`document.getElementById('membership-catalog-status').textContent.includes('尚未启用在线收款')`);
   assert.equal(await evaluate(`document.querySelector('[data-plan="monthly"] [data-plan-price]').textContent`), '19.90', 'payment pause does not erase current pricing');
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ ok: true, checks: ['delayed pending lookup remains guarded when quote returns first', 'lookup failure retains original record and guarded retry', 'old-owner pending lookup cannot unlock or query after account switch', 'Alipay default with separate Wechat registered catalog', 'uncertain Wechat create freezes method and reuses request ID', 'pending Wechat order restores and resumes its saved provider without another create', '375px Native guidance requires another device', 'online-only purchase with manual QR plans email-copy and report removed', 'quote change requires second click', 'PAYMENT_UNAVAILABLE create reuses request ID', 'payment pause blocks checkout and allows readiness refresh', 'removed draft SKU keeps its original plan name', 'recovery preserves original request and quoted amount', 'disabled catalog never creates an order', 'single-order checkout fragment preserved', 'return parameters never grant rights', 'back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant', 'paid without committed webhook stays pending and automatically polls', 'native app focus immediately checks pending order', 'confirmed order refreshes account and feature rights before clearing recovery', 'fresh account rights reach app listeners and member badge', 'renderer restart restores saved pending order without another create or checkout', 'unpaid recovery resumes the original order with a fresh checkout token', 'restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID', 'status and checkout failures retain the original order', 'PAID restart and PAID resume followed by network failure block both purchase actions', 'confirmed recovery after a failed PAID check refreshes rights without another checkout or create', 'confirmed or paid retry without checkout URL queries status', 'late created or resumed checkout discarded on account switch', 'browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout', 'marketing page uses enabled live catalog and shows payment pause', '375px online layout including unpaid restart control'], screenshots: directory }));
+  fs.writeFileSync(path.join(directory, 'screenshot-states.json'), JSON.stringify(screenshotStates, null, 2) + '\n');
+  console.log(JSON.stringify({ ok: true, checks: ['confirmed receipt and detail preserve the accepted order price after catalog changes', 'delayed old handoff lookup cannot overwrite a newer active purchase', 'native open failure preserves the same order and supports retry plus copy', 'verified deep return tails old PENDING without reopening checkout', 'open success panel immediately renders member status and expiry', 'daily monthly yearly and Wechat selection fits desktop and 375px', 'cold-start handoff waits for verified initial account state', 'late native open failure cannot replace a confirmed success', 'delayed pending lookup remains guarded when quote returns first', 'lookup failure retains original record and guarded retry', 'old-owner pending lookup cannot unlock or query after account switch', 'Alipay default with separate Wechat registered catalog', 'uncertain Wechat create freezes method and reuses request ID', 'pending Wechat order restores and resumes its saved provider without another create', '375px Native guidance requires another device', 'online-only purchase with manual QR plans email-copy and report removed', 'quote change requires second click', 'PAYMENT_UNAVAILABLE create reuses request ID', 'payment pause blocks checkout and allows readiness refresh', 'removed draft SKU keeps its original plan name', 'recovery preserves original request and quoted amount', 'disabled catalog never creates an order', 'single-order checkout fragment preserved', 'return parameters never grant rights', 'back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant', 'paid without committed webhook stays pending and automatically polls', 'native app focus immediately checks pending order', 'confirmed order refreshes account and feature rights before clearing recovery', 'fresh account rights reach app listeners and member badge', 'renderer restart restores saved pending order without another create or checkout', 'unpaid recovery resumes the original order with a fresh checkout token', 'restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID', 'status and checkout failures retain the original order', 'PAID restart and PAID resume followed by network failure block both purchase actions', 'confirmed recovery after a failed PAID check refreshes rights without another checkout or create', 'confirmed or paid retry without checkout URL queries status', 'late created or resumed checkout discarded on account switch', 'browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout', 'marketing page uses enabled live catalog and shows payment pause', '375px online layout including unpaid restart control'], screenshots: directory }));
   await finish(0);
 }).catch(error => void finish(1, error));

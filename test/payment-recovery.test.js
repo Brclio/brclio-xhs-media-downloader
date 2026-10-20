@@ -386,7 +386,7 @@ test('temporary pending-record reads recover automatically or immediately on foc
   }
 });
 
-test('automatic, focus and manual checks share a single in-flight request', async () => {
+test('automatic and manual checks share the flight while a foreground return adds one serial follow-up', async () => {
   const f = fixture(), pending = deferred();
   f.data.statusWork = () => pending.promise;
   f.recovery.track(orderId);
@@ -394,10 +394,10 @@ test('automatic, focus and manual checks share a single in-flight request', asyn
   const second = f.recovery.focus();
   const third = f.recovery.check();
   await f.advance(3000);
-  assert.equal(f.count('payment-status'), 1);
+  assert.equal(f.count('payment-status'), 1, 'a return does not overlap the older request');
   pending.resolve({ ok: true, result: { order: { id: orderId, status: 'pending' }, paymentStatus: 'PENDING' } });
   await Promise.all([first, second, third]); await settle();
-  assert.equal(f.count('payment-status'), 1);
+  assert.equal(f.count('payment-status'), 2, 'focus rechecks after the older PENDING response instead of trusting it');
   assert.equal(f.last().busy, false);
   f.recovery.dispose();
 });
