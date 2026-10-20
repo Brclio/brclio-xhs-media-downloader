@@ -192,7 +192,11 @@ app.whenReady().then(async () => {
     const requested = calls.filter(call => call.action === 'send-code').length;
     await click('#feedback-send-code');
     await waitFor(() => calls.filter(call => call.action === 'send-code').length > requested && calls.filter(call => call.action === 'send-code').at(-1).input.email === email, 'fixture login code requested');
-    await fill('#feedback-login-code', '123456'); await submit('#feedback-login-form');
+    await fill('#feedback-login-code', '123456');
+    // The server can record send-code before its response reaches the renderer.
+    // Submit only when the same controls a real user clicks are enabled.
+    await check(`!document.querySelector('#feedback-login-submit').disabled && !document.querySelector('#feedback-login-email').disabled`, 'login submission ready');
+    await submit('#feedback-login-form');
     await check(`!document.querySelector('#feedback-login-dialog').open && !document.querySelector('#feedback-logout').hidden`, 'login completed');
   }
 
