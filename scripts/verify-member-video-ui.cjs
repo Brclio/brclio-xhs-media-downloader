@@ -325,15 +325,21 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
     fs.writeFileSync(path.join(screenshots, `${name}.png`), (await win.webContents.capturePage()).toPNG());
   };
-  const settleScrolling = (minimumMs = 750) => evaluate(`new Promise((resolve, reject) => {
-    const coordinate = () => scrollY + document.getElementById('single-note-panel').scrollTop;
-    const started = performance.now(); let previous = coordinate(), stable = 0;
+  const settleScrolling = (minimumMs = 750, expectedPosition = null) => evaluate(`new Promise((resolve, reject) => {
+    const coordinate = () => ({ windowY: scrollY, nestedY: document.getElementById('single-note-panel').scrollTop });
+    const expected = ${JSON.stringify(expectedPosition)};
+    const started = performance.now(); let previous = coordinate(), stableSince = null;
     const check = () => {
-      stable = Math.abs(coordinate() - previous) < 0.5 ? stable + 1 : 0; previous = coordinate();
-      if (performance.now() - started >= ${minimumMs} && stable >= 4) resolve();
-      else if (performance.now() - started > 3000) reject(new Error('Pending scroll did not settle'));
-      else requestAnimationFrame(check);
-    }; requestAnimationFrame(check);
+      const current = coordinate(), at = performance.now();
+      const stable = Math.abs(current.windowY - previous.windowY) < 0.5 && Math.abs(current.nestedY - previous.nestedY) < 0.5;
+      const atExpectedPosition = !expected || (Math.abs(current.windowY - expected.windowY) <= 1 && Math.abs(current.nestedY - expected.nestedY) <= 1);
+      if (!stable || !atExpectedPosition) stableSince = null;
+      else if (stableSince === null) stableSince = at;
+      previous = current;
+      if (at - started >= ${minimumMs} && stableSince !== null && at - stableSince >= 250) resolve();
+      else if (at - started > 10000) reject(new Error('Scroll coordinates did not settle: ' + JSON.stringify({ current, expected, elapsedMs: Math.round(at - started) })));
+      else setTimeout(check, 50);
+    }; setTimeout(check, 50);
   })`);
   const assertNoOverflow = async width => {
     const overflow = await evaluate(`({ viewport: document.documentElement.clientWidth, width: document.documentElement.scrollWidth, offenders: [...document.querySelectorAll('body *')].filter(element => { const box = element.getBoundingClientRect(); return box.width > 0 && box.right > document.documentElement.clientWidth + 1; }).slice(0, 10).map(element => ({ tag: element.tagName, id: element.id, className: element.className, width: element.getBoundingClientRect().width })) })`);
@@ -399,7 +405,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(immediate.buttonDisabled, true);
   progressEvidence.push({ ...immediate, immediateClick: true });
   await paused('account');
-  await settleScrolling();
+  await settleScrolling(2000, { windowY: immediate.scrollY, nestedY: immediate.nestedScrollTop });
   if (!baselineNestedScroll) {
     const replay = await evaluate(`window.fixtureDeferredScrollEvidence.filter(item=>item.target==='window')`);
     assert.equal(replay.length, 1, 'The deferred window compositor position must actually be delivered');
@@ -636,7 +642,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.ok(nestedImmediate.rect.top + Math.min(nestedLayout.scrollTop, 1300) > nestedLayout.viewportHeight, 'Pending desktop scroll must have enough actual travel to move progress out of view');
   progressEvidence.push({ ...nestedImmediate, immediateClick: true, desktopNested: true });
   await paused('account');
-  await settleScrolling(1100);
+  await settleScrolling(2000, { windowY: nestedImmediate.scrollY, nestedY: nestedImmediate.nestedScrollTop });
   const nestedReplay = await evaluate(`window.fixtureDeferredScrollEvidence.filter(item=>item.target==='nested')`);
   assert.equal(nestedReplay.length, 1, 'The deferred desktop compositor position must actually be delivered');
   assert.equal(nestedReplay[0].phase, 'verifying');

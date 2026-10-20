@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.30",
+  "status": "superseded-unpublished",
+  "sourceCommit": "d354f47ccc9edffdad5a28e331a2c2d25588763b",
+  "tagImmutable": true,
+  "workflowRunId": 39473963689,
+  "workflowRunUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39473963689",
+  "workflowConclusion": "failure",
+  "failurePlatform": "windows-x64",
+  "reason": "The restored viewport product fix is already present and locally verified. Hidden Windows rendering throttled RAF to about 1Hz, so the verifier requirement of four RAF samples within three seconds reported a false failure. Only the renderer sampling helper is being corrected.",
+  "published": false,
+  "productionChanged": false,
+  "replacementVersion": "2.0.31"
+}

@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.31",
+  "stage": "preflight-only",
+  "checkedAt": "2026-10-20T18:40:50.846370+00:00",
+  "baseCommit": "d354f47ccc9edffdad5a28e331a2c2d25588763b",
+  "workingTreeDirty": true,
+  "changes": [
+    "Native awaited checkout open with visible same-order retry/copy fallback",
+    "Authenticated-session desktop HTTPS return page without browser login or session transfer",
+    "Registered client handoff carrying only a UUID; cold/warm delivery and identity/order guards",
+    "Foreground tail status recheck, fast paid confirmation and persistent successful membership result",
+    "Single checkout modal, plan cards, order receipt, clear waiting/failure/success states and original-price lock",
+    "Browser account modal restores before login/redeem focus; stale close events cannot cover a reopened checkout",
+    "Windows portable scheme uses the stable outer launcher instead of its disposable extracted runtime",
+    "Bounded startup scroll stabilization cancels late compositor scroll while yielding immediately to user input; deterministic renderer regression retains viewport assertions"
+  ],
+  "local": {
+    "node": {
+      "tests": 1940,
+      "passed": 1927,
+      "skipped": 13,
+      "failed": 0
+    },
+    "python": {
+      "passed": 47,
+      "failed": 0
+    },
+    "recoveryAndUIFocused": {
+      "passed": 53,
+      "failed": 0,
+      "command": "node --test test/payment-recovery.test.js test/payment-recovery-review.test.js test/payment-recovery-foreground.test.js test/brclio-pay-ui.test.js"
+    },
+    "chromiumPayment": {
+      "passed": 40,
+      "failed": 0,
+      "screenshotsReviewed": 13,
+      "currentCandidateRerun": false,
+      "screenshotNote": "online-desktop is an uncertain-result retry view; mobile waiting and success views separately verified. 9 images identical to reviewed previous candidate, 4 fresh images visually reviewed.",
+      "sameProductSourceAs": "2.0.30"
+    },
+    "nativeHandoffPackagingStartup": {
+      "handoffAndPendingTests": 27,
+      "realElectronStartup": true,
+      "networkAttempts": 0,
+      "realNativeKeychainTested": false,
+      "portableLauncherPathGuarded": true
+    },
+    "returnPage": {
+      "dedicatedTests": 8,
+      "boundaryAndBackendTests": 85,
+      "realBrowserDesktopAnd375px": true,
+      "accountApiRequests": 0
+    },
+    "cloudflareWorkerDryRun": true,
+    "pagesBuild": true,
+    "sourceSecretScan": {
+      "checkedAt": "2026-10-20T18:40:50.846370+00:00",
+      "sourceFilesChecked": 897,
+      "businessCredentialMatches": 0,
+      "temporaryManagementTokenMatches": 0,
+      "privateCredentialMode": "600",
+      "buildFiles": 430
+    },
+    "memberVideoAndBrowserAuthorization": {
+      "ok": true,
+      "widths": [
+        1440,
+        768,
+        390,
+        320
+      ],
+      "defaultSmoothNavigation": true,
+      "deferredWindowAndNestedCompositorCancelled": true,
+      "nativeFocusedMouseClick": true,
+      "earlyRealWheelRetainedAfter1700ms": true,
+      "immutableV29FailsSameRegression": true,
+      "screenshotsCaptured": 25,
+      "currentCandidateRerun": true
+    },
+    "browserMembershipRenderer": {
+      "passed": 17,
+      "failed": 0,
+      "singleModalAndRestoredFocus": true,
+      "previousSourceFailsNewFocusRegression": true
+    },
+    "commerceRenderer": {
+      "passed": 17,
+      "failed": 0
+    },
+    "webNavigationRenderer": {
+      "passed": 12,
+      "failed": 0
+    },
+    "videoProgressFocused": {
+      "passed": 64,
+      "failed": 0,
+      "boundedStartupScrollGuard": true,
+      "childBlurDoesNotStopGuard": true,
+      "userInputStopsGuard": true
+    },
+    "publicFeedbackRenderer": {
+      "passed": 26,
+      "failed": 0,
+      "realControlsReadyBeforeSubmit": true
+    }
+  },
+  "externalPreflight": {
+    "allChecksPassed": true,
+    "fixedAccountId": "c8b059429c868f6d0e528f9e10325f46",
+    "secretNameCount": 31,
+    "secretValuesRead": false,
+    "mainVersion": "e8d3c6c7-25ea-4428-ac9e-dd2cf3a19f3e",
+    "existingBindingsPreserved": true,
+    "newStorageResources": false,
+    "privateBusinessDataWrites": false,
+    "snapshotReusedFromCandidate": "2.0.28, 2.0.29 and 2.0.30 were not published or deployed; the 2026-10-20T18:22:11.683Z read-only v2.0.30 recheck matched the v2.0.27 production baseline",
+    "readOnlyRecheckedAt": "2026-10-20T18:40:50.846370+00:00",
+    "readOnlyCheckCount": 22
+  },
+  "sourceSha256": {
+    "lib/payment-recovery.js": "8a94b14f2091673ed892997d3030d359e1529c5bb93c71c0d39a95310b0ddad9",
+    "test/payment-recovery.test.js": "9f4be4aa86aafb348a50e0f233478f58dbe2b3c41fa7ea9dc9ab0523c8c7bac5",
+    "test/payment-recovery-foreground.test.js": "3cb39829ebac56f4151d59efed570e46fc1cbb9915fd48e564fc414e285a8bf7",
+    "scripts/verify-brclio-pay-ui.cjs": "8e71237c348f39684bfdff973ff9fac9f90d9fe4a83c65d97e2477e4aae3d6f7",
+    "account-ui.js": "6074e0a9dd5aeeeb4c7945e56dd5c836eef55a4e84c846f20ab87d8e155a44b1",
+    "account-ui.css": "dd670d5b6a9830912f28e184c44080a500bd238eda8f1978075aa8c0db7ed95a",
+    "desktop/payment-handoff.js": "5797c759d9972d83bdebe6ad54ae019358022b55bfc42a671234ae8573e4871c",
+    "desktop/main.js": "55a4710a57b334ea5c2979166f77f2734b9b5be0d188295a301f9990c5f0f911",
+    "desktop/preload.cjs": "ed8bab70245eed73e3c99ae9907f978ca7b439639a861d2fc36bb2aec35f32e5",
+    "payment-return.js": "425e5a12be2e0e09ca6f9b8b10cb0777ce77f97397ffaf958bd8436d48dba934",
+    "scripts/verify-membership-ui.cjs": "4f800515b2eacd2555426aead0f2fd9f70caed018f46be4198cd736f8f9dda9e",
+    "scripts/verify-commerce-ui.cjs": "be788db25dfddc9b0844fb75d62d9a6afae0c12269a1338e57b1091195679d9c",
+    "test/desktop-payment-handoff.test.js": "79ae554f92b92e29c0b106ca7a0f003ddbcab7341f5e65e63b71582b2e657dc7",
+    "app.js": "ab7388339430167ec4bfd7296e5a111260daaad2fca544bfcae1c12a577d6351",
+    "scripts/verify-public-feedback-ui.cjs": "e78ee9caede1f23311ec2053c1f7dad0dacbc0f660e02aa3f9780b6bd0c32c13",
+    "test/video-download-progress.test.js": "5f44807405fee4a3c977b81cb379c503009581d88c275ef454534c662b2a2500",
+    "scripts/verify-member-video-ui.cjs": "f40ca5f7eec8df04aad882c6eb7ec9ad0e1e625754cb4164f44413e53f654f78"
+  },
+  "screenshots": [
+    {
+      "path": "docs/releases/v2.0.31-validation/payment-selection-wechat-desktop.png",
+      "sha256": "775aed193a42ae15a13bd64fb23a2bda322d166d7b95cf40a1584aeba8b5e474",
+      "isolatedFixture": true,
+      "visuallyReviewed": true
+    },
+    {
+      "path": "docs/releases/v2.0.31-validation/payment-open-error-desktop.png",
+      "sha256": "2031801c2e9dc4fd1d3b43d22bf0aeaa135d260bc4fc60077618ae3961770bfc",
+      "isolatedFixture": true,
+      "visuallyReviewed": true
+    },
+    {
+      "path": "docs/releases/v2.0.31-validation/payment-success-mobile.png",
+      "sha256": "773b411977c455658e0ac5455f4405b658594597b00276a2800e71d89624529e",
+      "isolatedFixture": true,
+      "visuallyReviewed": true
+    },
+    {
+      "path": "docs/releases/v2.0.31-validation/payment-wechat-confirmed-mobile.png",
+      "sha256": "dff1ae5c0875a613d6e43efed81f0751faee2d2f7597543e41ddae30eec55d8c",
+      "isolatedFixture": true,
+      "visuallyReviewed": true
+    }
+  ],
+  "notYetVerified": {
+    "nativePublishedInstallers": true,
+    "publicAttachments": true,
+    "productionDeployment": true,
+    "actualUserInstalledClient": true,
+    "actualOSBrowserAndSchemeHandoff": true,
+    "realPaymentAfterChanges": true
+  },
+  "limits": "Local real renderer screenshots use isolated synthetic accounts and quote changes, not a production purchase. Native OS acceptance, public release/deployment and user-installed behavior are distinct stages. Existing paid membership is preserved.",
+  "localVerificationReuse": {
+    "fromVersion": "2.0.30",
+    "sourceCommit": "d354f47ccc9edffdad5a28e331a2c2d25588763b",
+    "checkedAt": "2026-10-20T18:20:35.386331+00:00",
+    "productSourceUnchanged": true,
+    "productSourceSha256": {
+      "lib/payment-recovery.js": "8a94b14f2091673ed892997d3030d359e1529c5bb93c71c0d39a95310b0ddad9",
+      "account-ui.js": "6074e0a9dd5aeeeb4c7945e56dd5c836eef55a4e84c846f20ab87d8e155a44b1",
+      "account-ui.css": "dd670d5b6a9830912f28e184c44080a500bd238eda8f1978075aa8c0db7ed95a",
+      "desktop/payment-handoff.js": "5797c759d9972d83bdebe6ad54ae019358022b55bfc42a671234ae8573e4871c",
+      "desktop/main.js": "55a4710a57b334ea5c2979166f77f2734b9b5be0d188295a301f9990c5f0f911",
+      "desktop/preload.cjs": "ed8bab70245eed73e3c99ae9907f978ca7b439639a861d2fc36bb2aec35f32e5",
+      "payment-return.js": "425e5a12be2e0e09ca6f9b8b10cb0777ce77f97397ffaf958bd8436d48dba934",
+      "app.js": "ab7388339430167ec4bfd7296e5a111260daaad2fca544bfcae1c12a577d6351"
+    },
+    "countsDescribePreviousRun": true,
+    "note": "Runtime product sources retain the verified v2.0.30 fix. Previous local results are reused for unchanged product code; the modified renderer sampling helper was independently run against this candidate (pass) and immutable v2.0.29 (expected failure)."
+  },
+  "verifierUpdate": {
+    "path": "scripts/verify-member-video-ui.cjs",
+    "status": "local-green-baseline-red",
+    "reason": "Hidden Windows renderers can throttle RAF to 1Hz; a four-RAF sample in three seconds falsely rejects a restored viewport.",
+    "sourceHashPending": false,
+    "sourceSha256": "f40ca5f7eec8df04aad882c6eb7ec9ad0e1e625754cb4164f44413e53f654f78",
+    "timerSamplingMs": 50,
+    "coordinateStabilityMs": 250,
+    "startupObservationMinimumMs": 2000,
+    "timeoutMs": 10000,
+    "strictViewportAndUserWheelAssertionsRetained": true
+  }
+}
