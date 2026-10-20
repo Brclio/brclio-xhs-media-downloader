@@ -1,0 +1,395 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.32",
+  "status": "published-and-production-read-only-verified",
+  "verifiedAt": "2026-10-20T19:48:12.306Z",
+  "clientTimezone": "Asia/Shanghai",
+  "releaseDateClientTime": "2026-10-21",
+  "sourceSha": "3b4051e9d185eb552190c9662181841334fab1fb",
+  "tag": "v2.0.32",
+  "immutableTagMoved": false,
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.32",
+  "publishedAt": "2026-10-20T19:38:47Z",
+  "workflow": {
+    "runId": 39480383596,
+    "attempt": 2,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39480383596",
+    "conclusion": "success",
+    "platforms": [
+      "mac-arm64",
+      "mac-intel",
+      "windows-x64"
+    ],
+    "artifactsFromFrozenSourceOnly": true,
+    "firstArmAttempt": {
+      "attempt": 1,
+      "gate": "Verify member original videos and browser account authorization in the real renderer",
+      "observation": "Trusted wheel input did not produce default window scrolling; no product scroll restoration was observed.",
+      "hostRootCauseConfirmed": false,
+      "inputFocusNote": "The hidden fixture did not explicitly establish or record the documented focused-window precondition; this does not establish the cause."
+    },
+    "retry": {
+      "attempt": 2,
+      "wholeArmJobRerunCount": 1,
+      "sameSource": true,
+      "assertionsUnchanged": true,
+      "retainedSuccessfulPlatforms": [
+        "mac-intel",
+        "windows-x64"
+      ],
+      "conclusion": "success"
+    }
+  },
+  "validation": {
+    "localNode": {
+      "tests": 1940,
+      "passed": 1927,
+      "skipped": 13,
+      "failed": 0
+    },
+    "localPython": {
+      "passed": 47,
+      "failed": 0
+    },
+    "localEvidenceReuse": {
+      "fromVersion": "2.0.31",
+      "sourceCommit": "d208e645b3740bf9bbe9b4e8bc898546905825e1",
+      "checkedAt": "2026-10-20T18:40:50.846370+00:00",
+      "productSourceUnchanged": true,
+      "productSourceSha256": {
+        "lib/payment-recovery.js": "8a94b14f2091673ed892997d3030d359e1529c5bb93c71c0d39a95310b0ddad9",
+        "account-ui.js": "6074e0a9dd5aeeeb4c7945e56dd5c836eef55a4e84c846f20ab87d8e155a44b1",
+        "account-ui.css": "dd670d5b6a9830912f28e184c44080a500bd238eda8f1978075aa8c0db7ed95a",
+        "desktop/payment-handoff.js": "5797c759d9972d83bdebe6ad54ae019358022b55bfc42a671234ae8573e4871c",
+        "desktop/main.js": "55a4710a57b334ea5c2979166f77f2734b9b5be0d188295a301f9990c5f0f911",
+        "desktop/preload.cjs": "ed8bab70245eed73e3c99ae9907f978ca7b439639a861d2fc36bb2aec35f32e5",
+        "payment-return.js": "425e5a12be2e0e09ca6f9b8b10cb0777ce77f97397ffaf958bd8436d48dba934",
+        "app.js": "ab7388339430167ec4bfd7296e5a111260daaad2fca544bfcae1c12a577d6351"
+      },
+      "countsDescribePreviousRun": true,
+      "note": "Runtime sources retain the verified v2.0.30 implementation unchanged through v2.0.31. Full local Node/Python and payment UI counts describe that prior run. The final v2.0.32 renderer script was run independently (pass); the same script detects immutable v2.0.29 (expected failure)."
+    },
+    "nativePlatforms": [
+      "mac-arm64",
+      "mac-intel",
+      "windows-x64"
+    ],
+    "publishedAssets": 11,
+    "sourceFilesComparedPerPlatform": [
+      {
+        "platform": "darwin",
+        "arch": "arm64",
+        "comparedSources": 250
+      },
+      {
+        "platform": "darwin",
+        "arch": "x64",
+        "comparedSources": 250
+      },
+      {
+        "platform": "win32",
+        "arch": "x64",
+        "comparedSources": 250
+      }
+    ],
+    "publicInstallerHeadChecks": 9,
+    "compatibilityAliasesVerified": true,
+    "remoteDigestsVerified": true,
+    "publicManifestsVerified": true,
+    "paymentProduction": {
+      "passed": 29,
+      "total": 29
+    },
+    "cloudflareProduction": {
+      "passed": 58,
+      "total": 58
+    },
+    "avatarAssetComparisons": 112,
+    "distinctBuiltinAvatars": 100,
+    "staticComparisonsAcrossThreeOrigins": 39,
+    "htmlCanonicalRedirectChecks": 12,
+    "retiredManualPayment404Checks": 6,
+    "returnPageSecurityChecks": 6,
+    "returnPageMetaCspChecks": 3,
+    "productionRenderer": {
+      "passed": 16,
+      "total": 16,
+      "screenshotsReviewed": 5,
+      "businessMutationRequests": 0,
+      "rendererErrors": 0
+    },
+    "finalSourceSecretScan": {
+      "checkedAt": "2026-10-20T19:50:44.635036+00:00",
+      "sourceFilesChecked": 911,
+      "buildFilesChecked": 430,
+      "businessCredentialMatches": 0,
+      "temporaryManagementTokenMatches": 0,
+      "privateCredentialMode": "0600",
+      "frozenBuildSha256Matches": true,
+      "tagUnchanged": true,
+      "changesRestrictedToPublicationDocumentation": true
+    }
+  },
+  "before": {
+    "workerVersion": "e8d3c6c7-25ea-4428-ac9e-dd2cf3a19f3e",
+    "workerDeploymentId": "f26dd473-64df-4eb1-b671-7505800adc32",
+    "pagesDeploymentId": "c61e30de-8c67-4374-a1b8-62c72f68d696"
+  },
+  "after": {
+    "workerVersion": "6de99888-9d9d-4a57-99b5-f77cf21535b0",
+    "workerDeploymentId": "1a82f66b-902a-4ab2-aa84-915891ad4f88",
+    "workerTrafficPercent": 100,
+    "pagesDeploymentId": "80517c16-f883-4b6c-b586-4fd4f496c57a",
+    "pagesDeploymentUrl": "https://80517c16.brclio-xhs-pages.pages.dev",
+    "pagesSource": "3b4051e"
+  },
+  "configurationAudit": {
+    "ok": true,
+    "checks": {
+      "expectedWorkerActiveAt100Percent": true,
+      "expectedWorkerSettingsVersion": true,
+      "onlyExpectedWorkerDeploymentAdded": true,
+      "expectedPagesDeployment": true,
+      "expectedPagesSource": true,
+      "onlyExpectedPagesDeploymentAdded": true,
+      "expected31SecretNames": true,
+      "secretNamesUnchanged": true,
+      "settingsSecretNamesMatch": true,
+      "allBindingsUnchanged": true,
+      "existingDurableNamespacesUnchanged": true,
+      "existingServiceBindingsUnchanged": true,
+      "onlyAuthorizedRuntimeAssetRoutesAdded": true,
+      "otherLiveRuntimeUnchanged": true,
+      "sourceConfigOnlyAuthorizedAssetRoutesChanged": true,
+      "trackedCronUnchanged": true,
+      "trackedGlobalSettingsUnchanged": true,
+      "desktopV27ReleaseAndAssetsUnchanged": true,
+      "desktopV27TagUnchanged": true,
+      "android15ReleaseAndAssetsUnchanged": true,
+      "android15TagUnchanged": true,
+      "v28Unpublished": true,
+      "v29Unpublished": true,
+      "v30Unpublished": true,
+      "v31Unpublished": true,
+      "newV32TagMatchesFrozenSource": true,
+      "mainMatchesFrozenSource": true,
+      "newV32Published": true,
+      "newV32HasExact11Assets": true,
+      "newV32AssetDigestsPresent": true,
+      "latestIsNewV32": true,
+      "nativeRunMatchesFrozenSource": true,
+      "nativeRunAllJobsSuccessful": true,
+      "pythonDeploymentHistoryUnchanged": true,
+      "proxyDeploymentHistoryUnchanged": true,
+      "alipayDeploymentHistoryUnchanged": true
+    },
+    "configuration": {
+      "secretNameCount": 31,
+      "secretNamesSha256": "531037708096eb9698e2b2edce93dbec7110a76303885ca3e7d3a69f3e886f4c",
+      "secretNameDiff": {
+        "added": [],
+        "removed": []
+      },
+      "bindingsCount": 38,
+      "bindingMetadataSha256": "0c2bf8d2e9ef6fbb7c20f297a0e83910c52fb2a7934d3b0d665d0ac0f6d715ad",
+      "authorizedAddedAssetRoutes": [
+        "/payment-return",
+        "/payment-return.html"
+      ],
+      "coverage": {
+        "live": [
+          "Worker active deployment/version resources/runtime/bindings",
+          "31 Secret names only",
+          "Pages production deployment list",
+          "three existing ancillary Worker deployment histories",
+          "public source-repository release/tag/main/run metadata"
+        ],
+        "sourceOnly": [
+          "cron triggers",
+          "workers_dev",
+          "preview_urls",
+          "observability",
+          "other tracked Wrangler settings"
+        ],
+        "notCapturedLive": [
+          "global Worker settings outside version resources",
+          "cron schedules"
+        ],
+        "explanation": "No predeployment live snapshots exist for global settings or schedules; source equality is not presented as a live measurement."
+      }
+    },
+    "otherWorkers": {
+      "python": {
+        "id": "5f44d093-a020-4d60-96c4-f915a9a9bfb3",
+        "created_on": "2026-10-11T05:13:12.262729Z",
+        "source": "wrangler",
+        "strategy": "percentage",
+        "versions": [
+          {
+            "version_id": "6d84f091-8d1c-426d-9eb6-5aa53cf06dd3",
+            "percentage": 100
+          }
+        ]
+      },
+      "proxy": {
+        "id": "d7df0fa2-7c45-4ae2-b7d1-c172d8e5a8a7",
+        "created_on": "2026-10-11T13:22:32.56204Z",
+        "source": "wrangler",
+        "strategy": "percentage",
+        "versions": [
+          {
+            "version_id": "159a718d-155d-44a6-8da0-fe215377c855",
+            "percentage": 100
+          }
+        ]
+      },
+      "alipay": {
+        "id": "21c52c95-dd54-4498-a8a0-989ec2c7bedc",
+        "created_on": "2026-10-18T12:20:57.031364Z",
+        "source": "wrangler",
+        "strategy": "percentage",
+        "versions": [
+          {
+            "version_id": "9c95bc4f-ba5f-44cb-9e1a-d9cb2ce54d51",
+            "percentage": 100
+          }
+        ]
+      }
+    },
+    "sanitizedSummarySha256": "77cd4b56b977df1a4e91e950fbc178241030173f34601b89d438340787fe1c37"
+  },
+  "scope": {
+    "deployed": [
+      "existing main Cloudflare Worker",
+      "existing Pages project",
+      "desktop v2.0.32 release"
+    ],
+    "unchangedAncillaryDeployments": [
+      "Python Worker",
+      "subscription proxy Worker",
+      "original Alipay center Worker"
+    ],
+    "notDeployedByThisRelease": [
+      "WeChat center Worker",
+      "Vercel",
+      "Android APK"
+    ],
+    "androidVersion": "1.0.15",
+    "storage": "existing private GitHub storage; repository identity omitted",
+    "privateBusinessDataWritesByAgent": false,
+    "historicalPaidOrdersAndMembershipPreserved": true,
+    "originalAlipayAndWeChatOnlineChannelsPreserved": true,
+    "supersededUnpublishedVersions": [
+      {
+        "version": "2.0.28",
+        "sourceCommit": "d3f53f6d0cb7b9b0a72aaaf5bbe0ac1d1d92ddba",
+        "runId": 39463922497,
+        "workflowStatus": "completed",
+        "workflowConclusion": "cancelled",
+        "replacementVersion": "2.0.32"
+      },
+      {
+        "version": "2.0.29",
+        "sourceCommit": "96fc7d04380187a2665679e063554c095a086f06",
+        "runId": 39467390775,
+        "replacementVersion": "2.0.32"
+      },
+      {
+        "version": "2.0.30",
+        "sourceCommit": "d354f47ccc9edffdad5a28e331a2c2d25588763b",
+        "runId": 39473963689,
+        "workflowStatus": "completed",
+        "workflowConclusion": "failure",
+        "replacementVersion": "2.0.32"
+      },
+      {
+        "version": "2.0.31",
+        "sourceCommit": "d208e645b3740bf9bbe9b4e8bc898546905825e1",
+        "runId": 39476945881,
+        "workflowStatus": "completed",
+        "workflowConclusion": "cancelled",
+        "replacementVersion": "2.0.32"
+      }
+    ]
+  },
+  "boundaries": {
+    "newRealPaymentPerformed": false,
+    "authenticatedProductionPurchaseVerified": false,
+    "productionEntitlementGrantVerified": false,
+    "noRepeatPaymentRequiredForAcceptance": true,
+    "previousUserPaidRecordsPreserved": true,
+    "userCurrentInstallationChanged": false,
+    "nativeInstallEvidence": "Disposable CI installation, upgrade and relaunch checks; not the user current installed application or default protocol handler.",
+    "protocolRegistrationRequiresInstallAndOpen": "2.0.32",
+    "browserHandoff": "The browser may ask for confirmation or block automatic client invocation. Returning to the original client and querying the original order remains available.",
+    "cloudflareSecretValuesRead": false,
+    "privateBusinessRepositoryIdentityIncluded": false,
+    "liveGlobalConfigurationCoverage": {
+      "live": [
+        "Worker active deployment/version resources/runtime/bindings",
+        "31 Secret names only",
+        "Pages production deployment list",
+        "three existing ancillary Worker deployment histories",
+        "public source-repository release/tag/main/run metadata"
+      ],
+      "sourceOnly": [
+        "cron triggers",
+        "workers_dev",
+        "preview_urls",
+        "observability",
+        "other tracked Wrangler settings"
+      ],
+      "notCapturedLive": [
+        "global Worker settings outside version resources",
+        "cron schedules"
+      ],
+      "explanation": "No predeployment live snapshots exist for global settings or schedules; source equality is not presented as a live measurement."
+    }
+  },
+  "evidenceFiles": [
+    {
+      "path": "docs/releases/v2.0.32-preflight.json",
+      "sha256": "5c2f82851c498ca36372caafb6c1e4c500b30bc848aa51bb7d38942938545239"
+    },
+    {
+      "path": "docs/releases/v2.0.32-publication-verification.json",
+      "sha256": "c7a935b827f37bd63730ec174cd73f0e57d360dbfcff26039022b0b764e2d4b3"
+    },
+    {
+      "path": "docs/releases/v2.0.32-payment-production-verification.json",
+      "sha256": "a434af969e6f80923bd5b690e521317c4f5b1fd87120affd77975a0da3b61c47"
+    },
+    {
+      "path": "docs/releases/v2.0.32-cloudflare-production-verification.json",
+      "sha256": "f7c63d0558e32c17c769e32a599e0065755ae245e7066b07ef80dc35bf68f1b6"
+    },
+    {
+      "path": "docs/releases/v2.0.32-avatar-production-verification.json",
+      "sha256": "ea3618554051e7113e8d71f537a67aa5d5e53e0e013e4242801ba1b2fe47317c"
+    },
+    {
+      "path": "docs/releases/v2.0.32-static-production-verification.json",
+      "sha256": "304db77f23a3c56b7b905802f36e41ea5ca8025e314c35a392a325beb8d2dea4"
+    },
+    {
+      "path": "docs/releases/v2.0.32-renderer-production-verification.json",
+      "sha256": "7ef19cc51efb93681f6c55e727004a5476869ab8a6d60988bb540b5ff7031289"
+    },
+    {
+      "path": "docs/releases/v2.0.28-superseded.json",
+      "sha256": "71f7555956e814c1c36b68886760d9300528e8320044179607b44460e9085971"
+    },
+    {
+      "path": "docs/releases/v2.0.29-superseded.json",
+      "sha256": "0a9af497a7748c5deaf53f16dc0b544597cff7add6921556ab4abc5497bf5b42"
+    },
+    {
+      "path": "docs/releases/v2.0.30-superseded.json",
+      "sha256": "10345fb71b1b125c637bafb1dd4548873919ee0fff5836da4466e3dc9899683b"
+    },
+    {
+      "path": "docs/releases/v2.0.31-superseded.json",
+      "sha256": "417b7205bbaf941b65d9b71323c1beb87fbe2973b944747d99836c7de521d6db"
+    }
+  ]
+}
