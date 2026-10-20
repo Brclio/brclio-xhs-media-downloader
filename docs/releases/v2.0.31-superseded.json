@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.31",
+  "status": "superseded-unpublished",
+  "stage": "superseded-unpublished-final-workflow-state",
+  "sourceCommit": "d208e645b3740bf9bbe9b4e8bc898546905825e1",
+  "tagImmutable": true,
+  "workflowRunId": 39476945881,
+  "workflowRunUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39476945881",
+  "workflowStatus": "completed",
+  "workflowConclusion": "cancelled",
+  "failedJob": "windows-x64",
+  "failedStep": 35,
+  "failedGate": "Verify member original videos and browser account authorization in the real renderer",
+  "reason": "An isolated real-Electron reproduction confirmed a fixture race: closing child and parent consecutively lets a queued child-close reopen the browser account parent modal, intercepting the early wheel. Viewport restoration and the late-wheel test already passed; product source is unchanged. The fixture must wait for child close and parent restore before closing the parent.",
+  "finalWorkflowStateUpdatePending": false,
+  "published": false,
+  "productionChanged": false,
+  "replacementVersion": "2.0.32",
+  "cancellationRequest": {
+    "requestedAt": "2026-10-20T18:58:32Z",
+    "accepted": true,
+    "finalStatusPending": false
+  },
+  "jobConclusions": {
+    "mac-arm64": "success",
+    "windows-x64": "failure",
+    "mac-intel": "cancelled",
+    "Publish verified installers": "cancelled"
+  }
+}

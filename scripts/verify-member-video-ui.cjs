@@ -56,6 +56,7 @@ window.fixtureRequests = []; window.fixtureDownloads = []; window.fixtureBlobs =
 window.fixtureDenyChunks = false; window.fixtureDenyFinalMeta = false; window.fixtureCorruptMp4 = false; window.fixtureChangeDuringFinalMeta = ''; window.fixtureMetaCalls = 0; window.fixtureOpened = []; window.fixtureParsePopups = [];
 window.fixtureSlow = false; window.fixturePending = []; window.fixtureDeliveredBytes = 0; window.fixtureAccountChecks = 0; window.fixtureInspectionCalls = 0;
 window.fixtureScrollAudit = [];
+window.fixtureWheelEvents = [];
 window.fixtureAnimationFrames = 0;
 const countFrame = () => { window.fixtureAnimationFrames++; requestAnimationFrame(countFrame); };
 requestAnimationFrame(countFrame);
@@ -102,6 +103,12 @@ HTMLElement.prototype.focus = function(options) {
 };
 document.addEventListener('scroll', event => auditScroll('scroll', { id: event.target.id || event.target.nodeName, top: event.target.scrollTop }), { capture: true, passive: true });
 document.addEventListener('focusin', event => auditScroll('focusin', { id: event.target.id }), true);
+window.addEventListener('wheel', event => {
+  const record = { trusted:event.isTrusted, target:event.target.id || event.target.tagName,
+    modalCount:document.querySelectorAll('dialog:modal').length, x:event.clientX, y:event.clientY,
+    scrollY, at:Math.round(performance.now()), phase:document.getElementById('video-download-progress')?.dataset.phase };
+  window.fixtureWheelEvents.push(record); auditScroll('wheel', record);
+}, { capture:true, passive:true });
 window.fixtureRelease = stage => {
   const pending = window.fixturePending.find(item => item.stage === stage);
   if (!pending) throw new Error('No paused fixture response: ' + stage);
@@ -253,7 +260,8 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
       closed: true, navigations: [], openerCleared: true,
     })), 'Successful parsing closes every preopened verification window without navigating it');
   };
-  readDiagnostics = () => evaluate(`({ audit: window.fixtureScrollAudit, deferredScrolls: window.fixtureDeferredScrollEvidence, scrollY, active: document.activeElement?.id,
+  readDiagnostics = () => evaluate(`({ audit: window.fixtureScrollAudit, deferredScrolls: window.fixtureDeferredScrollEvidence,
+    modals:Array.from(document.querySelectorAll('dialog:modal')).map(item=>item.id), earlyWheelInput:window.fixtureEarlyWheelInput, wheelEvents:window.fixtureWheelEvents, scrollY, active: document.activeElement?.id,
     pending: window.fixturePending?.map(item => item.stage), phase: document.getElementById('video-download-progress')?.dataset.phase,
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, animationFrames: window.fixtureAnimationFrames,
     viewport: { width: document.documentElement.clientWidth, height: innerHeight, pageHeight: document.documentElement.scrollHeight } })`);
@@ -274,6 +282,15 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     }; check();
   })`);
   const click = id => evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
+  const closePurchaseAndAccount = async () => {
+    await until(`document.getElementById('membership-dialog').open`);
+    await click('membership-close');
+    // The child close event restores its parent asynchronously. A second click
+    // before that event can close nothing and leave a modal over later input.
+    await until(`!document.getElementById('membership-dialog').open&&document.getElementById('browser-account-dialog').open`);
+    await click('browser-account-close');
+    await until(`document.querySelectorAll('dialog:modal').length===0`);
+  };
   const progressEvidence = [];
   const progressSnapshotScript = `(() => {
     const panel = document.getElementById('video-download-progress');
@@ -491,7 +508,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(await evaluate('window.fixtureDownloads.length'), 1);
   await assertNoUnexpectedWindows();
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0);
-  await click('membership-close'); await click('browser-account-close');
+  await closePurchaseAndAccount();
   await evaluate('window.fixtureDenyChunks = false; window.fixtureDenyFinalMeta = true');
   const preSaveStart = await evaluate('window.fixtureRequests.length');
   await click('download-original-video-button');
@@ -504,7 +521,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(await evaluate('window.fixtureDownloads.length'), 1, 'A rejected final authorization must not save a combined MP4');
   await assertNoUnexpectedWindows();
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0);
-  await click('membership-close'); await click('browser-account-close');
+  await closePurchaseAndAccount();
   await evaluate('window.fixtureDenyFinalMeta = false');
   for (const change of ['logout', 'relogin']) {
     await evaluate(`window.fixtureRole = 'member'; window.fixtureChangeDuringFinalMeta = ${JSON.stringify(change)}`);
@@ -554,8 +571,21 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await evaluate(`document.getElementById('video-download-progress').scrollIntoView({block:'center',behavior:'instant'});window.fixtureSlow=true;window.fixtureAccountChecks=0`);
   const earlyWheelStart = await evaluate(`document.getElementById('download-original-video-button').click();${progressSnapshotScript}`);
   assert.equal(earlyWheelStart.inViewport, true);
+  const earlyWheelInput = await evaluate(`(()=>{
+    const target=document.elementFromPoint(1000,500);
+    return window.fixtureEarlyWheelInput={modalCount:document.querySelectorAll('dialog:modal').length,
+      hitTarget:target?.id||target?.tagName,hitModal:target?.closest('dialog:modal')?.id||null,wheelCount:window.fixtureWheelEvents.length};
+  })()`);
+  assert.equal(earlyWheelInput.modalCount, 0, 'A lingering account modal must not intercept the startup wheel');
+  assert.ok(earlyWheelInput.hitTarget, 'The startup wheel needs a real renderer hit target');
+  assert.equal(earlyWheelInput.hitModal, null, 'The startup wheel hit target is outside every modal');
+  win.webContents.sendInputEvent({ type:'mouseMove', x:1000, y:500 });
   win.webContents.sendInputEvent({ type:'mouseWheel', x:1000, y:500, deltaX:0, deltaY:900, canScroll:true });
   await paused('account');
+  await until(`window.fixtureWheelEvents.length>${earlyWheelInput.wheelCount}`);
+  const startupWheel = await evaluate(`window.fixtureWheelEvents[${earlyWheelInput.wheelCount}]`);
+  assert.equal(startupWheel.trusted, true, 'Startup scrolling must come from a trusted native wheel');
+  assert.equal(startupWheel.modalCount, 0, 'The native wheel reaches the unblocked page');
   await until(`Math.abs(scrollY-${earlyWheelStart.scrollY})>100`);
   await settleScrolling(1700);
   const earlyWheelPosition = await progressSnapshot();
@@ -563,7 +593,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(earlyWheelPosition.inViewport, false, 'A real wheel during startup may leave the pending download controls');
   await settleScrolling(200);
   assert.equal(await evaluate('scrollY'), earlyWheelPosition.scrollY, 'Neither queued frames nor guard expiry may undo the startup wheel');
-  progressEvidence.push({...earlyWheelPosition,userWheelDuringStartup:true});
+  progressEvidence.push({...earlyWheelPosition,userWheelDuringStartup:true,input:earlyWheelInput,wheel:startupWheel});
   await capture('progress-startup-user-scroll-respected');
   await evaluate(`window.fixtureSlow=false;window.fixtureRelease('account')`);
   await until(`window.fixtureDownloads.length===4&&!document.getElementById('download-original-video-button').disabled`);
@@ -577,7 +607,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await click('download-original-video-button');
   await until(`document.getElementById('membership-dialog').open`);
   assert.equal(await evaluate(`window.fixtureRequests.slice(${requestsBefore}).filter(request => request.path === '/api/member_video').length`), 0);
-  await click('membership-close'); await click('browser-account-close');
+  await closePurchaseAndAccount();
   for (const width of [1440, 768, 390, 320]) {
     await setViewport(width, 960);
     await evaluate(`document.querySelectorAll('.toast').forEach(element => element.classList.remove('toast-visible')); document.documentElement.style.scrollBehavior = 'auto';

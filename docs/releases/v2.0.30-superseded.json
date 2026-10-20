@@ -11,5 +11,9 @@
   "reason": "The restored viewport product fix is already present and locally verified. Hidden Windows rendering throttled RAF to about 1Hz, so the verifier requirement of four RAF samples within three seconds reported a false failure. Only the renderer sampling helper is being corrected.",
   "published": false,
   "productionChanged": false,
-  "replacementVersion": "2.0.31"
+  "replacementVersion": "2.0.32",
+  "replacementHistory": [
+    "2.0.31",
+    "2.0.32"
+  ]
 }
