@@ -99,7 +99,7 @@ export function createBrclioPayService({ store, now = Date.now, authenticate, ha
       if (user.membership?.type === 'permanent') fail('ALREADY_PERMANENT', '您已是永久会员，无需购买时长套餐。', 409);
       const current = await catalog(), plan = current.plans.find(item => item.id === input.planId);
       if (!current.enabled || !plan) fail('PAYMENT_PRODUCT_DISABLED', '该套餐暂不可购买，请刷新商品目录。', 409);
-      if (current.acceptingPayments === false) fail('PAYMENT_SERVICE_DISABLED', '支付中心尚未启用在线收款，请稍后刷新报价或使用人工扫码。', 503);
+      if (current.acceptingPayments === false) fail('PAYMENT_SERVICE_DISABLED', '支付中心尚未启用在线收款，请稍后刷新报价重试。', 503);
       if (plan.amount !== input.amount || current.version !== input.catalogVersion) fail('QUOTE_CHANGED', '套餐报价已更新，请刷新并确认新报价后重新购买。', 409);
       const id = randomUUID();
       order = await store.transaction(state => {

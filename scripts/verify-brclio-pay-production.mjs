@@ -71,7 +71,7 @@ export function buildPaymentChecks({ baseUrl, sourceSha, catalogVersion }, metad
     requireCheck(!response.headers.has('set-cookie'), 'Payment return unexpectedly set a cookie.');
   }, { allowRedirect: true });
   for (const [name, path, markers] of [
-    ['membership-page', '/membership', ['membership-catalog-status', 'Brclio Pay', '人工扫码']],
+    ['membership-page', '/membership', ['membership-catalog-status', 'Brclio Pay', '在线付款']],
     ['account-ui', '/account-ui.js', ['membership-online-pay', 'membership-online-restart', 'payment_order', 'payment-catalog', 'payment-create', 'payment-resume']],
     ['membership-ui', '/membership.js', ['payment-catalog', 'catalog.plans']],
     ['browser-account', '/lib/browser-account.js', ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']],
@@ -105,6 +105,29 @@ export function buildPaymentChecks({ baseUrl, sourceSha, catalogVersion }, metad
     ['unsigned', '/api/brclio-payment', jsonRequest({}), 401, 'PAYMENT_INVALID_SIGNATURE'],
     ['wrong-signature', '/api/brclio-payment', { ...jsonRequest({}), headers: { ...JSON_HEADERS, 'X-Brclio-Timestamp': String(Math.floor(Date.now() / 1000)), 'X-Brclio-Event': 'evt_production_invalid_signature', 'X-Brclio-Signature': '0'.repeat(64) } }, 401, 'PAYMENT_INVALID_SIGNATURE'],
   ]) add(`payment/webhook/${name}`, path, init, response => json(response, status, code));
+  add('wechat/registered-catalog', '/api/account', jsonRequest({ action: 'payment-catalog', input: { provider: 'wechat' } }), response => {
+    const catalog = json(response, 200).catalog;
+    requireCheck(catalog?.enabled === true && catalog.provider === 'wechat' && catalog.mode === 'live' && catalog.currency === 'CNY'
+      && JSON.stringify(catalog.channels) === '["native"]' && typeof catalog.version === 'string', 'WeChat product configuration did not match.');
+    const prices = { daily: [300, 1], monthly: [1990, 30], yearly: [6990, 365] };
+    requireCheck(Array.isArray(catalog.plans) && catalog.plans.length === 3 && new Set(catalog.plans.map(p => p.id)).size === 3, 'Expected three distinct WeChat plans.');
+    for (const plan of catalog.plans) requireCheck(prices[plan.id]?.[0] === plan.priceCents && prices[plan.id]?.[1] === plan.days && plan.amount === (plan.priceCents / 100).toFixed(2), 'WeChat price or entitlement did not match.');
+    metadata.wechatCatalog = { version: catalog.version, channels: catalog.channels, plans: catalog.plans.map(({ id, amount, days }) => ({ id, amount, days })) };
+  });
+  add('wechat/anonymous-order-denied', '/api/account', { ...jsonRequest({ action: 'payment-create', input: { provider: 'wechat', client: 'browser', expectedUserId: FIXTURE_ID, requestId: 'anonymous-wechat-verification', planId: 'daily', amount: '3.00', catalogVersion: 'anonymous-wechat-verification' } }), headers: { ...JSON_HEADERS, Origin: baseUrl } }, response => json(response, 401, 'ACCOUNT_REQUIRED'));
+  for (const [name, init, status, code] of [
+    ['method', {}, 405, 'METHOD_NOT_ALLOWED'],
+    ['content-type', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: '{}' }, 415, 'UNSUPPORTED_MEDIA_TYPE'],
+    ['oversize', jsonRequest({ padding: 'x'.repeat(16_384) }), 413, 'REQUEST_TOO_LARGE'],
+    ['unsigned', jsonRequest({}), 401, 'PAYMENT_INVALID_SIGNATURE'],
+    ['wrong-signature', { ...jsonRequest({}), headers: { ...JSON_HEADERS, 'X-Brclio-Timestamp': String(Math.floor(Date.now() / 1000)), 'X-Brclio-Nonce': 'a'.repeat(32), 'X-Brclio-Event': 'payment.success.production_invalid_signature', 'X-Brclio-Signature': '0'.repeat(64) } }, 401, 'PAYMENT_INVALID_SIGNATURE'],
+  ]) add(`wechat/webhook/${name}`, '/api/brclio-wechat-payment', init, response => json(response, status, code));
+  add('wechat/webhook/query', '/api/brclio-wechat-payment?success=true', jsonRequest({}), response => json(response, 400, 'INVALID_REQUEST'));
+  add('payment/online-only-ui', '/account-ui.js', {}, response => {
+    requireCheck(response.status === 200 && response.text.includes('membership-online-method') && response.text.includes('https://paywc.bornforthis.cn'), 'Online payment method selector is missing.');
+    requireCheck(!['membership-report-paid', 'membership-payment-image', 'assets/membership/alipay.png', 'assets/membership/wechat-pay.png'].some(s => response.text.includes(s)), 'Removed manual payment controls were still published.');
+  });
+  for (const name of ['alipay', 'wechat-pay']) add(`payment/removed-manual-asset/${name}`, `/assets/membership/${name}.png`, {}, response => requireCheck(response.status === 404, 'A removed manual payment code is still public.'));
   return checks;
 }
 

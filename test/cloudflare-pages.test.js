@@ -45,16 +45,30 @@ test('gateway leaves binary ranges, admin redirects and security headers untouch
   }
 });
 
-test('route manifest guards internal paths alongside API/admin and static fallback never calls APP', async () => {
+test('route manifest guards internal and retired QR paths alongside API/admin and static fallback never calls APP', async () => {
   const routes = JSON.parse(await readFile(new URL('../cloudflare/pages/_routes.json', import.meta.url), 'utf8'));
-  assert.deepEqual(routes, { version: 1, include: ['/api/*', '/admin*', '/__internal/*'], exclude: [] });
-  for (const urlPath of ['/', '/app.js', '/style.css', '/changelog', '/download', '/download.html', '/download.css', '/download.js', '/product', '/product.html', '/product.css', '/product.js', '/feedback', '/feedback.html', '/feedback.css', '/feedback.js', '/assets/downloads/hero.webp', '/assets/example.png']) {
+  assert.deepEqual(routes, { version: 1, include: ['/api/*', '/admin*', '/__internal/*', '/assets/membership/alipay.png', '/assets/membership/wechat-pay.png'], exclude: [] });
+  for (const urlPath of ['/', '/app.js', '/style.css', '/changelog', '/download', '/download.html', '/download.css', '/download.js', '/product', '/product.html', '/product.css', '/product.js', '/feedback', '/feedback.html', '/feedback.css', '/feedback.js', '/assets/downloads/hero.webp', '/assets/example.png', '/assets/membership/wechat-contact.png']) {
     const request = new Request(`https://xhs.example.test${urlPath}`);
     const result = new Response('static');
     assert.equal(await gateway.fetch(request, {
       APP: { fetch() { assert.fail('Static fallback called APP'); } },
       ASSETS: { fetch(req) { assert.equal(req, request); return result; } },
     }), result);
+  }
+});
+
+test('retired manual payment QR paths return non-cacheable 404 for every method before APP or static fallback', async () => {
+  const env = { APP: { fetch() { assert.fail('Retired payment QR route reached the application'); } },
+    ASSETS: { fetch() { assert.fail('Retired payment QR route reached static fallback'); } } };
+  for (const method of ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
+    for (const pathname of ['/assets/membership/alipay.png', '/assets/membership/wechat-pay.png?cache=old-client']) {
+      const response = await gateway.fetch(new Request(`https://xhs.example.test${pathname}`, { method }), env);
+      assert.equal(response.status, 404); assert.equal(response.headers.get('Cache-Control'), 'no-store');
+      assert.equal(response.headers.get('Content-Type'), 'text/plain; charset=utf-8');
+      assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
+      assert.equal(await response.text(), method === 'HEAD' ? '' : 'Not Found');
+    }
   }
 });
 

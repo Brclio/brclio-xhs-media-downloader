@@ -268,6 +268,64 @@ test('a pending order restores after a new controller starts and immediately che
   foreign.recovery.dispose();
 });
 
+test('pending lookup immediately guards an unknown order until a successful empty lookup finishes', async () => {
+  const f = fixture(), hold = deferred();
+  f.data.pendingWork = () => hold.promise;
+  const work = f.recovery.restore();
+  assert.equal(f.last().phase, 'restoring', 'the guard is emitted synchronously before waiting for storage');
+  assert.equal(f.last().busy, true);
+  assert.equal(f.last().orderId, null);
+  assert.equal(f.count('payment-status'), 0);
+  hold.resolve({ ok: true, result: null, state: accountState() });
+  await work;
+  assert.equal(f.last().phase, 'idle');
+  assert.equal(f.last().busy, false);
+  assert.equal(f.count('clearPendingPayment'), 0);
+  f.recovery.dispose();
+});
+
+test('a failed pending lookup keeps purchase recovery guarded and retains its saved record until a retry succeeds', async () => {
+  const f = fixture(), hold = deferred();
+  f.data.pendingWork = () => hold.promise;
+  const work = f.recovery.restore();
+  hold.resolve({ ok: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'fixture storage offline' } });
+  await work;
+  assert.equal(f.last().phase, 'restore-retry');
+  assert.equal(f.last().busy, false, 'focus and manual retry remain available');
+  assert.deepEqual(f.data.pending, { userId: 'a', orderId });
+  assert.equal(f.count('clearPendingPayment'), 0);
+  assert.match(f.last().message, /恢复完成前暂不创建新订单/);
+  delete f.data.pendingWork;
+  await f.recovery.focus();
+  assert.equal(f.last().orderId, orderId);
+  assert.equal(f.last().phase, 'waiting');
+  assert.equal(f.count('payment-status'), 1);
+  f.recovery.dispose();
+});
+
+test('an old pending lookup cannot unlock a replacement account lookup', async () => {
+  const f = fixture(), oldLookup = deferred(), nextLookup = deferred();
+  f.data.pendingWork = () => oldLookup.promise;
+  const oldWork = f.recovery.restore();
+  f.recovery.setAccount(accountState('b'));
+  f.data.pendingWork = () => nextLookup.promise;
+  const nextWork = f.recovery.restore();
+  assert.equal(f.last().ownerId, 'b');
+  assert.equal(f.last().phase, 'restoring');
+  oldLookup.resolve({ ok: true, result: { userId: 'a', orderId }, state: accountState() });
+  await oldWork;
+  assert.equal(f.last().ownerId, 'b');
+  assert.equal(f.last().phase, 'restoring', 'a stale result cannot remove the new owner guard');
+  assert.equal(f.last().busy, true);
+  assert.equal(f.count('payment-status'), 0);
+  nextLookup.resolve({ ok: true, result: null, state: accountState('b') });
+  await nextWork;
+  assert.equal(f.last().ownerId, 'b');
+  assert.equal(f.last().phase, 'idle');
+  assert.equal(f.last().busy, false);
+  f.recovery.dispose();
+});
+
 test('concurrent restore and focus share one pending-record read and one order status request', async () => {
   const f = fixture(), pending = deferred(), status = deferred();
   f.data.pendingWork = () => pending.promise;
@@ -298,6 +356,8 @@ test('restart after an offline identity refresh keeps recovery available for the
   f.data.refreshWork = async () => ({ ok: false, state: accountState('a', false, { verified: false }), error: { code: 'SERVICE_UNAVAILABLE' } });
   await f.recovery.restore(); await settle();
   assert.equal(f.count('getPendingPayment'), 0, 'secure pending record is read only after identity is verified');
+  assert.equal(f.last().phase, 'restore-retry', 'unverified identity must not return to an unguarded purchase state');
+  assert.equal(f.last().busy, false);
   assert.equal(f.count('payment-status'), 0);
   assert.ok(f.timers.size > 0);
   delete f.data.refreshWork;

@@ -38,14 +38,15 @@ test('the served desktop app can load every static relative module including the
   assert.ok(loaded.has('xhs-app://local/lib/parse-verification.js'));
 });
 
-test('desktop protocol serves the cropped membership QR images locally', async () => {
-  for (const name of ['wechat-pay', 'alipay', 'wechat-contact']) {
+test('desktop protocol retains customer support and removes manual membership payment codes', async () => {
+  for (const name of ['wechat-contact']) {
     const response = await handler(new Request(`xhs-app://local/assets/membership/${name}.png`));
     assert.equal(response.status, 200, name);
     assert.equal(response.headers.get('content-type'), 'image/png');
     const bytes = Buffer.from(await response.arrayBuffer());
     assert.deepEqual(bytes.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
   }
+  for (const name of ['wechat-pay', 'alipay']) assert.equal((await handler(new Request(`xhs-app://local/assets/membership/${name}.png`))).status, 404);
 });
 
 test('Live Photo maker and its complete local encoding graph are served under the sandbox policy', async () => {

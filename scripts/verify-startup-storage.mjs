@@ -126,10 +126,12 @@ async function snapshot(win) {
       },
       membership: {
         browseDisabled: document.querySelector('#account-open-membership')?.disabled,
-        paymentHidden: document.querySelector('#membership-payment')?.hidden,
-        emailHidden: document.querySelector('#membership-email-row')?.hidden,
-        copyDisabled: document.querySelector('#membership-copy-email')?.disabled,
-        loginGuidanceHidden: document.querySelector('#membership-login-guidance')?.hidden
+        manualControlsAbsent: !document.querySelector('#membership-report-paid, #membership-payment, #membership-payment-image, #membership-email-row, #membership-copy-email, input[name="membership-plan"], input[name="membership-method"]'),
+        onlinePaymentHidden: document.querySelector('#membership-online-payment')?.hidden,
+        onlinePayDisabled: document.querySelector('#membership-online-pay')?.disabled,
+        onlineRefreshDisabled: document.querySelector('#membership-online-refresh')?.disabled,
+        loginGuidanceHidden: document.querySelector('#membership-login-guidance')?.hidden,
+        loginRequired: document.querySelector('#membership-login-message')?.textContent.includes('登录软件账号'),
       },
       retryLabel: document.querySelector('#account-refresh')?.textContent,
       nodeAvailable: typeof require === 'function'
@@ -148,9 +150,9 @@ function assertIdleGoogleControls(value, loginDisabled) {
 
 function assertSignedOutMembershipGuard(value) {
   assert.deepEqual(value.membership, {
-    browseDisabled: false, paymentHidden: true, emailHidden: true,
-    copyDisabled: true, loginGuidanceHidden: false,
-  }, 'Users can view plans and login guidance, but payment codes and email copying require their verified account');
+    browseDisabled: false, manualControlsAbsent: true, onlinePaymentHidden: false,
+    onlinePayDisabled: true, onlineRefreshDisabled: true, loginGuidanceHidden: false, loginRequired: true,
+  }, 'Users can view online payment choices and login guidance, but purchasing requires a verified account and manual collection controls stay removed');
 }
 
 function assertSignedOutOperationGuards(value, blocked, refreshBlocked = blocked) {

@@ -1,0 +1,440 @@
+{
+  "checkedAt": "2026-10-20T15:11:59.659Z",
+  "timeZone": "Asia/Shanghai",
+  "scope": "Independent Brclio WeChat Native payment; remove manual Alipay/WeChat membership purchase",
+  "workingTree": {
+    "baseCommit": "01daa4c3de23a688660733c760da49455e9a547b",
+    "dirty": true,
+    "sourceFiles": [
+      {
+        "path": ".env.example",
+        "sha256": "776790f46196226d4df3210dadc88a75bfdf0117259015fc88f7f0a70919ff4a"
+      },
+      {
+        "path": "account-ui.js",
+        "sha256": "f22a33d5310c0c4e6698e78ec8099d034faf7476b9d81983713236d88b3aaa45"
+      },
+      {
+        "path": "admin/admin.js",
+        "sha256": "e548ef5ff0471c96e74f9a3981bcd06f19e12ce07ca066aff33550c60a435c4d"
+      },
+      {
+        "path": "api/brclio-payment.js",
+        "sha256": "734b2dee4519d66d5bcfc36c8fbae714dc193c30fcb3d478ecd5d9c8bbcc0f60"
+      },
+      {
+        "path": "assets/membership/alipay.png",
+        "deleted": true
+      },
+      {
+        "path": "assets/membership/wechat-pay.png",
+        "deleted": true
+      },
+      {
+        "path": "cloudflare/account-runtime.js",
+        "sha256": "aa082b6b23b8ad31d6ebb6f192b9e51ed272ddc7101ff1a3c2156eb71934cbb3"
+      },
+      {
+        "path": "cloudflare/pages/_routes.json",
+        "sha256": "37fddf5dca57309cc365bfc44ee848f5dc1571ee198f2f003857540bab8bbb80"
+      },
+      {
+        "path": "cloudflare/pages/_worker.js",
+        "sha256": "795c03a6a4247eddb0538c9c86826b7f9ca94d441a580301d0ccf87934b0ad8a"
+      },
+      {
+        "path": "cloudflare/worker.js",
+        "sha256": "a5475c369743f531b0761dd7c2e42c235514d22105e3084528f69a1155137ecc"
+      },
+      {
+        "path": "commerce-ui.js",
+        "sha256": "21fd8d3ea001aa40dbc5c8a381f921d34c072d9e2e910bdf8e8605580c93256b"
+      },
+      {
+        "path": "deploy/build-web.mjs",
+        "sha256": "230e8e790fbfb2e880e29597b3848183def8a49656021969ab183dc0322880eb"
+      },
+      {
+        "path": "download.html",
+        "sha256": "3c1f1538f47596324c054f4a715f4d98977c1d76c862a556cede69faa89b4dc9"
+      },
+      {
+        "path": "membership.html",
+        "sha256": "46872351422cb914b3dc1d6025a7132daa82cf9fda6e5c0535e4599b161a0426"
+      },
+      {
+        "path": "membership.js",
+        "sha256": "21225d3f9a43d40271bcac798517b3a606f3624aa1bde3b1f60e0d01d3f60ed1"
+      },
+      {
+        "path": "package.json",
+        "sha256": "6830517d46d7aebf2f02a2a331df6fdf93870b6d78ab3cbf9a56ff527357f8ad"
+      },
+      {
+        "path": "scripts/verify-brclio-pay-production.mjs",
+        "sha256": "c53b9b570183e1bf4d9245dd4bc29100ffbcc91387293a31ae68006382dce963"
+      },
+      {
+        "path": "scripts/verify-brclio-pay-ui.cjs",
+        "sha256": "028c1210f9649e66b02297802ccc8e2606cd3e55574aefa5058f4e5eed2da1db"
+      },
+      {
+        "path": "scripts/verify-commerce-ui.cjs",
+        "sha256": "3fbcc2c99271467a2c8531dc82907294c478fd8c0d1b819a7b4961f66c4f668e"
+      },
+      {
+        "path": "scripts/verify-membership-ui.cjs",
+        "sha256": "de94806111051706e18427e16e7d5d3d1fa8079e94b193d275b9a42cc7d97d73"
+      },
+      {
+        "path": "scripts/verify-promoted-installer.mjs",
+        "sha256": "94d90b4514b38c54a34a1f04c198c45c8e42381235ae1be8484954478726d24f"
+      },
+      {
+        "path": "scripts/verify-startup-storage.mjs",
+        "sha256": "c1055d688e90982ab382e71b83a70fe382873e0a28d1e6ef8823c06d795d7e6d"
+      },
+      {
+        "path": "server/auth/brclio-pay-client.js",
+        "sha256": "c7fc61f03188a4047152908deb94470b0182e2de4f374a914d3c0f49bf7aa56b"
+      },
+      {
+        "path": "server/auth/brclio-pay.js",
+        "sha256": "e0133d12262f2b82faa4ed4fc38cec422ca924dd6afe68d9a8a6d48f7661713e"
+      },
+      {
+        "path": "server/auth/commerce.js",
+        "sha256": "4703ccafc4facac3893be6157fad6b3e6cf89599b53298154eac2dcda86b8faa"
+      },
+      {
+        "path": "server/auth/config.js",
+        "sha256": "ecceab3fff3fcf0ba9f786dc20e36235e5f45604254cd39944c6feaac73edfd1"
+      },
+      {
+        "path": "server/auth/service.js",
+        "sha256": "a150666076ffb1b20d8eea9f2af60428c8ddedf71bf5110d2c276cf2bdf36a1e"
+      },
+      {
+        "path": "server/auth/store.js",
+        "sha256": "e618e19ec041dd3852569333211447a73e211c6c0abfbf931d61f30e3e708f77"
+      },
+      {
+        "path": "server/standalone/http.js",
+        "sha256": "625ea9b99664b5fab7097f8903edc4ba9cd3a353b9a842e5bd3eac0112fbdcb4"
+      },
+      {
+        "path": "server/standalone/start.mjs",
+        "sha256": "c7a8b45a0456596368862061ced64f4855aa048a3fd3d988c694194a5972cca6"
+      },
+      {
+        "path": "test/brclio-pay-ui.test.js",
+        "sha256": "d06c44f797b266b7cc818afd3a99ac32b93457f33f482ed1059038ee846b8f92"
+      },
+      {
+        "path": "test/brclio-pay.test.js",
+        "sha256": "555a6df38d8dac2040dfe43cbb6a2cf3e17faacc989b14a7f61aae2413d25d30"
+      },
+      {
+        "path": "test/cloudflare-commerce.test.js",
+        "sha256": "a6067340410c342c3331d11356f144c475b4a65c44562c0660440935ac016cf9"
+      },
+      {
+        "path": "test/cloudflare-pages.test.js",
+        "sha256": "7cb5cceab290dc14b899d643e906e454e2cf2a7956a5b81a54ae30e9af4d83f4"
+      },
+      {
+        "path": "test/cloudflare-worker.test.js",
+        "sha256": "01241dbca061964b59f0084abc5c9f1161764596eae93274aed059f47d799ce9"
+      },
+      {
+        "path": "test/commerce-backend.test.js",
+        "sha256": "1c7541bb813fc325b64c4013e2e7efe86a3864fa096605e5c38a5c1b9260db90"
+      },
+      {
+        "path": "test/deployment-boundary.test.js",
+        "sha256": "7b8d2f220ad67d2a212614be6af1aab33c5d92786d7762e03094154b849b9b55"
+      },
+      {
+        "path": "test/desktop-protocol.test.js",
+        "sha256": "387553c592cffc15bb8356c9093f1af605cc972990e8acd121c8f2527dd65933"
+      },
+      {
+        "path": "test/packaged-membership.test.js",
+        "sha256": "fb6a5279c43dd3f0d2017949675ff1e2135df0030557077901138dc1de094815"
+      },
+      {
+        "path": "vercel.json",
+        "sha256": "fee168d85d43a8dd5d5a5ae452c3e2fe429a38761f9a394686827169c3705aef"
+      },
+      {
+        "path": "wrangler.jsonc",
+        "sha256": "df4dfd92b2c39087bf741425e621b662b1618cd8c9b789b6cdfb0a70517ffdfc"
+      },
+      {
+        "path": "api/brclio-wechat-payment.js",
+        "sha256": "7d3e68af8bf26d9ede4fca57825539d8010f1894db1ccaab6098f448a715a5e7"
+      },
+      {
+        "path": "server/auth/brclio-wechat-pay-client.js",
+        "sha256": "132d5682ac7189c13775c453c029d0b81730b0e9e4d492785583df41fdd0a511"
+      },
+      {
+        "path": "server/auth/brclio-wechat-pay.js",
+        "sha256": "824513ecfebc962604dfa7c9371648a4410450528a9d29273c903b0d8b7b1d4c"
+      },
+      {
+        "path": "test/brclio-wechat-http.test.js",
+        "sha256": "e81582035fc226d97f8843e8cd35b23a8904ed604a7c8f348b2414f7ee6dba89"
+      },
+      {
+        "path": "test/brclio-wechat-pay-client.test.js",
+        "sha256": "596f3d8f2b51997e048109ae0c42b53f7f05f71625eb7e070fb6b4bc97a169f3"
+      },
+      {
+        "path": "test/brclio-wechat-pay-service.test.js",
+        "sha256": "05e0281b7070e956895fa6f3e9071284988c4f35c0db9e86a06a54a23f8f8c91"
+      }
+    ],
+    "commitCreated": false,
+    "sourcePushed": false
+  },
+  "paymentCenter": {
+    "origin": "https://paywc.bornforthis.cn",
+    "clientId": "p-2bb6d77a673327a2f8d881bac2d4fe26",
+    "createdOwnPendingProduct": true,
+    "channels": [
+      "native"
+    ],
+    "webhookUrl": "https://xhs.download.brclio.com/api/brclio-wechat-payment",
+    "returnOrigins": [
+      "https://xhs.download.brclio.com"
+    ],
+    "amountsCnyFen": {
+      "daily": 300,
+      "monthly": 1990,
+      "yearly": 6990
+    },
+    "lastReadbackDisabled": false,
+    "otherProductsModified": false,
+    "globalSettingsModified": false,
+    "managementTokenWrittenToFile": false,
+    "managementSessionCleared": true
+  },
+  "cloudflare": {
+    "accountId": "c8b059429c868f6d0e528f9e10325f46",
+    "worker": "brclio-xhs-downloader",
+    "workerBefore": "ade1e861-258c-440c-8aab-e34fdb0294c0",
+    "workerFinal": "7cc3f235-b9ab-452e-b149-8000d7d59738",
+    "pagesProject": "brclio-xhs-pages",
+    "pagesFinal": "https://fb86563c.brclio-xhs-pages.pages.dev",
+    "existingSecretNamesPreserved": true,
+    "beforeSecretCount": 27,
+    "afterSecretCount": 31,
+    "addedSecretNames": [
+      "BRCLIO_WECHAT_PAY_API_KEY",
+      "BRCLIO_WECHAT_PAY_BASE_URL",
+      "BRCLIO_WECHAT_PAY_CLIENT_ID",
+      "BRCLIO_WECHAT_PAY_WEBHOOK_SECRET"
+    ],
+    "structuralBindingsUnchanged": true,
+    "bindings": [
+      {
+        "name": "ACCOUNT_RUNTIME",
+        "type": "durable_object_namespace",
+        "namespace_id": "d3edbdb22f164230bf5a2202edc31dc8",
+        "class_name": "AccountRuntime"
+      },
+      {
+        "name": "BROWSER",
+        "type": "browser"
+      },
+      {
+        "name": "PARSE_RUNTIME",
+        "type": "durable_object_namespace",
+        "namespace_id": "99645981698f4c489b880998cad8f1d0",
+        "class_name": "ParseRuntime"
+      },
+      {
+        "name": "PYTHON_API",
+        "type": "service",
+        "service": "brclio-xhs-python"
+      },
+      {
+        "name": "SUBSCRIPTION_PROXY",
+        "type": "service",
+        "service": "brclio-xhs-subscription-proxy"
+      }
+    ],
+    "newStorageResources": [],
+    "pythonRedeployed": false,
+    "subscriptionProxyRedeployed": false,
+    "vercelRedeployed": false
+  },
+  "validation": {
+    "node": {
+      "passed": 1856,
+      "skipped": 13,
+      "failed": 0
+    },
+    "python": {
+      "passed": 47,
+      "failed": 0
+    },
+    "retiredRoutesRegression": {
+      "passed": 22,
+      "failed": 0
+    },
+    "production": {
+      "passed": 29,
+      "total": 29,
+      "ok": true
+    },
+    "staticReadback": {
+      "ok": true,
+      "checkedAt": "2026-10-20T15:10:50.498Z",
+      "total": 15,
+      "results": [
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "file": "/membership.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "file": "/commerce-ui.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "file": "/account-ui.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "file": "/membership.html",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://xhs.download.brclio.com",
+          "file": "/download.html",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "file": "/commerce-ui.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "file": "/account-ui.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "file": "/membership.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "file": "/membership.html",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://brclio-xhs-pages.pages.dev",
+          "file": "/download.html",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://fb86563c.brclio-xhs-pages.pages.dev",
+          "file": "/account-ui.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://fb86563c.brclio-xhs-pages.pages.dev",
+          "file": "/commerce-ui.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://fb86563c.brclio-xhs-pages.pages.dev",
+          "file": "/membership.js",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://fb86563c.brclio-xhs-pages.pages.dev",
+          "file": "/membership.html",
+          "status": 200,
+          "matchesBuild": true
+        },
+        {
+          "origin": "https://fb86563c.brclio-xhs-pages.pages.dev",
+          "file": "/download.html",
+          "status": 200,
+          "matchesBuild": true
+        }
+      ]
+    },
+    "secretScan": {
+      "filesScanned": 1283,
+      "hitFiles": [],
+      "secretFileMode": "600",
+      "managementTokenPersisted": false
+    },
+    "isolatedUi": {
+      "paymentChromium": true,
+      "membershipChromium": true,
+      "commerceChromium": true,
+      "mockKeychainStartup": true,
+      "productionBrowserRenderVerified": false
+    },
+    "liveCenterInterop": {
+      "signedNativeCreate": true,
+      "signedGetWithFinalClient": true,
+      "repeatedBusinessIdSameCenterId": true,
+      "expectedTotalTamperRejected": "CATALOG_PRICE_CHANGED",
+      "unpaidOrderCount": 1
+    }
+  },
+  "preservation": {
+    "alipayCenter": "https://pay.bornforthis.cn",
+    "alipayClientId": "xhs-downloader",
+    "oldAlipayCatalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+    "historicalOrders": true,
+    "existingEntitlements": true,
+    "activationCodeRedemption": true,
+    "privateGithubBusinessStoreUnchanged": true,
+    "productionBusinessDataWriteByAgent": false
+  },
+  "manualPaymentRemoval": {
+    "userPurchaseUiRemoved": true,
+    "newManualReportsDisabled": true,
+    "previousRequestReadOnlyReplayRetained": true,
+    "imagesDeleted": [
+      "assets/membership/alipay.png",
+      "assets/membership/wechat-pay.png"
+    ],
+    "publicUrlsReturn404": true,
+    "futureDesktopPackagesExcludeImages": true
+  },
+  "releaseBoundaries": {
+    "webAndBackendDeployed": true,
+    "desktopInstallersBuilt": false,
+    "desktopInstallersPublished": false,
+    "installedClientsUpdatedOrRelaunched": false,
+    "androidPublished": false,
+    "realWechatPaymentVerified": false,
+    "productionEntitlementGrantVerified": false
+  }
+}

@@ -3,7 +3,7 @@
 export default {
   async fetch(request, env) {
     const pathname = new URL(request.url).pathname;
-    if (pathname.startsWith('/__internal/')) {
+    if (pathname.startsWith('/__internal/') || pathname === '/assets/membership/alipay.png' || pathname === '/assets/membership/wechat-pay.png') {
       return new Response(request.method === 'HEAD' ? null : 'Not Found', { status: 404,
         headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
     }

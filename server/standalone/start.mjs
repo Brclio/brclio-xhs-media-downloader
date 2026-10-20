@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAccountHandler } from '../../api/account.js';
 import { createBrclioPaymentHandler } from '../../api/brclio-payment.js';
+import { createBrclioWechatPaymentHandler } from '../../api/brclio-wechat-payment.js';
 import { createAccountService } from '../auth/service.js';
 import { readConfig } from '../auth/config.js';
 import { createGithubStore } from '../auth/store.js';
@@ -54,6 +55,7 @@ export async function startStandalone({ env = process.env } = {}) {
     const accountHandler = createAccountHandler({ service, config, clientIp: req => req.clientIp });
     runtime = await createStandaloneServer({ staticRoot, accountHandler,
       paymentHandler: createBrclioPaymentHandler({ service, config }),
+      wechatPaymentHandler: createBrclioWechatPaymentHandler({ service, config }),
       memberVideoHandler: createStandaloneMemberVideoHandler({ env, accountHandler, media }),
       storageCheck: () => store.read(), media, trustedProxy: env.SERVER_TRUST_PROXY || '',
       ...serverOptions,

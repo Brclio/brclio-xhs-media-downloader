@@ -4,6 +4,7 @@ import video from '../api/video.js';
 import { createHostedMemberVideoHandler } from '../api/member_video.js';
 import { createAccountHandler } from '../api/account.js';
 import { createBrclioPaymentHandler } from '../api/brclio-payment.js';
+import { createBrclioWechatPaymentHandler } from '../api/brclio-wechat-payment.js';
 import packageInfo from '../package.json' with { type: 'json' };
 import { browserPythonMedia } from './browser-python-source.js';
 import { avatarBinaryResponse, cleanupAvatarUploads, AVATAR_MAX_BYTES } from '../server/auth/avatar.js';
@@ -58,7 +59,10 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
       const path = url.pathname;
       let response;
       try {
-        if (path === '/api/health') {
+        if (['/assets/membership/alipay.png', '/assets/membership/wechat-pay.png'].includes(path)) {
+          response = new Response(request.method === 'HEAD' ? null : 'Not Found', { status: 404,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+        } else if (path === '/api/health') {
           response = request.method === 'GET' || request.method === 'HEAD'
             ? json({ ok: true, platform: 'cloudflare', version: env.VERSION || packageInfo.version, pythonBinding: Boolean(env.PYTHON_API?.fetch), avatars: { builtinCount: 100, customUploads: Boolean(getAvatarStorage(env)), maxOriginalBytes: AVATAR_MAX_BYTES }, ...(env.DEPLOYMENT?.id ? { deploymentId: env.DEPLOYMENT.id } : {}) })
             : json({ success: false, message: '只支持 GET 请求。' }, 405, { Allow: 'GET, HEAD' });
@@ -66,10 +70,10 @@ export function createWorker({ nodeRoutes = NODE_ROUTES, accountFactory = create
           response = env.ACCOUNT_RUNTIME
             ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)
             : await avatarBinaryResponse(request, { storage: getAvatarStorage(env), config: readConfig(env) });
-        } else if (path === '/api/brclio-payment') {
+        } else if (path === '/api/brclio-payment' || path === '/api/brclio-wechat-payment') {
           response = env.ACCOUNT_RUNTIME
             ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)
-            : await invokeHandler(createBrclioPaymentHandler({ env }), request);
+            : await invokeHandler((path === '/api/brclio-wechat-payment' ? createBrclioWechatPaymentHandler : createBrclioPaymentHandler)({ env }), request);
         } else if (path === '/api/account') {
           response = env.ACCOUNT_RUNTIME
             ? await env.ACCOUNT_RUNTIME.get(env.ACCOUNT_RUNTIME.idFromName('accounts-v1')).fetch(request)

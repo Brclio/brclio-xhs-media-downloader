@@ -12,6 +12,7 @@ import { createGoogleOAuth } from './google-oauth.js';
 import { createGoogleLoginService } from './google-login.js';
 import { createAvatarService, avatarView } from './avatar.js';
 import { createBrclioPayService } from './brclio-pay.js';
+import { createBrclioWechatPayService } from './brclio-wechat-pay.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -76,7 +77,7 @@ function activationCodeValue(value) {
   return code;
 }
 
-export function createAccountService({ store, mailer, config, now = Date.now, fetchImpl, avatarStorage, paymentClient, paymentConfig }) {
+export function createAccountService({ store, mailer, config, now = Date.now, fetchImpl, avatarStorage, paymentClient, paymentConfig, wechatPaymentClient, wechatPaymentConfig }) {
   const hash = (purpose, value) => digest(config.pepper, purpose, value);
   const isAdmin = user => config.adminEmails.includes(user.email);
   const role = user => isAdmin(user) ? 'admin' : 'user';
@@ -567,13 +568,26 @@ export function createAccountService({ store, mailer, config, now = Date.now, fe
   const googleService = createGoogleLoginService({ store, now, hash, google, loginSession, emailValue, noMembership, isAdmin });
   const avatarService = createAvatarService({ store, now, hash, config, authenticate, storage: avatarStorage });
   const paymentService = createBrclioPayService({ store, now, authenticate, hash, config: paymentConfig || config.brclioPay || {}, paymentClient, protectedFeatures: config.protectedFeatures });
+  const wechatPaymentService = createBrclioWechatPayService({ store, now, authenticate, hash, config: wechatPaymentConfig || config.brclioWechatPay || {}, paymentClient: wechatPaymentClient, protectedFeatures: config.protectedFeatures });
+  async function executePayment(request) {
+    if (['payment-resume', 'payment-status'].includes(request.action)) {
+      // Saved order ownership and authentication are checked by its original
+      // provider. A browser selector must never redirect a historical payment.
+      const { state } = await store.read();
+      const order = owns(state.orders || {}, request.input.orderId);
+      return (order?.source === 'brclio_wechat' ? wechatPaymentService : paymentService).execute(request);
+    }
+    if (request.input.provider !== undefined && !['alipay', 'wechat'].includes(request.input.provider)) fail('INVALID_ORDER', '请选择有效的在线支付渠道。');
+    return (request.input.provider === 'wechat' ? wechatPaymentService : paymentService).execute(request);
+  }
   return {
     receivePayment: request => paymentService.receivePayment(request),
+    receiveWechatPayment: request => wechatPaymentService.receivePayment(request),
     async execute({ action, input = {}, token = '', proof, ip = '', client, googleBinding = '' }) {
       if (typeof action !== 'string' || action.length > 80 || !input || typeof input !== 'object' || Array.isArray(input)) fail('INVALID_REQUEST', '请求格式无效。');
       const request = { action, input, token, proof, ip, client, googleBinding };
       let result;
-      if (['payment-catalog', 'payment-create', 'payment-resume', 'payment-status'].includes(action)) result = await paymentService.execute(request);
+      if (['payment-catalog', 'payment-create', 'payment-resume', 'payment-status'].includes(action)) result = await executePayment(request);
       else if (action.startsWith('avatar-') || action.startsWith('admin-avatar-')) result = await avatarService.execute(request);
       else if (action.startsWith('google-')) result = await googleService.execute(request);
       else if (['profile-update', 'reviews-public', 'review-mine', 'review-submit', 'order-create', 'orders-mine', 'admin-orders', 'admin-record-order', 'admin-link-order-code', 'admin-revenue'].includes(action)) result = await commerceService.execute(request);

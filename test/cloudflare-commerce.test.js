@@ -145,11 +145,17 @@ test('production Worker and AccountRuntime isolate public reviews, personal orde
     const changed = await call('orders-mine', { expectedUserId: ownerId }, otherCookie); assert.equal(changed.response.status, 409); assert.equal(changed.body.error.code, 'ACCOUNT_CHANGED');
     const before = await call('admin-revenue', {}, bothCookies);
     assert.equal(before.body.revenue.totalCents, 1990); assert.equal(before.body.revenue.activationCodeCount, 1); assert.equal(before.body.revenue.legacyUnverifiedCount, 0);
-    const input = orderInput(), reported = await call('order-create', input, bothCookies);
-    assert.equal(reported.response.status, 200, JSON.stringify(reported.body));
-    assert.equal(reported.body.order.status, 'pending'); assert.equal(reported.body.order.amountCents, null); assert.equal(reported.body.order.priceCents, 1990);
-    const repeat = await call('order-create', { ...input, requestId: randomUUID() }, ownerCookie);
-    assert.equal(repeat.body.order.id, reported.body.order.id);
+    const beforeReport = writes;
+    for (const paymentMethod of ['wechat', 'alipay']) {
+      const rejected = await call('order-create', orderInput({ paymentMethod }), bothCookies);
+      assert.equal(rejected.response.status, 410); assert.equal(rejected.body.error.code, 'MANUAL_PAYMENT_DISABLED');
+    }
+    assert.equal(writes, beforeReport, 'retired manual-payment requests never write an order or operation');
+    const historicalId = randomUUID();
+    state.orders[historicalId] = { id: historicalId, userId: ownerId, planId: 'monthly', planName: '月付', priceCents: 1990, amountCents: null, status: 'pending', paymentMethod: 'wechat', paidAt: null, createdAt, confirmedAt: null, codeId: null, source: 'user_report' };
+    version++;
+    const history = await call('orders-mine', { expectedUserId: ownerId }, ownerCookie);
+    assert.equal(history.body.orders.find(order => order.id === historicalId).status, 'pending');
     const after = await call('admin-revenue', {}, adminCookie);
     assert.equal(after.body.revenue.totalCents, 1990); assert.equal(after.body.revenue.pendingCount, 1);
     assert.equal(state.users[ownerId].membership.type, 'none');

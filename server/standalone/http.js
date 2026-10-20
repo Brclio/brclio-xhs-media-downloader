@@ -6,6 +6,7 @@ import path from 'node:path';
 import { PUBLIC_FILES } from '../../deploy/build-web.mjs';
 import { createHostedMemberVideoHandler } from '../../api/member_video.js';
 import { createBrclioPaymentHandler } from '../../api/brclio-payment.js';
+import { createBrclioWechatPaymentHandler } from '../../api/brclio-wechat-payment.js';
 import { createMediaRuntime, HttpError } from './media.js';
 
 const MEDIA = new Set(['/api/parse', '/api/image', '/api/video', '/api/python_parse', '/api/python_image', '/api/python_video']);
@@ -137,7 +138,7 @@ async function staticFile(root, pathname, req, res) {
 }
 
 /** Node HTTP boundary shared by direct execution, Docker and integration tests. */
-export async function createStandaloneServer({ staticRoot, accountHandler, memberVideoHandler, paymentHandler = createBrclioPaymentHandler(), storageCheck = async () => {}, media = createMediaRuntime(),
+export async function createStandaloneServer({ staticRoot, accountHandler, memberVideoHandler, paymentHandler = createBrclioPaymentHandler(), wechatPaymentHandler = createBrclioWechatPaymentHandler(), storageCheck = async () => {}, media = createMediaRuntime(),
   trustedProxy = '', requestTimeoutMs = 60_000, maxRequests = 32 } = {}) {
   const rootStat = await lstat(staticRoot);
   if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error('Static root must be the built dist-web directory, not a symlink.');
@@ -165,18 +166,18 @@ export async function createStandaloneServer({ staticRoot, accountHandler, membe
           if (pathname === '/readyz') await storageCheck();
           json(res, 200, { ok: true }); return;
         }
-        if (pathname === '/api/account' || pathname === '/api/member_video' || pathname === '/api/brclio-payment' || MEDIA.has(pathname)) {
+        if (pathname === '/api/account' || pathname === '/api/member_video' || pathname === '/api/brclio-payment' || pathname === '/api/brclio-wechat-payment' || MEDIA.has(pathname)) {
           const body = await readBody(req, pathname === '/api/account' ? 1_600_000 : 16_384, abort.signal);
           if (abort.signal.aborted) return;
           const url = new URL(req.url, 'http://localhost');
           const adapted = { method: req.method, url: req.url, headers: req.headers, body,
             query: Object.fromEntries(url.searchParams), socket: req.socket, clientIp: getIp(req), signal: abort.signal };
-          if (pathname === '/api/account' || pathname === '/api/member_video' || pathname === '/api/brclio-payment') {
+          if (pathname === '/api/account' || pathname === '/api/member_video' || pathname === '/api/brclio-payment' || pathname === '/api/brclio-wechat-payment') {
             // Buffer the handler result so a timed-out transaction cannot write to a closed socket.
             const headers = {}, reply = { status: 200, body: '' };
             const response = { setHeader(name, value) { headers[name] = value; return this; },
               status(value) { reply.status = value; return this; }, json(value) { reply.body = JSON.stringify(value); return this; } };
-            const selectedHandler = pathname === '/api/member_video' ? membershipHandler : pathname === '/api/brclio-payment' ? paymentHandler : accountHandler;
+            const selectedHandler = pathname === '/api/member_video' ? membershipHandler : pathname === '/api/brclio-payment' ? paymentHandler : pathname === '/api/brclio-wechat-payment' ? wechatPaymentHandler : accountHandler;
             response.send = value => { reply.body = value; return response; };
             response.end = value => { reply.body = value || ''; return response; };
             await selectedHandler(adapted, response);

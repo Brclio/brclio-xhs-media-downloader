@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.27",
+  "checkedAt": "2026-10-20T15:24:38.952Z",
+  "timeZone": "Asia/Shanghai",
+  "baseSha": "01daa4c3de23a688660733c760da49455e9a547b",
+  "status": "preflight-only",
+  "auditFindingsFixed": [
+    "Same WeChat transaction cannot be counted again through the preserved manual receipt channel; both CAS orderings are guarded.",
+    "Slow or failed persisted pending-order lookup blocks new purchases and channel switching until the old reference is resolved."
+  ],
+  "local": {
+    "nodePassed": 1865,
+    "nodeSkipped": 13,
+    "nodeFailed": 0,
+    "pythonPassed": 47,
+    "paymentChromiumChecks": 32,
+    "membershipChromiumChecks": 12,
+    "commerceChromiumChecks": 17,
+    "navigationChromiumChecks": 12,
+    "signedEntitlementScenarios": 4,
+    "signedEntitlementTests": 8,
+    "bulkNotes": 130,
+    "mockKeychainStartup": "PASS",
+    "workerDryRun": "PASS",
+    "asarAndDeploymentBoundary": "PASS",
+    "secretScan": {
+      "filesScanned": 864,
+      "hitFiles": [],
+      "privateSecretMode": "600"
+    }
+  },
+  "configuration": {
+    "cloudflareAccountId": "c8b059429c868f6d0e528f9e10325f46",
+    "productionSecretCount": 31,
+    "existingSecretValuesChanged": false,
+    "storageProvider": "existing-private-github-repository",
+    "newStorageResources": false,
+    "targets": [
+      "desktop-v2.0.27",
+      "existing main Worker",
+      "existing Pages project"
+    ],
+    "otherWorkersNotToDeploy": [
+      "brclio-xhs-python",
+      "brclio-xhs-subscription-proxy",
+      "payment center"
+    ],
+    "androidVersionUnchanged": "1.0.15"
+  },
+  "productionOrdersCreated": false,
+  "realPaymentsAttempted": false,
+  "productionEntitlementGrantsAttempted": false,
+  "userInstalledApplicationReplaced": false
+}

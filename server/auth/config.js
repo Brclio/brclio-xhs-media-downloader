@@ -31,6 +31,13 @@ export function readConfig(env = process.env) {
       mode: env.BRCLIO_PAY_MODE || 'live',
       returnOrigin: env.AUTH_SITE_ORIGIN || '',
     },
+    brclioWechatPay: {
+      baseUrl: env.BRCLIO_WECHAT_PAY_BASE_URL || 'https://paywc.bornforthis.cn',
+      clientId: env.BRCLIO_WECHAT_PAY_CLIENT_ID || 'p-2bb6d77a673327a2f8d881bac2d4fe26',
+      apiKey: env.BRCLIO_WECHAT_PAY_API_KEY || '',
+      webhookSecret: env.BRCLIO_WECHAT_PAY_WEBHOOK_SECRET || '',
+      returnOrigin: env.AUTH_SITE_ORIGIN || '',
+    },
   };
   if (Buffer.byteLength(config.pepper) < 32) fail('SERVICE_NOT_CONFIGURED', '授权服务尚未配置。', 503);
   if (!Number.isInteger(config.deviceLimit) || config.deviceLimit < 1 || config.deviceLimit > 20) fail('SERVICE_NOT_CONFIGURED', '设备上限配置错误。', 503);

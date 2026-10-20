@@ -1,5 +1,6 @@
 import { createAccountHandler } from '../api/account.js';
 import { createBrclioPaymentHandler } from '../api/brclio-payment.js';
+import { createBrclioWechatPaymentHandler } from '../api/brclio-wechat-payment.js';
 import { createCloudflareMailer } from './mailer.js';
 import { invokeHandler, MAX_ACCOUNT_BODY_BYTES, RequestTooLargeError } from './http-adapter.js';
 import { createGithubStore } from '../server/auth/store.js';
@@ -27,6 +28,7 @@ export class AccountRuntime {
   async fetch(request) {
     try {
       if (new URL(request.url).pathname === '/api/brclio-payment') return await invokeHandler(createBrclioPaymentHandler({ env: this.env }), request);
+      if (new URL(request.url).pathname === '/api/brclio-wechat-payment') return await invokeHandler(createBrclioWechatPaymentHandler({ env: this.env }), request);
       if (new URL(request.url).pathname === '/api/account_avatar') return avatarBinaryResponse(request, { storage: getAvatarStorage(this.env), config: readConfig(this.env) });
       if (new URL(request.url).pathname === '/__internal/avatar-cleanup') {
         if (request.method !== 'GET') return Response.json({ ok: false }, { status: 405 });

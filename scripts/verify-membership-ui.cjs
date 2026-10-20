@@ -28,7 +28,6 @@ async function finish(code, error) {
 
 const fixture = `
 window.fixtureCalls = [];
-window.fixtureCopied = [];
 window.fixtureState = { configured: true, authenticated: false, verified: false, status: 'logged_out', account: null };
 window.fixtureSetState = value => { window.fixtureState = value; window.fixtureUpdate?.(value); };
 window.xhsDesktop = {
@@ -46,11 +45,18 @@ window.xhsDesktop = {
     return { ok: true, state: next, result: { message: '会员兑换成功。' } };
   },
   logoutAccount: async () => { window.fixtureCalls.push(['logout']); return { ok: true, state: { configured: true, authenticated: false, verified: false, status: 'logged_out', account: null }, result: {} }; },
+  getPendingPayment: async () => ({ ok: true, result: null }),
+  commerceRequest: async (action, input = {}) => {
+    window.fixtureCalls.push([action, structuredClone(input)]);
+    if (action === 'payment-catalog') return { ok: true, result: { catalog: { enabled: true, mode: 'live', currency: 'CNY', version: 'membership-ui-fixture',
+      ...(input.provider === 'wechat' ? { provider: 'wechat', channels: ['native'] } : {}),
+      plans: [{ id: 'daily', name: '日付', days: 1, priceCents: 300, amount: '3.00' }, { id: 'monthly', name: '月付', days: 30, priceCents: 1990, amount: '19.90' }, { id: 'yearly', name: '年付', days: 365, priceCents: 6990, amount: '69.90' }] } } };
+    if (action === 'orders-mine') return { ok: true, result: { orders: [], page: 1, total: 0, totalPages: 1 } };
+    if (action === 'reviews-public') return { ok: true, result: { reviews: [], page: 1, total: 0, totalPages: 1, summary: { count: 0, averageRating: null } } };
+    if (action === 'review-mine') return { ok: true, result: { review: null } };
+    throw new Error('Unexpected membership fixture operation: ' + action);
+  },
 };
-Object.defineProperty(navigator, 'clipboard', { value: { writeText: async text => {
-  if (window.fixtureClipboardFails) throw new Error('Clipboard unavailable');
-  window.fixtureCopied.push(text);
-} } });
 document.body.classList.add('is-desktop');
 document.querySelectorAll('.desktop-page, #single-note-panel, #profile-panel').forEach(element => { element.hidden = true; });
 document.querySelectorAll('[role="tab"]').forEach(element => { element.setAttribute('aria-selected', 'false'); });
@@ -78,21 +84,26 @@ app.whenReady().then(async () => {
   win.webContents.session.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !details.url.startsWith('xhs-app://local/') && !details.url.startsWith('data:') }));
   const rendererErrors = [];
   win.webContents.on('console-message', (_event, details) => { if (details.level === 'error' && !details.message.includes('ERR_BLOCKED_BY_CLIENT')) rendererErrors.push(details.message); });
-  const evaluate = script => win.webContents.executeJavaScript(script, true);
+  const evaluate = async script => {
+    try { return await win.webContents.executeJavaScript(script, true); }
+    catch (error) { throw new Error(`Membership fixture failed: ${script.slice(0, 240)}`, { cause: error }); }
+  };
   const settle = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
   const snapshot = () => evaluate(`(() => {
     const d = document.getElementById('membership-dialog');
-    return { open: d.open, focus: document.activeElement.id, paymentHidden: document.getElementById('membership-payment').hidden,
+    return { open: d.open, focus: document.activeElement.id, paymentDisabled: document.getElementById('membership-online-pay').disabled,
       guidanceHidden: document.getElementById('membership-login-guidance').hidden,
-      email: document.getElementById('membership-email').textContent,
-      amount: document.getElementById('membership-amount').textContent,
-      src: document.getElementById('membership-payment-image').getAttribute('src'),
-      help: document.getElementById('membership-payment-help').textContent,
+      account: document.getElementById('membership-online-account').textContent,
+      quote: document.getElementById('membership-online-quote').textContent,
+      provider: document.querySelector('input[name="membership-online-method"]:checked').value,
+      help: document.getElementById('membership-online-method-help').textContent,
+      noManual: !d.querySelector('#membership-payment, #membership-copy-email, #membership-report-paid, input[name="membership-plan"], input[name="membership-method"], img'),
       notice: document.getElementById('account-notice').textContent,
       overflow: d.scrollWidth > d.clientWidth + 1,
       width: d.getBoundingClientRect().width, viewport: innerWidth };
   })()`);
   const click = id => evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
+  const wait = condition => evaluate(`new Promise((resolve,reject)=>{const start=Date.now();const check=()=>{if(${condition})resolve();else if(Date.now()-start>5000)reject(new Error('Membership fixture condition timed out'));else setTimeout(check,10)};check();})`);
   const setState = state => evaluate(`window.fixtureSetState(${JSON.stringify(state)})`);
   const capture = async name => {
     await settle();
@@ -110,42 +121,37 @@ app.whenReady().then(async () => {
   let current = await snapshot();
   assert.equal(current.open, true);
   assert.equal(current.focus, 'membership-close');
-  assert.equal(current.paymentHidden, true, 'Logged-out users must be guided to confirm their software account before paying');
+  assert.equal(current.paymentDisabled, true, 'Logged-out users must be guided to confirm their software account before paying');
   assert.equal(current.guidanceHidden, false);
-  assert.equal(current.amount, '¥19.9');
+  assert.equal(current.noManual, true, 'Membership purchase contains no manual QR, manual plan, email copy or paid report entry');
   await capture('logged-out-desktop');
   await click('membership-go-login');
   assert.equal((await snapshot()).focus, 'account-email');
   assert.equal((await snapshot()).open, false);
 
-  const signedIn = { configured: true, authenticated: true, verified: true, status: 'ready', account: { user: { email: 'member@example.test' }, membership: { type: 'none', active: false }, device: { status: 'authorized' }, serverTime: '2026-09-23T00:00:00Z' } };
+  const signedIn = { configured: true, authenticated: true, verified: true, status: 'ready', account: { user: { id: 'member-id', email: 'member@example.test' }, membership: { type: 'none', active: false }, device: { status: 'authorized' }, serverTime: '2026-09-23T00:00:00Z' } };
   await setState(signedIn);
   await evaluate(`document.getElementById('account-open-membership').focus(); document.getElementById('account-open-membership').click()`);
+  await wait(`!document.getElementById('membership-online-pay').disabled`);
   current = await snapshot();
-  assert.equal(current.paymentHidden, false);
-  assert.equal(current.email, signedIn.account.user.email);
-  await click('membership-copy-email');
-  assert.deepEqual(await evaluate('window.fixtureCopied'), [signedIn.account.user.email]);
-  assert.match(await evaluate(`document.getElementById('membership-email-status').textContent`), /已复制/);
-  await evaluate('window.fixtureClipboardFails = true');
-  await click('membership-copy-email');
-  assert.match(await evaluate(`document.getElementById('membership-email-status').textContent`), /手动复制/);
-  await evaluate('window.fixtureClipboardFails = false');
-  for (const [id, amount, days] of [['daily', '3', 1], ['monthly', '19.9', 30], ['yearly', '69.9', 365]]) {
-    await evaluate(`document.querySelector('input[name="membership-plan"][value="${id}"]').click()`);
-    assert.equal((await snapshot()).amount, `¥${amount}`);
-    assert.match(await evaluate(`document.getElementById('membership-purchase-summary').textContent`), new RegExp(`${days} 天`));
-    assert.match((await snapshot()).help, new RegExp(`${amount.replace('.', '\\.')} 元`));
+  assert.equal(current.paymentDisabled, false);
+  assert.match(current.account, /member@example\.test/);
+  assert.equal(current.provider, 'alipay');
+  for (const [id, amount, days] of [['daily', '3.00', 1], ['monthly', '19.90', 30], ['yearly', '69.90', 365]]) {
+    await evaluate(`(()=>{const select=document.getElementById('membership-online-plan');select.value='${id}';select.dispatchEvent(new Event('change',{bubbles:true}))})()`);
+    assert.ok((await snapshot()).quote.includes(`¥${amount}`));
+    assert.match((await snapshot()).quote, new RegExp(`${days} 天会员`));
   }
-  await evaluate(`document.querySelector('input[name="membership-method"][value="alipay"]').click()`);
-  assert.equal((await snapshot()).src, './assets/membership/alipay.png');
-  assert.match((await snapshot()).help, /支付宝/);
-  await evaluate(`document.querySelector('input[name="membership-plan"][value="monthly"]').click()`);
-  await evaluate(`document.querySelector('input[name="membership-method"][value="wechat"]').click()`);
-  await evaluate(`Promise.all([...document.querySelectorAll('#membership-dialog img')].map(image => image.decode()))`);
-  assert.deepEqual(await evaluate(`window.fixtureCalls`), [], 'Browsing plans, copying the email and showing payment codes cannot invoke purchase or grant actions');
-  await setState({ ...signedIn, account: { ...signedIn.account, user: { email: 'another@example.test' } } });
+  await evaluate(`document.querySelector('input[name="membership-online-method"][value="wechat"]').click()`);
+  await wait(`!document.getElementById('membership-online-method').disabled`);
+  assert.equal((await snapshot()).provider, 'wechat');
+  assert.match((await snapshot()).help, /Native.*另一台设备/);
+  assert.equal((await snapshot()).noManual, true);
+  assert.deepEqual(await evaluate(`window.fixtureCalls.filter(([action])=>['payment-create','order-create','redeem'].includes(action))`), [], 'Browsing online providers and plans cannot create a purchase or grant rights');
+  await setState({ ...signedIn, account: { ...signedIn.account, user: { id: 'another-id', email: 'another@example.test' } } });
   await setState(signedIn);
+  await click('account-open-membership');
+  await wait(`!document.getElementById('membership-online-pay').disabled`);
   await capture('membership-desktop');
 
   // Native dialog contains keyboard focus and restores the trigger after Escape.
@@ -166,29 +172,32 @@ app.whenReady().then(async () => {
 
   await click('account-open-membership');
   await setState({ ...signedIn, verified: false, status: 'service_unavailable', error: { message: '网络连接不可用，请稍后刷新。' } });
-  assert.equal((await snapshot()).paymentHidden, true);
+  assert.equal((await snapshot()).paymentDisabled, true);
   assert.match((await snapshot()).notice, /网络连接不可用/);
   await click('membership-go-login');
   assert.equal((await snapshot()).focus, 'account-refresh');
   await setState({ ...signedIn, authenticated: false, verified: false, status: 'secure_storage_unavailable', account: null, error: { message: '安全存储不可用' } });
   await click('account-open-membership');
   assert.equal((await snapshot()).open, true, 'Pricing remains viewable during account errors');
-  assert.equal((await snapshot()).paymentHidden, true);
-  assert.equal((await snapshot()).email, '', 'Previous identity cannot remain visible after logout or storage failure');
+  assert.equal((await snapshot()).paymentDisabled, true);
+  assert.doesNotMatch((await snapshot()).account, /member@example\.test/, 'Previous identity cannot remain visible after logout or storage failure');
   await setState(signedIn);
-  assert.equal((await snapshot()).paymentHidden, false);
+  await click('account-open-membership');
+  await wait(`!document.getElementById('membership-online-pay').disabled`);
+  assert.equal((await snapshot()).paymentDisabled, false);
   await setState({ ...signedIn, account: { ...signedIn.account, membership: { type: 'permanent', active: true } } });
-  assert.equal((await snapshot()).paymentHidden, true, 'Permanent members must not be invited to pay for duration codes they cannot redeem');
+  assert.equal((await snapshot()).paymentDisabled, true, 'Permanent members must not be invited to pay for another duration membership');
   assert.match(await evaluate(`document.getElementById('membership-login-message').textContent`), /无需购买/);
   assert.equal(await evaluate(`document.getElementById('membership-go-redeem').hidden`), true);
   await evaluate(`document.getElementById('membership-dialog').scrollTop = 0`);
   await capture('membership-permanent');
-  await setState({ ...signedIn, account: { ...signedIn.account, user: { email: 'another@example.test' } } });
-  assert.equal((await snapshot()).email, 'another@example.test');
-  assert.equal(await evaluate(`document.getElementById('membership-email-status').textContent`), '');
+  await setState({ ...signedIn, account: { ...signedIn.account, user: { id: 'another-id', email: 'another@example.test' } } });
+  assert.match((await snapshot()).account, /another@example\.test/);
   await setState(signedIn);
+  await click('account-open-membership');
+  await wait(`!document.getElementById('membership-online-pay').disabled`);
 
-  // Narrow viewport retains every price, warning and QR; the modal scrolls.
+  // Narrow viewport retains online choices, price and payment guidance.
   win.setContentSize(390, 844);
   await evaluate(`document.getElementById('membership-dialog').scrollTop = 0`);
   await settle();
@@ -196,11 +205,8 @@ app.whenReady().then(async () => {
   assert.equal(current.overflow, false);
   assert.ok(current.width <= current.viewport);
   await capture('membership-mobile-top');
-  await evaluate(`document.getElementById('membership-payment').scrollIntoView({ block: 'center' })`);
+  await evaluate(`document.getElementById('membership-online-payment').scrollIntoView({ block: 'center' })`);
   await capture('membership-mobile-payment');
-  await evaluate(`document.querySelector('.membership-contact').open = true; document.querySelector('.membership-contact').scrollIntoView({ block: 'center' })`);
-  await capture('membership-mobile-contact');
-  await evaluate(`document.querySelector('.membership-contact').open = false`);
   assert.equal((await snapshot()).overflow, false);
   win.setContentSize(1280, 960);
   await click('membership-go-redeem');
@@ -214,7 +220,7 @@ app.whenReady().then(async () => {
   assert.match((await snapshot()).notice, /兑换成功/);
   assert.equal(await evaluate(`document.getElementById('account-activation').value`), '');
   assert.equal(await evaluate(`document.getElementById('account-membership').textContent`), '有效期会员');
-  assert.deepEqual(await evaluate('window.fixtureCalls'), [['redeem', 'INVALID'], ['redeem', 'Brclio-TEST-ONLY']]);
+  assert.deepEqual(await evaluate(`window.fixtureCalls.filter(([action])=>action==='redeem')`), [['redeem', 'INVALID'], ['redeem', 'Brclio-TEST-ONLY']]);
   await capture('membership-redeemed');
 
   // Browser login now shares the account UI, inside its closed account dialog.
@@ -222,6 +228,6 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`Boolean(document.querySelector('#browser-account-mount #software-account'))`), true);
   assert.equal(await evaluate(`document.getElementById('browser-account-dialog').open`), false);
   assert.deepEqual(rendererErrors, []);
-  console.log(JSON.stringify({ ok: true, checks: ['logged-out guidance', 'plan prices and durations', 'payment method switching', 'all QR images load and decode as images', 'copy success/failure', 'no implicit purchase requests', 'native focus trap and Escape', 'offline/storage errors', 'permanent member guard', 'account switch', 'mobile layout', 'redeem failure/success', 'browser account mount'], screenshots }, null, 2));
+  console.log(JSON.stringify({ ok: true, checks: ['logged-out guidance', 'online plan prices and durations', 'Alipay default and Native Wechat selection', 'manual QR plans email-copy and payment-report absent', 'no implicit purchase requests', 'native focus trap and Escape', 'offline/storage errors', 'permanent member guard', 'account switch', 'mobile layout', 'existing activation redeem failure/success', 'browser account mount'], screenshots }, null, 2));
   await finish(0);
 }).catch(error => finish(1, error));

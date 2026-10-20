@@ -51,7 +51,7 @@ test('packaged membership and learning content match the reviewed source bytes',
     return verifyAsar(archive, root, pkg.version);
   };
   assert.ok(await verify() >= 27, 'The complete selected application is verified');
-  for (const name of ['assets/membership/wechat-pay.png', 'assets/membership/alipay.png', 'assets/membership/wechat-contact.png']) {
+  for (const name of ['assets/membership/wechat-contact.png']) {
     await t.test(`rejects missing or altered ${name}`, async () => {
       const destination = path.join(source, name);
       const original = await readFile(destination);

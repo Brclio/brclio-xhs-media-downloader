@@ -10,8 +10,8 @@ const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'brclio-commerce-ui-'));
 app.setPath('userData', path.join(directory, 'profile'));
 app.disableHardwareAcceleration();
 let server, win, origin, finished = false;
-const errors = [], calls = [], reviews = [], orderIds = new Map();
-let user = 'a', failReviewOnce = true, failMineOnce = true, failProfileOnce = true, delayOrders = false, releaseOrders, delayPayment = false, releasePayment, delayProfile = false, releaseProfile;
+const errors = [], calls = [], reviews = [];
+let user = 'a', failReviewOnce = true, failMineOnce = true, failProfileOnce = true, delayOrders = false, releaseOrders, delayProfile = false, releaseProfile;
 const nicknames = new Map([['a', '听风的小鹿'], ['b', '追光的小熊']]);
 const at = '2026-10-09T00:00:00.000Z';
 const account = () => ({ user: { id: user, email: `${user}@example.test`, nickname: nicknames.get(user) }, membership: { type: 'none', active: false }, device: { status: 'authorized' }, serverTime: at });
@@ -20,7 +20,7 @@ const state = () => ({ configured: true, authenticated: Boolean(user), verified:
 function route(action, input = {}) {
   calls.push({ action, input: structuredClone(input) });
   if (action === 'google-config') return result({ enabled: true });
-  if (action === 'payment-catalog') return result({ catalog: { enabled: false, mode: 'live', currency: 'CNY', version: 'fixture', plans: [] } });
+  if (action === 'payment-catalog') return result({ catalog: { enabled: true, mode: 'live', currency: 'CNY', version: 'fixture', ...(input.provider === 'wechat' ? { provider: 'wechat', channels: ['native'] } : {}), plans: [{ id: 'monthly', name: '月付', days: 30, priceCents: 1990, amount: '19.90' }] } });
   if (action === 'me' || action === 'verify-code') return result({ account: account() });
   if (action === 'send-code') return result({ retryAfterSeconds: 60 });
   if (action === 'logout') { user = null; return result({}); }
@@ -52,12 +52,6 @@ function route(action, input = {}) {
     const body = result({ orders: Array.from({ length: page === 3 ? 3 : 10 }, (_, i) => ({ id: `${owner}-order-${(page - 1) * pageSize + i}`, status: 'confirmed', planName: '月会员', priceCents: 1990, amountCents: 1990, paymentMethod: 'wechat', paidAt: at, createdAt: at })), total: 23, page, pageSize, totalPages: 3 });
     if (delayOrders) { delayOrders = false; return new Promise(resolve => { releaseOrders = () => resolve(body); }); }
     return body;
-  }
-  if (action === 'order-create') {
-    assert.equal(input.expectedUserId, user); assert.equal(input.planId, 'monthly');
-    if (!orderIds.has(input.requestId)) orderIds.set(input.requestId, `purchase-${orderIds.size + 1}`);
-    const response=result({ order: { id: orderIds.get(input.requestId), status: 'pending' } });
-    if(delayPayment){delayPayment=false;return new Promise(resolve=>{releasePayment=()=>resolve(response)})} return response;
   }
   throw new Error(`Unexpected action ${action}`);
 }
@@ -116,6 +110,20 @@ window.fixtureState=${JSON.stringify(state())};`;
   const evaluate = script => win.webContents.executeJavaScript(script, true);
   const until = script => evaluate(`new Promise((resolve,reject)=>{const start=Date.now();const check=()=>{if(${script})resolve();else if(Date.now()-start>8000)reject(new Error('Timeout: '+${JSON.stringify(script)}));else setTimeout(check,20)};check()})`);
   const click = id => evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
+  const assertOnlineMembership = async () => {
+    assert.equal(await evaluate(`document.querySelector('#membership-report-paid, #membership-payment, #membership-payment-image, input[name="membership-plan"], input[name="membership-method"], .membership-order-report, .membership-payment-qr')===null`), true, 'Manual purchase, payment report and static collection QR controls are removed');
+    assert.equal(await evaluate(`Array.from(document.querySelectorAll('#membership-dialog img')).some(image=>/assets\\/membership\\/(?:wechat-pay\\.png|alipay\\.png)/.test(image.getAttribute('src')||''))`), false, 'The membership dialog has no original static Alipay or WeChat collection QR');
+    assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('input[name="membership-online-method"]')).map(input=>input.value).sort()`), ['alipay', 'wechat']);
+    assert.equal(await evaluate(`Boolean(document.getElementById('account-redeem-form')&&document.getElementById('membership-go-redeem'))`), true, 'Existing activation codes remain redeemable');
+    assert.equal(await evaluate(`document.getElementById('orders-list').textContent.includes('-order-')`), true, 'Historical manual orders remain visible');
+    await click('account-open-membership');
+    await until(`!document.getElementById('membership-online-payment').hidden && !document.getElementById('membership-online-pay').disabled`);
+    await evaluate(`document.querySelector('input[name="membership-online-method"][value="wechat"]').click()`);
+    await until(`document.getElementById('membership-online-method-help').textContent.includes('Native') && !document.getElementById('membership-online-pay').disabled`);
+    assert.equal(await evaluate(`document.getElementById('membership-online-quote').textContent.includes('19.90')`), true);
+    assert.equal(calls.some(call => call.action === 'payment-catalog' && call.input.provider === 'wechat'), true);
+    await click('membership-close');
+  };
   const capture = async name => { fs.writeFileSync(path.join(directory, `${name}.png`), (await win.webContents.capturePage()).toPNG()); };
   const showReviews = async () => {
     await evaluate(`document.getElementById('software-reviews').scrollIntoView({behavior:'instant',block:'start'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
@@ -152,10 +160,8 @@ window.fixtureState=${JSON.stringify(state())};`;
   await until(`document.getElementById('orders-list').textContent.includes('a-order-10')`);
   await evaluate(`document.getElementById('orders-pagination').querySelectorAll('button')[1].click()`);
   await until(`document.querySelectorAll('.order-item').length===3`);
-  await click('account-open-membership'); await click('membership-report-paid');
-  await until(`document.getElementById('membership-order-status').textContent.includes('purchase-1')`);
-  assert.equal(orderIds.size, 1);
-  await click('membership-close'); await click('browser-account-close');
+  await assertOnlineMembership();
+  await click('browser-account-close');
   const originalContent = '  真实的使用体验，下载很方便；电话13800138000；订单ABC-123；链接https://example.test/?token=public-value；邮箱me@example.test  ';
   await evaluate(`document.getElementById('review-content').value=${JSON.stringify(originalContent)};document.getElementById('review-form').requestSubmit()`);
   await until(`document.getElementById('review-account-notice').textContent.includes('网络未确认') && !document.getElementById('review-submit').disabled`);
@@ -213,21 +219,13 @@ window.fixtureState=${JSON.stringify(state())};`;
   await until(`(()=>{const rect=document.getElementById('review-nickname').getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight})()`);
   assert.equal(await evaluate(`document.getElementById('review-profile-form').hidden`), false, 'Desktop nickname link navigates using the real tab controller and focuses the editable form');
   await showReviews(); await capture('desktop-reviews');
-  delayPayment=true; await click('account-open-membership'); await click('membership-report-paid');
-  await new Promise(resolve=>{const timer=setInterval(()=>{if(releasePayment){clearInterval(timer);resolve()}},10)});
-  const signedIn=state();
-  await evaluate(`window.fixtureUpdate({configured:true,authenticated:false,verified:false,status:'logged_out',account:null});window.fixtureUpdate(${JSON.stringify(signedIn)})`);
-  await click('membership-report-paid');
-  await until(`document.getElementById('membership-order-status').textContent.includes('purchase-3')`);
-  releasePayment();
-  await evaluate(`new Promise(resolve=>setTimeout(resolve,100))`);
-  assert.equal(await evaluate(`document.getElementById('membership-order-status').textContent.includes('purchase-3')`),true,'Old payment completion cannot overwrite a fresh login to the same account');
-  await click('membership-close');
+  await assertOnlineMembership();
   await evaluate(`window.fixtureUpdate({configured:true,authenticated:false,verified:false,status:'logged_out',account:null})`);
   assert.equal(await evaluate(`document.getElementById('orders-list').children.length`), 0);
   assert.equal(await evaluate(`document.getElementById('review-form').hidden`), true);
   assert.ok(calls.some(call => call.action === 'google-config'), 'The browser fixture must exercise public Google configuration');
+  assert.equal(calls.some(call => call.action === 'order-create'), false, 'The membership flow never sends a new manual payment report');
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ ok: true, checks: ['public pagination and rating', 'XSS rendered as text', '1000 built-in random nicknames and custom nickname', 'uncertain nickname save retries same requestId', 'nickname change updates existing review without another comment', 'review body preserves phone URL order and whitespace with email masked', 'web account nickname link closes dialog and focuses visible form', 'desktop account nickname link switches real reviews tab and focuses visible form', 'all personal order pages', 'payment report creates pending order', 'uncertain evaluation retries same requestId', 'single evaluation locks composer', '375px and 900px layout', 'late private response and nickname save after logout discarded', 'desktop bridge and account switching', 'private evaluation read failure retains retry', 'old payment result after re-login cannot overwrite new request'], screenshots: directory }, null, 2));
+  console.log(JSON.stringify({ ok: true, checks: ['public pagination and rating', 'XSS rendered as text', '1000 built-in random nicknames and custom nickname', 'uncertain nickname save retries same requestId', 'nickname change updates existing review without another comment', 'review body preserves phone URL order and whitespace with email masked', 'web account nickname link closes dialog and focuses visible form', 'desktop account nickname link switches real reviews tab and focuses visible form', 'all historical personal order pages', 'online Alipay and WeChat remain available without manual controls or collection QR', 'existing activation code redemption retained', 'uncertain evaluation retries same requestId', 'single evaluation locks composer', '375px and 900px layout', 'late private response and nickname save after logout discarded', 'desktop bridge and account switching', 'private evaluation read failure retains retry'], screenshots: directory }, null, 2));
   await finish(0);
 }).catch(error => void finish(1,error));

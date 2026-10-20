@@ -3,6 +3,8 @@ import { fail } from './errors.js';
 import { getMembershipPlan } from '../../lib/membership-plans.js';
 import { defaultReviewNickname, normalizeReviewNickname } from '../../lib/review-nicknames.js';
 import { validateBrclioPayState, brclioOrderView } from './brclio-pay.js';
+import { validateBrclioWechatPayState, brclioWechatOrderView } from './brclio-wechat-pay.js';
+import { hasWechatTransaction } from './payment-reference.js';
 
 const own = (object, key) => Object.hasOwn(object, key) ? object[key] : undefined;
 const iso = time => new Date(time).toISOString();
@@ -28,13 +30,14 @@ export function validateCommerceState(state) {
     if (!state[key] || typeof state[key] !== 'object' || Array.isArray(state[key])) fail('STORAGE_INVALID', '评价或订单数据格式异常。', 503);
   }
   validateBrclioPayState(state);
+  validateBrclioWechatPayState(state);
   for (const [userId, review] of Object.entries(state.reviews)) {
     if (!review || review.userId !== userId || !uuidPattern.test(review.id || '') || !Number.isSafeInteger(review.rating) || review.rating < 1 || review.rating > 5 || typeof review.content !== 'string' || review.content.length > 2000 || !validTime(review.createdAt) || (review.nickname !== undefined && !validNickname(review.nickname))) fail('STORAGE_INVALID', '软件评价数据格式异常。', 503);
   }
   for (const user of Object.values(state.users)) if (user?.nickname !== undefined && !validNickname(user.nickname)) fail('STORAGE_INVALID', '软件账号昵称格式异常。', 503);
   const payments = new Set(), codes = new Set();
   for (const [id, order] of Object.entries(state.orders)) {
-    if (!order || order.id !== id || !uuidPattern.test(id) || typeof order.userId !== 'string' || !getMembershipPlan(order.planId) || !Number.isSafeInteger(order.priceCents) || order.priceCents < 0 || !['pending', 'confirmed'].includes(order.status) || !(methods.includes(order.paymentMethod) || order.paymentMethod === 'brclio_pay') || !validTime(order.createdAt)) fail('STORAGE_INVALID', '订单数据格式异常。', 503);
+    if (!order || order.id !== id || !uuidPattern.test(id) || typeof order.userId !== 'string' || !getMembershipPlan(order.planId) || !Number.isSafeInteger(order.priceCents) || order.priceCents < 0 || !['pending', 'confirmed'].includes(order.status) || !(methods.includes(order.paymentMethod) || ['brclio_pay', 'brclio_wechat'].includes(order.paymentMethod)) || !validTime(order.createdAt)) fail('STORAGE_INVALID', '订单数据格式异常。', 503);
     if (order.status === 'confirmed') {
       if (!Number.isSafeInteger(order.amountCents) || order.amountCents < 1 || order.amountCents > maxAmount || !validTime(order.paidAt) || !validTime(order.confirmedAt) || !/^[a-f0-9]{64}$/.test(order.paymentKey || '') || typeof order.transactionReference !== 'string' || order.transactionReference.trim().length < 3 || order.transactionReference.length > 120 || typeof order.reason !== 'string' || order.reason.trim().length < 2 || typeof order.confirmedBy !== 'string' || payments.has(order.paymentKey)) fail('STORAGE_INVALID', '收款记录数据格式异常。', 503);
       payments.add(order.paymentKey);
@@ -82,7 +85,7 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
     if (input.expectedUserId !== user.id) fail('ACCOUNT_CHANGED', '登录账号已变化，请刷新页面后重新操作。', 409);
   }
   function orderView(order, state, admin = false) {
-    const result = order.source === 'brclio_pay' ? brclioOrderView(order) : { id: order.id, userId: order.userId, planId: order.planId, planName: order.planName, priceCents: order.priceCents, amountCents: order.amountCents, status: order.status, paymentMethod: order.paymentMethod, paidAt: order.paidAt, createdAt: order.createdAt, confirmedAt: order.confirmedAt, codeId: order.codeId || null, source: order.source };
+    const result = order.source === 'brclio_pay' ? brclioOrderView(order) : order.source === 'brclio_wechat' ? brclioWechatOrderView(order) : { id: order.id, userId: order.userId, planId: order.planId, planName: order.planName, priceCents: order.priceCents, amountCents: order.amountCents, status: order.status, paymentMethod: order.paymentMethod, paidAt: order.paidAt, createdAt: order.createdAt, confirmedAt: order.confirmedAt, codeId: order.codeId || null, source: order.source };
     if (admin) Object.assign(result, { email: own(state.users, order.userId)?.email || '', transactionReference: order.transactionReference || '', reason: order.reason || '', confirmedBy: order.confirmedBy || null });
     return result;
   }
@@ -162,20 +165,16 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
           return { review: reviewView(state, review), replayed: false };
         }
         if (request.action === 'order-create') {
-          const plan = getMembershipPlan(input.planId);
-          if (!plan || !['alipay', 'wechat'].includes(input.paymentMethod)) fail('INVALID_ORDER', '请选择有效套餐和支付渠道。');
-          const prior = Object.values(state.orders).find(order => order.userId === user.id && order.planId === plan.id && order.paymentMethod === input.paymentMethod && order.status === 'pending');
-          if (prior) return { order: orderView(prior, state), replayed: true };
-          const order = { id, userId: user.id, planId: plan.id, planName: plan.name, priceCents: plan.priceCents, amountCents: null, status: 'pending', paymentMethod: input.paymentMethod, paidAt: null, createdAt: iso(time), confirmedAt: null, codeId: null, source: 'user_report' };
-          state.orders[id] = order;
-          return { order: orderView(order, state), replayed: false };
+          // Existing operation receipts above may still be read back, but old
+          // clients cannot begin another manual QR payment or report a new one.
+          fail('MANUAL_PAYMENT_DISABLED', '人工扫码开通已停止，请更新客户端并在「开通会员」选择支付宝或微信在线付款。已有订单可在「我的全部订单」查看，已有激活码仍可兑换。', 410);
         }
         if (request.action === 'admin-link-order-code') {
           if (typeof input.orderId !== 'string' || !uuidPattern.test(input.orderId) || typeof input.codeId !== 'string' || !uuidPattern.test(input.codeId)) fail('INVALID_ORDER', '订单或激活码编号无效。');
           if (typeof input.reason !== 'string' || input.reason.trim().length < 2 || input.reason.length > 500) fail('REASON_REQUIRED', '请填写 2 至 500 字的关联说明。');
           const order = own(state.orders, input.orderId);
           if (!order) fail('ORDER_NOT_FOUND', '订单不存在。', 404);
-          if (order.source === 'brclio_pay') fail('PAYMENT_AUTOMATED_ORDER', '在线支付订单由验签回调开通，不能关联激活码。', 409);
+          if (['brclio_pay', 'brclio_wechat'].includes(order.source)) fail('PAYMENT_AUTOMATED_ORDER', '在线支付订单由服务端核验开通，不能关联激活码。', 409);
           if (order.status !== 'confirmed') fail('ORDER_NOT_CONFIRMED', '请先核实并确认实际收款，再关联激活码。', 409);
           if (order.codeId) fail('ORDER_ALREADY_LINKED', '该订单已经关联激活码，不能再次修改。', 409);
           const code = own(state.codes, input.codeId);
@@ -198,12 +197,13 @@ export function createCommerceService({ store, now, authenticate, hash, operatio
         dateValue(input.paidAt.slice(0, 10));
         const transactionReference = input.transactionReference.trim();
         const paymentKey = hash('order-payment', `${input.paymentMethod}:${transactionReference.toLowerCase()}`);
-        if (Object.values(state.orders).some(order => order.paymentKey === paymentKey)) fail('ORDER_PAYMENT_DUPLICATE', '该渠道的收款流水号已经入账，请勿重复确认。', 409);
+        if (Object.values(state.orders).some(order => order.paymentKey === paymentKey)
+          || (input.paymentMethod === 'wechat' && hasWechatTransaction(state, transactionReference))) fail('ORDER_PAYMENT_DUPLICATE', '该渠道的收款流水号已经入账，请勿重复确认。', 409);
         let prior = null, codeId = input.codeId || null;
         if (input.orderId) {
           prior = own(state.orders, input.orderId) || ledger(state).find(order => order.id === input.orderId);
           if (!prior || prior.userId !== target.id || prior.planId !== plan.id) fail('ORDER_NOT_FOUND', '订单不存在或与所选用户、套餐不符。', 404);
-          if (prior.source === 'brclio_pay') fail('PAYMENT_AUTOMATED_ORDER', '在线支付订单只能通过验签回调确认收款。', 409);
+          if (['brclio_pay', 'brclio_wechat'].includes(prior.source)) fail('PAYMENT_AUTOMATED_ORDER', '在线支付订单只能通过服务端核验确认收款。', 409);
           if (prior.status === 'confirmed') fail('ORDER_ALREADY_CONFIRMED', '该订单已经确认收款，不能再次修改。', 409);
           if (prior.codeId && codeId && prior.codeId !== codeId) fail('ORDER_CODE_MISMATCH', '激活码与历史记录不一致。', 409);
           codeId ||= prior.codeId;

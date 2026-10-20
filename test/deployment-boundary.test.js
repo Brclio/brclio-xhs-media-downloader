@@ -34,7 +34,7 @@ test('Docker and Vercel ignore configuration excludes nested private files and p
     const patterns = (await readFile(new URL(`../${name}`, import.meta.url), 'utf8')).split(/\r?\n/)
       .map(line => line.trim()).filter(line => line && !line.startsWith('#'));
     for (const filename of privateFiles) assert.ok(excluded(filename, patterns), `${name} excludes ${filename}`);
-    for (const filename of ['package.json', 'api/account.js', 'server/auth/service.js', 'membership.html', 'membership.css', 'membership.js', 'lib/membership-plans.js', 'assets/membership/alipay.png']) {
+    for (const filename of ['package.json', 'api/account.js', 'server/auth/service.js', 'membership.html', 'membership.css', 'membership.js', 'lib/membership-plans.js', 'assets/membership/wechat-contact.png']) {
       assert.equal(excluded(filename, patterns), false, `${name} preserves ${filename}`);
     }
     assert.equal(excluded('.env.example', patterns), name === '.vercelignore', 'only the Docker context retains the placeholder example');
@@ -78,9 +78,8 @@ test('public build only copies allowed assets, excluding backend, desktop, tests
   assert.ok(files.includes('admin/index.html'));
   assert.ok(files.includes('lib/archive.js'));
   assert.ok(files.includes('lib/membership-plans.js'), 'client and admin share the public plan catalog');
-  for (const name of ['wechat-pay', 'alipay', 'wechat-contact']) {
-    assert.ok(files.includes(`assets/membership/${name}.png`), `membership QR is included: ${name}`);
-  }
+  assert.ok(files.includes('assets/membership/wechat-contact.png'), 'customer support contact is retained');
+  for (const name of ['wechat-pay', 'alipay']) assert.ok(!files.includes(`assets/membership/${name}.png`), `removed manual membership code is not public: ${name}`);
   for (const name of ['download.html', 'download.css', 'download.js', 'assets/downloads/hero.webp']) {
     assert.ok(files.includes(name), `download page asset is public: ${name}`);
   }

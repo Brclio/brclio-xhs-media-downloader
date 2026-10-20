@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, verify } from 'node:crypto';
-import { consumePaymentCallback, paymentCheckoutUrl, paymentCatalog } from '../account-ui.js';
+import { consumePaymentCallback, paymentCheckoutUrl, paymentCatalog, paymentOrderProvider } from '../account-ui.js';
 import { createBrowserAccountBridge } from '../lib/browser-account.js';
 import { AccountClient } from '../desktop/account-client.js';
 
@@ -23,11 +23,36 @@ test('payment returns consume only a valid business order reference and never in
 
 test('checkout requires the exact HTTPS payment center and preserves its single-order token fragment', () => {
   assert.equal(paymentCheckoutUrl('https://pay.bornforthis.cn/checkout/order#token=fixture-order-token'), 'https://pay.bornforthis.cn/checkout/order#token=fixture-order-token');
+  assert.equal(paymentCheckoutUrl('https://paywc.bornforthis.cn/checkout/order#token=fixture-order-token', 'wechat'), 'https://paywc.bornforthis.cn/checkout/order#token=fixture-order-token');
+  assert.throws(() => paymentCheckoutUrl('https://pay.bornforthis.cn/checkout/order#token=fixture-order-token', 'wechat'));
+  assert.throws(() => paymentCheckoutUrl('https://paywc.bornforthis.cn/checkout/order#token=fixture-order-token', 'alipay'));
   for (const url of ['javascript:alert(1)', 'http://pay.bornforthis.cn/checkout', 'https://pay.bornforthis.cn.attacker.test/checkout',
     'https://user:password@pay.bornforthis.cn/checkout', 'https://pay.bornforthis.cn:8443/checkout', 'https://pay.bornforthis.cn/checkout#fake',
-    'https://pay.bornforthis.cn/checkout', 'https://pay.bornforthis.cn/checkout#token=a&token=b', 'https://pay.bornforthis.cn/checkout#token=']) {
+    'https://pay.bornforthis.cn/checkout', 'https://pay.bornforthis.cn/checkout#token=a&token=b', 'https://pay.bornforthis.cn/checkout#token=',
+    'http://paywc.bornforthis.cn/checkout#token=a', 'https://paywc.bornforthis.cn.attacker.test/checkout#token=a',
+    'https://user:password@paywc.bornforthis.cn/checkout#token=a', 'https://paywc.bornforthis.cn:8443/checkout#token=a',
+    'https://paywc.bornforthis.cn/checkout#token=a&token=b', 'https://paywc.bornforthis.cn/checkout#token=a&extra=b',
+    'https://paywc.bornforthis.cn/checkout#token=%0A', 'https://paywc.bornforthis.cn/checkout#token=']) {
     assert.throws(() => paymentCheckoutUrl(url));
   }
+});
+
+test('saved payment orders recover their own provider while historical Alipay orders retain their default', () => {
+  assert.equal(paymentOrderProvider({ source: 'brclio_pay' }), 'alipay');
+  assert.equal(paymentOrderProvider({ source: 'brclio_wechat' }), 'wechat');
+  assert.equal(paymentOrderProvider({ paymentMethod: 'brclio_wechat' }), 'wechat');
+  assert.equal(paymentOrderProvider({ provider: 'wechat' }), 'wechat');
+});
+
+test('Wechat catalog only accepts the registered Native channel and cannot replace the Alipay catalog', () => {
+  const wechat = { ...catalog(), provider: 'wechat', channels: ['native'] };
+  assert.equal(paymentCatalog(wechat, 'wechat'), wechat);
+  for (const patch of [{ provider: 'alipay' }, { channels: undefined }, { channels: ['h5'] }, { channels: ['native', 'app'] }]) {
+    assert.throws(() => paymentCatalog({ ...wechat, ...patch }, 'wechat'));
+  }
+  assert.throws(() => paymentCatalog(wechat, 'alipay'));
+  assert.throws(() => paymentCatalog(catalog(), 'wechat'));
+  assert.equal(paymentCatalog(catalog(), 'alipay').provider, undefined);
 });
 
 test('live online catalog rejects foreign currency, sandbox, unknown rights, duplicate SKUs and inconsistent price snapshots', () => {
@@ -56,10 +81,14 @@ test('desktop payment requests retain the existing signed-user proof and reject 
     return Response.json({ ok: true, catalog: catalog(), order: { id: orderId, userId: 'a', status: 'pending' } });
   } });
   client.credentials = { privateKey, publicKey, token: 'token-a', pendingLogoutTokens: [], pendingRedemptions: {} }; client.account = account('a'); client.status = 'ready';
-  for (const action of ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']) await client.commerceRequest(action, { expectedUserId: 'a', orderId });
+  for (const provider of [undefined, 'wechat']) {
+    for (const action of ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']) await client.commerceRequest(action, { expectedUserId: 'a', orderId, ...(provider ? { provider } : {}) });
+  }
   for (const action of ['payment-create', 'payment-resume', 'payment-status']) await assert.rejects(client.commerceRequest(action, { expectedUserId: 'b', orderId }), { code: 'SESSION_CHANGED' });
   assert.throws(() => client.commerceRequest('payment-admin'), { code: 'UNKNOWN_ACTION' });
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 8);
+  assert.equal(calls.filter(call => call.input.provider === 'wechat').length, 4, 'the desktop bridge forwards the selected online channel inside its signed input');
+  assert.equal(calls.filter(call => call.input.provider === undefined).length, 4, 'default Alipay requests preserve the legacy input contract');
 });
 
 test('browser payment requests use same-origin cookies, preserve uncertain identity and stop during pending logout', async () => {
@@ -72,7 +101,10 @@ test('browser payment requests use same-origin cookies, preserve uncertain ident
     return Response.json({ ok: true, account: account('a'), catalog: catalog(), order: { id: orderId, userId: 'a', status: 'pending' } });
   } });
   await bridge.verifyAccountCode('a@example.test', '123456');
-  for (const action of ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']) assert.equal((await bridge.commerceRequest(action, { expectedUserId: 'a', orderId })).ok, true);
+  for (const provider of [undefined, 'wechat']) {
+    for (const action of ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']) assert.equal((await bridge.commerceRequest(action, { expectedUserId: 'a', orderId, ...(provider ? { provider } : {}) })).ok, true);
+  }
+  assert.equal(calls.filter(call => call.input.provider === 'wechat').length, 4, 'the browser bridge forwards the selected online channel with cookie authentication');
   offline = true;
   const failed = await bridge.commerceRequest('payment-create', { expectedUserId: 'a', requestId: 'repeat-original-order' });
   assert.equal(failed.ok, false); assert.equal(failed.state.verified, true);

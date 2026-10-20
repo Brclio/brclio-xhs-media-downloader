@@ -9,6 +9,7 @@ import { createAccountService } from '../server/auth/service.js';
 import { digest } from '../server/auth/crypto.js';
 import { readConfig } from '../server/auth/config.js';
 import { REVIEW_NICKNAMES, defaultReviewNickname } from '../lib/review-nicknames.js';
+import { getMembershipPlan } from '../lib/membership-plans.js';
 
 const clock = Date.parse('2026-10-09T12:00:00Z');
 function fixture() {
@@ -36,7 +37,13 @@ function fixture() {
   const call = (action, input = {}, session = sessions[0], service = instance()) => service.execute({ action, input, token: session?.token || '', client: session?.client });
   const userInput = (input = {}, session = sessions[0]) => ({ requestId: randomUUID(), expectedUserId: session.user.id, ...input });
   const record = (input = {}) => ({ requestId: randomUUID(), userId: users[0].id, planId: 'monthly', amountCents: 1990, paymentMethod: 'wechat', paidAt: '2026-10-09T01:00:00+08:00', transactionReference: randomUUID(), reason: '核实真实支付凭证', ...input });
-  return { sessions, users, store, instance, call, userInput, record, config, set uncertain(value) { commitThenThrow = value; }, set beforeNextPut(value) { beforeNextPut = value; }, get state() { return state; }, get conflicts() { return conflicts; } };
+  const historicalReport = (input = {}) => {
+    const plan = getMembershipPlan(input.planId || 'monthly'), id = randomUUID();
+    const order = { id, userId: users[0].id, planId: plan.id, planName: plan.name, priceCents: plan.priceCents, amountCents: null, status: 'pending', paymentMethod: 'wechat', paidAt: null, createdAt: new Date(clock - 86_400_000).toISOString(), confirmedAt: null, codeId: null, source: 'user_report', ...input };
+    state.orders[id] = structuredClone(order);
+    return order;
+  };
+  return { sessions, users, store, instance, call, userInput, record, historicalReport, config, set uncertain(value) { commitThenThrow = value; }, set beforeNextPut(value) { beforeNextPut = value; }, get state() { return state; }, get conflicts() { return conflicts; }, get revision() { return version; } };
 }
 
 test('software reviews persist once across clients, display stable default nicknames and redact only authored emails', async () => {
@@ -216,13 +223,16 @@ test('commerce reauthenticates after a CAS conflict and read actions reject a di
   assert.equal(Object.keys(g.state.orders).length, 0); assert.equal(g.state.audit.length, 0);
 });
 
-test('orders list only the owner and pending reports never count as money or grant membership', async () => {
+test('fresh manual payment reports reject without writes while historical orders remain private and never grant membership', async () => {
   const f = fixture(), input = f.userInput({ planId: 'monthly', paymentMethod: 'wechat', amountCents: 1 });
-  const created = await f.call('order-create', input);
-  assert.equal(created.order.priceCents, 1990); assert.equal(created.order.amountCents, null); assert.equal(created.order.status, 'pending');
-  assert.equal((await f.call('order-create', input)).order.id, created.order.id);
-  assert.equal((await f.call('order-create', { ...input, requestId: randomUUID() })).order.id, created.order.id, 'duplicate pending reports share one order');
+  const before = structuredClone(f.state), revision = f.revision;
+  await assert.rejects(f.call('order-create', input, null), { code: 'ACCOUNT_REQUIRED' });
+  await assert.rejects(f.call('order-create', input, f.sessions[2]), { code: 'USER_SESSION_REQUIRED' });
+  for (const paymentMethod of ['wechat', 'alipay']) await assert.rejects(f.call('order-create', { ...input, paymentMethod }), { code: 'MANUAL_PAYMENT_DISABLED', status: 410 });
+  assert.equal(f.revision, revision); assert.deepEqual(f.state, before);
+  const historical = f.historicalReport();
   assert.equal((await f.call('orders-mine')).total, 1);
+  assert.equal((await f.call('orders-mine')).orders[0].id, historical.id);
   assert.equal((await f.call('orders-mine', {}, f.sessions[1])).total, 0);
   const revenue = (await f.call('admin-revenue', {}, f.sessions[2])).revenue;
   assert.equal(revenue.totalCents, 0); assert.equal(revenue.pendingCount, 1);
@@ -231,11 +241,22 @@ test('orders list only the owner and pending reports never count as money or gra
   await assert.rejects(f.call('admin-revenue'), { code: 'FORBIDDEN' });
   await assert.rejects(f.call('admin-record-order', f.record()), { code: 'FORBIDDEN' });
   await assert.rejects(f.call('order-create', { ...input, expectedUserId: f.users[1].id }), { code: 'ACCOUNT_CHANGED' });
-  for (const patch of [{ planId: 'permanent' }, { paymentMethod: 'other' }]) await assert.rejects(f.call('order-create', f.userInput({ planId: 'monthly', paymentMethod: 'wechat', ...patch })), { code: 'INVALID_ORDER' });
+  for (const patch of [{ planId: 'permanent' }, { paymentMethod: 'other' }]) await assert.rejects(f.call('order-create', f.userInput({ planId: 'monthly', paymentMethod: 'wechat', ...patch })), { code: 'MANUAL_PAYMENT_DISABLED' });
+});
+
+test('the exact historical manual request can be read back without creating another payment or write', async () => {
+  const f = fixture(), historical = f.historicalReport(), input = f.userInput({ planId: 'monthly', paymentMethod: 'wechat' });
+  const key = digest(f.config.pepper, 'operation', `${f.users[0].id}:${input.requestId}`);
+  f.state.operations[key] = { actorId: f.users[0].id, action: 'order-create', inputHash: digest(f.config.pepper, 'operation-input', `order-create:${JSON.stringify(input)}`), at: historical.createdAt, result: { order: historical, replayed: false } };
+  const before = structuredClone(f.state), revision = f.revision;
+  const replayed = await f.call('order-create', input);
+  assert.equal(replayed.replayed, true); assert.equal(replayed.order.id, historical.id);
+  assert.equal(f.revision, revision); assert.deepEqual(f.state, before);
+  await assert.rejects(f.call('order-create', { ...input, requestId: randomUUID() }), { code: 'MANUAL_PAYMENT_DISABLED' });
 });
 
 test('administrator records actual receipts exactly once, audits confirmation and rejects duplicate external receipts', async () => {
-  const f = fixture(), pending = (await f.call('order-create', f.userInput({ planId: 'monthly', paymentMethod: 'wechat' }))).order;
+  const f = fixture(), pending = f.historicalReport();
   const input = f.record({ orderId: pending.id, amountCents: 1800 });
   const created = await f.call('admin-record-order', input, f.sessions[2]);
   assert.equal(created.order.id, pending.id); assert.equal(created.order.amountCents, 1800); assert.equal(created.order.priceCents, 1990);
@@ -327,14 +348,14 @@ test('administrator receipts reject invalid amounts, missing evidence, mismatche
   for (const patch of [{ paidAt: 'invalid' }, { paidAt: '2027-01-01T00:00:00Z' }, { paidAt: '2026-10-09T01:00:00' }]) await assert.rejects(f.call('admin-record-order', f.record(patch), f.sessions[2]), { code: 'INVALID_PAID_AT' });
   await assert.rejects(f.call('admin-record-order', f.record({ reason: '短' }), f.sessions[2]), { code: 'REASON_REQUIRED' });
   await assert.rejects(f.call('admin-record-order', f.record({ userId: 'missing' }), f.sessions[2]), { code: 'USER_NOT_FOUND' });
-  const pending = (await f.call('order-create', f.userInput({ planId: 'monthly', paymentMethod: 'wechat' }))).order;
+  const pending = f.historicalReport();
   await assert.rejects(f.call('admin-record-order', f.record({ orderId: pending.id, userId: f.users[1].id }), f.sessions[2]), { code: 'ORDER_NOT_FOUND' });
   assert.equal(Object.values(f.state.orders).filter(order => order.status === 'confirmed').length, 0);
 });
 
 test('confirmed receipts can link a subsequently issued targeted code without changing money or duplicating purchase history', async () => {
   const f = fixture();
-  const pending = (await f.call('order-create', f.userInput({ planId: 'monthly', paymentMethod: 'wechat' }))).order;
+  const pending = f.historicalReport();
   const confirmed = (await f.call('admin-record-order', f.record({ orderId: pending.id, amountCents: 1800 }), f.sessions[2])).order;
   const issued = await f.call('admin-generate-codes', { userId: f.users[0].id, planId: 'monthly', count: 1, reason: '确认收款后发放定向激活码', requestId: randomUUID() }, f.sessions[2]);
   assert.equal((await f.call('orders-mine')).total, 2, 'unlinked issuance is counted until explicitly linked to its prior receipt');
@@ -366,7 +387,7 @@ test('post-payment code links enforce administrator scope, confirmed state, owne
   await assert.rejects(f.call('admin-link-order-code', { ...input, reason: '短' }, f.sessions[2]), { code: 'REASON_REQUIRED' });
   for (const patch of [{ orderId: null }, { codeId: {} }, { orderId: `legacy-${codeId}` }]) await assert.rejects(f.call('admin-link-order-code', { ...input, ...patch }, f.sessions[2]), { code: 'INVALID_ORDER' });
   await assert.rejects(f.call('admin-link-order-code', { ...input, orderId: randomUUID() }, f.sessions[2]), { code: 'ORDER_NOT_FOUND' });
-  const pending = (await f.call('order-create', f.userInput({ planId: 'daily', paymentMethod: 'wechat' }))).order;
+  const pending = f.historicalReport({ planId: 'daily' });
   await assert.rejects(f.call('admin-link-order-code', { ...input, orderId: pending.id }, f.sessions[2]), { code: 'ORDER_NOT_CONFIRMED' });
   for (const patch of [{ status: 'void' }, { recipientId: f.users[1].id }, { redeemedBy: f.users[1].id }, { planId: 'yearly' }, { recipientId: null, redeemedBy: null }]) {
     f.state.codes[codeId] = { ...originalCode, ...patch };
@@ -382,7 +403,7 @@ test('post-payment code links enforce administrator scope, confirmed state, owne
 
 test('concurrent code links, receipt confirmations and lost responses preserve single-code ownership and one link audit', async () => {
   const f = fixture(), first = (await f.call('admin-record-order', f.record(), f.sessions[2])).order;
-  const pending = (await f.call('order-create', f.userInput({ planId: 'monthly', paymentMethod: 'wechat' }))).order;
+  const pending = f.historicalReport();
   const { codes: [code] } = await f.call('admin-generate-codes', { userId: f.users[0].id, planId: 'monthly', count: 1, reason: '测试并发竞争同一激活码', requestId: randomUUID() }, f.sessions[2]);
   const link = { orderId: first.id, codeId: code.id, reason: '将已发激活码关联收款订单', requestId: randomUUID() };
   const raced = await Promise.allSettled([

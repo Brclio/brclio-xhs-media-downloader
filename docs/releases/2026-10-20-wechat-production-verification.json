@@ -1,0 +1,237 @@
+{
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-10-20T15:11:07.236Z",
+  "passed": 29,
+  "total": 29,
+  "ok": true,
+  "realMediaChecks": false,
+  "results": [
+    {
+      "name": "payment/health",
+      "ok": true,
+      "status": 200,
+      "durationMs": 2599
+    },
+    {
+      "name": "payment/home",
+      "ok": true,
+      "status": 200,
+      "durationMs": 558
+    },
+    {
+      "name": "payment/return-reference-is-static",
+      "ok": true,
+      "status": 200,
+      "durationMs": 620
+    },
+    {
+      "name": "payment/static/membership-page",
+      "ok": true,
+      "status": 200,
+      "durationMs": 495
+    },
+    {
+      "name": "payment/static/account-ui",
+      "ok": true,
+      "status": 200,
+      "durationMs": 807
+    },
+    {
+      "name": "payment/static/membership-ui",
+      "ok": true,
+      "status": 200,
+      "durationMs": 200
+    },
+    {
+      "name": "payment/static/browser-account",
+      "ok": true,
+      "status": 200,
+      "durationMs": 325
+    },
+    {
+      "name": "payment/static/manual-commerce-preserved",
+      "ok": true,
+      "status": 200,
+      "durationMs": 1359
+    },
+    {
+      "name": "payment/live-signed-catalog",
+      "ok": true,
+      "status": 200,
+      "durationMs": 1368
+    },
+    {
+      "name": "payment/anonymous-order-denied",
+      "ok": true,
+      "status": 401,
+      "durationMs": 1496
+    },
+    {
+      "name": "payment/anonymous-status-denied",
+      "ok": true,
+      "status": 401,
+      "durationMs": 2340
+    },
+    {
+      "name": "payment/anonymous-resume-denied",
+      "ok": true,
+      "status": 401,
+      "durationMs": 1823
+    },
+    {
+      "name": "payment/webhook/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 526
+    },
+    {
+      "name": "payment/webhook/content-type",
+      "ok": true,
+      "status": 415,
+      "durationMs": 350
+    },
+    {
+      "name": "payment/webhook/query",
+      "ok": true,
+      "status": 400,
+      "durationMs": 353
+    },
+    {
+      "name": "payment/webhook/oversize",
+      "ok": true,
+      "status": 413,
+      "durationMs": 550
+    },
+    {
+      "name": "payment/webhook/unsigned",
+      "ok": true,
+      "status": 401,
+      "durationMs": 927
+    },
+    {
+      "name": "payment/webhook/wrong-signature",
+      "ok": true,
+      "status": 401,
+      "durationMs": 647
+    },
+    {
+      "name": "wechat/registered-catalog",
+      "ok": true,
+      "status": 200,
+      "durationMs": 375
+    },
+    {
+      "name": "wechat/anonymous-order-denied",
+      "ok": true,
+      "status": 401,
+      "durationMs": 1271
+    },
+    {
+      "name": "wechat/webhook/method",
+      "ok": true,
+      "status": 405,
+      "durationMs": 359
+    },
+    {
+      "name": "wechat/webhook/content-type",
+      "ok": true,
+      "status": 415,
+      "durationMs": 411
+    },
+    {
+      "name": "wechat/webhook/oversize",
+      "ok": true,
+      "status": 413,
+      "durationMs": 578
+    },
+    {
+      "name": "wechat/webhook/unsigned",
+      "ok": true,
+      "status": 401,
+      "durationMs": 473
+    },
+    {
+      "name": "wechat/webhook/wrong-signature",
+      "ok": true,
+      "status": 401,
+      "durationMs": 540
+    },
+    {
+      "name": "wechat/webhook/query",
+      "ok": true,
+      "status": 400,
+      "durationMs": 508
+    },
+    {
+      "name": "payment/online-only-ui",
+      "ok": true,
+      "status": 200,
+      "durationMs": 845
+    },
+    {
+      "name": "payment/removed-manual-asset/alipay",
+      "ok": true,
+      "status": 404,
+      "durationMs": 235
+    },
+    {
+      "name": "payment/removed-manual-asset/wechat-pay",
+      "ok": true,
+      "status": 404,
+      "durationMs": 1017
+    }
+  ],
+  "expectedCatalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+  "deployment": {
+    "version": "2.0.26",
+    "deploymentId": "7cc3f235-b9ab-452e-b149-8000d7d59738"
+  },
+  "catalog": {
+    "version": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+    "mode": "live",
+    "currency": "CNY",
+    "plans": [
+      {
+        "id": "daily",
+        "amount": "3.00",
+        "days": 1
+      },
+      {
+        "id": "monthly",
+        "amount": "19.90",
+        "days": 30
+      },
+      {
+        "id": "yearly",
+        "amount": "69.90",
+        "days": 365
+      }
+    ]
+  },
+  "wechatCatalog": {
+    "version": "e1f7bb8890633ce6e22000045292dc22bbfda100401ef3977a8504a69adaf76b",
+    "channels": [
+      "native"
+    ],
+    "plans": [
+      {
+        "id": "daily",
+        "amount": "3.00",
+        "days": 1
+      },
+      {
+        "id": "monthly",
+        "amount": "19.90",
+        "days": 30
+      },
+      {
+        "id": "yearly",
+        "amount": "69.90",
+        "days": 365
+      }
+    ]
+  },
+  "authenticatedPurchaseVerified": false,
+  "realPaymentVerified": false,
+  "productionEntitlementGrantVerified": false
+}

@@ -87,13 +87,18 @@ export async function verifyAsar(archive, sourceDirectory, version) {
         `Packaged avatar asset differs from release tag: ${name}`);
     }
   }
-  // Payment images must be the exact reviewed codes. Loading the purchase UI
-  // alone does not establish that its packaged QR assets are present or intact.
+  // Historical tags retain their reviewed manual payment codes. Current builds
+  // retain only customer support and must not ship the removed receipt codes.
   if (expectedSources.includes('lib/membership-plans.js')) {
-    for (const name of ['assets/membership/wechat-pay.png', 'assets/membership/alipay.png', 'assets/membership/wechat-contact.png']) {
+    const accountSource = await readFile(path.join(sourceDirectory, 'account-ui.js'), 'utf8');
+    const paymentImages = ['assets/membership/wechat-pay.png', 'assets/membership/alipay.png'];
+    const requiredImages = ['assets/membership/wechat-contact.png', ...paymentImages.filter(name => accountSource.includes(name))];
+    for (const name of requiredImages) {
       assert.ok(extract(name).equals(await readFile(path.join(sourceDirectory, name))),
         `Packaged membership QR differs from release tag: ${name}`);
     }
+    const packagedFiles = asar.listPackage(archive).map(name => name.replaceAll('\\', '/').replace(/^\//, ''));
+    for (const name of paymentImages.filter(name => !accountSource.includes(name))) assert.ok(!packagedFiles.includes(name), `Removed manual membership payment code must not be packaged: ${name}`);
   }
   if (expectedSources.includes('learn.html')) {
     for (const name of ['assets/learning/book-promo.png', 'assets/support/wechat-personal-qr.png']) {

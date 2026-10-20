@@ -290,13 +290,14 @@ for (const sqlite of [false, true]) test(`owned payment resume reuses persisted 
 test('resume accepts only an authenticated owner of an existing online business order', async () => {
   const f = fixture(), created = await f.call('payment-create', f.createInput());
   const input = { orderId: created.order.id, expectedUserId: f.userId };
-  const manual = await f.call('order-create', { planId: 'daily', paymentMethod: 'alipay', expectedUserId: f.userId, requestId: randomUUID() });
+  const manualId = randomUUID();
+  await f.mutate(state => { state.orders[manualId] = { id: manualId, userId: f.userId, planId: 'daily', planName: '日付', priceCents: 300, amountCents: null, status: 'pending', paymentMethod: 'alipay', paidAt: null, createdAt: new Date(f.clock - DAY).toISOString(), confirmedAt: null, codeId: null, source: 'user_report' }; });
   const callsBefore = f.apiCalls.length;
   await assert.rejects(f.call('payment-resume', input, ''), { code: 'ACCOUNT_REQUIRED' });
   await assert.rejects(f.call('payment-resume', { ...input, expectedUserId: f.otherId }), { code: 'ACCOUNT_CHANGED' });
   await assert.rejects(f.call('payment-resume', { ...input, expectedUserId: f.otherId }, f.otherToken), { code: 'ORDER_NOT_FOUND' });
   await assert.rejects(f.call('payment-resume', input, f.adminToken, 'admin'), { code: 'USER_SESSION_REQUIRED' });
-  for (const orderId of [randomUUID(), '__proto__', manual.order.id]) {
+  for (const orderId of [randomUUID(), '__proto__', manualId]) {
     await assert.rejects(f.call('payment-resume', { orderId, expectedUserId: f.userId }), { code: 'ORDER_NOT_FOUND' });
   }
   assert.equal(f.apiCalls.length, callsBefore);

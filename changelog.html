@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.26 增加未支付订单继续支付与重新下单，保留已付款和状态不确定的原订单。Android 保持 v1.0.15。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.27 新增微信在线支付，与支付宝统一开通会员；保留历史订单、权益与激活码。Android 保持 v1.0.15。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -68,7 +68,7 @@
             <span class="eyebrow">PRODUCT CHANGELOG · SINCE 2026</span>
             <h1 id="release-title">每一次改进，<br /><span class="hl-yellow">都留下一条记录。</span></h1>
             <p>
-              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次补齐未支付订单的继续付款与重新下单入口，已付款或暂时无法核实时继续保留原单。
+              从网页与 Android 单篇下载，到 Mac / Windows 主页批量保存，记录每次功能增加、体验优化与问题修复。本次统一支付宝与微信在线开通入口，保留原有订单、会员权益与激活码兑换。
             </p>
 
             <div class="release-hero-actions">
@@ -83,31 +83,31 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.26</strong>
-              <small>Brclio Pay · 未支付订单恢复</small>
+              <strong>v2.0.27</strong>
+              <small>微信在线支付 · 统一会员开通</small>
             </div>
 
             <div class="summary-grid">
               <div class="summary-stat">
                 <strong>Web</strong>
-                <span>实时套餐与原单恢复</span>
+                <span>支付宝与微信在线开通</span>
               </div>
               <div class="summary-stat">
                 <strong>App</strong>
-                <span>继续支付与重新下单</span>
+                <span>原单恢复与重复付款保护</span>
               </div>
               <div class="summary-stat">
                 <strong>1.0.15</strong>
                 <span>Android 客户端</span>
               </div>
               <div class="summary-stat">
-                <strong>10.19</strong>
-                <span>最近整理 · 2026</span>
+                <strong>双渠道</strong>
+                <span>在线核实 · 自动开通</span>
               </div>
             </div>
 
-            <p class="summary-note"><span aria-hidden="true">✦</span> 未支付订单可继续原单或重新选择套餐。重新下单不会关闭旧单，请勿重复付款；已付款与状态不确定时保留原单。Android 保持 v1.0.15。</p>
-            <a class="release-summary-link" href="#brclio-pay-unpaid-retry">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
+            <p class="summary-note"><span aria-hidden="true">✦</span> 微信仅支持另一台设备显示二维码后扫码。Mac / Windows 需安装新版；Android 保持 v1.0.15，浏览器账号页随网站更新。</p>
+            <a class="release-summary-link" href="#wechat-online-membership">阅读本次更新说明 <span aria-hidden="true">↗</span></a>
           </aside>
         </section>
 
@@ -125,7 +125,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.26、继续支付、重新下单" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.27、微信支付、会员开通" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -139,6 +139,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
+              <a href="#wechat-online-membership"><span>v2.0.27</span><strong>微信在线支付与统一开通</strong></a>
               <a href="#brclio-pay-unpaid-retry"><span>v2.0.26</span><strong>继续支付与重新下单</strong></a>
               <a href="#brclio-pay-recovery"><span>v2.0.25</span><strong>付款等待与恢复</strong></a>
               <a href="#brclio-pay-readiness"><span>v2.0.23</span><strong>付款暂停与恢复</strong></a>
@@ -214,7 +215,19 @@
           </aside>
 
           <div id="release-feed" class="release-feed">
-            <article id="brclio-pay-unpaid-retry" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+            <article id="wechat-online-membership" class="release-entry release-entry-featured" data-release-platforms="web desktop">
+              <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-20"><span>10.20</span><small>2026 · 会员开通</small></time></div>
+              <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.27</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">在线双渠道</span></div><h3>选择支付宝或微信，在线开通会员</h3></div></header>
+                <p class="release-lead">新增独立的微信在线付款渠道，与原支付宝共用会员开通窗口。选择渠道、核对套餐与金额，付款经服务端核实后开通。</p>
+                <div class="change-list">
+                  <div class="change-item"><span aria-hidden="true">01</span><p><strong>微信 Native 扫码</strong>使用另一台设备显示收银台二维码，再用手机微信扫一扫。原支付宝在线付款继续可用；当前手机付款也需要另一台设备配合。</p></div>
+                  <div class="change-item"><span aria-hidden="true">02</span><p><strong>会员开通统一走在线付款</strong>移除原人工收款码与「我已付款」提交入口，历史订单、已开通权益与已有激活码兑换继续保留。</p></div>
+                  <div class="change-item"><span aria-hidden="true">03</span><p><strong>同一笔付款只入账一次</strong>微信在线通知与历史人工补录核对交易记录，避免重复入账或重复顺延。启动时先核实已有订单，查询完成前不能另建付款单。</p></div>
+                  <div class="change-item"><span aria-hidden="true">04</span><p><strong>旧客户端需要安装更新</strong>Mac / Windows 安装新版后获得新入口。Android 保持 1.0.15，浏览器账号页随网站更新。</p></div>
+                </div>
+              </div>
+            </article>
+            <article id="brclio-pay-unpaid-retry" class="release-entry" data-release-platforms="web desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026-10-19"><span>10.19</span><small>2026 · 订单恢复</small></time></div>
               <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.26</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">未支付订单恢复</span></div><h3>还没完成付款，可以继续原单或重新下单</h3></div></header>
                 <p class="release-lead">修复未支付订单一直停留在等待状态的问题。核实订单后可继续原收银台，也可重新选择套餐；已付款、权益确认中或暂时无法核实时继续保留原单。</p>

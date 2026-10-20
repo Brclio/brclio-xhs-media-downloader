@@ -25,7 +25,7 @@ async function rawBody(req) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-export function createBrclioPaymentHandler({ service, config: accountConfig, env, now = Date.now } = {}) {
+export function createBrclioPaymentHandler({ service, config: accountConfig, env, now = Date.now, provider = 'alipay' } = {}) {
   return async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
@@ -38,7 +38,8 @@ export function createBrclioPaymentHandler({ service, config: accountConfig, env
       const effectiveService = service || createAccountService({ store: createGithubStore(env), config: accountConfig || readConfig(env), mailer: { configured: false }, now });
       // This server-to-server endpoint uses only the signed body. Browser return
       // parameters and login cookies never authenticate a payment notification.
-      await effectiveService.receivePayment({ rawBody: body, headers: new Headers(req.headers) });
+      const receive = provider === 'wechat' ? effectiveService.receiveWechatPayment : effectiveService.receivePayment;
+      await receive({ rawBody: body, headers: new Headers(req.headers) });
       return res.status(200).json({ ok: true });
     } catch (error) {
       const known = error instanceof AccountError;

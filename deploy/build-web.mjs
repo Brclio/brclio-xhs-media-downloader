@@ -23,6 +23,7 @@ export const PUBLIC_FILES = [
 export const PYODIDE_VERSION = '314.0.7';
 export const PYODIDE_FILES = ['pyodide.mjs', 'pyodide.asm.mjs', 'pyodide.asm.wasm', 'python_stdlib.zip', 'pyodide-lock.json'];
 const MAX_PAGES_ASSET_BYTES = 25 * 1024 * 1024;
+const REMOVED_MANUAL_PAYMENT_IMAGES = new Set(['assets/membership/alipay.png', 'assets/membership/wechat-pay.png']);
 
 async function copyBrowserPython(output) {
   const runtime = fileURLToPath(new URL('../node_modules/pyodide/', import.meta.url));
@@ -116,7 +117,8 @@ export async function buildWeb(root = fileURLToPath(new URL('../', import.meta.u
         recursive: true,
         dereference: false,
         // Finder metadata and AppleDouble resource forks are not public assets.
-        filter: source => path.basename(source) !== '.DS_Store' && !path.basename(source).startsWith('._'),
+        filter: source => path.basename(source) !== '.DS_Store' && !path.basename(source).startsWith('._')
+          && !REMOVED_MANUAL_PAYMENT_IMAGES.has(path.relative(root, source).split(path.sep).join('/')),
       });
     }
   }

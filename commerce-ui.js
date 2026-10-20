@@ -7,7 +7,7 @@ const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
 const money = cents => cents == null ? '待核实' : `¥${(cents / 100).toFixed(2)}`;
 const date = value => value ? new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) : '—';
 const statuses = { pending: '付款待核实', confirmed: '已确认收款', legacy_unverified: '历史发码 · 收款待核实' };
-const methods = { wechat: '微信支付', alipay: '支付宝', other: '其他方式', unknown: '待核实', activation_code: '激活码套餐入账', brclio_pay: 'Brclio Pay' };
+const methods = { wechat: '微信支付', alipay: '支付宝', other: '其他方式', unknown: '待核实', activation_code: '激活码套餐入账', brclio_pay: 'Brclio Pay', brclio_wechat: 'Brclio 微信支付' };
 function node(tag, className, text) {
   const item = document.createElement(tag);
   item.className = className || '';
@@ -43,7 +43,7 @@ export function initializeCommerceUI({ accountPanel, openAccount }) {
   orders.id = 'software-orders';
   orders.setAttribute('aria-labelledby', 'software-orders-title');
   orders.innerHTML = `<div class="commerce-heading"><div><span class="account-eyebrow">YOUR PURCHASES</span><h2 id="software-orders-title">我的全部订单</h2></div><button id="orders-refresh" class="button button-secondary" type="button">刷新订单</button></div>
-    <p class="commerce-help">仅展示当前软件账号的订单。扫码付款后可在「开通会员」提交付款核实；管理员按套餐发放激活码后，套餐金额即为实收金额，收到激活码后请兑换开通会员。</p>
+    <p class="commerce-help">仅展示当前软件账号的订单。在线付款后由服务端核实并开通会员；请返回「开通会员」查询原订单，避免重复付款。历史订单和已发放的激活码继续有效。</p>
     <p id="orders-notice" class="commerce-notice" role="status" aria-live="polite">登录软件账号后查看订单。</p><div id="orders-list" class="orders-list"></div><div id="orders-pagination" class="commerce-pagination"></div>`;
   accountPanel.append(orders);
   const $ = id => document.getElementById(id);

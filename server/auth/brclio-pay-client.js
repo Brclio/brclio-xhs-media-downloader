@@ -38,7 +38,7 @@ export function createBrclioPayClient({ baseUrl = 'https://pay.bornforthis.cn', 
       // must never reach users, including clients already installed on desktop.
       if (!response.ok) {
         if (response.status === 503 && result?.error?.code === 'PAYMENTS_DISABLED') {
-          fail('PAYMENT_SERVICE_DISABLED', '支付中心尚未启用在线收款，请稍后刷新报价或使用人工扫码。', 503);
+          fail('PAYMENT_SERVICE_DISABLED', '支付中心尚未启用在线收款，请稍后刷新报价重试。', 503);
         }
         fail('PAYMENT_UNAVAILABLE', '支付中心暂时不可用，请保留本次请求并重试。', 503);
       }

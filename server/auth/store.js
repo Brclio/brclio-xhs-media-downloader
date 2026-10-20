@@ -7,7 +7,7 @@ const ACCOUNT_UNAVAILABLE = '账号服务暂时不可用，请稍后重试。';
 const ACCOUNT_RATE_LIMITED = '账号服务请求较多，请稍后重试。';
 
 export function emptyState() {
-  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {}, feedbackCommentRateLimits: {}, updateProxyConfig: null, webParseProxyConfig: null, reviews: {}, orders: {}, googleAttempts: {}, paymentEvents: {} };
+  return { schemaVersion: 1, users: {}, sessions: {}, devices: {}, otps: {}, otpHistory: [], codes: {}, operations: {}, rateLimits: {}, audit: [], mailStatus: null, feedback: {}, feedbackRateLimits: {}, feedbackReplyRateLimits: {}, feedbackCommentRateLimits: {}, updateProxyConfig: null, webParseProxyConfig: null, reviews: {}, orders: {}, googleAttempts: {}, paymentEvents: {}, wechatPaymentEvents: {} };
 }
 export function validateState(state) {
   if (!state || state.schemaVersion !== 1 || !Array.isArray(state.audit)) fail('STORAGE_INVALID', '业务数据格式异常，授权暂不可用。', 503);

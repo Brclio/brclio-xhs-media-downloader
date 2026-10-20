@@ -29,10 +29,10 @@ async function showLatestCatalog() {
     document.querySelector('[data-starting-price]').textContent = cheapest ? `¥${cheapest.amount}` : '在线购买暂停';
     document.querySelector('[data-starting-suffix]').hidden = !cheapest;
     status.textContent = cheapest && catalog.acceptingPayments === false
-      ? '以上为最新在线报价。支付中心尚未启用在线收款，请稍后刷新；原有人工扫码与激活码流程仍可在「账号与会员 → 开通会员」查看。'
+      ? '以上为支付宝最新在线报价。该渠道支付中心尚未启用在线收款，请稍后刷新；可在「账号与会员 → 开通会员」查看微信在线付款。'
       : cheapest
-      ? '以上为最新在线报价，按次购买，不自动续费。在线付款经服务端核实后开通；人工扫码套餐以开通窗口展示为准，兑换激活码后生效。已有未到期时长可顺延。'
-      : '在线购买暂未开放。原有人工扫码与激活码流程仍可在「账号与会员 → 开通会员」查看。';
+      ? '以上为支付宝最新在线报价，按次购买，不自动续费。开通窗口可另选微信在线付款并核对该渠道报价；微信仅支持另一台设备显示二维码后扫码。付款经服务端核实后自动开通，已有未到期时长可顺延。'
+      : '该渠道在线购买暂未开放，请在开通窗口查看其他在线付款渠道，或稍后刷新。';
   } catch {
     for (const card of document.querySelectorAll('[data-plan]')) {
       card.querySelector('[data-plan-price]').textContent = '待查询';
@@ -40,7 +40,7 @@ async function showLatestCatalog() {
     }
     document.querySelector('[data-starting-price]').textContent = '报价暂不可用';
     document.querySelector('[data-starting-suffix]').hidden = true;
-    if (status) status.textContent = '暂时无法读取在线报价，请在开通窗口刷新。原有人工扫码与激活码流程仍可使用，人工套餐以开通窗口展示为准。';
+    if (status) status.textContent = '暂时无法读取在线报价，请在开通窗口选择支付宝或微信并刷新报价。已有激活码可在账号页兑换。';
   }
 }
 
