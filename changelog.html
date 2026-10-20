@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.29 改进收银台打开、付款返回和会员结果同步；保留支付宝、微信在线付款及历史订单。Android 保持 v1.0.15。"
+      content="查看 Brclio 小红书下载器的网页版、Mac / Windows 与 Android 客户端更新记录。v2.0.30 改进收银台打开、付款返回和会员结果同步；保留支付宝、微信在线付款及历史订单。Android 保持 v1.0.15。"
     />
     <meta name="theme-color" content="#fefcf6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -83,7 +83,7 @@
           <aside class="release-summary" aria-label="项目版本概览">
             <div class="summary-heading">
               <span>桌面客户端 · DESKTOP</span>
-              <strong>v2.0.29</strong>
+              <strong>v2.0.30</strong>
               <small>顺畅付款 · 会员结果同步</small>
             </div>
 
@@ -125,7 +125,7 @@
             </div>
             <div class="release-search">
               <label for="release-query">版本或关键词</label>
-              <input id="release-query" type="search" placeholder="试试 v2.0.29、付款返回、会员结果" autocomplete="off" aria-controls="release-feed" />
+              <input id="release-query" type="search" placeholder="试试 v2.0.30、付款返回、会员结果" autocomplete="off" aria-controls="release-feed" />
               <button id="release-reset" type="button" disabled>清除筛选</button>
             </div>
             <p id="release-result-count" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -139,7 +139,7 @@
             <h2 id="ledger-title">从现在，<br />回到最初。</h2>
 
             <nav class="release-index-nav" aria-label="更新记录快速定位">
-              <a href="#desktop-payment-handoff"><span>v2.0.29</span><strong>顺畅付款与会员结果同步</strong></a>
+              <a href="#desktop-payment-handoff"><span>v2.0.30</span><strong>顺畅付款与会员结果同步</strong></a>
               <a href="#wechat-online-membership"><span>v2.0.27</span><strong>微信在线支付与统一开通</strong></a>
               <a href="#brclio-pay-unpaid-retry"><span>v2.0.26</span><strong>继续支付与重新下单</strong></a>
               <a href="#brclio-pay-recovery"><span>v2.0.25</span><strong>付款等待与恢复</strong></a>
@@ -218,7 +218,7 @@
           <div id="release-feed" class="release-feed">
             <article id="desktop-payment-handoff" class="release-entry release-entry-featured" data-release-platforms="web desktop">
               <div class="release-entry-rail"><span class="release-dot" aria-hidden="true"></span><time datetime="2026"><span>2026</span><small>付款回跳</small></time></div>
-              <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.29</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">付款与结果同步</span></div><h3>顺畅打开收银台，回到软件核实会员结果</h3></div></header>
+              <div class="release-card"><header class="release-card-heading"><div><div class="release-badges"><span class="release-badge release-badge-yellow">v2.0.30</span><span class="release-badge release-badge-blue">Web / Mac / Windows</span><span class="release-status">付款与结果同步</span></div><h3>顺畅打开收银台，回到软件核实会员结果</h3></div></header>
                 <p class="release-lead">改进系统浏览器打开、付款返回和会员结果同步。新桌面订单使用专用返回页，无需在浏览器登录即可尝试唤回客户端；正式发布时间以 GitHub Releases 为准。</p>
                 <div class="change-list">
                   <div class="change-item"><span aria-hidden="true">01</span><p><strong>打开失败可继续同一订单</strong>客户端确认系统是否接受打开收银台，失败时明确提示，可重试原单或复制付款链接，不会因重开浏览器再建一笔付款单。</p></div>

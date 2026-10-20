@@ -7,8 +7,8 @@ import vm from 'node:vm';
 const source = (await readFile(new URL('../app.js', import.meta.url), 'utf8')).replace(/\r\n?/g, '\n');
 const playback = 'https://sns-video-bd.xhscdn.com/stream/progress.mp4';
 
-function page(fetch = async () => { throw new Error('Unexpected network request'); }, { bridge, account } = {}) {
-  const nodes = new Map(), intervals = new Map();
+function page(fetch = async () => { throw new Error('Unexpected network request'); }, { bridge, account, windowImpl } = {}) {
+  const nodes = new Map(), intervals = new Map(), timeouts = new Map();
   let now = 1000;
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {
@@ -25,12 +25,13 @@ function page(fetch = async () => { throw new Error('Unexpected network request'
   const context = vm.createContext({
     document: { querySelector: selector => selector.startsWith('#') ? node(selector.slice(1)) : null,
       querySelectorAll: () => [] },
-    window: { innerHeight: 900, xhsDesktop: bridge }, navigator: { userAgent: '' }, localStorage: { getItem: () => null },
+    window: windowImpl || { innerHeight: 900, xhsDesktop: bridge }, navigator: { userAgent: '' }, localStorage: { getItem: () => null },
     crypto: { randomUUID: () => 'native-request' }, AbortController,
     getAccountBridge: () => account, openAccountUI: async () => {},
     initializeDesktopUI: async () => {}, Blob, URLSearchParams, Uint8Array, fetch,
     Date: class extends Date { static now() { return now; } },
-    setTimeout: () => Symbol(), clearTimeout() {},
+    setTimeout(callback, delay) { const id = Symbol(); timeouts.set(id, { callback, delay }); return id; },
+    clearTimeout: id => timeouts.delete(id),
     setInterval(callback) { const id = Symbol(); intervals.set(id, callback); return id; },
     clearInterval: id => intervals.delete(id)
   });
@@ -40,7 +41,7 @@ function page(fetch = async () => { throw new Error('Unexpected network request'
       tryDirectVideoDownload, fetchVideoBlobWithFallback, startVideoProgress,
       saveNativeVideo, downloadCurrentVideo, downloadOriginalVideo, downloadLiveVideo, state };
   `, context, { filename: 'app.js' });
-  return { ...context.helpers, node, intervals, advance(ms) { now += ms; } };
+  return { ...context.helpers, node, intervals, timeouts, advance(ms) { now += ms; } };
 }
 
 function controlledResponse(headers = {}) {
@@ -196,6 +197,119 @@ test('video progress retains terminal status, clears timers, and isolates a new 
   assert.equal(ui.intervals.size, 0);
   assert.equal(panel.dataset.phase, 'complete');
   assert.equal(panel.getAttribute('aria-busy'), 'false');
+});
+
+function scrollingPage() {
+  const frames = new Map(), listeners = new Map(), writes = [];
+  let nextFrame = 0;
+  const windowImpl = {
+    innerHeight: 656, scrollY: 1941, scrollX: 0,
+    scrollTo({ top, left, behavior }) { writes.push({ target: 'window', top, left, behavior }); this.scrollY = top; this.scrollX = left; },
+    requestAnimationFrame(callback) { const id = ++nextFrame; frames.set(id, callback); return id; },
+    cancelAnimationFrame: id => frames.delete(id),
+    addEventListener(name, callback, options) {
+      assert.equal(options.capture, true); assert.equal(options.passive, true);
+      if (!listeners.has(name)) listeners.set(name, new Set());
+      listeners.get(name).add(callback);
+    },
+    removeEventListener(name, callback) { listeners.get(name)?.delete(callback); },
+  };
+  const outer = { scrollHeight: 1000, clientHeight: 600, scrollWidth: 400, clientWidth: 400, scrollTop: 40, scrollLeft: 0,
+    scrollTo({ top, left, behavior }) { writes.push({ target: 'outer', top, left, behavior }); this.scrollTop = top; this.scrollLeft = left; } };
+  const inner = { parentElement: outer, scrollHeight: 3000, clientHeight: 600, scrollWidth: 600, clientWidth: 400, scrollTop: 1200, scrollLeft: 30,
+    scrollTo({ top, left, behavior }) { writes.push({ target: 'inner', top, left, behavior }); this.scrollTop = top; this.scrollLeft = left; } };
+  const ui = page(undefined, { windowImpl }), panel = ui.node('video-download-progress');
+  panel.isConnected = true; panel.parentElement = inner;
+  panel.getBoundingClientRect = () => {
+    const top = 150 - (windowImpl.scrollY - 1941) - (inner.scrollTop - 1200) - (outer.scrollTop - 40);
+    return { top, bottom: top + 100 };
+  };
+  return { ...ui, window: windowImpl, inner, outer, panel, frames, writes,
+    get listenerCount() { return [...listeners.values()].reduce((sum, callbacks) => sum + callbacks.size, 0); },
+    frame(ms = 16) {
+      ui.advance(ms);
+      for (const [id, callback] of [...frames]) if (frames.delete(id)) callback();
+    },
+    input(name, { target = windowImpl } = {}) { for (const callback of [...(listeners.get(name) || [])]) callback({ type: name, target, currentTarget: windowImpl, preventDefault: () => assert.fail('User input must never be prevented') }); },
+  };
+}
+
+test('late compositor scroll cannot move starting video progress away from its window or nested-container anchor', () => {
+  const ui = scrollingPage();
+  ui.startVideoProgress('verifying', '正在验证会员权益');
+  const alignedWrites = ui.writes.length;
+  ui.frame(100);
+  assert.equal(ui.writes.length, alignedWrites, 'A stable viewport never receives repeated scroll commands');
+  // ARM Chromium committed the old smooth scroll about 431 ms after the click.
+  ui.window.scrollY = 3398; ui.inner.scrollTop = 1800; ui.inner.scrollLeft = 150; ui.outer.scrollTop = 200;
+  assert.ok(ui.panel.getBoundingClientRect().bottom < 0);
+  ui.frame(350);
+  assert.equal(ui.window.scrollY, 1941); assert.equal(ui.inner.scrollTop, 1200); assert.equal(ui.inner.scrollLeft, 30); assert.equal(ui.outer.scrollTop, 40);
+  assert.ok(ui.panel.getBoundingClientRect().top >= 0 && ui.panel.getBoundingClientRect().bottom <= ui.window.innerHeight);
+  assert.ok(ui.writes.every(write => write.behavior === 'instant'));
+  // A later queued compositor update is still cancelled during the short guard.
+  ui.window.scrollY = 2600; ui.frame(700);
+  assert.equal(ui.window.scrollY, 1941);
+});
+
+test('real interaction, resize or leaving the page immediately releases scroll stabilization without consuming the event', async t => {
+  for (const event of ['wheel', 'touchstart', 'touchmove', 'pointerdown', 'mousedown', 'keydown', 'resize', 'blur', 'pagehide', 'visibilitychange']) await t.test(event, () => {
+    const ui = scrollingPage(); ui.startVideoProgress('preparing', '准备读取视频');
+    assert.ok(ui.listenerCount > 0);
+    ui.input(event);
+    assert.equal(ui.frames.size, 0); assert.equal(ui.listenerCount, 0); assert.equal(ui.timeouts.size, 0);
+    const writes = ui.writes.length;
+    ui.window.scrollY = 3200; ui.inner.scrollTop = 1800; ui.frame(500);
+    assert.equal(ui.window.scrollY, 3200); assert.equal(ui.inner.scrollTop, 1800);
+    assert.equal(ui.writes.length, writes, 'User-controlled movement is never snapped back');
+  });
+});
+
+test('captured child blur or media resize cannot release the guard, while actual window blur and resize do', async t => {
+  for (const event of ['blur', 'resize']) await t.test(event, () => {
+    const ui = scrollingPage(); ui.startVideoProgress('verifying', '正在验证会员权益');
+    ui.input(event, { target: { nodeName: event === 'blur' ? 'BUTTON' : 'VIDEO' } });
+    assert.ok(ui.listenerCount > 0); assert.equal(ui.frames.size, 1);
+    ui.window.scrollY = 3398; ui.frame(450);
+    assert.equal(ui.window.scrollY, 1941, 'A child event cannot let the delayed compositor scroll escape');
+    ui.input(event);
+    assert.equal(ui.listenerCount, 0); assert.equal(ui.frames.size, 0);
+    ui.window.scrollY = 3200; ui.frame(100);
+    assert.equal(ui.window.scrollY, 3200, 'A genuine window event ends the guard');
+  });
+});
+
+test('scroll stabilization has a hard 1.5-second bound and cleans up on finish, disposal and replacement', async t => {
+  for (const end of ['frame deadline', 'timeout', 'finish', 'dispose', 'replacement']) await t.test(end, () => {
+    const ui = scrollingPage(), progress = ui.startVideoProgress('preparing', '准备读取视频');
+    if (end === 'frame deadline') ui.frame(1500);
+    if (end === 'timeout') [...ui.timeouts.values()][0].callback();
+    if (end === 'finish') progress.finish('complete', '已开始保存');
+    if (end === 'dispose') progress.dispose();
+    if (end === 'replacement') { ui.startVideoProgress('preparing', '新的下载').dispose(); }
+    assert.equal(ui.frames.size, 0); assert.equal(ui.listenerCount, 0); assert.equal(ui.timeouts.size, 0);
+    const writes = ui.writes.length;
+    ui.window.scrollY = 3200; ui.frame(100);
+    assert.equal(ui.window.scrollY, 3200); assert.equal(ui.writes.length, writes);
+  });
+});
+
+test('a delayed deadline frame or timeout repairs the final compositor position, but user cancellation never does', async t => {
+  for (const end of ['delayed frame', 'timeout', 'user wheel before delayed frame']) await t.test(end, () => {
+    const ui = scrollingPage(); ui.startVideoProgress('verifying', '正在验证会员权益');
+    const queuedTimeout = [...ui.timeouts.values()][0].callback;
+    if (end.startsWith('user')) ui.input('wheel');
+    ui.window.scrollY = 3398; ui.inner.scrollTop = 1800;
+    if (end === 'timeout') queuedTimeout();
+    else ui.frame(2000);
+    if (end.startsWith('user')) {
+      queuedTimeout();
+      assert.equal(ui.window.scrollY, 3398); assert.equal(ui.inner.scrollTop, 1800);
+    } else {
+      assert.equal(ui.window.scrollY, 1941); assert.equal(ui.inner.scrollTop, 1200);
+    }
+    assert.equal(ui.frames.size, 0); assert.equal(ui.listenerCount, 0); assert.equal(ui.timeouts.size, 0);
+  });
 });
 
 function nativeBridge(save) {

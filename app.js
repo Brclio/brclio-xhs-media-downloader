@@ -445,6 +445,62 @@ function hideProgress() {
 
 let activeVideoProgress = null;
 
+function stabilizeVideoProgressScroll(panel) {
+  if (!window.requestAnimationFrame || !window.addEventListener || panel.isConnected === false) return () => {};
+  // Chromium can commit an old compositor smooth-scroll after an instant stop.
+  // Guard only the start of this operation; any new interaction gives control
+  // back immediately, without cancelling the user's event or moving them later.
+  const windowPosition = { top: window.scrollY, left: window.scrollX };
+  const ancestors = [];
+  for (let container = panel.parentElement; container; container = container.parentElement) {
+    if (container !== document.scrollingElement
+      && (container.scrollHeight > container.clientHeight || container.scrollWidth > container.clientWidth)) {
+      ancestors.push({ container, top: container.scrollTop, left: container.scrollLeft });
+    }
+  }
+  const events = ["wheel", "touchstart", "touchmove", "pointerdown", "mousedown", "keydown", "resize", "blur", "pagehide", "visibilitychange"];
+  const startedAt = Date.now();
+  let stopped = false, frame, timeout;
+  const stop = event => {
+    // Capture also sees a disabled button's blur and a video's resize; only
+    // actual window lifecycle events should release this startup guard.
+    if (["blur", "resize"].includes(event?.type) && event.target !== event.currentTarget) return;
+    if (stopped) return;
+    stopped = true;
+    window.cancelAnimationFrame?.(frame);
+    clearTimeout(timeout);
+    for (const event of events) window.removeEventListener(event, stop, true);
+  };
+  const restorePosition = () => {
+    try {
+      if (Math.abs(window.scrollY - windowPosition.top) > 0.5 || Math.abs(window.scrollX - windowPosition.left) > 0.5) {
+        window.scrollTo?.({ ...windowPosition, behavior: "instant" });
+      }
+      for (const { container, top, left } of ancestors) {
+        if (Math.abs(container.scrollTop - top) > 0.5 || Math.abs(container.scrollLeft - left) > 0.5) {
+          container.scrollTo?.({ top, left, behavior: "instant" });
+        }
+      }
+    } catch { stop(); }
+  };
+  const restore = () => {
+    if (stopped) return;
+    if (panel.isConnected === false || panel.hidden) { stop(); return; }
+    // A delayed frame may arrive after the deadline: repair its final observed
+    // compositor position before releasing, unless input already stopped us.
+    restorePosition();
+    if (stopped || Date.now() - startedAt >= 1500) { stop(); return; }
+    frame = window.requestAnimationFrame(restore);
+  };
+  for (const event of events) window.addEventListener(event, stop, { capture: true, passive: true });
+  timeout = setTimeout(() => {
+    if (!stopped && panel.isConnected !== false && !panel.hidden) restorePosition();
+    stop();
+  }, 1500);
+  frame = window.requestAnimationFrame(restore);
+  return stop;
+}
+
 function startVideoProgress(phase, message) {
   activeVideoProgress?.dispose();
   clearTimeout(showToast.timer);
@@ -463,6 +519,7 @@ function startVideoProgress(phase, message) {
   let lastRender = 0;
   let lastPercent = null;
   let timer;
+  let stopScrollStabilization = () => {};
 
   const render = () => {
     if (activeVideoProgress !== progress || !panel) return;
@@ -517,9 +574,10 @@ function startVideoProgress(phase, message) {
     finish(nextPhase, text, description = "") {
       busy = false;
       clearInterval(timer);
+      stopScrollStabilization();
       progress.phase(nextPhase, text, { description });
     },
-    dispose() { clearInterval(timer); }
+    dispose() { clearInterval(timer); stopScrollStabilization(); }
   };
   activeVideoProgress = progress;
   if (panel) panel.hidden = false;
@@ -527,7 +585,8 @@ function startVideoProgress(phase, message) {
   timer = setInterval(render, 1000);
   if (panel) {
     // A previous result/focus scroll can still be animating while this panel is
-    // already visible. Stop that navigation once, before the first async step.
+    // already visible. Align before the first async step, then briefly guard
+    // against an old compositor scroll committing after this instant stop.
     window.scrollTo?.({ top: window.scrollY, left: window.scrollX, behavior: "instant" });
     for (let container = panel.parentElement; container; container = container.parentElement) {
       if (container.scrollHeight > container.clientHeight || container.scrollWidth > container.clientWidth) {
@@ -538,6 +597,7 @@ function startVideoProgress(phase, message) {
     if (rect.top < 0 || rect.bottom > window.innerHeight) {
       panel.scrollIntoView({ block: "nearest", behavior: "instant" });
     }
+    stopScrollStabilization = stabilizeVideoProgressScroll(panel);
   }
   return progress;
 }

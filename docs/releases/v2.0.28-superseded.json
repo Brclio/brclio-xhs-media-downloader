@@ -10,5 +10,9 @@
   "reason": "旧 membership renderer 断言需更新，并补充浏览器父层对话框焦点修正。",
   "published": false,
   "productionChanged": false,
-  "replacementVersion": "2.0.29"
+  "replacementVersion": "2.0.30",
+  "replacementHistory": [
+    "2.0.29",
+    "2.0.30"
+  ]
 }

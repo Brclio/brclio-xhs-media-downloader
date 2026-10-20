@@ -2,6 +2,7 @@
 // No email, payment, login credentials or remote media leave this process.
 // Run: npx electron scripts/verify-member-video-ui.cjs
 // Immediate-navigation host regression: add --instant-fixture-scroll.
+// Replay the immutable pre-stabilization app: add --baseline-compositor-scroll.
 const { app, BrowserWindow } = require('electron');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -16,8 +17,10 @@ const root = path.resolve(__dirname, '..');
 // shared product files just to reproduce the old scroll behavior.
 const baselineNestedScroll = process.argv.includes('--baseline-nested-scroll');
 const baselineScroll = process.argv.includes('--baseline-scroll') || baselineNestedScroll;
+const baselineCompositorScroll = process.argv.includes('--baseline-compositor-scroll');
 const instantFixtureScroll = process.argv.includes('--instant-fixture-scroll');
-const baselineApp = baselineScroll ? execFileSync('git', ['show', 'v1.8.27:app.js'], { cwd: root, encoding: 'utf8' }) : null;
+const baselineRef = baselineScroll ? 'v1.8.27' : baselineCompositorScroll ? 'v2.0.29' : null;
+const baselineApp = baselineRef ? execFileSync('git', ['show', baselineRef + ':app.js'], { cwd: root, encoding: 'utf8' }) : null;
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'brclio-member-video-ui-'));
 const screenshots = path.join(temporary, 'screenshots');
 fs.mkdirSync(screenshots);
@@ -74,6 +77,25 @@ Element.prototype.scrollTo = function(...args) {
 };
 const windowScrollTo = window.scrollTo;
 window.scrollTo = (...args) => { auditScroll('windowScrollTo', { args }); return windowScrollTo.apply(window, args); };
+window.fixtureDeferredScrollEvidence = [];
+window.fixtureQueueCompositorScroll = (kind, top) => {
+  // The ARM failure delivered an old compositor position after a synchronous
+  // instant cancellation. Apply that position through the actual native scroll
+  // API after click's synchronous cancellation. A microtask barrier cannot be
+  // throttled past the product's bounded guard by an occluded fixture window.
+  auditScroll('queued-compositor-scroll', { target: kind, top });
+  queueMicrotask(() => {
+    const page = document.getElementById('single-note-panel');
+    if (kind === 'window') windowScrollTo.call(window, { top, behavior: 'instant' });
+    else elementScrollTo.call(page, { top, behavior: 'instant' });
+    const rect = document.getElementById('video-download-progress').getBoundingClientRect();
+    const evidence = { target: kind, top, frame: window.fixtureAnimationFrames, at: Math.round(performance.now()),
+      phase: document.getElementById('video-download-progress').dataset.phase,
+      inViewport: rect.bottom > 0 && rect.top < innerHeight, scrollY, nestedScrollTop: page.scrollTop };
+    window.fixtureDeferredScrollEvidence.push(evidence);
+    auditScroll('replayed-compositor-scroll', evidence);
+  });
+};
 const focus = HTMLElement.prototype.focus;
 HTMLElement.prototype.focus = function(options) {
   auditScroll('focus', { id: this.id, options }); return focus.call(this, options);
@@ -217,7 +239,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
-  win = new BrowserWindow({ width: 1440, height: 1000, show: false, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  win = new BrowserWindow({ width: 1440, height: 1000, show: false, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: false } });
   win.webContents.session.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !details.url.startsWith(origin + '/') && !details.url.startsWith('blob:') && !details.url.startsWith('data:') }));
   const rendererErrors = [];
   win.webContents.on('console-message', details => {
@@ -231,7 +253,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
       closed: true, navigations: [], openerCleared: true,
     })), 'Successful parsing closes every preopened verification window without navigating it');
   };
-  readDiagnostics = () => evaluate(`({ audit: window.fixtureScrollAudit, scrollY, active: document.activeElement?.id,
+  readDiagnostics = () => evaluate(`({ audit: window.fixtureScrollAudit, deferredScrolls: window.fixtureDeferredScrollEvidence, scrollY, active: document.activeElement?.id,
     pending: window.fixturePending?.map(item => item.stage), phase: document.getElementById('video-download-progress')?.dataset.phase,
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, animationFrames: window.fixtureAnimationFrames,
     viewport: { width: document.documentElement.clientWidth, height: innerHeight, pageHeight: document.documentElement.scrollHeight } })`);
@@ -347,17 +369,44 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await click('browser-account-close');
   await evaluate(`document.getElementById('download-original-video-button').scrollIntoView({ block: 'center', behavior: 'instant' });
     window.fixtureSlow = true; window.fixtureAccountChecks = 0; window.fixtureDeliveredBytes = 0`);
-  const immediate = await evaluate(`auditScroll('pending-parse-navigation');
-    if (${!baselineNestedScroll}) window.scrollTo({ top: Math.min(document.documentElement.scrollHeight - innerHeight, scrollY + 1300), behavior: ${JSON.stringify(instantFixtureScroll ? 'instant' : 'smooth')} });
-    document.getElementById('download-original-video-button').click(); ${progressSnapshotScript}`);
+  const nativeClickPoint = await evaluate(`(() => {
+    const button=document.getElementById('download-original-video-button');
+    button.focus({preventScroll:true});
+    button.addEventListener('click', event => {
+      window.fixtureTrustedDownloadClick={trusted:event.isTrusted,focusedAtCapture:document.activeElement.id};
+      auditScroll('pending-parse-navigation');
+      if (${!baselineNestedScroll}) {
+        const top=Math.min(document.documentElement.scrollHeight-innerHeight,scrollY+1300);
+        window.scrollTo({top,behavior:${JSON.stringify(instantFixtureScroll ? 'instant' : 'smooth')}});
+        window.fixturePendingWindowTop=top;
+      }
+    }, {capture:true,once:true});
+    button.addEventListener('click',()=>{
+      window.fixtureImmediateProgress=${progressSnapshotScript};
+      if (${!baselineNestedScroll}) window.fixtureQueueCompositorScroll('window',window.fixturePendingWindowTop);
+    },{once:true});
+    const rect=button.getBoundingClientRect();return {x:Math.round(rect.left+rect.width/2),y:Math.round(rect.top+rect.height/2)};
+  })()`);
+  win.webContents.sendInputEvent({ type:'mouseMove', ...nativeClickPoint });
+  win.webContents.sendInputEvent({ type:'mouseDown', button:'left', clickCount:1, ...nativeClickPoint });
+  win.webContents.sendInputEvent({ type:'mouseUp', button:'left', clickCount:1, ...nativeClickPoint });
+  await until('window.fixtureImmediateProgress');
+  const immediate = await evaluate('window.fixtureImmediateProgress');
+  assert.deepEqual(await evaluate('window.fixtureTrustedDownloadClick'), { trusted:true, focusedAtCapture:'download-original-video-button' }, 'A real pointer click starts from the focused download button before disabling it');
   assert.equal(immediate.phase, 'verifying', 'Click must synchronously show progress before awaiting the account request');
   assert.equal(immediate.visible, true);
   assert.equal(immediate.inViewport, true);
   assert.equal(immediate.buttonDisabled, true);
   progressEvidence.push({ ...immediate, immediateClick: true });
   await paused('account');
-  await assertProgress('verifying'); await capture('progress-verifying');
   await settleScrolling();
+  if (!baselineNestedScroll) {
+    const replay = await evaluate(`window.fixtureDeferredScrollEvidence.filter(item=>item.target==='window')`);
+    assert.equal(replay.length, 1, 'The deferred window compositor position must actually be delivered');
+    assert.equal(replay[0].phase, 'verifying');
+    assert.equal(replay[0].inViewport, false, 'The replay must have enough real travel to move progress out of view');
+  }
+  await assertProgress('verifying'); await capture('progress-verifying');
   await release('account'); await paused('resolve');
   const resolvedProgress = await assertProgress('resolving'); await capture('progress-resolving');
   assert.ok(Math.abs(resolvedProgress.scrollY - immediate.scrollY) <= 1, 'Window progress must remain at its visible position after download start');
@@ -492,6 +541,28 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   await assertProgress('complete', { active: false, transferred: bytes.length });
   assert.equal(await evaluate(`window.fixtureRequests.filter(request => request.path === '/api/video' || request.path === '/api/python_video').length`), 0, 'Member failure/retry cannot use an unprotected playback route');
   await assertNoUnexpectedWindows();
+
+  // A wheel arriving immediately after a new attempt must release its startup
+  // scroll guard. Keep the account request paused past the entire guard window
+  // so no later progress render or timeout may steal the user's chosen place.
+  await evaluate(`document.getElementById('video-download-progress').scrollIntoView({block:'center',behavior:'instant'});window.fixtureSlow=true;window.fixtureAccountChecks=0`);
+  const earlyWheelStart = await evaluate(`document.getElementById('download-original-video-button').click();${progressSnapshotScript}`);
+  assert.equal(earlyWheelStart.inViewport, true);
+  win.webContents.sendInputEvent({ type:'mouseWheel', x:1000, y:500, deltaX:0, deltaY:900, canScroll:true });
+  await paused('account');
+  await until(`Math.abs(scrollY-${earlyWheelStart.scrollY})>100`);
+  await settleScrolling(1700);
+  const earlyWheelPosition = await progressSnapshot();
+  assert.equal(earlyWheelPosition.phase, 'verifying');
+  assert.equal(earlyWheelPosition.inViewport, false, 'A real wheel during startup may leave the pending download controls');
+  await settleScrolling(200);
+  assert.equal(await evaluate('scrollY'), earlyWheelPosition.scrollY, 'Neither queued frames nor guard expiry may undo the startup wheel');
+  progressEvidence.push({...earlyWheelPosition,userWheelDuringStartup:true});
+  await capture('progress-startup-user-scroll-respected');
+  await evaluate(`window.fixtureSlow=false;window.fixtureRelease('account')`);
+  await until(`window.fixtureDownloads.length===4&&!document.getElementById('download-original-video-button').disabled`);
+  await assertProgress('complete', {active:false,transferred:bytes.length,inViewport:false});
+  await evaluate(`document.getElementById('video-download-progress').scrollIntoView({block:'center',behavior:'instant'})`);
   await evaluate('window.fixtureDenyFinalMeta = false; window.fixtureRole = "ordinary"');
   await click('browser-account-open'); await click('account-refresh');
   await until(`document.getElementById('account-badge').textContent.includes('普通用户')`);
@@ -519,6 +590,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.match(await evaluate(`document.getElementById('original-video-hint').textContent`), /未提供原视频/);
   await assertNoUnexpectedWindows(2);
   const browserScrollAudit = await evaluate('window.fixtureScrollAudit');
+  const browserDeferredScrolls = await evaluate('window.fixtureDeferredScrollEvidence');
   for (const unsafe of ['javascript:alert(1)', 'https://www.xiaohongshu.com.attacker.test/explore/abc', 'https://user@www.xiaohongshu.com/explore/abc']) {
     const rejected = new URL(origin + '/'); rejected.searchParams.set('note', unsafe); rejected.searchParams.set('memberVideo', '1');
     await win.loadURL(rejected.href);
@@ -553,15 +625,23 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   const nestedImmediate = await evaluate(`(() => {
     const page = document.getElementById('single-note-panel');
     auditScroll('pending-desktop-navigation', { top: page.scrollTop });
-    page.scrollTo({ top: Math.max(0, page.scrollTop - 1300), behavior: ${JSON.stringify(instantFixtureScroll ? 'instant' : 'smooth')} });
+    const top = Math.max(0, page.scrollTop - 1300);
+    page.scrollTo({ top, behavior: ${JSON.stringify(instantFixtureScroll ? 'instant' : 'smooth')} });
     document.getElementById('download-original-video-button').click();
-    return ${progressSnapshotScript};
+    const immediate=${progressSnapshotScript};
+    window.fixtureQueueCompositorScroll('nested', top);
+    return immediate;
   })()`);
   assert.equal(nestedImmediate.inViewport, true, 'Desktop progress must be visible at click');
   assert.ok(nestedImmediate.rect.top + Math.min(nestedLayout.scrollTop, 1300) > nestedLayout.viewportHeight, 'Pending desktop scroll must have enough actual travel to move progress out of view');
   progressEvidence.push({ ...nestedImmediate, immediateClick: true, desktopNested: true });
-  await paused('account'); await assertProgress('verifying');
+  await paused('account');
   await settleScrolling(1100);
+  const nestedReplay = await evaluate(`window.fixtureDeferredScrollEvidence.filter(item=>item.target==='nested')`);
+  assert.equal(nestedReplay.length, 1, 'The deferred desktop compositor position must actually be delivered');
+  assert.equal(nestedReplay[0].phase, 'verifying');
+  assert.equal(nestedReplay[0].inViewport, false, 'The replay must move progress beyond the real desktop scroll viewport');
+  await assertProgress('verifying');
   await release('account'); await paused('resolve');
   await assertProgress('resolving'); await capture('desktop-pending-scroll-resolving');
   // Some hosts complete a requested smooth scroll in the same JS task. The
@@ -606,7 +686,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(rendererErrors.length, 0, rendererErrors.join('\n'));
   const report = path.join(temporary, 'verification.json');
   const result = { ok: true, verifiedAt: new Date().toISOString(), version: require(path.join(root, 'package.json')).version, platform: process.platform, arch: process.arch, electronVersion: process.versions.electron, safeExternalEntry: true, noAutomaticPaidAction: true, guestLogin: true, browserAccountLogin: true, memberDownload: true, desktopAccountEntryAndDownload: true, finalAuthorizationBeforeSave: true, accountChangeDuringFinalResponse: true, noProtectedFallback: true, ordinaryPurchase: true, noOriginal: true, immediateProgress: true, delayedAccountResolveMetadataChunks: true, delayedMp4Inspection: true, realBytePercentage: true, progressWithinChunkBody: true, noSaveBeforeFinalChecks: true, retainedCompletionAndFailure: true, invalidMediaNoSave: true, retryRestoresButtons: true, retryResetsReceivedBytes: true, freePlaybackProgress: true, pendingWindowScrollCancelled: true, pendingDesktopScrollCancelled: true, userWheelScrollingRespected: true, fixtureBytes: bytes.length, widths: [1440, 768, 390, 320], screenshots, report };
-  fs.writeFileSync(report, JSON.stringify({ ...result, requestedNavigationBehavior: instantFixtureScroll ? 'instant' : 'smooth', progressEvidence, browserScrollAudit, desktopNestedLayout: nestedLayout, scrollAudit: await evaluate('window.fixtureScrollAudit') }, null, 2));
+  fs.writeFileSync(report, JSON.stringify({ ...result, requestedNavigationBehavior: instantFixtureScroll ? 'instant' : 'smooth', baselineRef, deferredWindowCompositorCancelled: true, deferredDesktopCompositorCancelled: true, browserDeferredScrolls, desktopDeferredScrolls: await evaluate('window.fixtureDeferredScrollEvidence'), progressEvidence, browserScrollAudit, desktopNestedLayout: nestedLayout, scrollAudit: await evaluate('window.fixtureScrollAudit') }, null, 2));
   console.log(JSON.stringify(result));
   await finish(0);
 }).catch(error => void finish(1, error));

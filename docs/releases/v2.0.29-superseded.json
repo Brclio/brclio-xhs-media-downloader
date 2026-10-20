@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.29",
+  "status": "superseded-unpublished",
+  "sourceCommit": "96fc7d04380187a2665679e063554c095a086f06",
+  "tagImmutable": true,
+  "workflowRunId": 39467390775,
+  "workflowRunUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39467390775",
+  "workflowAttempts": [
+    {
+      "attempt": 1,
+      "conclusion": "failure",
+      "reason": "ARM feedback fixture race; a readiness barrier is required."
+    },
+    {
+      "attempt": 2,
+      "conclusion": "failure",
+      "reason": "Existing viewport-scroll cancellation race exposed by the ARM renderer gate; application fix and renderer regression are required."
+    }
+  ],
+  "published": false,
+  "productionChanged": false,
+  "replacementVersion": "2.0.30"
+}
