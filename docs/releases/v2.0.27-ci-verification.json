@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.27",
+  "tag": "v2.0.27",
+  "repository": "Brclio/brclio-xhs-media-downloader",
+  "sourceSha": "b6e94d6023032029c6b193db3f30da4ee2d56ce9",
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.27",
+  "publishedAt": "2026-10-20T16:03:54Z",
+  "publishedAtAsiaShanghai": "2026-10-21T00:03:54+08:00",
+  "scope": "Independent read-only CI monitoring and release asset metadata, build-evidence and checksum manifest verification. No source edits, release mutations or large installer downloads were performed by this verifier.",
+  "workflow": {
+    "runId": 39448309986,
+    "runAttempt": 2,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39448309986",
+    "path": ".github/workflows/desktop-build.yml",
+    "status": "completed",
+    "conclusion": "success",
+    "observedCompletedAt": "2026-10-20T16:03:57Z",
+    "jobs": [
+      { "id": 118728001834, "name": "mac-arm64", "conclusion": "success" },
+      { "id": 118728003281, "name": "mac-intel", "conclusion": "success" },
+      { "id": 118728004180, "name": "windows-x64", "conclusion": "success" },
+      { "id": 118735783697, "name": "Publish verified installers", "conclusion": "success" }
+    ],
+    "initialInfrastructureFailure": {
+      "runAttempt": 1,
+      "jobId": 118716022338,
+      "jobName": "mac-arm64",
+      "label": "macos-15",
+      "conclusion": "cancelled",
+      "runnerName": "",
+      "executedStepCount": 0,
+      "startedAt": "2026-10-20T15:25:48Z",
+      "completedAt": "2026-10-20T15:40:50Z",
+      "failureAnnotation": "The job was not acquired by Runner of type hosted even after multiple attempts",
+      "capacityNotice": "Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times.",
+      "classification": "GitHub-hosted runner capacity failure before any source or test step executed",
+      "retryScope": "The root release orchestrator reran the cancelled ARM job and its dependent publisher in the same workflow run. Successful Intel and Windows jobs were retained. Source commit, version tag, runner label and acceptance gates were unchanged."
+    }
+  },
+  "releaseMetadata": {
+    "draft": false,
+    "prerelease": false,
+    "latestReleaseMatches": true,
+    "assetCount": 11,
+    "uniqueExpectedNamesVerified": true,
+    "allAssetsUploaded": true,
+    "allAssetSizesPositiveSafeIntegers": true,
+    "allAssetDigestsValidSha256": true,
+    "allAssetDownloadUrlsMatchOfficialTagAndNames": true,
+    "primaryInstallerCount": 6,
+    "legacyCompatibilityInstallerCount": 3,
+    "smallDocumentCount": 2
+  },
+  "smallDocuments": {
+    "names": ["build-evidence.json", "SHA256SUMS.txt"],
+    "initialAnonymousDownload": {
+      "result": "timeout",
+      "timeoutMilliseconds": 30000,
+      "detail": "The first anonymous GitHub release attachment request timed out before document verification completed. This was a transport failure, not a failed digest or build assertion."
+    },
+    "successfulReadTransport": "GitHub release asset API with Accept: application/octet-stream",
+    "documentBytesDownloaded": true,
+    "documentSizesMatchReleaseMetadata": true,
+    "documentSha256MatchesReleaseMetadata": true,
+    "buildEvidenceRepositoryTagAndSourceVerified": true,
+    "manifestContainsExactlyNineUniqueInstallerEntries": true,
+    "allInstallerMetadataDigestsMatchBuildEvidenceAndManifest": true,
+    "allThreeCompatibilityAliasesMatchOriginalSizeAndDigest": true,
+    "assertionsPreservedOnTransportRetry": true
+  },
+  "builds": [
+    {
+      "platform": "darwin",
+      "arch": "arm64",
+      "sourceSha": "b6e94d6023032029c6b193db3f30da4ee2d56ce9",
+      "sourceDirty": false,
+      "comparedSources": 246,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true,
+      "macCodeSigning": "adhoc",
+      "macCodeSignatureVerified": true,
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "platform": "darwin",
+      "arch": "x64",
+      "sourceSha": "b6e94d6023032029c6b193db3f30da4ee2d56ce9",
+      "sourceDirty": false,
+      "comparedSources": 246,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true,
+      "macCodeSigning": "adhoc",
+      "macCodeSignatureVerified": true,
+      "packagedMacLaunchVerified": true,
+      "packagedMacUpdateVerified": true,
+      "packagedUpdateHistoryVerified": true
+    },
+    {
+      "platform": "win32",
+      "arch": "x64",
+      "sourceSha": "b6e94d6023032029c6b193db3f30da4ee2d56ce9",
+      "sourceDirty": false,
+      "comparedSources": 246,
+      "bundledPythonVerified": true,
+      "bundledUpdateProxyVerified": true,
+      "bundledSubscriptionsAbsent": true,
+      "packagedWindowsUpdateVerified": true,
+      "packagedWindowsPortableVerified": true,
+      "automaticRelaunchRendererReadyVerified": true,
+      "restartedRendererRecords": 2,
+      "bothRestartedRendererVersionsMatchRelease": true
+    }
+  ],
+  "nativeTestCountsReportedByRoot": {
+    "source": "The root release orchestrator separately downloaded and verified the native job logs; these counts are attributed to that verification rather than the independent metadata inspection.",
+    "macFullNode": { "passed": 1864, "skipped": 14 },
+    "macAdditionalNative": { "passed": 93 },
+    "windowsFullNode": { "passed": 1809, "skipped": 69 },
+    "pythonEachPlatform": { "passed": 47 }
+  },
+  "limits": {
+    "largeInstallerBytesDownloaded": false,
+    "installerByteHashesLocallyRecomputed": false,
+    "installerMetadataHashesComparedAgainstProofsAndManifest": true,
+    "anonymousInstallerHeadProbesIncluded": false,
+    "productionWebDeploymentIncluded": false,
+    "userCurrentInstallationChanged": false,
+    "realPaymentOrProductionEntitlementAcceptanceIncluded": false,
+    "credentialsOrPrivateConfigurationRead": false,
+    "note": "The root release orchestrator separately owns the strict publication verifier, anonymous installer probes, web deployment, operation audit and final release description. This report does not imply a user installation or real payment."
+  },
+  "ok": true
+}

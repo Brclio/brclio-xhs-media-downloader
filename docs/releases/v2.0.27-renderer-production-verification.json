@@ -1,0 +1,186 @@
+{
+  "releaseVersion": "2.0.27",
+  "sourceSha": "b6e94d6023032029c6b193db3f30da4ee2d56ce9",
+  "stage": "anonymous-production-renderer-verification",
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-10-20T16:08:10.500Z",
+  "reviewTimezone": "Asia/Shanghai",
+  "deploymentContext": {
+    "workerVersion": "e8d3c6c7-25ea-4428-ac9e-dd2cf3a19f3e",
+    "pagesDeploymentId": "c61e30de-8c67-4374-a1b8-62c72f68d696",
+    "pagesDeployment": "https://c61e30de.brclio-xhs-pages.pages.dev"
+  },
+  "ok": true,
+  "passed": 10,
+  "total": 10,
+  "checks": [
+    {
+      "name": "Live membership renderer displays all three prices and days from the expected payment-center catalog.",
+      "ok": true
+    },
+    {
+      "name": "membership desktop: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "membership 375px: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "Actual signed-out dialog shows online Alipay and WeChat, keeps checkout disabled, and has no manual QR or report entry.",
+      "ok": true
+    },
+    {
+      "name": "signed-out dialog desktop: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "signed-out dialog 375px: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "unsigned payment return 375px: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "Forged payment return parameters are consumed without authentication, status lookup, checkout or entitlement.",
+      "ok": true
+    },
+    {
+      "name": "Signed-out purchase guidance returns focus to the real account login form without submitting it.",
+      "ok": true
+    },
+    {
+      "name": "Network allowlist admitted only public read-only account actions and static GETs; no cookies or mutations.",
+      "ok": true
+    }
+  ],
+  "expectedCatalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+  "catalog": {
+    "version": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+    "mode": "live",
+    "currency": "CNY",
+    "plans": [
+      {
+        "id": "daily",
+        "amount": "3.00",
+        "days": 1
+      },
+      {
+        "id": "monthly",
+        "amount": "19.90",
+        "days": 30
+      },
+      {
+        "id": "yearly",
+        "amount": "69.90",
+        "days": 365
+      }
+    ]
+  },
+  "networkAudit": {
+    "admittedRequestCount": 93,
+    "methods": {
+      "GET": 83,
+      "POST": 10
+    },
+    "accountActions": {
+      "payment-catalog": 2,
+      "reviews-public": 2,
+      "me": 4,
+      "google-config": 2
+    },
+    "allowedAccountActions": [
+      "google-config",
+      "me",
+      "payment-catalog",
+      "reviews-public"
+    ],
+    "blockedCrossOriginGetCount": 5,
+    "businessMutationRequestCount": 0,
+    "cookiesAtStartAndFinish": 0,
+    "credentialHeadersStripped": true,
+    "isolatedBrowserProfile": true,
+    "profileCleaned": true,
+    "rendererErrorCount": 0
+  },
+  "screenshotCount": 8,
+  "visuallyReviewedScreenshotCount": 8,
+  "screenshots": [
+    {
+      "file": "01-membership-desktop-hero.png",
+      "sha256": "5515e3f8b35e6cb0c0594a63104dfab1e3ce3676418694d672e36aaa9592c33e",
+      "width": 2880,
+      "height": 2036,
+      "visuallyReviewed": true,
+      "observation": "Desktop membership hero is readable with aligned navigation and no horizontal overflow."
+    },
+    {
+      "file": "02-membership-desktop-prices.png",
+      "sha256": "445055bb165d64d4c6bc5fa78c334d538b5c3fe4a5506006ce9001c2e92d7038",
+      "width": 2880,
+      "height": 2036,
+      "visuallyReviewed": true,
+      "observation": "Desktop displays live daily 3.00, monthly 19.90, yearly 69.90 CNY prices and online-only opening instructions."
+    },
+    {
+      "file": "03-membership-mobile-prices.png",
+      "sha256": "46106f1743684d2515c55b13c03a5b82f1abb9ad1df35de58d6bb13f7f28622f",
+      "width": 750,
+      "height": 1900,
+      "visuallyReviewed": true,
+      "observation": "375px pricing layout stacks cards vertically without horizontal overflow; additional cards remain below the viewport."
+    },
+    {
+      "file": "04-membership-mobile-hero.png",
+      "sha256": "72070e2943d3692f73b66de7c430372758be0843a640b7a7e05a246d6601e769",
+      "width": 750,
+      "height": 1900,
+      "visuallyReviewed": true,
+      "observation": "375px membership hero and account/menu controls remain readable without horizontal overflow."
+    },
+    {
+      "file": "05-signed-out-dialog-desktop.png",
+      "sha256": "43db12910d0d38da24cf37cc876dadbfd5cfd36c88bfecc71374bf7c2b434616",
+      "width": 2880,
+      "height": 2100,
+      "visuallyReviewed": true,
+      "observation": "Desktop signed-out purchase dialog shows both online providers, disabled checkout, login guidance, existing-code redemption, and no manual collection QR/report."
+    },
+    {
+      "file": "06-signed-out-dialog-mobile.png",
+      "sha256": "1a3471769975f88d564a38db1d5fea60feca1a0df0af5327250635842b3c8bbc",
+      "width": 750,
+      "height": 1900,
+      "visuallyReviewed": true,
+      "observation": "375px signed-out purchase dialog fits the viewport with visible login guidance and disabled online purchase controls."
+    },
+    {
+      "file": "07-payment-return-mobile.png",
+      "sha256": "22c134c26cf5cf9e5e407a089ae6c90989c1452f9b85c0680dca21a020f95607",
+      "width": 750,
+      "height": 1900,
+      "visuallyReviewed": true,
+      "observation": "Forged return keeps the 375px dialog signed out; checkout and order status controls remain disabled."
+    },
+    {
+      "file": "08-login-guidance-mobile.png",
+      "sha256": "7ccd40fc06ca60c565a362c1cb1024b5fbf7e4facf2e139829958aa720c5113f",
+      "width": 750,
+      "height": 1900,
+      "visuallyReviewed": true,
+      "observation": "Login guidance opens the real account form without entering email, submitting login, or sending a code."
+    }
+  ],
+  "screenshotsRetainedInPrivateWorkspace": true,
+  "authenticatedPurchaseVerified": false,
+  "realPaymentVerified": false,
+  "productionEntitlementGrantVerified": false,
+  "installedUserClientVerified": false,
+  "limitations": [
+    "Anonymous public-page rendering and read-only account actions only.",
+    "Authenticated provider switching, live checkout, Native scanning, payment settlement, and entitlement grants were not performed.",
+    "No user-installed desktop or mobile client was modified, reset, installed, or relaunched."
+  ],
+  "sanitization": "Contains only public catalog data, action counts, assertions, screenshot basenames and hashes; no cookies, tokens, credentials, emails, business orders, request bodies or private absolute paths."
+}

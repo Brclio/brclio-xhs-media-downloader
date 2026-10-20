@@ -1,0 +1,348 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.27",
+  "sourceSha": "b6e94d6023032029c6b193db3f30da4ee2d56ce9",
+  "verifiedAt": "2026-10-20T16:09:20.618Z",
+  "ok": true,
+  "staticComparisons": 27,
+  "retiredPathChecks": 6,
+  "accountWrites": false,
+  "results": [
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "account-ui.js",
+      "publicPath": "/account-ui.js",
+      "status": 200,
+      "bytes": 48393,
+      "sha256": "935b939edcb6678d61e6103547e1a5a9f8cac9908fe5d6c3faf8453682ad092f",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "account-ui.css",
+      "publicPath": "/account-ui.css",
+      "status": 200,
+      "bytes": 20312,
+      "sha256": "4997779cf07ac77470f5517041e220aa55b2807e2222c7ee3d972dc18f675269",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "commerce-ui.js",
+      "publicPath": "/commerce-ui.js",
+      "status": 200,
+      "bytes": 17603,
+      "sha256": "21fd8d3ea001aa40dbc5c8a381f921d34c072d9e2e910bdf8e8605580c93256b",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "membership.js",
+      "publicPath": "/membership.js",
+      "status": 200,
+      "bytes": 3306,
+      "sha256": "21225d3f9a43d40271bcac798517b3a606f3624aa1bde3b1f60e0d01d3f60ed1",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "membership.html",
+      "publicPath": "/membership",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/membership.html",
+        "to": "/membership"
+      },
+      "status": 200,
+      "bytes": 24049,
+      "sha256": "9ccaf6de0ac8b4e5c4f07dae68daba575a27e92e609ce883da95eb566ea64eda",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "download.html",
+      "publicPath": "/download",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/download.html",
+        "to": "/download"
+      },
+      "status": 200,
+      "bytes": 38058,
+      "sha256": "687ca2902a2bf6091682fa7bc731aa1d8eb1fe68425576f54458e6bab04a8a29",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "changelog.html",
+      "publicPath": "/changelog",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/changelog.html",
+        "to": "/changelog"
+      },
+      "status": 200,
+      "bytes": 196302,
+      "sha256": "344fa55cdda4895cf68ca855940c872028f5d04fe07588ced85c57bb21dbb01d",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "lib/payment-recovery.js",
+      "publicPath": "/lib/payment-recovery.js",
+      "status": 200,
+      "bytes": 15004,
+      "sha256": "90b611cb2277d9a7a77a5823208f2e5c832350cd10fb2c1f9f4b99ab1ec70424",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "lib/browser-account.js",
+      "publicPath": "/lib/browser-account.js",
+      "status": 200,
+      "bytes": 18750,
+      "sha256": "40f75c6b02392b6f0872388c90c6017af0dff60f5be6f18fc5163c8505735ce7",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "assets/membership/alipay.png",
+      "retired": true,
+      "status": 404,
+      "noStore": true,
+      "nosniff": true
+    },
+    {
+      "origin": "https://xhs.download.brclio.com",
+      "file": "assets/membership/wechat-pay.png",
+      "retired": true,
+      "status": 404,
+      "noStore": true,
+      "nosniff": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "account-ui.js",
+      "publicPath": "/account-ui.js",
+      "status": 200,
+      "bytes": 48393,
+      "sha256": "935b939edcb6678d61e6103547e1a5a9f8cac9908fe5d6c3faf8453682ad092f",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "account-ui.css",
+      "publicPath": "/account-ui.css",
+      "status": 200,
+      "bytes": 20312,
+      "sha256": "4997779cf07ac77470f5517041e220aa55b2807e2222c7ee3d972dc18f675269",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "commerce-ui.js",
+      "publicPath": "/commerce-ui.js",
+      "status": 200,
+      "bytes": 17603,
+      "sha256": "21fd8d3ea001aa40dbc5c8a381f921d34c072d9e2e910bdf8e8605580c93256b",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "membership.js",
+      "publicPath": "/membership.js",
+      "status": 200,
+      "bytes": 3306,
+      "sha256": "21225d3f9a43d40271bcac798517b3a606f3624aa1bde3b1f60e0d01d3f60ed1",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "membership.html",
+      "publicPath": "/membership",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/membership.html",
+        "to": "/membership"
+      },
+      "status": 200,
+      "bytes": 24049,
+      "sha256": "9ccaf6de0ac8b4e5c4f07dae68daba575a27e92e609ce883da95eb566ea64eda",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "download.html",
+      "publicPath": "/download",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/download.html",
+        "to": "/download"
+      },
+      "status": 200,
+      "bytes": 38058,
+      "sha256": "687ca2902a2bf6091682fa7bc731aa1d8eb1fe68425576f54458e6bab04a8a29",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "changelog.html",
+      "publicPath": "/changelog",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/changelog.html",
+        "to": "/changelog"
+      },
+      "status": 200,
+      "bytes": 196302,
+      "sha256": "344fa55cdda4895cf68ca855940c872028f5d04fe07588ced85c57bb21dbb01d",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "lib/payment-recovery.js",
+      "publicPath": "/lib/payment-recovery.js",
+      "status": 200,
+      "bytes": 15004,
+      "sha256": "90b611cb2277d9a7a77a5823208f2e5c832350cd10fb2c1f9f4b99ab1ec70424",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "lib/browser-account.js",
+      "publicPath": "/lib/browser-account.js",
+      "status": 200,
+      "bytes": 18750,
+      "sha256": "40f75c6b02392b6f0872388c90c6017af0dff60f5be6f18fc5163c8505735ce7",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "assets/membership/alipay.png",
+      "retired": true,
+      "status": 404,
+      "noStore": true,
+      "nosniff": true
+    },
+    {
+      "origin": "https://brclio-xhs-pages.pages.dev",
+      "file": "assets/membership/wechat-pay.png",
+      "retired": true,
+      "status": 404,
+      "noStore": true,
+      "nosniff": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "account-ui.js",
+      "publicPath": "/account-ui.js",
+      "status": 200,
+      "bytes": 48393,
+      "sha256": "935b939edcb6678d61e6103547e1a5a9f8cac9908fe5d6c3faf8453682ad092f",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "account-ui.css",
+      "publicPath": "/account-ui.css",
+      "status": 200,
+      "bytes": 20312,
+      "sha256": "4997779cf07ac77470f5517041e220aa55b2807e2222c7ee3d972dc18f675269",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "commerce-ui.js",
+      "publicPath": "/commerce-ui.js",
+      "status": 200,
+      "bytes": 17603,
+      "sha256": "21fd8d3ea001aa40dbc5c8a381f921d34c072d9e2e910bdf8e8605580c93256b",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "membership.js",
+      "publicPath": "/membership.js",
+      "status": 200,
+      "bytes": 3306,
+      "sha256": "21225d3f9a43d40271bcac798517b3a606f3624aa1bde3b1f60e0d01d3f60ed1",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "membership.html",
+      "publicPath": "/membership",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/membership.html",
+        "to": "/membership"
+      },
+      "status": 200,
+      "bytes": 24049,
+      "sha256": "9ccaf6de0ac8b4e5c4f07dae68daba575a27e92e609ce883da95eb566ea64eda",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "download.html",
+      "publicPath": "/download",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/download.html",
+        "to": "/download"
+      },
+      "status": 200,
+      "bytes": 38058,
+      "sha256": "687ca2902a2bf6091682fa7bc731aa1d8eb1fe68425576f54458e6bab04a8a29",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "changelog.html",
+      "publicPath": "/changelog",
+      "canonicalRedirect": {
+        "status": 308,
+        "from": "/changelog.html",
+        "to": "/changelog"
+      },
+      "status": 200,
+      "bytes": 196302,
+      "sha256": "344fa55cdda4895cf68ca855940c872028f5d04fe07588ced85c57bb21dbb01d",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "lib/payment-recovery.js",
+      "publicPath": "/lib/payment-recovery.js",
+      "status": 200,
+      "bytes": 15004,
+      "sha256": "90b611cb2277d9a7a77a5823208f2e5c832350cd10fb2c1f9f4b99ab1ec70424",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "lib/browser-account.js",
+      "publicPath": "/lib/browser-account.js",
+      "status": 200,
+      "bytes": 18750,
+      "sha256": "40f75c6b02392b6f0872388c90c6017af0dff60f5be6f18fc5163c8505735ce7",
+      "matchesBuild": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "assets/membership/alipay.png",
+      "retired": true,
+      "status": 404,
+      "noStore": true,
+      "nosniff": true
+    },
+    {
+      "origin": "https://c61e30de.brclio-xhs-pages.pages.dev",
+      "file": "assets/membership/wechat-pay.png",
+      "retired": true,
+      "status": 404,
+      "noStore": true,
+      "nosniff": true
+    }
+  ]
+}

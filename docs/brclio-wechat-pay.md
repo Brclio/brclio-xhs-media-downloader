@@ -1,6 +1,6 @@
 # Brclio 微信支付接入
 
-2026-10-20 已为当前项目在 `https://paywc.bornforthis.cn` 登记独立产品 `p-2bb6d77a673327a2f8d881bac2d4fe26`。原 `https://pay.bornforthis.cn` / `xhs-downloader` 支付宝配置、回调和历史订单保留。支付中心登记、目标项目网页及生产后端现已部署。真实微信付款与生产会员开通仍未验收；桌面安装包及 Android 未重新发布。
+2026-10-20 已为当前项目在 `https://paywc.bornforthis.cn` 登记独立产品 `p-2bb6d77a673327a2f8d881bac2d4fe26`。原 `https://pay.bornforthis.cn` / `xhs-downloader` 支付宝配置、回调和历史订单保留。支付中心登记、目标项目网页及生产后端已部署，Mac / Windows v2.0.27 于北京时间 2026-10-21 正式发布并完成生产只读核验。Android 保持 1.0.15；真实微信付款与生产会员开通仍需扫码验收。
 
 ## 中心配置与金额
 
@@ -39,7 +39,8 @@ API 请求签名原文为 `METHOD + LF + pathAndQuery + LF + timestamp + LF + no
 - Chromium 验证包含支付宝保留、渠道切换、失败重试、微信原单恢复与 375px Native 提示。桌面 UI 源码兼容不等于已安装客户端已更新。
 - 使用当前产品业务密钥的真实接口测试证实签名下单/查单成功，金额篡改返回 `CATALOG_PRICE_CHANGED`，同业务号重复创建返回同一中心订单。只创建一笔 300 分未付款联调单，没有扫码付款、真实到账或生产会员开通验收。
 - 首次部署检查发现 Wrangler 登录身份不匹配；用户重新登录后，已确认可访问固定生产账号 `c8b059429c868f6d0e528f9e10325f46`。没有修改 `account_id` 或在其他账号创建替代资源。
-- 业务密钥仅保存在 Git 忽略的本机 `0600` 文件及生产后端 Secret，未写入客户端、构建或公开文档；临时管理 Token 未写入文件，临时管理会话已清理。原有 27 个后端 Secret 保留，新增独立微信四项后为 31 个；生产存储与服务绑定保持一致。未构建或发布新的桌面安装包或 Android 包。
-- 最终完整回归为 Node 1856 通过、13 跳过、0 失败，Python 47 通过；随后针对两条旧码路径的 Worker / Pages / 部署边界 22 项回归通过。
+- 业务密钥仅保存在 Git 忽略的本机 `0600` 文件及生产后端 Secret，未写入客户端、构建或公开文档；临时管理 Token 未写入文件，临时管理会话已清理。原有 27 个后端 Secret 保留，新增独立微信四项后为 31 个；生产存储与服务绑定保持一致。后续 v2.0.27 发布未再次改写 Secret，也未发布新 Android 包。
+- 全面核查补充了在线微信与历史人工补录共用的交易唯一性检查，并修复启动查单未完成时误建新单的问题。本地最终回归为 Node 1865 通过、13 跳过、0 失败，Python 47 通过；支付 Chromium 32 项、会员 12 项及历史订单与评价 17 项通过。
+- v2.0.27 的三平台原生构建、完整打包、安装升级与重启门禁均通过，11 个公开附件、SHA-256、新旧更新器及历史发布附件已核验。网站与后端已部署；线上支付 29 项、接口 58 项、112 个头像账号资源和主站 / 备用站 / 部署地址文件一致性核验通过。见[版本说明](releases/v2.0.27.md)、[公开附件核验](releases/v2.0.27-publication-verification.json)及[发布操作审计](releases/v2.0.27-operation-audit.json)。用户已安装的桌面客户端需自行升级，隔离环境的安装验收不表示用户本机已更新。
 
-已先核对既有 Secret 名称、资源和部署，再使用 Wrangler 的 `--keep-vars --secrets-file` 将四项微信配置与新 Worker 版本一起发布。后续人工流程移除与旧码 404 修正使用 `--keep-vars` 发布；Pages 明确使用上述账号，只更新既有 `brclio-xhs-pages`。最终部署与生产检查见[操作审计](releases/2026-10-20-wechat-operation-audit.json)及[线上支付验证](releases/2026-10-20-wechat-production-verification.json)。真实付款仍由用户在自己的订单扫码完成。
+已先核对既有 Secret 名称、资源和部署，再使用 Wrangler 的 `--keep-vars --secrets-file` 将四项微信配置与新 Worker 版本一起发布。后续人工流程移除、旧码 404 修正与 v2.0.27 发布使用 `--keep-vars`，保留全部 31 项 Secret；Pages 明确使用上述账号，只更新既有 `brclio-xhs-pages`。首次网页接入阶段见[初次操作审计](releases/2026-10-20-wechat-operation-audit.json)及[初次线上支付验证](releases/2026-10-20-wechat-production-verification.json)，正式版本结果见上方 v2.0.27 记录。真实付款仍由用户在自己的订单扫码完成。

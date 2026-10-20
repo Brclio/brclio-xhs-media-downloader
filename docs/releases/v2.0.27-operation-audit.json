@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.27",
+  "status": "published-and-production-read-only-verified",
+  "verifiedAt": "2026-10-20T16:13:12.435Z",
+  "clientTimezone": "Asia/Shanghai",
+  "releaseDateClientTime": "2026-10-21",
+  "sourceSha": "b6e94d6023032029c6b193db3f30da4ee2d56ce9",
+  "tag": "v2.0.27",
+  "immutableTagMoved": false,
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.27",
+  "publishedAt": "2026-10-20T16:03:54Z",
+  "workflow": {
+    "runId": 39448309986,
+    "attempt": 2,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39448309986",
+    "conclusion": "success",
+    "firstArmAttempt": "GitHub hosted runner capacity cancellation before any step",
+    "retry": "Same run/source/tag/gates; only ARM and dependent publisher rerun; successful Intel and Windows retained"
+  },
+  "findingsFixedBeforeTag": [
+    "A WeChat transaction reference shared by online fulfilment and historical manual receipt confirmation could be counted twice. Both atomic mutators now enforce the same payment-family uniqueness check, including SHA-conflict races.",
+    "Pending-order restoration could leave checkout temporarily idle before the asynchronous lookup completed. Restoring and uncertain retry states now keep new checkout blocked."
+  ],
+  "validation": {
+    "localNode": {
+      "tests": 1878,
+      "passed": 1865,
+      "skipped": 13,
+      "failed": 0
+    },
+    "localPython": {
+      "passed": 47,
+      "failed": 0
+    },
+    "localChromium": {
+      "payment": 32,
+      "membership": 12,
+      "commerce": 17,
+      "startupRecovery": true,
+      "navigation": 12
+    },
+    "nativePlatforms": [
+      "mac-arm64",
+      "mac-intel",
+      "windows-x64"
+    ],
+    "nativeInstallerUpgradeAndRelaunch": true,
+    "publishedAssets": 11,
+    "anonymousInstallerHeadChecks": 9,
+    "sourceFilesComparedPerPlatform": 246,
+    "currentAndShippedLegacyUpdaterVerified": true,
+    "paymentProduction": {
+      "passed": 29,
+      "total": 29
+    },
+    "apiProduction": {
+      "passed": 58,
+      "total": 58
+    },
+    "avatarAccountResourceComparisons": 112,
+    "distinctBuiltinAvatars": 100,
+    "staticComparisonsAcrossThreeOrigins": 27,
+    "retiredPaymentPath404Checks": 6,
+    "htmlCanonicalRedirects": "All nine .html requests returned 308 to the expected same-origin extensionless path, whose bytes matched the frozen build.",
+    "productionRenderer": {
+      "passed": 10,
+      "total": 10,
+      "screenshotsReviewed": 8,
+      "businessMutations": 0,
+      "rendererErrors": 0
+    },
+    "signedCenterRead": {
+      "checkedAt": "2026-10-20T15:28:08.023Z",
+      "signedReadSucceeded": true,
+      "clientMatches": true,
+      "businessMatches": true,
+      "amountMatches": true,
+      "status": "CLOSED",
+      "realPaymentVerified": false,
+      "newOrderCreated": false
+    },
+    "finalSourceSecretScan": {
+      "checkedAt": "2026-10-20T16:13:49.557Z",
+      "checkedFiles": 873,
+      "credentialMatches": 0,
+      "temporaryTokenMatches": 0,
+      "privateCredentialMode": "0600",
+      "evidenceDigestsValid": true,
+      "tagUnchanged": true,
+      "changesRestrictedToPublicationDocumentation": true
+    }
+  },
+  "before": {
+    "workerVersion": "7cc3f235-b9ab-452e-b149-8000d7d59738",
+    "pagesDeploymentId": "fb86563c-2377-4ded-a033-a14a8d9c0b31"
+  },
+  "after": {
+    "workerVersion": "e8d3c6c7-25ea-4428-ac9e-dd2cf3a19f3e",
+    "workerDeploymentId": "f26dd473-64df-4eb1-b671-7505800adc32",
+    "workerTrafficPercent": 100,
+    "pagesDeploymentId": "c61e30de-8c67-4374-a1b8-62c72f68d696",
+    "pagesDeploymentUrl": "https://c61e30de.brclio-xhs-pages.pages.dev",
+    "pagesSource": "b6e94d6"
+  },
+  "configurationAudit": {
+    "fixedAccountId": "c8b059429c868f6d0e528f9e10325f46",
+    "allChecksPassed": true,
+    "secretNameCount": 31,
+    "secretNamesUnchanged": true,
+    "secretNamesSha256": "531037708096eb9698e2b2edce93dbec7110a76303885ca3e7d3a69f3e886f4c",
+    "secretNamesAdded": [],
+    "secretNamesRemoved": [],
+    "cloudflareSecretValuesRead": false,
+    "releaseSecretWrites": false,
+    "deploymentPreservedVariables": true,
+    "existingBindingsUnchanged": true,
+    "bindingsSha256": "e5c9215dc3d1d3295d1aaea6d1d19b128929e35b2c3bf2a12bf2f435a779c70f",
+    "existingNamespaceBindingsUnchanged": true,
+    "changedOtherWorkers": [],
+    "otherWorkers": [
+      {
+        "name": "brclio-xhs-python",
+        "deploymentId": "5f44d093-a020-4d60-96c4-f915a9a9bfb3",
+        "version": "6d84f091-8d1c-426d-9eb6-5aa53cf06dd3",
+        "deploymentHistoryUnchanged": true
+      },
+      {
+        "name": "brclio-xhs-subscription-proxy",
+        "deploymentId": "d7df0fa2-7c45-4ae2-b7d1-c172d8e5a8a7",
+        "version": "159a718d-155d-44a6-8da0-fe215377c855",
+        "deploymentHistoryUnchanged": true
+      },
+      {
+        "name": "brclio-pay",
+        "deploymentId": "21c52c95-dd54-4498-a8a0-989ec2c7bedc",
+        "version": "9c95bc4f-ba5f-44cb-9e1a-d9cb2ce54d51",
+        "deploymentHistoryUnchanged": true
+      }
+    ],
+    "newStorageResources": false,
+    "storageProvider": "existing-private-github-repository",
+    "pagesGatewayRouteScope": "Existing project and gateway; retains explicit 404 for the two retired membership code paths."
+  },
+  "scope": {
+    "deployed": [
+      "existing brclio-xhs-downloader Worker",
+      "existing brclio-xhs-pages Pages project",
+      "desktop v2.0.27 release"
+    ],
+    "notDeployedByThisRelease": [
+      "private Python Worker",
+      "subscription proxy Worker",
+      "Alipay center Worker",
+      "WeChat center Worker",
+      "Vercel",
+      "Android APK"
+    ],
+    "githubWrites": [
+      "source repository main and immutable v2.0.27 tag",
+      "new v2.0.27 release attachments and release notes",
+      "documentation-only publication evidence follow-up"
+    ],
+    "privateBusinessRepositoryWritesByAgent": false,
+    "historicalAssets": [
+      {
+        "tag": "v2.0.26",
+        "assets": 11,
+        "idsSizesDigestsUnchanged": true
+      },
+      {
+        "tag": "android-v1.0.15",
+        "assets": 4,
+        "idsSizesDigestsUnchanged": true
+      }
+    ],
+    "androidVersion": "1.0.15",
+    "otherPaymentProductsModified": false,
+    "existingAlipayAndHistoricalMembershipPreserved": true,
+    "manualMembershipCheckoutRemoved": true
+  },
+  "boundaries": {
+    "authenticatedProductionPurchaseVerified": false,
+    "realWeChatPaymentVerified": false,
+    "productionEntitlementGrantVerified": false,
+    "unpaidIntegrationFixture": "The one prior isolated 300-fen fixture was read with the business API key and had naturally CLOSED; this release created no payment order and collected no funds.",
+    "installedUserClientChanged": false,
+    "nativeInstallEvidence": "Disposable CI installations and update histories, not the user current installed application.",
+    "businessCredentials": "Server-side only; ignored local credential file mode 0600. No business key or integration token in Git, public assets, APK or desktop package.",
+    "temporaryIntegrationToken": "Never saved to disk; integration management runtime session cleared before this release. Not used for business order signing.",
+    "remainingUserAcceptance": "Upgrade the installed Mac/Windows client and complete a real WeChat scan payment on the user own order to verify actual receipt and production entitlement."
+  },
+  "evidenceFiles": [
+    {
+      "path": "docs/releases/v2.0.27-ci-verification.json",
+      "sha256": "cea0b4775a21ee38ee050d83b52fc5194bb68e97e39189b59caf1c6518ffbd69"
+    },
+    {
+      "path": "docs/releases/v2.0.27-publication-verification.json",
+      "sha256": "0e80f57c875e8532bf0b9158341cdf0371a29608a44301436be3b742ca402207"
+    },
+    {
+      "path": "docs/releases/v2.0.27-payment-production-verification.json",
+      "sha256": "04cb4c20739f636ebad985d1153730e8c3a41126782121f49bbfe946bba04ab9"
+    },
+    {
+      "path": "docs/releases/v2.0.27-cloudflare-production-verification.json",
+      "sha256": "cbaa99a0793581a92a48e1209481ef8f0818ac315bbcee62d3e8a1f59350bd13"
+    },
+    {
+      "path": "docs/releases/v2.0.27-avatar-production-verification.json",
+      "sha256": "09c816179883c4404900f5afc8b47ea7f650874d181abf21ab0dc5767fbdd215"
+    },
+    {
+      "path": "docs/releases/v2.0.27-static-production-verification.json",
+      "sha256": "08ea74d768026398400a98990d676934ed7246999fabee2459cc043bfe7873bb"
+    },
+    {
+      "path": "docs/releases/v2.0.27-renderer-production-verification.json",
+      "sha256": "6c5fd911887eec4e15d38888406087116c7e4007a4630c2be0dcc1819fcce677"
+    }
+  ]
+}
