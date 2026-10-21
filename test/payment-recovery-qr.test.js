@@ -300,3 +300,97 @@ test('replacement tracking, restore and disposal never persist or revive a previ
   assert.equal(restored.count('payment-create'), 0);
   restored.recovery.dispose();
 });
+
+test('a successful automatic retry reports its fresh status context after restoring the pending QR', async () => {
+  let visibilityRevision = 2;
+  const captured = [], checked = [];
+  const f = fixture({
+    getStatusContext: () => { captured.push(visibilityRevision); return visibilityRevision; },
+    onStatusChecked: (context, value) => checked.push({ context, value }),
+  });
+  f.recovery.track(ORDER);
+  f.data.statusWork = async () => ({ ok: false, error: { message: 'fixture transport unavailable' } });
+  await f.recovery.focus();
+  assert.equal(f.recovery.snapshot().phase, 'retry');
+  assert.equal(checked.length, 0, 'a failed fresh read cannot authorize redisplaying a hidden code');
+  delete f.data.statusWork;
+  await f.advance(5000);
+  assert.equal(f.count('payment-status'), 2, 'the original timer retries without a manual status read');
+  assert.deepEqual(captured, [2, 2]);
+  assert.equal(checked.length, 1);
+  assert.equal(checked[0].context, visibilityRevision);
+  assert.equal(checked[0].value.phase, 'waiting', 'the callback observes the completed success transition');
+  assert.equal(checked[0].value.wechatQr.codeUrl, CODE);
+  assert.equal(f.count('payment-create'), 0);
+  f.recovery.dispose();
+});
+
+test('a foreground tail status read captures the new visibility context instead of reusing the hidden flight', async () => {
+  let visibilityRevision = 0;
+  const checked = [], first = deferred(), tail = deferred();
+  const f = fixture({ getStatusContext: () => visibilityRevision, onStatusChecked: (context, value) => checked.push({ context, value }) });
+  f.recovery.track(ORDER);
+  f.data.statusWork = () => f.count('payment-status') === 1 ? first.promise : tail.promise;
+  const work = f.recovery.check();
+  f.recovery.setForeground(false); visibilityRevision++;
+  f.recovery.setForeground(true); visibilityRevision++;
+  const waking = f.recovery.focus();
+  first.resolve(f.reply()); await tick();
+  assert.equal(f.count('payment-status'), 2);
+  assert.deepEqual(checked.map(item => item.context), [0], 'the old reply retains the revision from when its request began');
+  assert.notEqual(checked[0].context, visibilityRevision, 'a renderer must reject this pre-hide context');
+  tail.resolve(f.reply()); await Promise.all([work, waking]);
+  assert.deepEqual(checked.map(item => item.context), [0, 2]);
+  assert.equal(checked[1].value.phase, 'waiting');
+  assert.equal(checked[1].value.wechatQr.codeUrl, CODE);
+  f.recovery.dispose();
+});
+
+test('status observers reject old owner and verification epochs even if verification returns before the reply', async () => {
+  for (const change of [
+    recovery => recovery.setAccount(account('owner-b')),
+    recovery => recovery.setAccount(account('owner-a', false)),
+    recovery => { recovery.setAccount(account('owner-a', false)); recovery.setAccount(account()); },
+    recovery => recovery.setAccount({ authenticated: false, verified: false, account: null }),
+  ]) {
+    const checked = [], held = deferred();
+    const f = fixture({ getStatusContext: () => 4, onStatusChecked: (...args) => checked.push(args) });
+    f.recovery.track(ORDER); f.data.statusWork = () => held.promise;
+    const work = f.recovery.check(); change(f.recovery);
+    held.resolve(f.reply()); await work;
+    assert.equal(checked.length, 0, 'a successful old reply cannot authorize a new verified presentation');
+    assert.equal(f.recovery.snapshot().wechatQr, null);
+    assert.equal(f.count('permissions'), 0);
+    assert.equal(f.count('clear'), 0);
+    f.recovery.dispose();
+  }
+});
+
+test('context capture and status observer failures cannot interrupt payment polling or confirmed completion', async () => {
+  let captures = 0;
+  const checked = [];
+  const f = fixture({
+    getStatusContext: () => { captures++; throw new Error('fixture observer context failed'); },
+    onStatusChecked: (context, value) => {
+      checked.push({ context, phase: value.phase });
+      value.orderId = NEXT;
+      throw new Error('fixture renderer failed');
+    },
+  });
+  f.recovery.track(ORDER); await f.recovery.check();
+  assert.equal(f.recovery.snapshot().phase, 'waiting');
+  assert.equal(f.recovery.snapshot().orderId, ORDER, 'observers receive a copy of controller state');
+  await f.advance(3000);
+  assert.equal(f.count('payment-status'), 2, 'polling survives both observer failures');
+  f.data.orderStatus = 'confirmed'; f.data.paymentStatus = 'PAID';
+  await f.recovery.check();
+  assert.equal(captures, 3);
+  assert.deepEqual(checked.map(item => item.context), [undefined, undefined, undefined]);
+  assert.deepEqual(checked.map(item => item.phase), ['waiting', 'waiting', 'confirmed']);
+  assert.equal(f.recovery.snapshot().phase, 'confirmed');
+  assert.equal(f.recovery.snapshot().wechatQr, null);
+  assert.equal(f.count('permissions'), 1);
+  assert.equal(f.count('clear'), 1);
+  assert.equal(f.confirmed.length, 1);
+  f.recovery.dispose();
+});

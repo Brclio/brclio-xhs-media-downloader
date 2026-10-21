@@ -10,7 +10,8 @@ const jsQR = require('jsqr');
 const root = path.resolve(__dirname, '..');
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'brclio-pay-ui-'));
 app.setPath('userData', path.join(directory, 'profile')); app.disableHardwareAcceleration();
-let server, win, finished = false;
+let server, win, finished = false, qrStage = 'before-native-qr';
+const qrDiagnostics = [], nativeWindowEvents = [];
 const orderId = '12345678-1234-1234-1234-123456789abc';
 const replacementOrderId = '12345678-1234-1234-1234-123456789abd';
 const errors = [];
@@ -28,6 +29,20 @@ window.fixtureOrderId='${orderId}';window.fixtureResumeMode='success';window.fix
 window.fixturePendingDelay=new URL(location.href).searchParams.has('delayed-restore');window.fixturePendingFailure=false;
 window.fixtureQrEnabled=new URL(location.href).searchParams.has('native-qr');
 window.fixtureQrCode='weixin://wxpay/bizpayurl?pr=fixture_native_current_order';window.fixtureQrExpiresAt=new Date(Date.now()+60000).toISOString();
+window.fixtureQrLifecycle=[];
+window.fixtureQrDiagnostic=()=>({atMs:Math.round(performance.now()),hidden:document.hidden,visibilityState:document.visibilityState,hasFocus:document.hasFocus(),
+  dialogOpen:Boolean(document.getElementById('membership-dialog')?.open),phase:document.getElementById('membership-dialog')?.dataset.paymentPhase||null,
+  qrHidden:document.getElementById('membership-wechat-qr')?.hidden??null,svgCount:document.querySelectorAll('#membership-qr-image svg').length,
+  authenticated:Boolean(window.fixtureState?.authenticated),verified:Boolean(window.fixtureState?.verified),
+  paymentStatus:window.fixtureStatus,expiresInMs:Date.parse(window.fixtureQrExpiresAt)-Date.now()});
+for(const type of ['visibilitychange','focus','blur','resize','close']){
+  const target=type==='visibilitychange'||type==='close'?document:window;
+  target.addEventListener(type,event=>{
+    if(!window.fixtureQrEnabled||(target===window&&event.target!==window)||(type==='close'&&event.target.id!=='membership-dialog'))return;
+    const record=eventPhase=>{window.fixtureQrLifecycle.push({event:type,eventPhase,...window.fixtureQrDiagnostic()});window.fixtureQrLifecycle.splice(0,Math.max(0,window.fixtureQrLifecycle.length-30));};
+    record('event');queueMicrotask(()=>record('after-event'));
+  },true);
+}
 window.fixtureQrFields=(order,paymentStatus=window.fixtureStatus)=>window.fixtureQrEnabled&&order.provider==='wechat'?{
   qrCodeUrl:order.status==='pending'&&paymentStatus==='PENDING'&&Date.parse(window.fixtureQrExpiresAt)>Date.now()?window.fixtureQrCode:null,
   qrCodeExpiresAt:order.status==='pending'&&paymentStatus==='PENDING'&&Date.parse(window.fixtureQrExpiresAt)>Date.now()?window.fixtureQrExpiresAt:null}:{};
@@ -108,7 +123,15 @@ return Response.json(reply.ok?{ok:true,...reply.result}:{ok:false,error:reply.er
 }`;
 async function finish(code, error) {
   if (finished) return; finished = true; clearTimeout(timeout);
-  if (error) console.error(error);
+  if (error) {
+    console.error(error);
+    const diagnostics = { stage: qrStage, nativeWindowEvents, qrDiagnostics };
+    if (win && !win.isDestroyed()) {
+      try { diagnostics.current = await win.webContents.executeJavaScript(`({current:window.fixtureQrDiagnostic?.(),events:window.fixtureQrLifecycle||[]})`, true); } catch {}
+    }
+    fs.writeFileSync(path.join(directory, 'failure-diagnostics.json'), JSON.stringify(diagnostics, null, 2) + '\n');
+    console.error('[payment-qr-diagnostics]', JSON.stringify(diagnostics));
+  }
   if (win && !win.isDestroyed()) win.destroy();
   if (server?.listening) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
   app.exit(code);
@@ -133,6 +156,10 @@ app.whenReady().then(async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
   win = new BrowserWindow({ show: true, width: 1280, height: 960, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, backgroundThrottling: true } });
+  for (const event of ['show', 'hide', 'focus', 'blur', 'minimize', 'restore', 'resized']) win.on(event, () => {
+    nativeWindowEvents.push({ event, stage: qrStage, at: Date.now(), visible: win.isVisible(), focused: win.isFocused(), minimized: win.isMinimized() });
+    nativeWindowEvents.splice(0, Math.max(0, nativeWindowEvents.length - 30));
+  });
   win.webContents.session.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !details.url.startsWith(`${origin}/`) && !details.url.startsWith('data:') }));
   win.webContents.on('console-message', (event, details = event) => { if (details.level === 'error' && !details.message.includes('ERR_BLOCKED_BY_CLIENT')) errors.push(details.message); });
   const evaluate = code => win.webContents.executeJavaScript(code, true);
@@ -151,15 +178,19 @@ app.whenReady().then(async () => {
   };
   const qrVisible = `!document.getElementById('membership-wechat-qr').hidden&&Boolean(document.querySelector('#membership-qr-image svg'))`;
   const qrEmpty = `document.getElementById('membership-wechat-qr').hidden&&document.getElementById('membership-qr-image').childElementCount===0`;
-  const assertDecodableQr = async () => {
+  const assertDecodableQr = async stage => {
+    qrStage = stage;
+    console.log('[payment-qr-stage]', stage);
     const pixels = await evaluate(`(async()=>{
-      const svg=document.querySelector('#membership-qr-image svg');if(!svg)throw new Error('Missing Native payment SVG');
+      const diagnostics={stage:${JSON.stringify(stage)},...window.fixtureQrDiagnostic(),events:window.fixtureQrLifecycle};
+      const svg=document.querySelector('#membership-qr-image svg');if(!svg)throw new Error('Missing Native payment SVG '+JSON.stringify(diagnostics));
       const width=svg.viewBox.baseVal.width,scale=Math.max(4,Math.ceil(320/width));
       const canvas=document.createElement('canvas');canvas.width=canvas.height=width*scale;
       const image=new Image();image.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));
       await image.decode();const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);
-      return {width:canvas.width,height:canvas.height,data:Array.from(context.getImageData(0,0,canvas.width,canvas.height).data)};
+      return {width:canvas.width,height:canvas.height,data:Array.from(context.getImageData(0,0,canvas.width,canvas.height).data),diagnostics};
     })()`);
+    qrDiagnostics.push(pixels.diagnostics);
     const decoded = jsQR(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height, { inversionAttempts: 'dontInvert' });
     assert.ok(decoded, 'The displayed SVG must decode from actual canvas pixels using independent jsQR');
     assert.equal(decoded.data, await evaluate('window.fixtureQrCode'), 'The scanned value is exactly the current server-provided code');
@@ -168,7 +199,11 @@ app.whenReady().then(async () => {
   const prepareNativeQr = async (extra = '') => {
     await evaluate(`sessionStorage.removeItem('fixture-pending-payment');sessionStorage.removeItem('fixture-order-quote')`);
     await win.loadURL(`${origin}/?native-qr=1${extra}`);
-    win.setContentSize(1280, 960); win.showInactive();
+    win.setContentSize(1280, 960);
+    app.focus({ steal: true }); win.show(); win.focus(); win.webContents.focus();
+    await wait('!document.hidden&&document.hasFocus()');
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    assert.equal(await evaluate('!document.hidden&&document.hasFocus()'), true, 'Native QR fixtures start in a genuinely visible, focused renderer after layout settles');
     await wait(`document.getElementById('account-badge')?.textContent.includes('普通用户')`);
     await click('account-open-membership');
     await wait(`!document.getElementById('membership-online-method').disabled`);
@@ -604,7 +639,7 @@ app.whenReady().then(async () => {
   // OS browser. The earlier cases deliberately omit QR fields to retain the
   // legacy explicit-fallback, deep-return and Alipay regression coverage.
   await startNativeQr();
-  await assertDecodableQr();
+  await assertDecodableQr('native-initial');
   assert.equal(await evaluate(`document.getElementById('membership-open-checkout').hidden`), true, 'a valid local code does not compete with an external checkout action');
   assert.match(await evaluate(`document.getElementById('membership-qr-countdown').textContent`), /付款码剩余 \d+:\d{2}/);
   assert.equal(await evaluate('window.fixtureState.account.membership.active'), false);
@@ -653,12 +688,12 @@ app.whenReady().then(async () => {
   await wait(`${qrVisible}&&!document.getElementById('membership-online-pay').disabled`);
   assert.deepEqual(await evaluate(`window.fixtureCalls.find(item=>item.action==='payment-resume').input`), { orderId, expectedUserId: 'a' });
   assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 1, 'refreshing an expired code resumes the original order');
-  await assertDecodableQr();
+  await assertDecodableQr('native-expired-order-refreshed');
   await click('membership-close');
   await wait(`!document.getElementById('membership-dialog').open&&${qrEmpty}`);
   await click('account-open-membership'); await wait(qrVisible);
   assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 1, 'close and reopen preserve the current order');
-  await assertDecodableQr();
+  await assertDecodableQr('native-dialog-reopened');
   await evaluate(`window.fixtureStatusFailure=true`); await click('membership-online-check');
   await wait(`document.getElementById('membership-online-status').textContent.includes('暂时无法核实订单')&&!document.getElementById('membership-online-check').disabled`);
   assert.equal(await evaluate(`JSON.parse(sessionStorage.getItem('fixture-pending-payment')).orderId`), orderId);
@@ -674,7 +709,44 @@ app.whenReady().then(async () => {
   win.showInactive(); await wait(`Boolean(window.fixtureReleaseStatus)`);
   visibilityEvidence.push(await evaluate(`({stage:'reshown-status-pending',hidden:document.hidden,state:document.visibilityState,qrEmpty:${qrEmpty}})`));
   assert.equal(await evaluate(qrEmpty), true, 'a visibility return cannot show the previous code before its fresh status read settles');
-  await evaluate(`window.fixtureReleaseStatus()`); await wait(qrVisible); await assertDecodableQr();
+  await evaluate(`window.fixtureReleaseStatus()`); await wait(qrVisible); await assertDecodableQr('native-real-visibility-restored');
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 1);
+
+  // A failed first foreground query must not leave a valid code permanently
+  // hidden. Only restore the transport here: the next ordinary automatic poll
+  // must repair the presentation without a focus event or a manual status click.
+  qrStage = 'native-real-visibility-failed-query';
+  await evaluate(`window.fixtureStatusFailure=true;window.fixtureBeforeRecovery=window.fixtureCalls.filter(item=>item.action==='payment-status').length;window.fixtureRecoveryManualChecks=0;document.getElementById('membership-online-check').addEventListener('click',()=>window.fixtureRecoveryManualChecks++)`);
+  win.hide(); await wait(`document.hidden&&${qrEmpty}`);
+  win.showInactive();
+  await wait(`!document.hidden&&window.fixtureCalls.filter(item=>item.action==='payment-status').length>window.fixtureBeforeRecovery&&document.getElementById('membership-online-status').textContent.includes('暂时无法核实订单')&&!document.getElementById('membership-online-check').disabled`);
+  assert.equal(await evaluate(qrEmpty), true, 'a failed foreground query leaves the previous code removed');
+  visibilityEvidence.push(await evaluate(`({stage:'reshown-first-status-failed',hidden:document.hidden,state:document.visibilityState,qrEmpty:${qrEmpty},manualChecks:window.fixtureRecoveryManualChecks})`));
+  await evaluate(`window.fixtureStatusFailure=false;window.fixtureQrCode='weixin://wxpay/bizpayurl?pr=fixture_automatic_foreground_recovery';window.fixtureQrExpiresAt=new Date(Date.now()+60000).toISOString();window.fixtureBeforeAutomatic=window.fixtureCalls.filter(item=>item.action==='payment-status').length`);
+  await wait(`window.fixtureCalls.filter(item=>item.action==='payment-status').length>window.fixtureBeforeAutomatic&&${qrVisible}&&!document.getElementById('membership-online-check').disabled`);
+  assert.equal(await evaluate('window.fixtureRecoveryManualChecks'), 0, 'automatic recovery uses no manual query after restoring transport');
+  assert.equal(await evaluate('window.fixtureOpened.length'), 0, 'automatic recovery does not navigate to a browser');
+  assert.equal(await evaluate('window.fixturePermissionRefreshes'), 0, 'an unpaid automatic recovery does not grant or refresh membership');
+  assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 1, 'automatic foreground recovery preserves the same order');
+  await assertDecodableQr('native-real-visibility-automatic-recovery');
+  visibilityEvidence.push(await evaluate(`({stage:'automatic-fresh-status-restored',hidden:document.hidden,state:document.visibilityState,qrVisible:${qrVisible},manualChecks:window.fixtureRecoveryManualChecks})`));
+
+  // A request captured before hide is not fresh merely because it settles
+  // after show. Hold the queued foreground tail as well, proving that the old
+  // response cannot reveal its code while the required fresh read is pending.
+  qrStage = 'native-real-visibility-crossing-old-flight';
+  await evaluate(`window.fixtureStatusHoldOnce=true;window.fixtureReleaseStatus=null;window.fixtureQrCode='weixin://wxpay/bizpayurl?pr=fixture_pre_hide_old_flight'`);
+  await click('membership-online-check'); await wait(`Boolean(window.fixtureReleaseStatus)`);
+  await evaluate(`window.fixtureReleaseOldStatus=window.fixtureReleaseStatus;window.fixtureReleaseStatus=null;window.fixtureStatusHoldOnce=true;window.fixtureQrCode='weixin://wxpay/bizpayurl?pr=fixture_post_show_fresh_tail';window.fixtureBeforeTail=window.fixtureCalls.filter(item=>item.action==='payment-status').length`);
+  win.hide(); await wait(`document.hidden&&${qrEmpty}`);
+  win.showInactive(); await wait(`!document.hidden`);
+  assert.equal(await evaluate(qrEmpty), true, 'a held pre-hide flight cannot show a code on visibility return');
+  await evaluate(`window.fixtureReleaseOldStatus()`);
+  await wait(`window.fixtureCalls.filter(item=>item.action==='payment-status').length>window.fixtureBeforeTail&&Boolean(window.fixtureReleaseStatus)`);
+  assert.equal(await evaluate(qrEmpty), true, 'the pre-hide response cannot reveal its old code before the fresh foreground tail settles');
+  visibilityEvidence.push(await evaluate(`({stage:'old-flight-settled-fresh-tail-held',hidden:document.hidden,state:document.visibilityState,qrEmpty:${qrEmpty}})`));
+  await evaluate(`window.fixtureReleaseStatus()`); await wait(qrVisible);
+  await assertDecodableQr('native-real-visibility-fresh-tail-restored');
   assert.equal(await evaluate(`window.fixtureCalls.filter(item=>item.action==='payment-create').length`), 1);
 
   await evaluate(`window.fixtureStatusHoldOnce=true;window.fixtureReleaseStatus=null`); await click('membership-online-check');
@@ -704,7 +776,7 @@ app.whenReady().then(async () => {
   await startNativeQr('&browser-qr=1');
   assert.equal(await evaluate('Boolean(window.xhsDesktop)'), false, 'browser QR uses the actual cookie account bridge');
   assert.match(await evaluate(`document.getElementById('membership-qr-device-note').textContent`), /另一台设备.*微信扫码/);
-  await assertDecodableQr();
+  await assertDecodableQr('native-browser');
   await captureState('payment-native-browser-mobile',375); win.setContentSize(1280,960);
   await click('account-logout');
   await wait(`window.fixtureCalls.some(item=>item.action==='logout')&&${qrEmpty}`);
@@ -753,6 +825,8 @@ app.whenReady().then(async () => {
     'closing and reopening the payment dialog preserves the same valid order',
     'status network errors retain the original order without granting or opening a browser',
     'real Electron page visibility removes the QR and awaits fresh status before redisplay',
+    'a failed first foreground status automatically restores the freshly decoded QR on the next successful poll without manual focus or query',
+    'a pre-hide status response cannot reveal its old QR while the fresh foreground tail remains held',
     'same-owner loss and restoration of verification rejects a late old QR response',
     'late status and Native create responses never show the previous account code',
     'browser logout clears QR presentation while retaining the owner recovery reference',
@@ -761,6 +835,7 @@ app.whenReady().then(async () => {
   ];
   fs.writeFileSync(path.join(directory, 'screenshot-states.json'), JSON.stringify(screenshotStates, null, 2) + '\n');
   fs.writeFileSync(path.join(directory, 'visibility-evidence.json'), JSON.stringify(visibilityEvidence, null, 2) + '\n');
+  fs.writeFileSync(path.join(directory, 'qr-diagnostics.json'), JSON.stringify({ qrDiagnostics, nativeWindowEvents }, null, 2) + '\n');
   console.log(JSON.stringify({ ok: true, checks: ['confirmed receipt and detail preserve the accepted order price after catalog changes', 'delayed old handoff lookup cannot overwrite a newer active purchase', 'native open failure preserves the same order and supports retry plus copy', 'verified deep return tails old PENDING without reopening checkout', 'open success panel immediately renders member status and expiry', 'daily monthly yearly and Wechat selection fits desktop and 375px', 'cold-start handoff waits for verified initial account state', 'late native open failure cannot replace a confirmed success', 'delayed pending lookup remains guarded when quote returns first', 'lookup failure retains original record and guarded retry', 'old-owner pending lookup cannot unlock or query after account switch', 'Alipay default with separate Wechat registered catalog', 'uncertain Wechat create freezes method and reuses request ID', 'pending Wechat order restores and resumes its saved provider without another create', '375px Native guidance remains visible in the client', 'online-only purchase with manual QR plans email-copy and report removed', 'quote change requires second click', 'PAYMENT_UNAVAILABLE create reuses request ID', 'payment pause blocks checkout and allows readiness refresh', 'removed draft SKU keeps its original plan name', 'recovery preserves original request and quoted amount', 'disabled catalog never creates an order', 'single-order checkout fragment preserved', 'return parameters never grant rights', 'back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant', 'paid without committed webhook stays pending and automatically polls', 'native app focus immediately checks pending order', 'confirmed order refreshes account and feature rights before clearing recovery', 'fresh account rights reach app listeners and member badge', 'renderer restart restores saved pending order without another create or checkout', 'unpaid recovery resumes the original order with a fresh checkout token', 'restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID', 'status and checkout failures retain the original order', 'PAID restart and PAID resume followed by network failure block both purchase actions', 'confirmed recovery after a failed PAID check refreshes rights without another checkout or create', 'confirmed or paid retry without checkout URL queries status', 'late created or resumed checkout discarded on account switch', 'browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout', 'marketing page uses enabled live catalog and shows payment pause', '375px online layout including unpaid restart control', ...qrChecks], visibilityEvidence, screenshots: directory }));
   await finish(0);
 }).catch(error => void finish(1, error));

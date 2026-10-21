@@ -176,6 +176,10 @@ export async function initializeAccountUI() {
   let displayedQr = null, qrTimer = null, qrRenderFailed = false;
   let qrForegroundReady = !document.hidden, qrVisibilityRevision = 0;
   const recovery = createPaymentRecovery({ bridge,
+    getStatusContext: () => qrVisibilityRevision,
+    onStatusChecked: revision => {
+      if (Number.isSafeInteger(revision) && revision >= 0) allowQrAfterCheck(revision);
+    },
     onChange: value => {
       recoveryState = value;
       if (value.order && !['confirmed', 'closed'].includes(value.phase)) {

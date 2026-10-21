@@ -1,0 +1,96 @@
+{
+  "version": "2.0.35",
+  "sourceCommit": "d4a98c0827a72bd72c853b3d750e85260e9b6974",
+  "workflowRunId": 39530807170,
+  "workflowUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39530807170",
+  "workflowStatus": "completed",
+  "workflowConclusion": "failure",
+  "runAttempt": 2,
+  "published": false,
+  "productionChanged": false,
+  "productionVersionRetained": "2.0.32",
+  "immutableTagMoved": false,
+  "replacementVersion": "2.0.36",
+  "reason": "Both attempts failed on the same immutable source. Intel attempt 1 reported an hdiutil detach error while preparing the isolated rollback fixture; attempt 2 passed that native gate but later reported Missing Native payment SVG. The exact causes of both CI failures remain unconfirmed. ARM and Windows completed all their gates successfully and those successful executions were retained.",
+  "attempts": [
+    {
+      "runAttempt": 1,
+      "sourceCommit": "d4a98c0827a72bd72c853b3d750e85260e9b6974",
+      "workflowStatus": "completed",
+      "workflowConclusion": "failure",
+      "runStartedAt": "2026-10-21T02:02:55Z",
+      "observedJobs": {
+        "windows-x64": "success",
+        "mac-intel": "failure",
+        "mac-arm64": "success",
+        "publish": "skipped"
+      },
+      "intelJob": {
+        "id": 118995990345,
+        "startedAt": "2026-10-21T02:03:01Z",
+        "completedAt": "2026-10-21T02:10:57Z"
+      }
+    },
+    {
+      "runAttempt": 2,
+      "sourceCommit": "d4a98c0827a72bd72c853b3d750e85260e9b6974",
+      "workflowStatus": "completed",
+      "workflowConclusion": "failure",
+      "runStartedAt": "2026-10-21T02:15:13Z",
+      "observedJobs": {
+        "mac-intel": "failure",
+        "windows-x64": "success",
+        "mac-arm64": "success",
+        "publish": "skipped"
+      },
+      "intelJob": {
+        "id": 118999751993,
+        "startedAt": "2026-10-21T02:15:16Z",
+        "completedAt": "2026-10-21T02:30:33Z"
+      },
+      "successfulPlatformExecutionsRetainedFromAttempt1": [
+        "mac-arm64",
+        "windows-x64"
+      ]
+    }
+  ],
+  "failureSteps": {
+    "attempt1": {
+      "job": "mac-intel",
+      "step": 12,
+      "test": "real Electron updater launches the replacement and rollback GUI without inheriting helper Node mode",
+      "location": "test/mac-update.test.js:252",
+      "error": "hdiutil detach failed - No such file or directory",
+      "phase": "rollback fixture preparation before helper launch",
+      "exitCode": 1,
+      "rootCauseConfirmed": false,
+      "assertionComparisonFailureReported": false
+    },
+    "attempt2": {
+      "job": "mac-intel",
+      "step": 34,
+      "error": "Missing Native payment SVG",
+      "location": "scripts/verify-brclio-pay-ui.cjs:156",
+      "callingStageKnown": false,
+      "graphicsErrorReported": false,
+      "rootCauseConfirmed": false
+    }
+  },
+  "retry": {
+    "count": 1,
+    "scope": "Full failed Intel job on the same immutable source; successful ARM and Windows executions retained.",
+    "runtimeChanged": false,
+    "testChanged": false,
+    "timeoutsChanged": false,
+    "additionalRetriesPerformed": false
+  },
+  "controlledLocalObservation": {
+    "nativeWindowHideClearsQrPresentation": true,
+    "readingWithOriginalDecoderAfterHideReports": "Missing Native payment SVG",
+    "limitation": "This controlled local observation reproduces the error after a real hide. It does not establish that hiding or occlusion caused the CI failure, whose calling stage and exact lifecycle state were not logged."
+  },
+  "sourceChangesForReplacement": "Add safe per-stage verifier diagnostics and real native foreground readiness before QR inspection, preserving all 53 payment renderer checks. Native detach failures continue to fail closed; payment, security, decoding and timeout assertions remain enforced. The replacement independently fixes a reproduced QR presentation outage after a failed foreground query followed by a successful automatic poll; that separate regression is not claimed as the Intel Missing SVG root cause.",
+  "releaseAbsentVerifiedAt": "2026-10-21T02:51:48.954Z",
+  "releaseHttpStatus": 404,
+  "tagCommitVerifiedAt": "2026-10-21T02:51:51.993Z"
+}
