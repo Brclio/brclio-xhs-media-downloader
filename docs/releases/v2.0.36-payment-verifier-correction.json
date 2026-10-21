@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.36",
+  "ok": true,
+  "verifiedAt": "2026-10-21T04:51:23.762133+00:00",
+  "runtimeSourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+  "scope": "Postpublication acceptance-tool correction only; released runtime, installers and immutable source tag are unchanged.",
+  "initial": {
+    "path": "docs/releases/v2.0.36-payment-production-initial-failure.json",
+    "sha256": "4bf6cda16b22d62b74b457931225b128548feffca19a53b30d288c65123ec658",
+    "passed": 30,
+    "total": 31,
+    "failure": "payment/static/membership-page required retired Brclio Pay brand copy"
+  },
+  "correction": {
+    "script": "scripts/verify-brclio-pay-production.mjs",
+    "scriptSha256": "4557a0b3867c7a054f4101cd188a78638dc248f612b34028a98c46eb0e60d157",
+    "retainedMarkers": [
+      "membership-catalog-status",
+      "在线付款"
+    ],
+    "replacedRetiredBrandWith": [
+      "支付宝继续使用安全收银台",
+      "二维码自动收起并刷新会员及功能权限"
+    ],
+    "test": "test/brclio-pay-production-verifier.test.js",
+    "focusedTests": {
+      "total": 17,
+      "pass": 17,
+      "fail": 0
+    },
+    "oldVerifierRed": {
+      "pass": 4,
+      "fail": 1
+    },
+    "missingEachRequiredMarkerRejected": true
+  },
+  "final": {
+    "path": "docs/releases/v2.0.36-payment-production-verification.json",
+    "passed": 31,
+    "total": 31,
+    "deployment": {
+      "version": "2.0.36",
+      "deploymentId": "b45114ff-5763-4890-8ddd-9aef3960d9a1"
+    }
+  },
+  "runtimeChanged": false,
+  "frozenBuildFilesUnchanged": 434,
+  "runtimePathsVerifiedUnchanged": 11,
+  "initialFailurePreservedByteForByte": true,
+  "realPaymentVerified": false,
+  "productionEntitlementGrantVerified": false
+}

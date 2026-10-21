@@ -1,0 +1,171 @@
+{
+  "releaseVersion": "2.0.36",
+  "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+  "stage": "actual-production-anonymous-renderer",
+  "origin": "https://xhs.download.brclio.com",
+  "checkedAt": "2026-10-21T04:47:37.586Z",
+  "reviewTimezone": "Asia/Shanghai",
+  "deploymentContext": {
+    "workerVersion": "b45114ff-5763-4890-8ddd-9aef3960d9a1",
+    "pagesDeploymentId": "e9787252-a116-4cf4-a33d-c561445c223c",
+    "pagesDeployment": "https://e9787252.brclio-xhs-pages.pages.dev"
+  },
+  "ok": true,
+  "passed": 16,
+  "total": 16,
+  "checks": [
+    {
+      "name": "Nine deployed app/payment UI/recovery/QR/return files match the reviewed local source bytes.",
+      "ok": true
+    },
+    {
+      "name": "Live membership renderer displays all three prices and days from the expected payment-center catalog.",
+      "ok": true
+    },
+    {
+      "name": "membership desktop: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "membership 375px: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "Actual signed-out dialog shows online Alipay and WeChat, keeps checkout disabled, and has no manual QR or report entry.",
+      "ok": true
+    },
+    {
+      "name": "signed-out dialog desktop: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "signed-out dialog 375px: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "unsigned payment return 375px: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "Forged payment return parameters are consumed without authentication, status lookup, checkout or entitlement.",
+      "ok": true
+    },
+    {
+      "name": "Signed-out purchase guidance returns focus to the real account login form without submitting it.",
+      "ok": true
+    },
+    {
+      "name": "Signed-out redemption guidance opens only the parent modal and focuses the actual email field.",
+      "ok": true
+    },
+    {
+      "name": "A queued old close cannot reopen the parent over a freshly reopened payment modal.",
+      "ok": true
+    },
+    {
+      "name": "Escape closes the payment modal and restores a single parent account modal.",
+      "ok": true
+    },
+    {
+      "name": "dedicated return 375px: no horizontal overflow",
+      "ok": true
+    },
+    {
+      "name": "Dedicated return needs no account request, exposes canonical unsigned links, rejects malformed or duplicate references and never executes protocol navigation.",
+      "ok": true
+    },
+    {
+      "name": "Network allowlist admitted only public read-only account actions and static GETs; no cookies or mutations.",
+      "ok": true
+    }
+  ],
+  "expectedCatalogVersion": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+  "catalog": {
+    "version": "1987dfb7406bf6a1363101411e25d86c75f0d2e031a4a2deb25a6cd7f9130ffb",
+    "mode": "live",
+    "currency": "CNY",
+    "plans": [
+      {
+        "id": "daily",
+        "amount": "3.00",
+        "days": 1
+      },
+      {
+        "id": "monthly",
+        "amount": "19.90",
+        "days": 30
+      },
+      {
+        "id": "yearly",
+        "amount": "69.90",
+        "days": 365
+      }
+    ]
+  },
+  "sourceHashes": {
+    "app.js": "ab7388339430167ec4bfd7296e5a111260daaad2fca544bfcae1c12a577d6351",
+    "account-ui.js": "96333d9a05fbf9b3132c37fbe1fa21ac5832f9d69836ca85ddb6fee2348103c5",
+    "account-ui.css": "168fcc91d524f771e34a0e8a66e12bfc78bd75f6b69114a649ff045a41edddf1",
+    "lib/payment-recovery.js": "bb6e778b0a94ad23853e3ffd7447c4dc6483ed7406ff698d2e2fc50f41b5770a",
+    "lib/payment-qr.js": "f425a7d73d5546bf0e770fb6eafa6268ef003a5cf19b1ef5a7d5e8c390b7da7f",
+    "lib/vendor/qrcodegen.js": "349ee5546e42f022bfb3aa37eea8305eb1f0ff271e51fdadb5443dae756d58f7",
+    "payment-return.html": "5986dc643fde542ad541fd58c1400e4cbc9f85546ce2b584d888f97517555e79",
+    "payment-return.js": "425e5a12be2e0e09ca6f9b8b10cb0777ce77f97397ffaf958bd8436d48dba934",
+    "payment-return.css": "9f036de461fc92497592f01db5acccbd68f34ead22622bcf5a20599df0a26ca7"
+  },
+  "networkAudit": {
+    "admittedRequestCount": 125,
+    "methods": {
+      "GET": 114,
+      "POST": 11
+    },
+    "accountActions": {
+      "payment-catalog": 3,
+      "reviews-public": 2,
+      "me": 4,
+      "google-config": 2
+    },
+    "allowedAccountActions": [
+      "google-config",
+      "me",
+      "payment-catalog",
+      "reviews-public"
+    ],
+    "blockedCrossOriginGetCount": 6,
+    "businessMutationRequestCount": 0,
+    "cookiesAtStartAndFinish": 0,
+    "credentialHeadersStripped": true,
+    "isolatedBrowserProfile": true,
+    "profileCleaned": true,
+    "rendererErrorCount": 0
+  },
+  "screenshotCount": 10,
+  "visuallyReviewedScreenshotCount": 10,
+  "screenshots": [
+    "01-membership-desktop-hero.png",
+    "02-membership-desktop-prices.png",
+    "03-membership-mobile-prices.png",
+    "04-membership-mobile-hero.png",
+    "05-signed-out-dialog-desktop.png",
+    "06-signed-out-dialog-mobile.png",
+    "07-payment-return-mobile.png",
+    "08-login-guidance-mobile.png",
+    "09-browser-parent-restored.png",
+    "10-dedicated-payment-return-mobile.png"
+  ],
+  "screenshotsRetainedInPrivateWorkspace": true,
+  "authenticatedPurchaseVerified": false,
+  "realPaymentVerified": false,
+  "productionEntitlementGrantVerified": false,
+  "installedUserClientVerified": false,
+  "automaticProtocolNavigationPerformed": false,
+  "defaultBrowserOpened": false,
+  "installedHandlerRegistrationVerified": false,
+  "limitations": [
+    "Anonymous real production rendering and public read-only actions only.",
+    "Automatic OS/browser protocol navigation is not executed; canonical return context is checked as a pure function.",
+    "No login, business order, checkout, payment, entitlement grant or installed client change is performed.",
+    "Authenticated success/done and device rights require separate fixture or authorized real-payment acceptance."
+  ],
+  "sanitization": "Explicit projection; request payloads, headers, cookies and private workspace paths omitted."
+}

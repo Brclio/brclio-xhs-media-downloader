@@ -1,6 +1,6 @@
 # Brclio 微信支付接入
 
-2026-10-20 已为当前项目在 `https://paywc.bornforthis.cn` 登记独立产品 `p-2bb6d77a673327a2f8d881bac2d4fe26`。原 `https://pay.bornforthis.cn` / `xhs-downloader` 支付宝配置、回调和历史订单保留。支付中心登记、目标项目网页及生产后端已部署，Mac / Windows v2.0.27 于北京时间 2026-10-21 正式发布并完成生产只读核验。Android 保持 1.0.15；真实微信付款与生产会员开通仍需扫码验收。
+2026-10-20 已为当前项目在 `https://paywc.bornforthis.cn` 登记独立产品 `p-2bb6d77a673327a2f8d881bac2d4fe26`。原 `https://pay.bornforthis.cn` / `xhs-downloader` 支付宝配置、回调和历史订单保留。支付中心登记、目标项目网页及生产后端已部署，Mac / Windows v2.0.27 于北京时间 2026-10-21 正式发布并完成生产只读核验。Android 保持 1.0.15。v2.0.36 已增加客户端内 Native 二维码和自动会员结果，见[版本说明](releases/v2.0.36.md)与[操作审计](releases/v2.0.36-operation-audit.json)。本轮未追加实付验收，用户既有成功付款及权益保留。
 
 ## 中心配置与金额
 

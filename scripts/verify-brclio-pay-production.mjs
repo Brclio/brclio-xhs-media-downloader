@@ -71,7 +71,7 @@ export function buildPaymentChecks({ baseUrl, sourceSha, catalogVersion }, metad
     requireCheck(!response.headers.has('set-cookie'), 'Payment return unexpectedly set a cookie.');
   }, { allowRedirect: true });
   for (const [name, path, markers] of [
-    ['membership-page', '/membership', ['membership-catalog-status', 'Brclio Pay', '在线付款']],
+    ['membership-page', '/membership', ['membership-catalog-status', '在线付款', '支付宝继续使用安全收银台', '二维码自动收起并刷新会员及功能权限']],
     ['account-ui', '/account-ui.js', ['membership-online-pay', 'membership-online-restart', 'payment_order', 'payment-catalog', 'payment-create', 'payment-resume']],
     ['payment-qr', '/lib/payment-qr.js', ['paymentQrSvg', 'renderPaymentQr', 'crispEdges']],
     ['payment-qr-encoder', '/lib/vendor/qrcodegen.js', ['MIT License', 'QrCode', 'export { qrcodegen }']],

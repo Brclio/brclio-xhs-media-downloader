@@ -1,0 +1,671 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.36",
+  "status": "published-and-production-read-only-verified",
+  "verifiedAt": "2026-10-21T04:51:43.647Z",
+  "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+  "tag": "v2.0.36",
+  "immutableTagMoved": false,
+  "releaseUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.36",
+  "publishedAt": "2026-10-21T04:44:08Z",
+  "workflow": {
+    "runId": 39544258992,
+    "attempt": 1,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39544258992",
+    "conclusion": "success"
+  },
+  "validation": {
+    "local": {
+      "node": {
+        "command": "npm test",
+        "total": 1966,
+        "passed": 1953,
+        "skipped": 13,
+        "failed": 0
+      },
+      "python": {
+        "total": 47,
+        "passed": 47,
+        "failed": 0
+      }
+    },
+    "desktopFixtures": {
+      "payment": {
+        "ok": true,
+        "checks": 55,
+        "checklist": [
+          "confirmed receipt and detail preserve the accepted order price after catalog changes",
+          "delayed old handoff lookup cannot overwrite a newer active purchase",
+          "native open failure preserves the same order and supports retry plus copy",
+          "verified deep return tails old PENDING without reopening checkout",
+          "open success panel immediately renders member status and expiry",
+          "daily monthly yearly and Wechat selection fits desktop and 375px",
+          "cold-start handoff waits for verified initial account state",
+          "late native open failure cannot replace a confirmed success",
+          "delayed pending lookup remains guarded when quote returns first",
+          "lookup failure retains original record and guarded retry",
+          "old-owner pending lookup cannot unlock or query after account switch",
+          "Alipay default with separate Wechat registered catalog",
+          "uncertain Wechat create freezes method and reuses request ID",
+          "pending Wechat order restores and resumes its saved provider without another create",
+          "375px Native guidance remains visible in the client",
+          "online-only purchase with manual QR plans email-copy and report removed",
+          "quote change requires second click",
+          "PAYMENT_UNAVAILABLE create reuses request ID",
+          "payment pause blocks checkout and allows readiness refresh",
+          "removed draft SKU keeps its original plan name",
+          "recovery preserves original request and quoted amount",
+          "disabled catalog never creates an order",
+          "single-order checkout fragment preserved",
+          "return parameters never grant rights",
+          "back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant",
+          "paid without committed webhook stays pending and automatically polls",
+          "native app focus immediately checks pending order",
+          "confirmed order refreshes account and feature rights before clearing recovery",
+          "fresh account rights reach app listeners and member badge",
+          "renderer restart restores saved pending order without another create or checkout",
+          "unpaid recovery resumes the original order with a fresh checkout token",
+          "restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID",
+          "status and checkout failures retain the original order",
+          "PAID restart and PAID resume followed by network failure block both purchase actions",
+          "confirmed recovery after a failed PAID check refreshes rights without another checkout or create",
+          "confirmed or paid retry without checkout URL queries status",
+          "late created or resumed checkout discarded on account switch",
+          "browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout",
+          "marketing page uses enabled live catalog and shows payment pause",
+          "375px online layout including unpaid restart control",
+          "Native QR is a local SVG whose actual canvas pixels independently decode to the current server code",
+          "Native QR fits 1280 and 375 pixels with browser guidance requiring another device",
+          "automatic PAID polling removes the QR without browser return or uncommitted membership grants",
+          "duplicate paid returns share the fresh permission refresh and clear the saved order once",
+          "expired QR stays on the original order and refresh never creates another purchase",
+          "closing and reopening the payment dialog preserves the same valid order",
+          "status network errors retain the original order without granting or opening a browser",
+          "real Electron page visibility removes the QR and awaits fresh status before redisplay",
+          "a failed first foreground status automatically restores the freshly decoded QR on the next successful poll without manual focus or query",
+          "a pre-hide status response cannot reveal its old QR while the fresh foreground tail remains held",
+          "same-owner loss and restoration of verification rejects a late old QR response",
+          "late status and Native create responses never show the previous account code",
+          "browser logout clears QR presentation while retaining the owner recovery reference",
+          "legacy WeChat browser fallback requires an explicit action while Alipay retains its flow",
+          "PAID clears stale fallback errors and copy actions through held or failed permission refresh"
+        ],
+        "visibilityEvidence": [
+          {
+            "stage": "before-hide",
+            "hidden": false,
+            "state": "visible"
+          },
+          {
+            "stage": "native-hidden",
+            "hidden": true,
+            "state": "hidden",
+            "qrEmpty": true
+          },
+          {
+            "stage": "reshown-status-pending",
+            "hidden": false,
+            "state": "visible",
+            "qrEmpty": true
+          },
+          {
+            "stage": "reshown-first-status-failed",
+            "hidden": false,
+            "state": "visible",
+            "qrEmpty": true,
+            "manualChecks": 0
+          },
+          {
+            "stage": "automatic-fresh-status-restored",
+            "hidden": false,
+            "state": "visible",
+            "qrVisible": true,
+            "manualChecks": 0
+          },
+          {
+            "stage": "old-flight-settled-fresh-tail-held",
+            "hidden": false,
+            "state": "visible",
+            "qrEmpty": true
+          }
+        ],
+        "marketingSemanticAssertions": 4
+      },
+      "membership": {
+        "ok": true,
+        "checks": 17,
+        "scheme": "xhs-app://local",
+        "exactQrModuleAllowlist": true
+      },
+      "memberVideo": {
+        "ok": true,
+        "originalAssertionsPreserved": true,
+        "evidence": "Member-video-specific product and verifier bytes unchanged since successful v2.0.35 ARM/Windows native checks; fresh v2.0.36 native CI still required."
+      },
+      "commerce": {
+        "ok": true,
+        "checks": 17,
+        "localVersion": "2.0.36",
+        "browserAndDesktopGuidanceCheckedSeparately": true,
+        "historicalOrdersAndActivationCodesPreserved": true
+      },
+      "adminCommerce": {
+        "ok": true,
+        "checks": 17,
+        "lastLocalVersion": "2.0.35",
+        "version36NativeCiRequired": true
+      },
+      "accountStorage": {
+        "command": "npm run desktop:verify:account",
+        "passed": true,
+        "platform": "darwin",
+        "nativeSafeStorage": true,
+        "separateProcessRelaunch": true,
+        "stableDeviceIdentity": true,
+        "signedEntitlements": true,
+        "offlineSignedRelaunch": true,
+        "backgroundFailureTolerated": true,
+        "authoritativeInvalidationPersisted": true,
+        "legacyAccountUpgrade": true,
+        "serverTransport": "mock",
+        "osRebootTested": false,
+        "installerUpgradeTested": false,
+        "lastLocalVersion": "2.0.35",
+        "version36NativeCiRequired": true
+      }
+    },
+    "publicAssets": 11,
+    "sourceFilesCompared": [
+      {
+        "platform": "darwin",
+        "arch": "arm64",
+        "count": 252
+      },
+      {
+        "platform": "darwin",
+        "arch": "x64",
+        "count": 252
+      },
+      {
+        "platform": "win32",
+        "arch": "x64",
+        "count": 252
+      }
+    ],
+    "payment": {
+      "passed": 31,
+      "total": 31
+    },
+    "api": {
+      "passed": 58,
+      "total": 58
+    },
+    "avatarAssets": 112,
+    "staticComparisons": 45,
+    "renderer": {
+      "passed": 16,
+      "total": 16,
+      "screenshotCount": 10,
+      "visuallyReviewed": 10
+    },
+    "secretScan": {
+      "checkedAt": "2026-10-21T04:25:36.803Z",
+      "sourceFiles": 946,
+      "webFiles": 216,
+      "pagesFiles": 218,
+      "workerBuildFiles": 3,
+      "configuredBusinessSecretValuesChecked": 2,
+      "matches": 0,
+      "credentialsFileMode": "600",
+      "credentialsFileTracked": false,
+      "temporaryManagementTokenUsed": false,
+      "temporaryManagementTokenPersisted": false
+    },
+    "dependencyAudit": {
+      "runtime": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "allDependencies": {
+        "info": 0,
+        "low": 0,
+        "moderate": 9,
+        "high": 4,
+        "critical": 0,
+        "total": 13
+      },
+      "notes": "Runtime yaml patched to 2.8.3; jsqr is test-only. Existing development/build-tool advisories remain; no forced major toolchain changes."
+    },
+    "finalSecretScan": {
+      "checkedAt": "2026-10-21T04:52:04.733Z",
+      "sourceFiles": 958,
+      "webFiles": 216,
+      "pagesFiles": 218,
+      "workerBuildFiles": 3,
+      "configuredBusinessSecretValuesChecked": 2,
+      "matches": 0,
+      "credentialsFileMode": "600",
+      "credentialsFileTracked": false,
+      "temporaryManagementTokenUsed": false,
+      "temporaryManagementTokenPersisted": false
+    }
+  },
+  "configurationAudit": {
+    "schemaVersion": 1,
+    "version": "2.0.36",
+    "stage": "postdeployment-readonly-audit",
+    "verifiedAt": "2026-10-21T04:47:47.232Z",
+    "ok": true,
+    "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+    "checks": {
+      "workerExpected": true,
+      "oneMainDeploymentAdded": true,
+      "pagesExpected": true,
+      "onePagesDeploymentAdded": true,
+      "secretNamesUnchanged": true,
+      "bindingsUnchanged": true,
+      "runtimeUnchanged": true,
+      "trackedDeploymentConfigUnchanged": true,
+      "desktop32ReleaseUnchanged": true,
+      "desktop32TagUnchanged": true,
+      "android15ReleaseUnchanged": true,
+      "android15TagUnchanged": true,
+      "nativeSourceMatches": true,
+      "nativeWorkflowSucceeded": true,
+      "tagMatchesSource": true,
+      "published": true,
+      "exact11Assets": true,
+      "allAssetDigests": true,
+      "latestReleaseMatchesVersion": true,
+      "brclio-xhs-pythonUnchanged": true,
+      "brclio-xhs-subscription-proxyUnchanged": true,
+      "brclio-payUnchanged": true
+    },
+    "before": {
+      "workerVersion": "6de99888-9d9d-4a57-99b5-f77cf21535b0",
+      "pagesDeploymentId": "80517c16-f883-4b6c-b586-4fd4f496c57a"
+    },
+    "after": {
+      "workerVersion": "b45114ff-5763-4890-8ddd-9aef3960d9a1",
+      "workerDeploymentId": "3ee6cac7-cd23-4514-8ee9-5468b3fef695",
+      "workerTrafficPercent": 100,
+      "pagesDeploymentId": "e9787252-a116-4cf4-a33d-c561445c223c",
+      "pagesDeploymentUrl": "https://e9787252.brclio-xhs-pages.pages.dev",
+      "pagesSource": "8d60ae3"
+    },
+    "configuration": {
+      "secretNameCount": 31,
+      "secretNamesSha256": "531037708096eb9698e2b2edce93dbec7110a76303885ca3e7d3a69f3e886f4c",
+      "bindingCount": 38,
+      "bindingMetadataSha256": "0c2bf8d2e9ef6fbb7c20f297a0e83910c52fb2a7934d3b0d665d0ac0f6d715ad",
+      "runtimeMetadataSha256": "4a7ad4893a0456d7296be13aec62bb2c8a240191f9256af81cc3ca7befca081a",
+      "coverage": {
+        "live": [
+          "active deployment",
+          "version runtime and binding metadata",
+          "Secret names only",
+          "Pages deployments",
+          "ancillary Worker deployments"
+        ],
+        "sourceOnly": [
+          "cron",
+          "global settings outside version resources"
+        ],
+        "globalLiveSettingsNotCaptured": true
+      }
+    },
+    "nativeWorkflow": {
+      "conclusion": "success",
+      "head_sha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+      "html_url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39544258992",
+      "id": 39544258992,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    "newRelease": {
+      "tag": "v2.0.36",
+      "url": "https://github.com/Brclio/brclio-xhs-media-downloader/releases/tag/v2.0.36",
+      "publishedAt": "2026-10-21T04:44:08Z",
+      "assets": 11,
+      "tagCommit": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba"
+    },
+    "boundaries": {
+      "cloudflareSecretValuesRead": false,
+      "businessDataRead": false,
+      "businessDataWritten": false,
+      "paymentCenterManagementRead": false,
+      "privateBusinessRepositoryQueried": false
+    }
+  },
+  "evidenceFiles": [
+    {
+      "path": "docs/releases/v2.0.36-preflight.json",
+      "sha256": "8f64753e9aca20b2c49f3b51ea778831b2b840a6627c5de960747b61ee9b5000"
+    },
+    {
+      "path": "docs/releases/v2.0.36-publication-verification.json",
+      "sha256": "068528edcf141bda73850cf762820980e17aee6385b41c8f4b5ef2071266b988"
+    },
+    {
+      "path": "docs/releases/v2.0.36-payment-production-verification.json",
+      "sha256": "0aa0be4ad65c07c2b9f37d42f4532f516c9336a92906d2dd449511651f045cf0"
+    },
+    {
+      "path": "docs/releases/v2.0.36-cloudflare-production-verification.json",
+      "sha256": "d1453485ca03483f3469c8d8798e2a1973efe2c4ad0d17022510a99cc4160e5b"
+    },
+    {
+      "path": "docs/releases/v2.0.36-avatar-production-verification.json",
+      "sha256": "c7624baf2809a655b1feb5312db81747b3d87eaeec5d1ef9530f2ee8606322c2"
+    },
+    {
+      "path": "docs/releases/v2.0.36-static-production-verification.json",
+      "sha256": "14c358fbfdea05175b46103a5a9f20e9fae00530911c0b25dd97af044c60e4cc"
+    },
+    {
+      "path": "docs/releases/v2.0.36-renderer-production-verification.json",
+      "sha256": "367c44e88d2233cbf32afe548249396fd8a0083de7be23cba06611689a6c940c"
+    },
+    {
+      "path": "docs/releases/v2.0.36-ci-verification.json",
+      "sha256": "bd82fe5023bb1a8294ede5f5c3a022a61ab8e9e6bea6cc071d0ed9d78f07aaee"
+    },
+    {
+      "path": "docs/releases/v2.0.36-payment-production-initial-failure.json",
+      "sha256": "4bf6cda16b22d62b74b457931225b128548feffca19a53b30d288c65123ec658"
+    },
+    {
+      "path": "docs/releases/v2.0.36-payment-verifier-correction.json",
+      "sha256": "157f01404d1211d0e01519c92894716e84d4e52ff4ba23df4513cc34f1cb151e"
+    },
+    {
+      "path": "docs/releases/v2.0.35-superseded.json",
+      "sha256": "053b0cf87af7e4e951cf68f692eae955d8b1aa69b6d6fe23d69d4a0fd0694be4"
+    },
+    {
+      "path": "docs/releases/v2.0.34-superseded.json",
+      "sha256": "4efce97ee75674ebc00b0fff9c88d577f9878290b66eb7808eb2d6c61850527a"
+    },
+    {
+      "path": "docs/releases/v2.0.33-superseded.json",
+      "sha256": "b597ce0a0cc4fc0330cb54c4c01a3598d0c5e846d05f7178dc3cba5aad5d0654"
+    }
+  ],
+  "boundaries": {
+    "newRealPayment": false,
+    "newProductionEntitlementAcceptance": false,
+    "installedUserClientChanged": false,
+    "existingPaidOrdersAndEntitlementsPreserved": true,
+    "newStorageResources": false,
+    "newSecretNames": false,
+    "temporaryManagementTokenUsed": false,
+    "temporaryManagementTokenPersisted": false,
+    "privateBusinessRepositoryChangedByAgent": false
+  },
+  "nativeFixtureNote": {
+    "initialTrustedWheelDefaultScrollNotObserved": true,
+    "rootCauseConfirmed": false,
+    "isolatedControlsPassed": 10,
+    "fixtureChanges": [
+      "explicit OS window and webContents focus",
+      "layout frames and trusted pointer acknowledgement",
+      "plain document hit target",
+      "trusted startup wheel remains inside 1500ms guard"
+    ],
+    "productScrollCodeChanged": false,
+    "allOriginalScrollAssertionsRetained": true
+  },
+  "supersededCandidates": [
+    {
+      "version": "2.0.33",
+      "sourceCommit": "a7d27331129b0f8a1156b2696458e4a0d7dbf6a4",
+      "workflowRunId": 39525822018,
+      "workflowStatus": "completed",
+      "workflowConclusion": "cancelled",
+      "runAttempt": 1,
+      "published": false,
+      "productionChanged": false,
+      "immutableTagMoved": false,
+      "replacementVersion": "2.0.34",
+      "reason": "The shared final payment-marketing assertion still expected the old wording after the copy update. Native ARM VIP screenshot also reported UnknownVizError without a business assertion; graphics root cause unconfirmed.",
+      "sourceChangesForReplacement": "Update four explicit marketing assertions to the current supported behavior, bump version and rebuild all platforms from a new immutable source.",
+      "observedJobs": {
+        "mac-arm64": "failure",
+        "mac-intel": "cancelled",
+        "windows-x64": "failure",
+        "publish": "cancelled"
+      },
+      "releaseAbsentVerifiedAt": "2026-10-21T01:29:36.316Z",
+      "releaseHttpStatus": 404,
+      "failureSteps": {
+        "mac-arm64": {
+          "step": 32,
+          "error": "UnknownVizError",
+          "rootCauseConfirmed": false
+        },
+        "windows-x64": {
+          "step": 34,
+          "error": "stale shared marketing assertion"
+        },
+        "mac-intel": {
+          "step": 34,
+          "error": "same stale shared marketing assertion",
+          "jobConclusion": "cancelled"
+        }
+      }
+    },
+    {
+      "version": "2.0.34",
+      "sourceCommit": "84efd3745d6e9ff560dfbfa8ab0159955e64751a",
+      "workflowRunId": 39528315507,
+      "workflowStatus": "completed",
+      "workflowConclusion": "failure",
+      "runAttempt": 1,
+      "published": false,
+      "productionChanged": false,
+      "immutableTagMoved": false,
+      "replacementVersion": "2.0.35",
+      "reason": "The shared commerce renderer expected desktop-only 手机微信 wording in its browser case, which now correctly instructs use of another device. The Intel Node suite separately observed a 504 instead of 200 on a fresh-worker single-byte request under its 500ms fixture HTTP deadline; the exact scheduling or host cause is unconfirmed.",
+      "sourceChangesForReplacement": "Correct explicit browser/desktop commerce guidance assertions, update release metadata and rebuild all three platforms from a new immutable source. Runtime behavior and timeout budgets remain unchanged; payment and security assertions are preserved.",
+      "observedJobs": {
+        "mac-arm64": "failure",
+        "mac-intel": "failure",
+        "windows-x64": "failure",
+        "publish": "skipped"
+      },
+      "releaseAbsentVerifiedAt": "2026-10-21T01:51:30.654Z",
+      "releaseHttpStatus": 404,
+      "tagCommitVerifiedAt": "2026-10-21T01:51:52.394Z",
+      "failureSteps": {
+        "mac-intel": {
+          "step": 10,
+          "test": "member-video stalled bodies obey the HTTP deadline, release request slots and allow shutdown",
+          "location": "test/standalone-server.test.js:378",
+          "error": "Expected 200; received 504 on the successful single-byte request after stalled-request cancellation and recovered health check.",
+          "fixtureHttpDeadlineMs": 500,
+          "rootCauseConfirmed": false,
+          "unchangedSincePublishedV32": [
+            "test/standalone-server.test.js",
+            "server/standalone/http.js",
+            "server/standalone/media.js"
+          ],
+          "priorIntelSameTestPassed": {
+            "version": "2.0.33",
+            "workflowRunId": 39525822018,
+            "durationMs": 727.02527
+          },
+          "standaloneDefaultHttpDeadlineMs": 60000
+        },
+        "mac-arm64": {
+          "step": 38,
+          "error": "Stale shared browser-help condition in scripts/verify-commerce-ui.cjs:122.",
+          "rootCauseConfirmed": true
+        },
+        "windows-x64": {
+          "step": 38,
+          "error": "Same stale shared browser-help condition in scripts/verify-commerce-ui.cjs:122.",
+          "rootCauseConfirmed": true
+        }
+      },
+      "paymentRendererGate": {
+        "step": 34,
+        "mac-arm64": "success",
+        "windows-x64": "success"
+      },
+      "retryPerformed": false
+    },
+    {
+      "version": "2.0.35",
+      "sourceCommit": "d4a98c0827a72bd72c853b3d750e85260e9b6974",
+      "workflowRunId": 39530807170,
+      "workflowUrl": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39530807170",
+      "workflowStatus": "completed",
+      "workflowConclusion": "failure",
+      "runAttempt": 2,
+      "published": false,
+      "productionChanged": false,
+      "productionVersionRetained": "2.0.32",
+      "immutableTagMoved": false,
+      "replacementVersion": "2.0.36",
+      "reason": "Both attempts failed on the same immutable source. Intel attempt 1 reported an hdiutil detach error while preparing the isolated rollback fixture; attempt 2 passed that native gate but later reported Missing Native payment SVG. The exact causes of both CI failures remain unconfirmed. ARM and Windows completed all their gates successfully and those successful executions were retained.",
+      "attempts": [
+        {
+          "runAttempt": 1,
+          "sourceCommit": "d4a98c0827a72bd72c853b3d750e85260e9b6974",
+          "workflowStatus": "completed",
+          "workflowConclusion": "failure",
+          "runStartedAt": "2026-10-21T02:02:55Z",
+          "observedJobs": {
+            "windows-x64": "success",
+            "mac-intel": "failure",
+            "mac-arm64": "success",
+            "publish": "skipped"
+          },
+          "intelJob": {
+            "id": 118995990345,
+            "startedAt": "2026-10-21T02:03:01Z",
+            "completedAt": "2026-10-21T02:10:57Z"
+          }
+        },
+        {
+          "runAttempt": 2,
+          "sourceCommit": "d4a98c0827a72bd72c853b3d750e85260e9b6974",
+          "workflowStatus": "completed",
+          "workflowConclusion": "failure",
+          "runStartedAt": "2026-10-21T02:15:13Z",
+          "observedJobs": {
+            "mac-intel": "failure",
+            "windows-x64": "success",
+            "mac-arm64": "success",
+            "publish": "skipped"
+          },
+          "intelJob": {
+            "id": 118999751993,
+            "startedAt": "2026-10-21T02:15:16Z",
+            "completedAt": "2026-10-21T02:30:33Z"
+          },
+          "successfulPlatformExecutionsRetainedFromAttempt1": [
+            "mac-arm64",
+            "windows-x64"
+          ]
+        }
+      ],
+      "failureSteps": {
+        "attempt1": {
+          "job": "mac-intel",
+          "step": 12,
+          "test": "real Electron updater launches the replacement and rollback GUI without inheriting helper Node mode",
+          "location": "test/mac-update.test.js:252",
+          "error": "hdiutil detach failed - No such file or directory",
+          "phase": "rollback fixture preparation before helper launch",
+          "exitCode": 1,
+          "rootCauseConfirmed": false,
+          "assertionComparisonFailureReported": false
+        },
+        "attempt2": {
+          "job": "mac-intel",
+          "step": 34,
+          "error": "Missing Native payment SVG",
+          "location": "scripts/verify-brclio-pay-ui.cjs:156",
+          "callingStageKnown": false,
+          "graphicsErrorReported": false,
+          "rootCauseConfirmed": false
+        }
+      },
+      "retry": {
+        "count": 1,
+        "scope": "Full failed Intel job on the same immutable source; successful ARM and Windows executions retained.",
+        "runtimeChanged": false,
+        "testChanged": false,
+        "timeoutsChanged": false,
+        "additionalRetriesPerformed": false
+      },
+      "controlledLocalObservation": {
+        "nativeWindowHideClearsQrPresentation": true,
+        "readingWithOriginalDecoderAfterHideReports": "Missing Native payment SVG",
+        "limitation": "This controlled local observation reproduces the error after a real hide. It does not establish that hiding or occlusion caused the CI failure, whose calling stage and exact lifecycle state were not logged."
+      },
+      "sourceChangesForReplacement": "Add safe per-stage verifier diagnostics and real native foreground readiness before QR inspection, preserving all 53 payment renderer checks. Native detach failures continue to fail closed; payment, security, decoding and timeout assertions remain enforced. The replacement independently fixes a reproduced QR presentation outage after a failed foreground query followed by a successful automatic poll; that separate regression is not claimed as the Intel Missing SVG root cause.",
+      "releaseAbsentVerifiedAt": "2026-10-21T02:51:48.954Z",
+      "releaseHttpStatus": 404,
+      "tagCommitVerifiedAt": "2026-10-21T02:51:51.993Z"
+    }
+  ],
+  "acceptanceToolCorrection": {
+    "schemaVersion": 1,
+    "version": "2.0.36",
+    "ok": true,
+    "verifiedAt": "2026-10-21T04:51:23.762133+00:00",
+    "runtimeSourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+    "scope": "Postpublication acceptance-tool correction only; released runtime, installers and immutable source tag are unchanged.",
+    "initial": {
+      "path": "docs/releases/v2.0.36-payment-production-initial-failure.json",
+      "sha256": "4bf6cda16b22d62b74b457931225b128548feffca19a53b30d288c65123ec658",
+      "passed": 30,
+      "total": 31,
+      "failure": "payment/static/membership-page required retired Brclio Pay brand copy"
+    },
+    "correction": {
+      "script": "scripts/verify-brclio-pay-production.mjs",
+      "scriptSha256": "4557a0b3867c7a054f4101cd188a78638dc248f612b34028a98c46eb0e60d157",
+      "retainedMarkers": [
+        "membership-catalog-status",
+        "在线付款"
+      ],
+      "replacedRetiredBrandWith": [
+        "支付宝继续使用安全收银台",
+        "二维码自动收起并刷新会员及功能权限"
+      ],
+      "test": "test/brclio-pay-production-verifier.test.js",
+      "focusedTests": {
+        "total": 17,
+        "pass": 17,
+        "fail": 0
+      },
+      "oldVerifierRed": {
+        "pass": 4,
+        "fail": 1
+      },
+      "missingEachRequiredMarkerRejected": true
+    },
+    "final": {
+      "path": "docs/releases/v2.0.36-payment-production-verification.json",
+      "passed": 31,
+      "total": 31,
+      "deployment": {
+        "version": "2.0.36",
+        "deploymentId": "b45114ff-5763-4890-8ddd-9aef3960d9a1"
+      }
+    },
+    "runtimeChanged": false,
+    "frozenBuildFilesUnchanged": 434,
+    "runtimePathsVerifiedUnchanged": 11,
+    "initialFailurePreservedByteForByte": true,
+    "realPaymentVerified": false,
+    "productionEntitlementGrantVerified": false
+  }
+}

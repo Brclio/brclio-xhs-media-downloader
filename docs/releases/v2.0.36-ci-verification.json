@@ -1,0 +1,1176 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.36",
+  "tag": "v2.0.36",
+  "repository": "Brclio/brclio-xhs-media-downloader",
+  "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+  "verifiedAt": "2026-10-21T04:46:54.260Z",
+  "scope": "Independent read-only verification of the exact immutable release source, annotated tag, four successful native workflow jobs and downloaded CI logs. This report covers CI acceptance only.",
+  "workflow": {
+    "runId": 39544258992,
+    "runAttempt": 1,
+    "url": "https://github.com/Brclio/brclio-xhs-media-downloader/actions/runs/39544258992",
+    "path": ".github/workflows/desktop-build.yml",
+    "status": "completed",
+    "conclusion": "success",
+    "createdAt": "2026-10-21T04:28:52Z",
+    "updatedAt": "2026-10-21T04:44:11Z",
+    "retriesForThisRun": 0,
+    "jobs": [
+      {
+        "job": "mac-intel",
+        "jobId": 119038740461,
+        "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-21T04:28:55Z",
+        "completedAt": "2026-10-21T04:43:33Z",
+        "logSha256": "aeca931a3240a39b2905b6cdce94ab437e86ecb84e1b8d3e69248b12eb4be534",
+        "fullNode": {
+          "tests": 1966,
+          "pass": 1952,
+          "fail": 0,
+          "skipped": 14
+        },
+        "python": {
+          "passed": 47,
+          "failed": 0
+        },
+        "additionalNativeMac": {
+          "tests": 93,
+          "pass": 93,
+          "fail": 0,
+          "skipped": 0
+        },
+        "packagedSources": {
+          "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+          "sourceDirty": false,
+          "comparedSources": 252
+        },
+        "membershipRenderer": {
+          "ok": true,
+          "checks": 17
+        },
+        "paymentRenderer": {
+          "ok": true,
+          "checks": 55,
+          "visibilityEvidence": [
+            {
+              "stage": "before-hide",
+              "hidden": false,
+              "state": "visible"
+            },
+            {
+              "stage": "native-hidden",
+              "hidden": true,
+              "state": "hidden",
+              "qrEmpty": true
+            },
+            {
+              "stage": "reshown-status-pending",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true
+            },
+            {
+              "stage": "reshown-first-status-failed",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true,
+              "manualChecks": 0
+            },
+            {
+              "stage": "automatic-fresh-status-restored",
+              "hidden": false,
+              "state": "visible",
+              "qrVisible": true,
+              "manualChecks": 0
+            },
+            {
+              "stage": "old-flight-settled-fresh-tail-held",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true
+            }
+          ],
+          "coverage": [
+            "confirmed receipt and detail preserve the accepted order price after catalog changes",
+            "delayed old handoff lookup cannot overwrite a newer active purchase",
+            "native open failure preserves the same order and supports retry plus copy",
+            "verified deep return tails old PENDING without reopening checkout",
+            "open success panel immediately renders member status and expiry",
+            "daily monthly yearly and Wechat selection fits desktop and 375px",
+            "cold-start handoff waits for verified initial account state",
+            "late native open failure cannot replace a confirmed success",
+            "delayed pending lookup remains guarded when quote returns first",
+            "lookup failure retains original record and guarded retry",
+            "old-owner pending lookup cannot unlock or query after account switch",
+            "Alipay default with separate Wechat registered catalog",
+            "uncertain Wechat create freezes method and reuses request ID",
+            "pending Wechat order restores and resumes its saved provider without another create",
+            "375px Native guidance remains visible in the client",
+            "online-only purchase with manual QR plans email-copy and report removed",
+            "quote change requires second click",
+            "PAYMENT_UNAVAILABLE create reuses request ID",
+            "payment pause blocks checkout and allows readiness refresh",
+            "removed draft SKU keeps its original plan name",
+            "recovery preserves original request and quoted amount",
+            "disabled catalog never creates an order",
+            "single-order checkout fragment preserved",
+            "return parameters never grant rights",
+            "back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant",
+            "paid without committed webhook stays pending and automatically polls",
+            "native app focus immediately checks pending order",
+            "confirmed order refreshes account and feature rights before clearing recovery",
+            "fresh account rights reach app listeners and member badge",
+            "renderer restart restores saved pending order without another create or checkout",
+            "unpaid recovery resumes the original order with a fresh checkout token",
+            "restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID",
+            "status and checkout failures retain the original order",
+            "PAID restart and PAID resume followed by network failure block both purchase actions",
+            "confirmed recovery after a failed PAID check refreshes rights without another checkout or create",
+            "confirmed or paid retry without checkout URL queries status",
+            "late created or resumed checkout discarded on account switch",
+            "browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout",
+            "marketing page uses enabled live catalog and shows payment pause",
+            "375px online layout including unpaid restart control",
+            "Native QR is a local SVG whose actual canvas pixels independently decode to the current server code",
+            "Native QR fits 1280 and 375 pixels with browser guidance requiring another device",
+            "automatic PAID polling removes the QR without browser return or uncommitted membership grants",
+            "duplicate paid returns share the fresh permission refresh and clear the saved order once",
+            "expired QR stays on the original order and refresh never creates another purchase",
+            "closing and reopening the payment dialog preserves the same valid order",
+            "status network errors retain the original order without granting or opening a browser",
+            "real Electron page visibility removes the QR and awaits fresh status before redisplay",
+            "a failed first foreground status automatically restores the freshly decoded QR on the next successful poll without manual focus or query",
+            "a pre-hide status response cannot reveal its old QR while the fresh foreground tail remains held",
+            "same-owner loss and restoration of verification rejects a late old QR response",
+            "late status and Native create responses never show the previous account code",
+            "browser logout clears QR presentation while retaining the owner recovery reference",
+            "legacy WeChat browser fallback requires an explicit action while Alipay retains its flow",
+            "PAID clears stale fallback errors and copy actions through held or failed permission refresh"
+          ]
+        },
+        "completedSteps": [
+          {
+            "number": 1,
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "number": 2,
+            "name": "Validate requested release tag",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 3,
+            "name": "Run actions/checkout@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 4,
+            "name": "Run actions/setup-node@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 5,
+            "name": "Run actions/setup-python@v5",
+            "conclusion": "success"
+          },
+          {
+            "number": 6,
+            "name": "Run npm ci",
+            "conclusion": "success"
+          },
+          {
+            "number": 7,
+            "name": "Install locked dependencies for the subscription Worker regressions",
+            "conclusion": "success"
+          },
+          {
+            "number": 8,
+            "name": "Prepare the verified update proxy runtime without subscription defaults",
+            "conclusion": "success"
+          },
+          {
+            "number": 9,
+            "name": "Initialize Electron before concurrent native tests",
+            "conclusion": "success"
+          },
+          {
+            "number": 10,
+            "name": "Run node --test --test-concurrency=1",
+            "conclusion": "success"
+          },
+          {
+            "number": 11,
+            "name": "Verify Google login, browser callback and explicit device confirmation in the real renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 12,
+            "name": "Verify native Mac replacement and rollback in temporary signed apps",
+            "conclusion": "success"
+          },
+          {
+            "number": 13,
+            "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+            "conclusion": "success"
+          },
+          {
+            "number": 14,
+            "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+            "conclusion": "success"
+          },
+          {
+            "number": 15,
+            "name": "Run python scripts/build-mac-python.py",
+            "conclusion": "success"
+          },
+          {
+            "number": 16,
+            "name": "Run python scripts/build-windows-python.py",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 17,
+            "name": "Verify bundled Python handlers",
+            "conclusion": "success"
+          },
+          {
+            "number": 18,
+            "name": "Build complete Mac installers with ad hoc code signatures",
+            "conclusion": "success"
+          },
+          {
+            "number": 19,
+            "name": "Build complete Windows installers with bundled Python",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 20,
+            "name": "Verify packaged source, native runtime, installers, and checksums",
+            "conclusion": "success"
+          },
+          {
+            "number": 21,
+            "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 22,
+            "name": "Exercise real Electron main process, bridge, and both download engines",
+            "conclusion": "success"
+          },
+          {
+            "number": 23,
+            "name": "Verify native image clipboard and multi-file paste",
+            "conclusion": "success"
+          },
+          {
+            "number": 24,
+            "name": "Verify responsive startup and credential access recovery",
+            "conclusion": "success"
+          },
+          {
+            "number": 25,
+            "name": "Verify quitting during startup and reporting genuine startup failures",
+            "conclusion": "success"
+          },
+          {
+            "number": 26,
+            "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+            "conclusion": "success"
+          },
+          {
+            "number": 27,
+            "name": "Verify retry and update controls in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 28,
+            "name": "Verify avatar selection, original upload and compressed display",
+            "conclusion": "success"
+          },
+          {
+            "number": 29,
+            "name": "Verify private avatar collection and existing account administration",
+            "conclusion": "success"
+          },
+          {
+            "number": 30,
+            "name": "Verify updater retries through the real manager, IPC and original preload",
+            "conclusion": "success"
+          },
+          {
+            "number": 31,
+            "name": "Verify public and packaged learning page assets, navigation and QR saving",
+            "conclusion": "success"
+          },
+          {
+            "number": 32,
+            "name": "Verify anonymous VIP community access, responsive layout and original QR saving",
+            "conclusion": "success"
+          },
+          {
+            "number": 33,
+            "name": "Verify membership purchase and redemption in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 34,
+            "name": "Verify payment waiting, focus recovery and refreshed account permissions",
+            "conclusion": "success"
+          },
+          {
+            "number": 35,
+            "name": "Verify member original videos and browser account authorization in the real renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 36,
+            "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 37,
+            "name": "Verify public feedback, browser login and private owner conversations",
+            "conclusion": "success"
+          },
+          {
+            "number": 38,
+            "name": "Verify reviews and personal order history in real web and desktop renderers",
+            "conclusion": "success"
+          },
+          {
+            "number": 39,
+            "name": "Verify confirmed revenue and order administration in a real browser",
+            "conclusion": "success"
+          },
+          {
+            "number": 40,
+            "name": "Verify native credential encryption across two app processes",
+            "conclusion": "success"
+          },
+          {
+            "number": 41,
+            "name": "Run actions/upload-artifact@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 80,
+            "name": "Post Run actions/setup-python@v5",
+            "conclusion": "success"
+          },
+          {
+            "number": 81,
+            "name": "Post Run actions/setup-node@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 82,
+            "name": "Post Run actions/checkout@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 83,
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "job": "mac-arm64",
+        "jobId": 119038740716,
+        "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-21T04:28:55Z",
+        "completedAt": "2026-10-21T04:37:59Z",
+        "logSha256": "7de5126926d0ac180886dcac60c21c34559e8c3d2eef6e0f86627a68ec8912c3",
+        "fullNode": {
+          "tests": 1966,
+          "pass": 1952,
+          "fail": 0,
+          "skipped": 14
+        },
+        "python": {
+          "passed": 47,
+          "failed": 0
+        },
+        "additionalNativeMac": {
+          "tests": 93,
+          "pass": 93,
+          "fail": 0,
+          "skipped": 0
+        },
+        "packagedSources": {
+          "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+          "sourceDirty": false,
+          "comparedSources": 252
+        },
+        "membershipRenderer": {
+          "ok": true,
+          "checks": 17
+        },
+        "paymentRenderer": {
+          "ok": true,
+          "checks": 55,
+          "visibilityEvidence": [
+            {
+              "stage": "before-hide",
+              "hidden": false,
+              "state": "visible"
+            },
+            {
+              "stage": "native-hidden",
+              "hidden": true,
+              "state": "hidden",
+              "qrEmpty": true
+            },
+            {
+              "stage": "reshown-status-pending",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true
+            },
+            {
+              "stage": "reshown-first-status-failed",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true,
+              "manualChecks": 0
+            },
+            {
+              "stage": "automatic-fresh-status-restored",
+              "hidden": false,
+              "state": "visible",
+              "qrVisible": true,
+              "manualChecks": 0
+            },
+            {
+              "stage": "old-flight-settled-fresh-tail-held",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true
+            }
+          ],
+          "coverage": [
+            "confirmed receipt and detail preserve the accepted order price after catalog changes",
+            "delayed old handoff lookup cannot overwrite a newer active purchase",
+            "native open failure preserves the same order and supports retry plus copy",
+            "verified deep return tails old PENDING without reopening checkout",
+            "open success panel immediately renders member status and expiry",
+            "daily monthly yearly and Wechat selection fits desktop and 375px",
+            "cold-start handoff waits for verified initial account state",
+            "late native open failure cannot replace a confirmed success",
+            "delayed pending lookup remains guarded when quote returns first",
+            "lookup failure retains original record and guarded retry",
+            "old-owner pending lookup cannot unlock or query after account switch",
+            "Alipay default with separate Wechat registered catalog",
+            "uncertain Wechat create freezes method and reuses request ID",
+            "pending Wechat order restores and resumes its saved provider without another create",
+            "375px Native guidance remains visible in the client",
+            "online-only purchase with manual QR plans email-copy and report removed",
+            "quote change requires second click",
+            "PAYMENT_UNAVAILABLE create reuses request ID",
+            "payment pause blocks checkout and allows readiness refresh",
+            "removed draft SKU keeps its original plan name",
+            "recovery preserves original request and quoted amount",
+            "disabled catalog never creates an order",
+            "single-order checkout fragment preserved",
+            "return parameters never grant rights",
+            "back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant",
+            "paid without committed webhook stays pending and automatically polls",
+            "native app focus immediately checks pending order",
+            "confirmed order refreshes account and feature rights before clearing recovery",
+            "fresh account rights reach app listeners and member badge",
+            "renderer restart restores saved pending order without another create or checkout",
+            "unpaid recovery resumes the original order with a fresh checkout token",
+            "restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID",
+            "status and checkout failures retain the original order",
+            "PAID restart and PAID resume followed by network failure block both purchase actions",
+            "confirmed recovery after a failed PAID check refreshes rights without another checkout or create",
+            "confirmed or paid retry without checkout URL queries status",
+            "late created or resumed checkout discarded on account switch",
+            "browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout",
+            "marketing page uses enabled live catalog and shows payment pause",
+            "375px online layout including unpaid restart control",
+            "Native QR is a local SVG whose actual canvas pixels independently decode to the current server code",
+            "Native QR fits 1280 and 375 pixels with browser guidance requiring another device",
+            "automatic PAID polling removes the QR without browser return or uncommitted membership grants",
+            "duplicate paid returns share the fresh permission refresh and clear the saved order once",
+            "expired QR stays on the original order and refresh never creates another purchase",
+            "closing and reopening the payment dialog preserves the same valid order",
+            "status network errors retain the original order without granting or opening a browser",
+            "real Electron page visibility removes the QR and awaits fresh status before redisplay",
+            "a failed first foreground status automatically restores the freshly decoded QR on the next successful poll without manual focus or query",
+            "a pre-hide status response cannot reveal its old QR while the fresh foreground tail remains held",
+            "same-owner loss and restoration of verification rejects a late old QR response",
+            "late status and Native create responses never show the previous account code",
+            "browser logout clears QR presentation while retaining the owner recovery reference",
+            "legacy WeChat browser fallback requires an explicit action while Alipay retains its flow",
+            "PAID clears stale fallback errors and copy actions through held or failed permission refresh"
+          ]
+        },
+        "completedSteps": [
+          {
+            "number": 1,
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "number": 2,
+            "name": "Validate requested release tag",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 3,
+            "name": "Run actions/checkout@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 4,
+            "name": "Run actions/setup-node@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 5,
+            "name": "Run actions/setup-python@v5",
+            "conclusion": "success"
+          },
+          {
+            "number": 6,
+            "name": "Run npm ci",
+            "conclusion": "success"
+          },
+          {
+            "number": 7,
+            "name": "Install locked dependencies for the subscription Worker regressions",
+            "conclusion": "success"
+          },
+          {
+            "number": 8,
+            "name": "Prepare the verified update proxy runtime without subscription defaults",
+            "conclusion": "success"
+          },
+          {
+            "number": 9,
+            "name": "Initialize Electron before concurrent native tests",
+            "conclusion": "success"
+          },
+          {
+            "number": 10,
+            "name": "Run node --test --test-concurrency=1",
+            "conclusion": "success"
+          },
+          {
+            "number": 11,
+            "name": "Verify Google login, browser callback and explicit device confirmation in the real renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 12,
+            "name": "Verify native Mac replacement and rollback in temporary signed apps",
+            "conclusion": "success"
+          },
+          {
+            "number": 13,
+            "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+            "conclusion": "success"
+          },
+          {
+            "number": 14,
+            "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+            "conclusion": "success"
+          },
+          {
+            "number": 15,
+            "name": "Run python scripts/build-mac-python.py",
+            "conclusion": "success"
+          },
+          {
+            "number": 16,
+            "name": "Run python scripts/build-windows-python.py",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 17,
+            "name": "Verify bundled Python handlers",
+            "conclusion": "success"
+          },
+          {
+            "number": 18,
+            "name": "Build complete Mac installers with ad hoc code signatures",
+            "conclusion": "success"
+          },
+          {
+            "number": 19,
+            "name": "Build complete Windows installers with bundled Python",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 20,
+            "name": "Verify packaged source, native runtime, installers, and checksums",
+            "conclusion": "success"
+          },
+          {
+            "number": 21,
+            "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 22,
+            "name": "Exercise real Electron main process, bridge, and both download engines",
+            "conclusion": "success"
+          },
+          {
+            "number": 23,
+            "name": "Verify native image clipboard and multi-file paste",
+            "conclusion": "success"
+          },
+          {
+            "number": 24,
+            "name": "Verify responsive startup and credential access recovery",
+            "conclusion": "success"
+          },
+          {
+            "number": 25,
+            "name": "Verify quitting during startup and reporting genuine startup failures",
+            "conclusion": "success"
+          },
+          {
+            "number": 26,
+            "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+            "conclusion": "success"
+          },
+          {
+            "number": 27,
+            "name": "Verify retry and update controls in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 28,
+            "name": "Verify avatar selection, original upload and compressed display",
+            "conclusion": "success"
+          },
+          {
+            "number": 29,
+            "name": "Verify private avatar collection and existing account administration",
+            "conclusion": "success"
+          },
+          {
+            "number": 30,
+            "name": "Verify updater retries through the real manager, IPC and original preload",
+            "conclusion": "success"
+          },
+          {
+            "number": 31,
+            "name": "Verify public and packaged learning page assets, navigation and QR saving",
+            "conclusion": "success"
+          },
+          {
+            "number": 32,
+            "name": "Verify anonymous VIP community access, responsive layout and original QR saving",
+            "conclusion": "success"
+          },
+          {
+            "number": 33,
+            "name": "Verify membership purchase and redemption in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 34,
+            "name": "Verify payment waiting, focus recovery and refreshed account permissions",
+            "conclusion": "success"
+          },
+          {
+            "number": 35,
+            "name": "Verify member original videos and browser account authorization in the real renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 36,
+            "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 37,
+            "name": "Verify public feedback, browser login and private owner conversations",
+            "conclusion": "success"
+          },
+          {
+            "number": 38,
+            "name": "Verify reviews and personal order history in real web and desktop renderers",
+            "conclusion": "success"
+          },
+          {
+            "number": 39,
+            "name": "Verify confirmed revenue and order administration in a real browser",
+            "conclusion": "success"
+          },
+          {
+            "number": 40,
+            "name": "Verify native credential encryption across two app processes",
+            "conclusion": "success"
+          },
+          {
+            "number": 41,
+            "name": "Run actions/upload-artifact@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 80,
+            "name": "Post Run actions/setup-python@v5",
+            "conclusion": "success"
+          },
+          {
+            "number": 81,
+            "name": "Post Run actions/setup-node@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 82,
+            "name": "Post Run actions/checkout@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 83,
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "job": "windows-x64",
+        "jobId": 119038740763,
+        "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-10-21T04:28:55Z",
+        "completedAt": "2026-10-21T04:39:46Z",
+        "logSha256": "c9c2da105fccd31cfdce1051d1355f26d4b934f5e48cfed47dbcf50833c833f2",
+        "fullNode": {
+          "tests": 1966,
+          "pass": 1897,
+          "fail": 0,
+          "skipped": 69
+        },
+        "python": {
+          "passed": 47,
+          "failed": 0
+        },
+        "additionalNativeMac": null,
+        "packagedSources": {
+          "sourceSha": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+          "sourceDirty": false,
+          "comparedSources": 252
+        },
+        "membershipRenderer": {
+          "ok": true,
+          "checks": 17
+        },
+        "paymentRenderer": {
+          "ok": true,
+          "checks": 55,
+          "visibilityEvidence": [
+            {
+              "stage": "before-hide",
+              "hidden": false,
+              "state": "visible"
+            },
+            {
+              "stage": "native-hidden",
+              "hidden": true,
+              "state": "hidden",
+              "qrEmpty": true
+            },
+            {
+              "stage": "reshown-status-pending",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true
+            },
+            {
+              "stage": "reshown-first-status-failed",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true,
+              "manualChecks": 0
+            },
+            {
+              "stage": "automatic-fresh-status-restored",
+              "hidden": false,
+              "state": "visible",
+              "qrVisible": true,
+              "manualChecks": 0
+            },
+            {
+              "stage": "old-flight-settled-fresh-tail-held",
+              "hidden": false,
+              "state": "visible",
+              "qrEmpty": true
+            }
+          ],
+          "coverage": [
+            "confirmed receipt and detail preserve the accepted order price after catalog changes",
+            "delayed old handoff lookup cannot overwrite a newer active purchase",
+            "native open failure preserves the same order and supports retry plus copy",
+            "verified deep return tails old PENDING without reopening checkout",
+            "open success panel immediately renders member status and expiry",
+            "daily monthly yearly and Wechat selection fits desktop and 375px",
+            "cold-start handoff waits for verified initial account state",
+            "late native open failure cannot replace a confirmed success",
+            "delayed pending lookup remains guarded when quote returns first",
+            "lookup failure retains original record and guarded retry",
+            "old-owner pending lookup cannot unlock or query after account switch",
+            "Alipay default with separate Wechat registered catalog",
+            "uncertain Wechat create freezes method and reuses request ID",
+            "pending Wechat order restores and resumes its saved provider without another create",
+            "375px Native guidance remains visible in the client",
+            "online-only purchase with manual QR plans email-copy and report removed",
+            "quote change requires second click",
+            "PAYMENT_UNAVAILABLE create reuses request ID",
+            "payment pause blocks checkout and allows readiness refresh",
+            "removed draft SKU keeps its original plan name",
+            "recovery preserves original request and quoted amount",
+            "disabled catalog never creates an order",
+            "single-order checkout fragment preserved",
+            "return parameters never grant rights",
+            "back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant",
+            "paid without committed webhook stays pending and automatically polls",
+            "native app focus immediately checks pending order",
+            "confirmed order refreshes account and feature rights before clearing recovery",
+            "fresh account rights reach app listeners and member badge",
+            "renderer restart restores saved pending order without another create or checkout",
+            "unpaid recovery resumes the original order with a fresh checkout token",
+            "restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID",
+            "status and checkout failures retain the original order",
+            "PAID restart and PAID resume followed by network failure block both purchase actions",
+            "confirmed recovery after a failed PAID check refreshes rights without another checkout or create",
+            "confirmed or paid retry without checkout URL queries status",
+            "late created or resumed checkout discarded on account switch",
+            "browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout",
+            "marketing page uses enabled live catalog and shows payment pause",
+            "375px online layout including unpaid restart control",
+            "Native QR is a local SVG whose actual canvas pixels independently decode to the current server code",
+            "Native QR fits 1280 and 375 pixels with browser guidance requiring another device",
+            "automatic PAID polling removes the QR without browser return or uncommitted membership grants",
+            "duplicate paid returns share the fresh permission refresh and clear the saved order once",
+            "expired QR stays on the original order and refresh never creates another purchase",
+            "closing and reopening the payment dialog preserves the same valid order",
+            "status network errors retain the original order without granting or opening a browser",
+            "real Electron page visibility removes the QR and awaits fresh status before redisplay",
+            "a failed first foreground status automatically restores the freshly decoded QR on the next successful poll without manual focus or query",
+            "a pre-hide status response cannot reveal its old QR while the fresh foreground tail remains held",
+            "same-owner loss and restoration of verification rejects a late old QR response",
+            "late status and Native create responses never show the previous account code",
+            "browser logout clears QR presentation while retaining the owner recovery reference",
+            "legacy WeChat browser fallback requires an explicit action while Alipay retains its flow",
+            "PAID clears stale fallback errors and copy actions through held or failed permission refresh"
+          ]
+        },
+        "completedSteps": [
+          {
+            "number": 1,
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "number": 2,
+            "name": "Validate requested release tag",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 3,
+            "name": "Run actions/checkout@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 4,
+            "name": "Run actions/setup-node@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 5,
+            "name": "Run actions/setup-python@v5",
+            "conclusion": "success"
+          },
+          {
+            "number": 6,
+            "name": "Run npm ci",
+            "conclusion": "success"
+          },
+          {
+            "number": 7,
+            "name": "Install locked dependencies for the subscription Worker regressions",
+            "conclusion": "success"
+          },
+          {
+            "number": 8,
+            "name": "Prepare the verified update proxy runtime without subscription defaults",
+            "conclusion": "success"
+          },
+          {
+            "number": 9,
+            "name": "Initialize Electron before concurrent native tests",
+            "conclusion": "success"
+          },
+          {
+            "number": 10,
+            "name": "Run node --test --test-concurrency=1",
+            "conclusion": "success"
+          },
+          {
+            "number": 11,
+            "name": "Verify Google login, browser callback and explicit device confirmation in the real renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 12,
+            "name": "Verify native Mac replacement and rollback in temporary signed apps",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 13,
+            "name": "Run python -m unittest discover -s test -p 'test_python_*.py'",
+            "conclusion": "success"
+          },
+          {
+            "number": 14,
+            "name": "Verify native Live Photo image, slideshow, video and audio encoding",
+            "conclusion": "success"
+          },
+          {
+            "number": 15,
+            "name": "Run python scripts/build-mac-python.py",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 16,
+            "name": "Run python scripts/build-windows-python.py",
+            "conclusion": "success"
+          },
+          {
+            "number": 17,
+            "name": "Verify bundled Python handlers",
+            "conclusion": "success"
+          },
+          {
+            "number": 18,
+            "name": "Build complete Mac installers with ad hoc code signatures",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 19,
+            "name": "Build complete Windows installers with bundled Python",
+            "conclusion": "success"
+          },
+          {
+            "number": 20,
+            "name": "Verify packaged source, native runtime, installers, and checksums",
+            "conclusion": "success"
+          },
+          {
+            "number": 21,
+            "name": "Verify real Windows installed and portable upgrades from published v1.8.17",
+            "conclusion": "success"
+          },
+          {
+            "number": 22,
+            "name": "Exercise real Electron main process, bridge, and both download engines",
+            "conclusion": "success"
+          },
+          {
+            "number": 23,
+            "name": "Verify native image clipboard and multi-file paste",
+            "conclusion": "success"
+          },
+          {
+            "number": 24,
+            "name": "Verify responsive startup and credential access recovery",
+            "conclusion": "success"
+          },
+          {
+            "number": 25,
+            "name": "Verify quitting during startup and reporting genuine startup failures",
+            "conclusion": "success"
+          },
+          {
+            "number": 26,
+            "name": "Verify isolated Xiaohongshu login reset and preserved app session",
+            "conclusion": "success"
+          },
+          {
+            "number": 27,
+            "name": "Verify retry and update controls in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 28,
+            "name": "Verify avatar selection, original upload and compressed display",
+            "conclusion": "success"
+          },
+          {
+            "number": 29,
+            "name": "Verify private avatar collection and existing account administration",
+            "conclusion": "success"
+          },
+          {
+            "number": 30,
+            "name": "Verify updater retries through the real manager, IPC and original preload",
+            "conclusion": "success"
+          },
+          {
+            "number": 31,
+            "name": "Verify public and packaged learning page assets, navigation and QR saving",
+            "conclusion": "success"
+          },
+          {
+            "number": 32,
+            "name": "Verify anonymous VIP community access, responsive layout and original QR saving",
+            "conclusion": "success"
+          },
+          {
+            "number": 33,
+            "name": "Verify membership purchase and redemption in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 34,
+            "name": "Verify payment waiting, focus recovery and refreshed account permissions",
+            "conclusion": "success"
+          },
+          {
+            "number": 35,
+            "name": "Verify member original videos and browser account authorization in the real renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 36,
+            "name": "Verify feedback conversations and safe reply retries in the real desktop renderer",
+            "conclusion": "success"
+          },
+          {
+            "number": 37,
+            "name": "Verify public feedback, browser login and private owner conversations",
+            "conclusion": "success"
+          },
+          {
+            "number": 38,
+            "name": "Verify reviews and personal order history in real web and desktop renderers",
+            "conclusion": "success"
+          },
+          {
+            "number": 39,
+            "name": "Verify confirmed revenue and order administration in a real browser",
+            "conclusion": "skipped"
+          },
+          {
+            "number": 40,
+            "name": "Verify native credential encryption across two app processes",
+            "conclusion": "success"
+          },
+          {
+            "number": 41,
+            "name": "Run actions/upload-artifact@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 80,
+            "name": "Post Run actions/setup-python@v5",
+            "conclusion": "success"
+          },
+          {
+            "number": 81,
+            "name": "Post Run actions/setup-node@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 82,
+            "name": "Post Run actions/checkout@v4",
+            "conclusion": "success"
+          },
+          {
+            "number": 83,
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ]
+  },
+  "immutableTag": {
+    "annotatedTagObject": "54e6eedeb0642f14ab2d4cdf432e389966482081",
+    "commit": "8d60ae304d3ac8b4dd44434e9015d2c4cc95beba",
+    "verifiedThroughGitHubApi": true
+  },
+  "publisher": {
+    "jobId": 119042977289,
+    "status": "completed",
+    "conclusion": "success",
+    "startedAt": "2026-10-21T04:43:35Z",
+    "completedAt": "2026-10-21T04:44:10Z",
+    "logSha256": "e03c7bbdc1871447f1ed8a5b823cec9819040e1dcd6ecbb6ba6fe8a04440836d",
+    "completedSteps": [
+      {
+        "number": 1,
+        "name": "Set up job",
+        "conclusion": "success"
+      },
+      {
+        "number": 2,
+        "name": "Run actions/checkout@v4",
+        "conclusion": "success"
+      },
+      {
+        "number": 3,
+        "name": "Run actions/setup-node@v4",
+        "conclusion": "success"
+      },
+      {
+        "number": 4,
+        "name": "Run actions/download-artifact@v4",
+        "conclusion": "success"
+      },
+      {
+        "number": 5,
+        "name": "Verify all platforms and publish the complete release",
+        "conclusion": "success"
+      },
+      {
+        "number": 9,
+        "name": "Post Run actions/setup-node@v4",
+        "conclusion": "success"
+      },
+      {
+        "number": 10,
+        "name": "Post Run actions/checkout@v4",
+        "conclusion": "success"
+      },
+      {
+        "number": 11,
+        "name": "Complete job",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "supersededCandidates": {
+    "versions": [
+      "2.0.33",
+      "2.0.34",
+      "2.0.35"
+    ],
+    "assetsReusedForThisRelease": false,
+    "evidence": "The successful v2.0.36 workflow built and verified all three platforms from this report source. Previous candidate failure records and immutable tags are retained separately."
+  },
+  "limits": {
+    "releaseAttachmentVerificationIncluded": false,
+    "installerByteHashesLocallyRecomputed": false,
+    "productionWebDeploymentIncluded": false,
+    "userCurrentInstallationChanged": false,
+    "realPaymentOrProductionEntitlementAcceptanceIncluded": false,
+    "credentialsOrPrivateConfigurationRead": false
+  },
+  "ok": true
+}
