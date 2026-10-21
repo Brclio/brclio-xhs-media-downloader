@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.35",
+  "stage": "local-preflight-before-immutable-source-commit",
+  "verifiedAt": "2026-10-21T02:01:59.541226+00:00",
+  "ok": true,
+  "sourceScope": "Frozen v2.0.35 local working tree; native CI and packaged source comparison must additionally verify the final immutable source.",
+  "local": {
+    "node": {
+      "command": "npm test",
+      "total": 1962,
+      "passed": 1949,
+      "skipped": 13,
+      "failed": 0
+    },
+    "python": {
+      "total": 47,
+      "passed": 47,
+      "failed": 0
+    }
+  },
+  "desktopFixtures": {
+    "payment": {
+      "ok": true,
+      "checks": 53,
+      "checklist": [
+        "confirmed receipt and detail preserve the accepted order price after catalog changes",
+        "delayed old handoff lookup cannot overwrite a newer active purchase",
+        "native open failure preserves the same order and supports retry plus copy",
+        "verified deep return tails old PENDING without reopening checkout",
+        "open success panel immediately renders member status and expiry",
+        "daily monthly yearly and Wechat selection fits desktop and 375px",
+        "cold-start handoff waits for verified initial account state",
+        "late native open failure cannot replace a confirmed success",
+        "delayed pending lookup remains guarded when quote returns first",
+        "lookup failure retains original record and guarded retry",
+        "old-owner pending lookup cannot unlock or query after account switch",
+        "Alipay default with separate Wechat registered catalog",
+        "uncertain Wechat create freezes method and reuses request ID",
+        "pending Wechat order restores and resumes its saved provider without another create",
+        "375px Native guidance remains visible in the client",
+        "online-only purchase with manual QR plans email-copy and report removed",
+        "quote change requires second click",
+        "PAYMENT_UNAVAILABLE create reuses request ID",
+        "payment pause blocks checkout and allows readiness refresh",
+        "removed draft SKU keeps its original plan name",
+        "recovery preserves original request and quoted amount",
+        "disabled catalog never creates an order",
+        "single-order checkout fragment preserved",
+        "return parameters never grant rights",
+        "back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant",
+        "paid without committed webhook stays pending and automatically polls",
+        "native app focus immediately checks pending order",
+        "confirmed order refreshes account and feature rights before clearing recovery",
+        "fresh account rights reach app listeners and member badge",
+        "renderer restart restores saved pending order without another create or checkout",
+        "unpaid recovery resumes the original order with a fresh checkout token",
+        "restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID",
+        "status and checkout failures retain the original order",
+        "PAID restart and PAID resume followed by network failure block both purchase actions",
+        "confirmed recovery after a failed PAID check refreshes rights without another checkout or create",
+        "confirmed or paid retry without checkout URL queries status",
+        "late created or resumed checkout discarded on account switch",
+        "browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout",
+        "marketing page uses enabled live catalog and shows payment pause",
+        "375px online layout including unpaid restart control",
+        "Native QR is a local SVG whose actual canvas pixels independently decode to the current server code",
+        "Native QR fits 1280 and 375 pixels with browser guidance requiring another device",
+        "automatic PAID polling removes the QR without browser return or uncommitted membership grants",
+        "duplicate paid returns share the fresh permission refresh and clear the saved order once",
+        "expired QR stays on the original order and refresh never creates another purchase",
+        "closing and reopening the payment dialog preserves the same valid order",
+        "status network errors retain the original order without granting or opening a browser",
+        "real Electron page visibility removes the QR and awaits fresh status before redisplay",
+        "same-owner loss and restoration of verification rejects a late old QR response",
+        "late status and Native create responses never show the previous account code",
+        "browser logout clears QR presentation while retaining the owner recovery reference",
+        "legacy WeChat browser fallback requires an explicit action while Alipay retains its flow",
+        "PAID clears stale fallback errors and copy actions through held or failed permission refresh"
+      ],
+      "visibilityEvidence": [
+        {
+          "stage": "before-hide",
+          "hidden": false,
+          "state": "visible"
+        },
+        {
+          "stage": "native-hidden",
+          "hidden": true,
+          "state": "hidden",
+          "qrEmpty": true
+        },
+        {
+          "stage": "reshown-status-pending",
+          "hidden": false,
+          "state": "visible",
+          "qrEmpty": true
+        }
+      ],
+      "marketingSemanticAssertions": 4
+    },
+    "membership": {
+      "ok": true,
+      "checks": 17,
+      "scheme": "xhs-app://local",
+      "exactQrModuleAllowlist": true
+    },
+    "memberVideo": {
+      "ok": true,
+      "originalAssertionsPreserved": true,
+      "evidence": "v2.0.34 ARM/Windows native gate passed with identical product and verifier bytes; fresh v2.0.35 native CI remains required."
+    },
+    "commerce": {
+      "ok": true,
+      "checks": 17,
+      "browserAndDesktopGuidanceCheckedSeparately": true,
+      "historicalOrdersAndActivationCodesPreserved": true
+    },
+    "adminCommerce": {
+      "ok": true,
+      "checks": 17
+    },
+    "accountStorage": {
+      "command": "npm run desktop:verify:account",
+      "passed": true,
+      "platform": "darwin",
+      "nativeSafeStorage": true,
+      "separateProcessRelaunch": true,
+      "stableDeviceIdentity": true,
+      "signedEntitlements": true,
+      "offlineSignedRelaunch": true,
+      "backgroundFailureTolerated": true,
+      "authoritativeInvalidationPersisted": true,
+      "legacyAccountUpgrade": true,
+      "serverTransport": "mock",
+      "osRebootTested": false,
+      "installerUpgradeTested": false
+    }
+  },
+  "build": {
+    "pages": true,
+    "workerDryRun": true
+  },
+  "secretScan": {
+    "checkedAt": "2026-10-21T01:59:56.045Z",
+    "sourceFiles": 938,
+    "webFiles": 216,
+    "pagesFiles": 218,
+    "workerBuildFiles": 3,
+    "configuredBusinessSecretValuesChecked": 2,
+    "matches": 0,
+    "credentialsFileMode": "600",
+    "credentialsFileTracked": false,
+    "temporaryManagementTokenUsed": false,
+    "temporaryManagementTokenPersisted": false
+  },
+  "dependencyAudit": {
+    "runtime": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "allDependencies": {
+      "info": 0,
+      "low": 0,
+      "moderate": 9,
+      "high": 4,
+      "critical": 0,
+      "total": 13
+    },
+    "notes": "Runtime yaml patched to 2.8.3; jsqr is test-only. Existing development/build-tool advisories remain; no forced major toolchain changes."
+  },
+  "nativeFixtureNote": {
+    "initialTrustedWheelDefaultScrollNotObserved": true,
+    "rootCauseConfirmed": false,
+    "isolatedControlsPassed": 10,
+    "fixtureChanges": [
+      "explicit OS window and webContents focus",
+      "layout frames and trusted pointer acknowledgement",
+      "plain document hit target",
+      "trusted startup wheel remains inside 1500ms guard"
+    ],
+    "productScrollCodeChanged": false,
+    "allOriginalScrollAssertionsRetained": true
+  },
+  "localTestNote": "Final full v2.0.35 suite passed after all source, copy and context-specific verifier changes were frozen.",
+  "boundaries": {
+    "realPayment": false,
+    "productionOrderCreated": false,
+    "productionEntitlementGranted": false,
+    "newStorageResources": false,
+    "managementTokenUsed": false
+  },
+  "vendorFormatting": "Five upstream parameter-line trailing spaces removed; independent QR decoder tests rerun successfully.",
+  "frozenRendererSources": {
+    "unchangedDuringBothRuns": true,
+    "sha256": {
+      "package.json": "8d2fad13665e1593b253f377efbab1bd762009e91919cb2d3018a8007db815df",
+      "package-lock.json": "e5729502b98eb6d7412320501ccec0d0289a7cf8c087e6fd884a65712910475d",
+      "index.html": "0fbfae5a867bd10243a8f6a4d8ae1e512ab74c4a2feb6725f5a33500eac76628",
+      "membership.html": "c1eb503cdf6aaf80b9977913bba3866798fc092e850de48ec5930419064b6ec5",
+      "membership.js": "ce1b27e1b2c6c9c296f8af2cffa23216fdd559dee63b5a1007b9ff5f08588224",
+      "product.html": "c67fd42a7527ec62021b75b42902c1d8d752d74ca9fcadba441da92c384bcb68",
+      "download.html": "91954ee8d785aec0b3f3da1887465812d9742f658e75c90fffe28311cf482d92",
+      "download.js": "679038c9e1c15a76e41478e31600de47e0aeadeb1aea46183859eac5620cb3d7",
+      "changelog.html": "d4d27c1d648b0f7aa3ddcfbf0912edbffba697502a317715fc29b3d8e1fcad31",
+      "changelog.js": "4049fab35b9fde8c5cdef4f65f237aa2723e8176f471b9559fa61bf15b0a910a",
+      "account-ui.js": "54edb59803650e4e1b17680f0aad5cac2db9bc12ab8357606394997e073ee5cd",
+      "account-ui.css": "168fcc91d524f771e34a0e8a66e12bfc78bd75f6b69114a649ff045a41edddf1",
+      "lib/payment-qr.js": "f425a7d73d5546bf0e770fb6eafa6268ef003a5cf19b1ef5a7d5e8c390b7da7f",
+      "lib/vendor/qrcodegen.js": "349ee5546e42f022bfb3aa37eea8305eb1f0ff271e51fdadb5443dae756d58f7",
+      "lib/payment-recovery.js": "cb55c063fe6fcbb929eb00c1bd5670bbbbcbef7097e44e1f6cf6e9ad8a195be6",
+      "desktop/protocol.js": "13c0a676a9453e4dee2ccd5da1f116cc30fc3699a8dc89419f4f763eb3d72a70",
+      "scripts/verify-brclio-pay-ui.cjs": "42b11e6e678a6d14bbe2d1fc6416a297429e853c39995e5370175e51b18180c9",
+      "scripts/verify-membership-ui.cjs": "d8b2dace06464f31f436c3797769e5f8c04815e1f71cac5bc17e6976644e198a",
+      "scripts/verify-commerce-ui.cjs": "aaaee4b6266dd7f7869b37c2ceff1f2d446a1fe2ca1bb522fc4377bffd522a5e",
+      "deploy/build-web.mjs": "a89ce6fc1135e84aaca5e45f9d5b35a958259b788e28f7f566474d969dbca486"
+    }
+  },
+  "supersededCandidates": [
+    "v2.0.33-superseded.json",
+    "v2.0.34-superseded.json"
+  ]
+}

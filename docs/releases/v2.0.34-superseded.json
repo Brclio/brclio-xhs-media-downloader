@@ -1,0 +1,60 @@
+{
+  "version": "2.0.34",
+  "sourceCommit": "84efd3745d6e9ff560dfbfa8ab0159955e64751a",
+  "workflowRunId": 39528315507,
+  "workflowStatus": "completed",
+  "workflowConclusion": "failure",
+  "runAttempt": 1,
+  "published": false,
+  "productionChanged": false,
+  "immutableTagMoved": false,
+  "replacementVersion": "2.0.35",
+  "reason": "The shared commerce renderer expected desktop-only 手机微信 wording in its browser case, which now correctly instructs use of another device. The Intel Node suite separately observed a 504 instead of 200 on a fresh-worker single-byte request under its 500ms fixture HTTP deadline; the exact scheduling or host cause is unconfirmed.",
+  "sourceChangesForReplacement": "Correct explicit browser/desktop commerce guidance assertions, update release metadata and rebuild all three platforms from a new immutable source. Runtime behavior and timeout budgets remain unchanged; payment and security assertions are preserved.",
+  "observedJobs": {
+    "mac-arm64": "failure",
+    "mac-intel": "failure",
+    "windows-x64": "failure",
+    "publish": "skipped"
+  },
+  "releaseAbsentVerifiedAt": "2026-10-21T01:51:30.654Z",
+  "releaseHttpStatus": 404,
+  "tagCommitVerifiedAt": "2026-10-21T01:51:52.394Z",
+  "failureSteps": {
+    "mac-intel": {
+      "step": 10,
+      "test": "member-video stalled bodies obey the HTTP deadline, release request slots and allow shutdown",
+      "location": "test/standalone-server.test.js:378",
+      "error": "Expected 200; received 504 on the successful single-byte request after stalled-request cancellation and recovered health check.",
+      "fixtureHttpDeadlineMs": 500,
+      "rootCauseConfirmed": false,
+      "unchangedSincePublishedV32": [
+        "test/standalone-server.test.js",
+        "server/standalone/http.js",
+        "server/standalone/media.js"
+      ],
+      "priorIntelSameTestPassed": {
+        "version": "2.0.33",
+        "workflowRunId": 39525822018,
+        "durationMs": 727.02527
+      },
+      "standaloneDefaultHttpDeadlineMs": 60000
+    },
+    "mac-arm64": {
+      "step": 38,
+      "error": "Stale shared browser-help condition in scripts/verify-commerce-ui.cjs:122.",
+      "rootCauseConfirmed": true
+    },
+    "windows-x64": {
+      "step": 38,
+      "error": "Same stale shared browser-help condition in scripts/verify-commerce-ui.cjs:122.",
+      "rootCauseConfirmed": true
+    }
+  },
+  "paymentRendererGate": {
+    "step": 34,
+    "mac-arm64": "success",
+    "windows-x64": "success"
+  },
+  "retryPerformed": false
+}
