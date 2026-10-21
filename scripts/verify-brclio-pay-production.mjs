@@ -73,6 +73,8 @@ export function buildPaymentChecks({ baseUrl, sourceSha, catalogVersion }, metad
   for (const [name, path, markers] of [
     ['membership-page', '/membership', ['membership-catalog-status', 'Brclio Pay', '在线付款']],
     ['account-ui', '/account-ui.js', ['membership-online-pay', 'membership-online-restart', 'payment_order', 'payment-catalog', 'payment-create', 'payment-resume']],
+    ['payment-qr', '/lib/payment-qr.js', ['paymentQrSvg', 'renderPaymentQr', 'crispEdges']],
+    ['payment-qr-encoder', '/lib/vendor/qrcodegen.js', ['MIT License', 'QrCode', 'export { qrcodegen }']],
     ['membership-ui', '/membership.js', ['payment-catalog', 'catalog.plans']],
     ['browser-account', '/lib/browser-account.js', ['payment-catalog', 'payment-create', 'payment-resume', 'payment-status']],
     ['manual-commerce-preserved', '/commerce-ui.js', ['wechat:', 'alipay:', 'activation_code:', 'brclio_pay:']],

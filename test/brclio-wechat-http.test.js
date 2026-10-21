@@ -36,7 +36,7 @@ test('production Worker routes both providers and durably fulfills WeChat query/
   let state = emptyState(), revision = 1, writes = 0;
   state.users[userId] = { id: userId, email: 'fixture@example.test', createdAt: new Date().toISOString(), membership: { type: 'none', startsAt: null, expiresAt: null } };
   state.sessions[digest(pepper, 'session', token)] = { userId, client: 'browser', revokedAt: null };
-  const orders = new Map();
+  const orders = new Map(); let centerCreates = 0;
   const bundle = await build({ entryPoints: [fileURLToPath(new URL('../cloudflare/worker.js', import.meta.url))], bundle: true, format: 'esm', write: false, platform: 'node', external: ['node:*', 'cloudflare:*'] });
   const runtime = new Miniflare(convertV4MiniflareOptions({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-22', compatibilityFlags: ['nodejs_compat'], durableObjects: { ACCOUNT_RUNTIME: { className: 'AccountRuntime', useSQLite: true } },
     bindings: { AUTH_SITE_ORIGIN: origin, AUTH_SECRET_PEPPER: pepper, AUTH_GITHUB_OWNER: 'fixture', AUTH_GITHUB_REPO: 'private', AUTH_GITHUB_TOKEN: 'isolated-github-token', BRCLIO_WECHAT_PAY_BASE_URL: PAY, BRCLIO_WECHAT_PAY_CLIENT_ID: CLIENT, BRCLIO_WECHAT_PAY_API_KEY: SECRET, BRCLIO_WECHAT_PAY_WEBHOOK_SECRET: SECRET, BRCLIO_PAY_API_SECRET: SECRET, BRCLIO_PAY_WEBHOOK_SECRET: SECRET },
@@ -49,9 +49,10 @@ test('production Worker routes both providers and durably fulfills WeChat query/
         assert.equal(request.headers.get('x-brclio-signature'), createHmac('sha256', SECRET).update([request.method, url.pathname + url.search, ts, nonce, raw, ''].join('\n')).digest('hex'));
         assert.equal(request.headers.get('authorization'), null);
         if (url.pathname === '/api/v1/orders') {
+          centerCreates++;
           const input = JSON.parse(raw);
           assert.equal(input.quantity, 1); assert.equal(input.channel, 'native'); assert.equal(input.expectedTotal, 300);
-          if (!orders.has(input.merchantOrderId)) orders.set(input.merchantOrderId, { id: randomUUID().replaceAll('-', ''), clientId: CLIENT, merchantOrderId: input.merchantOrderId, sku: 'daily', quantity: 1, amount: { total: 300, currency: 'CNY' }, status: 'PENDING', payment: { channel: 'native' } });
+          if (!orders.has(input.merchantOrderId)) orders.set(input.merchantOrderId, { id: randomUUID().replaceAll('-', ''), clientId: CLIENT, merchantOrderId: input.merchantOrderId, sku: 'daily', quantity: 1, amount: { total: 300, currency: 'CNY' }, status: 'PENDING', expiresAt: new Date(Date.now() + 600_000).toISOString(), payment: { channel: 'native', codeUrl: 'weixin://wxpay/bizpayurl?pr=isolated_native_http_fixture' } });
           const order = orders.get(input.merchantOrderId);
           return Response.json({ ...order, checkoutUrl: `${PAY}/checkout/${order.id}#token=isolated_checkout_fixture_token` });
         }
@@ -70,11 +71,11 @@ test('production Worker routes both providers and durably fulfills WeChat query/
       return Response.json({ content: { sha: String(revision) } });
     } }));
   t.after(() => runtime.dispose());
-  const call = async (action, input = {}, authenticated = true) => {
-    const res = await runtime.dispatchFetch(origin + '/api/account', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, ...(authenticated ? { Cookie: `__Host-xhs-browser=${token}` } : {}) }, body: JSON.stringify({ action, input }) });
+  const call = async (action, input = {}, authenticated = true, requestOrigin = origin) => {
+    const res = await runtime.dispatchFetch(origin + '/api/account', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: requestOrigin, ...(authenticated ? { Cookie: `__Host-xhs-browser=${token}` } : {}) }, body: JSON.stringify({ action, input }) });
     const body = await res.json();
     assert.ok(!JSON.stringify(body).includes(SECRET));
-    return { status: res.status, body };
+    return { status: res.status, body, cacheControl: res.headers.get('cache-control') };
   };
   const catalog = await call('payment-catalog', { provider: 'wechat' }, false);
   assert.equal(catalog.status, 200); assert.equal(catalog.body.catalog.provider, 'wechat'); assert.deepEqual(catalog.body.catalog.channels, ['native']); assert.equal(writes, 0);
@@ -85,13 +86,27 @@ test('production Worker routes both providers and durably fulfills WeChat query/
   assert.equal((await call('payment-create', { ...input, amount: '0.01' })).status, 409);
   const created = await call('payment-create', input);
   assert.equal(created.status, 200, JSON.stringify(created.body)); assert.equal(created.body.order.source, 'brclio_wechat');
+  assert.equal(created.body.qrCodeUrl, 'weixin://wxpay/bizpayurl?pr=isolated_native_http_fixture');
+  assert.equal(created.cacheControl, 'no-store');
   const replayed = await call('payment-create', input);
   assert.equal(replayed.body.order.id, created.body.order.id); assert.equal(orders.size, 1);
   const remote = [...orders.values()][0];
+  const createsBeforeStatus = centerCreates, writesBeforeStatus = writes;
+  assert.equal((await call('payment-status', { orderId: created.body.order.id, expectedUserId: userId }, false)).status, 401);
+  assert.equal((await call('payment-status', { orderId: created.body.order.id, expectedUserId: randomUUID() })).status, 409);
+  const foreignOrigin = await call('payment-status', { orderId: created.body.order.id, expectedUserId: userId }, true, 'https://untrusted.example.test');
+  assert.equal(foreignOrigin.status, 403); assert.equal(foreignOrigin.body.qrCodeUrl, undefined); assert.equal(foreignOrigin.cacheControl, 'no-store');
+  const pending = await call('payment-status', { orderId: created.body.order.id, expectedUserId: userId });
+  assert.equal(pending.body.qrCodeUrl, remote.payment.codeUrl); assert.equal(pending.body.qrCodeExpiresAt, remote.expiresAt);
+  assert.equal(pending.cacheControl, 'no-store'); assert.equal(centerCreates, createsBeforeStatus); assert.equal(writes, writesBeforeStatus);
+  assert.ok(!JSON.stringify(state).includes('weixin:') && !JSON.stringify(state).includes('qrCode'));
+  const history = await call('orders-mine', { expectedUserId: userId });
+  assert.equal(history.status, 200); assert.ok(!JSON.stringify(history.body).includes('weixin:') && !JSON.stringify(history.body).includes('qrCode'));
   Object.assign(remote, { status: 'SUCCESS', transactionId: '20261020000000000000001', paidAt: new Date().toISOString() });
   // Input provider cannot switch an existing order away from its persisted center.
   const paid = await call('payment-status', { orderId: created.body.order.id, expectedUserId: userId, provider: 'alipay' });
   assert.equal(paid.status, 200, JSON.stringify(paid.body)); assert.equal(paid.body.order.status, 'confirmed');
+  assert.equal(paid.body.qrCodeUrl, null); assert.equal(paid.body.qrCodeExpiresAt, null);
   const expires = state.users[userId].membership.expiresAt, writesAfterPaid = writes;
   const event = { eventId: `payment.success.${remote.id}`, type: 'payment.success', orderId: remote.id, clientId: CLIENT, merchantOrderId: created.body.order.id, sku: 'daily', quantity: 1, total: 300, currency: 'CNY', transactionId: remote.transactionId, paidAt: remote.paidAt };
   const raw = JSON.stringify(event, null, 2) + '\n', ts = String(Math.floor(Date.now() / 1000)), nonce = 'a'.repeat(32);

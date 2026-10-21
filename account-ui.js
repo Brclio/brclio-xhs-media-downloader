@@ -4,6 +4,7 @@ import { getAccountBridge } from './lib/browser-account.js';
 import { initializeCommerceUI } from './commerce-ui.js';
 import { initializeAvatarUI } from './avatar-ui.js';
 import { createPaymentRecovery } from './lib/payment-recovery.js';
+import { renderPaymentQr } from './lib/payment-qr.js';
 
 const { document, window } = globalThis.brclioPageContext?.() ?? globalThis;
 
@@ -129,6 +130,11 @@ export async function initializeAccountUI() {
           <span id="membership-progress-eyebrow" class="account-eyebrow">PAYMENT IN PROGRESS</span>
           <h3 id="membership-progress-title" tabindex="-1">在浏览器中完成付款</h3>
           <p id="membership-progress-message">付款后返回这里，会员状态会自动更新。</p>
+          <div id="membership-wechat-qr" class="membership-wechat-qr" hidden>
+            <div id="membership-qr-image" class="membership-qr-image"></div>
+            <p id="membership-qr-countdown" class="membership-qr-countdown" role="timer" aria-live="off"></p>
+            <p id="membership-qr-device-note" class="membership-qr-device-note">请用手机微信扫一扫</p>
+          </div>
           <ol class="membership-steps" aria-label="开通进度"><li id="membership-step-pay"><span>1</span>完成付款</li><li id="membership-step-confirm"><span>2</span>核实订单</li><li id="membership-step-ready"><span>3</span>会员生效</li></ol>
           <p id="membership-completed-expiry" class="membership-completed-expiry" hidden></p>
         </div>
@@ -145,7 +151,7 @@ export async function initializeAccountUI() {
         <div class="membership-checkout-bottom">
           <p id="membership-online-status" class="membership-status" role="status" aria-live="polite"></p>
           <p id="membership-open-error" class="membership-open-error" role="alert" hidden></p>
-          <div class="membership-checkout-actions"><button id="membership-online-pay" class="button button-primary" type="button" disabled>前往 Brclio Pay 付款</button><button id="membership-online-check" class="button button-secondary" type="button" hidden>刷新付款状态</button><button id="membership-copy-checkout" class="button button-secondary" type="button" hidden>复制付款链接</button><button id="membership-success-done" class="button button-primary" type="button" hidden>完成，开始使用</button></div>
+          <div class="membership-checkout-actions"><button id="membership-online-pay" class="button button-primary" type="button" disabled>前往 Brclio Pay 付款</button><button id="membership-online-check" class="button button-secondary" type="button" hidden>刷新付款状态</button><button id="membership-open-checkout" class="button button-secondary" type="button" hidden>在浏览器打开原收银台</button><button id="membership-copy-checkout" class="button button-secondary" type="button" hidden>复制付款链接</button><button id="membership-success-done" class="button button-primary" type="button" hidden>完成，开始使用</button></div>
           <div class="membership-purchase-notes"><p id="membership-purchase-note">已有会员时长会顺延；付款由服务端核实后自动开通。</p><button id="membership-online-restart" class="membership-text-button" type="button" hidden>更换套餐</button></div>
         </div>
       </section>
@@ -167,6 +173,8 @@ export async function initializeAccountUI() {
   let recoveryState = null, recoveryOwner = null, onlineQuote = null, wakeBusy = false, wakeAgain = false, pageInactive = false, lastWake = -Infinity;
   let checkoutMemory = null, browserOpenError = '', completedState = null, returnToAccountDialog = false;
   let nativePaymentReturn = null, nativeReturnBusy = false;
+  let displayedQr = null, qrTimer = null, qrRenderFailed = false;
+  let qrForegroundReady = !document.hidden, qrVisibilityRevision = 0;
   const recovery = createPaymentRecovery({ bridge,
     onChange: value => {
       recoveryState = value;
@@ -178,8 +186,8 @@ export async function initializeAccountUI() {
           queueMicrotask(() => void loadOnlineCatalog());
         }
       }
-      if (value.phase === 'idle') { onlineQuote = null; completedState = null; checkoutMemory = null; browserOpenError = ''; }
-      if (['confirmed', 'closed'].includes(value.phase)) { checkoutMemory = null; browserOpenError = ''; }
+      if (value.phase === 'idle') { onlineQuote = null; completedState = null; checkoutMemory = null; browserOpenError = ''; qrRenderFailed = false; }
+      if (value.paymentStatus === 'PAID' || ['confirming', 'refreshing', 'confirmed', 'closed'].includes(value.phase)) { checkoutMemory = null; browserOpenError = ''; }
       if (value.order?.planId && getMembershipPlan(value.order.planId) && Number.isSafeInteger(value.order.priceCents)) {
         const plan = getMembershipPlan(value.order.planId);
         onlineQuote = { name: value.order.planName || plan.name, amount: (value.order.priceCents / 100).toFixed(2), days: plan.days };
@@ -219,14 +227,64 @@ export async function initializeAccountUI() {
     if (fresh && !dialog.open) recovery.dismissResult?.();
     const parent = document.getElementById('browser-account-dialog');
     if (parent?.open) { returnToAccountDialog = true; parent.close(); }
-    renderPurchase(); if (!dialog.open) dialog.showModal();
+    if (!dialog.open) dialog.showModal(); renderPurchase();
+  }
+  function clearDisplayedQr() {
+    if (qrTimer) { clearInterval(qrTimer); qrTimer = null; }
+    displayedQr = null;
+    element('membership-qr-image').replaceChildren();
+    element('membership-qr-countdown').textContent = '';
+    element('membership-wechat-qr').hidden = true;
+    dialog.dataset.paymentQr = 'hidden';
+  }
+  function renderWechatQr() {
+    const current = recoveryState, qr = current?.wechatQr;
+    const eligible = dialog.open && !pageInactive && !document.hidden && qrForegroundReady && state?.authenticated && state.verified && state.configured && state.account?.membership?.type !== 'permanent'
+      && paymentUserId && qr?.ownerId === paymentUserId && qr.orderId === current.orderId
+      && current.order?.userId === paymentUserId && paymentOrderProvider(current.order) === 'wechat'
+      && current.order?.status === 'pending' && current.paymentStatus === 'PENDING'
+      && !['confirmed', 'confirming', 'refreshing', 'closed'].includes(current.phase)
+      && Date.parse(qr.expiresAt) > Date.now();
+    if (!eligible) { clearDisplayedQr(); return false; }
+    if (!displayedQr || displayedQr.orderId !== qr.orderId || displayedQr.codeUrl !== qr.codeUrl || displayedQr.expiresAt !== qr.expiresAt) {
+      clearDisplayedQr();
+      try { renderPaymentQr(element('membership-qr-image'), qr.codeUrl); }
+      catch { qrRenderFailed = true; return false; }
+      displayedQr = { orderId: qr.orderId, codeUrl: qr.codeUrl, expiresAt: qr.expiresAt };
+      qrRenderFailed = false;
+      qrTimer = setInterval(() => {
+        if (!displayedQr || Date.parse(displayedQr.expiresAt) <= Date.now()) { clearDisplayedQr(); renderPurchase(); return; }
+        updateQrCountdown();
+      }, 1000);
+    }
+    updateQrCountdown();
+    element('membership-wechat-qr').hidden = false;
+    return true;
+  }
+  function updateQrCountdown() {
+    if (!displayedQr) return;
+    const seconds = Math.max(0, Math.ceil((Date.parse(displayedQr.expiresAt) - Date.now()) / 1000));
+    element('membership-qr-countdown').textContent = `付款码剩余 ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+  function rememberWechatCheckout(value, orderId, accountRevision) {
+    checkoutMemory = null; browserOpenError = '';
+    if (!state?.verified || !state.configured || state.account?.user?.id !== paymentUserId || accountRevision !== recovery.snapshot().accountRevision) return;
+    try {
+      checkoutMemory = { checkoutUrl: paymentCheckoutUrl(value, 'wechat'), orderId, ownerId: paymentUserId };
+    } catch { /* An invalid optional fallback cannot expose a URL or replace the QR. */ }
+  }
+  function allowQrAfterCheck(revision = qrVisibilityRevision) {
+    if (revision === qrVisibilityRevision && !document.hidden && !pageInactive && recovery.snapshot().phase === 'waiting') {
+      qrForegroundReady = true; renderPurchase();
+    }
   }
   async function openCheckout(checkoutUrl, orderId, epoch) {
+    if (epoch !== paymentEpoch || !state?.verified || !state.configured || state.account?.user?.id !== paymentUserId) return;
     checkoutMemory = { checkoutUrl, orderId, ownerId: paymentUserId }; browserOpenError = '';
     if (isDesktop) {
       const reply = await bridge.openPaymentCheckout?.({ checkoutUrl, orderId, expectedUserId: paymentUserId });
       const latest = recovery.snapshot();
-      if (epoch !== paymentEpoch || latest.orderId !== orderId || ['confirmed', 'closed', 'confirming', 'refreshing'].includes(latest.phase) || latest.paymentStatus === 'PAID') return;
+      if (epoch !== paymentEpoch || !state?.verified || !state.configured || latest.orderId !== orderId || ['confirmed', 'closed', 'confirming', 'refreshing'].includes(latest.phase) || latest.paymentStatus === 'PAID') return;
       if (!reply?.ok) {
         browserOpenError = reply?.error?.message || '当前客户端无法打开收银台，请更新客户端或检查系统默认浏览器后重试。';
         throw new Error(browserOpenError);
@@ -234,10 +292,14 @@ export async function initializeAccountUI() {
     } else window.location.assign(checkoutUrl);
   }
   const renderPurchase = () => {
+    if (!state?.authenticated || !state.verified || !state.configured) {
+      checkoutMemory = null; browserOpenError = ''; clearDisplayedQr();
+    }
     const email = state?.authenticated ? state.account?.user?.email || '' : '';
     const permanent = Boolean(state?.authenticated && state?.verified && state.account?.membership?.type === 'permanent');
     const ready = Boolean(email && state?.verified && state?.configured && !permanent);
     element('membership-online-account').textContent = email || '尚未登录';
+    element('membership-qr-device-note').textContent = isDesktop ? '请用手机微信扫一扫' : '请用另一台设备上的微信扫码';
     element('membership-login-guidance').hidden = ready && Boolean(bridge.commerceRequest);
     element('membership-login-message').textContent = permanent ? '当前账号已拥有永久会员，无需购买这些套餐。'
       : state?.authenticated
@@ -266,12 +328,12 @@ export async function initializeAccountUI() {
       ? '人民币计价，下单前会再次核对金额。'
       : '价格与当前收银台保持一致。';
     element('membership-online-method-help').textContent = (onlineProvider === 'wechat'
-      ? (isDesktop ? '在浏览器显示二维码，用手机微信扫一扫。' : '需要另一台设备显示二维码，再用手机微信扫码。')
+      ? (isDesktop ? '在客户端内显示二维码，用手机微信扫一扫。' : '在此显示付款二维码；请用另一台设备上的微信扫码。')
       : (isDesktop ? '将在系统默认浏览器中打开支付宝收银台。' : '将在安全收银台完成付款。'))
       + (restoring ? ' 正在恢复原付款记录，完成前暂不能切换渠道或创建新订单。' : waiting ? ' 已锁定原订单付款方式，请先核实原订单；请勿重复付款。' : onlineDraft ? ' 上次创建结果尚未确认，请重试原付款订单。' : '');
     element('membership-online-plan').disabled = !ready || restoring || waiting || onlineBusy || catalogBusy || Boolean(onlineDraft);
     element('membership-online-pay').disabled = !ready || restoring || onlineBusy || onlineStatusBusy || (waiting ? !canResume : !onlineCatalog?.enabled || paymentsPaused || (!onlinePlan && !onlineDraft) || catalogBusy);
-    element('membership-online-pay').textContent = restoring ? '等待恢复原付款订单' : onlineBusy ? '正在处理付款订单…' : onlineStatusBusy && waiting ? '正在核实订单…' : canResume ? '继续支付原订单' : waiting ? '等待付款与权益确认' : paymentsPaused ? '在线付款暂未开放' : onlineDraft ? '重试原付款订单' : '前往 Brclio Pay 付款';
+    element('membership-online-pay').textContent = restoring ? '等待恢复原付款订单' : onlineBusy ? '正在处理付款订单…' : onlineStatusBusy && waiting ? '正在核实订单…' : canResume ? onlineProvider === 'wechat' ? '刷新付款二维码' : '继续支付原订单' : waiting ? '等待付款与权益确认' : paymentsPaused ? '在线付款暂未开放' : onlineDraft ? '重试原付款订单' : onlineProvider === 'wechat' ? '生成微信付款二维码' : '前往 Brclio Pay 付款';
     element('membership-online-restart').hidden = !waiting;
     element('membership-online-restart').disabled = !ready || !canResume || onlineBusy || onlineStatusBusy || catalogBusy;
     element('membership-online-refresh').disabled = catalogBusy || onlineBusy || !ready;
@@ -302,18 +364,24 @@ export async function initializeAccountUI() {
     element('membership-summary-plan').textContent = selectedQuote ? `${({ daily: '日会员', monthly: '月会员', yearly: '年会员' })[recoveryState?.order?.planId || onlineDraft?.planId || onlinePlan?.id] || selectedQuote.name}` : '选择会员套餐';
     element('membership-summary-amount').textContent = selectedQuote?.amount || '—';
     element('membership-summary-duration').textContent = selectedQuote ? `${selectedQuote.days} 天 · 一次付款` : '登录后查看当前渠道报价';
-    element('membership-summary-provider').textContent = onlineProvider === 'wechat' ? '微信支付 · 在线收银台' : '支付宝 · 在线收银台';
+    element('membership-summary-provider').textContent = onlineProvider === 'wechat' ? '微信支付 · 扫码付款' : '支付宝 · 在线收银台';
     element('membership-summary-label').textContent = done ? '本次开通已确认' : waiting ? '原订单已保留' : '本次开通';
     const paid = done || ['confirming', 'refreshing'].includes(phase) || recoveryState?.paymentStatus === 'PAID';
+    const qrVisible = renderWechatQr();
+    const awaitingWechat = waiting && onlineProvider === 'wechat' && !paid && phase !== 'closed';
+    dialog.dataset.paymentQr = qrVisible ? 'visible' : 'hidden';
     const active = activeAccount?.membership?.active;
-    element('membership-progress-symbol').textContent = done ? '✓' : browserOpenError ? '!' : paid || creating || restoring ? '···' : '↗';
+    element('membership-progress-symbol').hidden = qrVisible;
+    element('membership-progress-eyebrow').hidden = qrVisible;
+    element('membership-progress-symbol').textContent = done ? '✓' : paid || creating || restoring ? '···' : browserOpenError ? '!' : '↗';
     element('membership-progress-eyebrow').textContent = done ? 'READY TO GO' : paid ? 'CONFIRMING MEMBERSHIP' : 'YOUR ORDER IS SAFE';
-    element('membership-progress-title').textContent = done ? active ? '会员已开通' : '付款已确认' : restoring ? '正在恢复原订单' : creating ? '正在准备收银台' : browserOpenError ? '收银台尚未打开' : paid ? '正在确认会员权益' : '在浏览器中完成付款';
+    element('membership-progress-title').textContent = done ? active ? '会员已开通' : '付款已确认' : paid ? '正在确认会员权益' : restoring ? '正在恢复原订单' : creating ? onlineProvider === 'wechat' ? '正在准备付款码' : '正在准备收银台' : browserOpenError ? '收银台尚未打开' : awaitingWechat ? qrVisible ? '用微信扫一扫' : '付款二维码待刷新' : '在浏览器中完成付款';
     element('membership-progress-message').textContent = done ? !active ? '账号已刷新，该次会员时长现已到期。' : recoveryState?.permissions?.some(item => !item.authorized) ? '会员已生效；当前设备的功能仍按授权限制执行。' : '账号与功能权限已更新，现在就可以使用。'
       : restoring ? '正在核实上次的付款记录，完成后继续。'
       : creating ? '正在安全保存本次订单，请稍候。'
-      : browserOpenError ? '原订单已保留，请重试打开或复制付款链接。'
       : paid ? '正在同步账号与功能权限，请勿重复付款。'
+      : browserOpenError ? '原订单已保留，请重试打开或复制付款链接。'
+      : awaitingWechat ? qrVisible ? '付款后自动核实，无需关闭窗口。' : !ready ? '重新核实账号后，可继续查看原订单。' : qrRenderFailed ? '二维码暂时无法显示，请刷新原订单。' : '付款码已失效或尚未就绪，请刷新原订单。'
       : isDesktop ? '付款后返回客户端，结果会自动显示在这里。无需登录网页账号。' : '请完成原订单付款；返回后会自动核实开通结果。';
     element('membership-step-pay').classList.toggle('is-done', paid);
     element('membership-step-confirm').classList.toggle('is-current', paid && !done);
@@ -324,12 +392,16 @@ export async function initializeAccountUI() {
     element('membership-completed-expiry').textContent = activeAccount?.membership?.type === 'permanent' ? '永久会员 · 无到期时间' : activeAccount?.membership?.expiresAt ? `有效期至 ${dateLabel(activeAccount.membership.expiresAt)}` : '';
     element('membership-online-pay').hidden = done;
     element('membership-online-check').hidden = done || !onlineOrderId;
+    element('membership-online-check').textContent = '刷新付款状态';
     element('membership-success-done').hidden = !done;
     element('membership-online-restart').hidden = done || !waiting;
-    element('membership-open-error').hidden = !browserOpenError;
+    element('membership-open-error').hidden = paid || !browserOpenError;
     element('membership-open-error').textContent = browserOpenError;
-    element('membership-copy-checkout').hidden = !browserOpenError || !checkoutMemory || checkoutMemory.ownerId !== paymentUserId;
+    element('membership-copy-checkout').hidden = paid || phase === 'closed' || !ready || !browserOpenError || !checkoutMemory || checkoutMemory.ownerId !== paymentUserId;
     element('membership-copy-checkout').disabled = onlineBusy || onlineStatusBusy;
+    element('membership-open-checkout').hidden = !ready || !awaitingWechat || qrVisible || !canResume || !checkoutMemory
+      || checkoutMemory.ownerId !== paymentUserId || checkoutMemory.orderId !== recoveryState.orderId;
+    element('membership-open-checkout').disabled = onlineBusy || onlineStatusBusy;
     element('membership-purchase-note').textContent = done ? '会员状态已同步，无需关闭窗口后再刷新。' : waiting && canResume ? '更换套餐不会关闭旧订单，请勿在新旧订单中重复付款。' : '已有会员时长会顺延；按次购买，不自动续费。';
   };
   async function loadOnlineCatalog() {
@@ -361,7 +433,7 @@ export async function initializeAccountUI() {
       if (epoch === paymentEpoch && revision === catalogRevision) { catalogBusy = false; renderPurchase(); }
     }
   }
-  const checkOnlineOrder = () => recovery.focus();
+  const checkOnlineOrder = async () => { const revision = qrVisibilityRevision; await recovery.focus(); allowQrAfterCheck(revision); };
   const notice = (message, error = false) => {
     element('account-notice').textContent = message || '';
     element('account-notice').classList.toggle('is-error', error);
@@ -398,7 +470,7 @@ export async function initializeAccountUI() {
       recoveryOwner = null;
       paymentUserId = value.authenticated ? value.account?.user?.id : null;
       onlineCatalog = null; onlineDraft = null; onlineBusy = false; catalogBusy = false; onlineStatusBusy = false;
-      completedState = null; checkoutMemory = null; browserOpenError = '';
+      completedState = null; checkoutMemory = null; browserOpenError = ''; qrRenderFailed = false; clearDisplayedQr();
       onlineProvider = 'alipay'; element('membership-online-method').querySelector('input[value="alipay"]').checked = true;
       catalogRevision++;
       element('membership-online-plan').replaceChildren(); renderPlanCards();
@@ -524,24 +596,50 @@ export async function initializeAccountUI() {
   element('account-open-membership').addEventListener('click', () => {
     showMembership({ fresh: true }); void loadOnlineCatalog();
   });
-  element('membership-close').addEventListener('click', () => dialog.close());
+  element('membership-close').addEventListener('click', () => { clearDisplayedQr(); dialog.close(); });
+  dialog.addEventListener('cancel', clearDisplayedQr);
   dialog.addEventListener('close', () => {
     // A queued close from the previous opening must not cover a new checkout.
     if (dialog.open) return;
+    clearDisplayedQr();
     const parent = document.getElementById('browser-account-dialog');
     if (returnToAccountDialog && parent && !parent.open && !pageInactive) parent.showModal();
     returnToAccountDialog = false;
   });
   element('membership-success-done').addEventListener('click', () => { returnToAccountDialog = false; dialog.close(); if (isDesktop) document.getElementById('single-note-tab')?.click(); });
+  function canCopyCheckout(saved) {
+    const pending = recovery.snapshot();
+    return Boolean(state?.authenticated && state.verified && state.configured && saved && checkoutMemory === saved
+      && saved.ownerId === paymentUserId && state.account?.user?.id === saved.ownerId && saved.orderId === pending.orderId
+      && !['PAID', 'CLOSED'].includes(pending.paymentStatus) && pending.order?.status !== 'confirmed'
+      && !['confirming', 'refreshing', 'confirmed', 'closed'].includes(pending.phase));
+  }
   element('membership-copy-checkout').addEventListener('click', async () => {
     const saved = checkoutMemory;
-    if (!saved || saved.ownerId !== paymentUserId || saved.orderId !== recovery.snapshot().orderId || ['confirmed', 'closed'].includes(recovery.snapshot().phase)) return;
-    try { await window.navigator.clipboard.writeText(saved.checkoutUrl); if (checkoutMemory === saved) { browserOpenError = '付款链接已复制，可粘贴到浏览器打开。请只支付这笔原订单。'; renderPurchase(); } }
-    catch { if (checkoutMemory === saved) { browserOpenError = '系统未允许复制。请设置默认浏览器后重试打开原收银台。'; renderPurchase(); } }
+    if (!canCopyCheckout(saved)) return;
+    try { await window.navigator.clipboard.writeText(saved.checkoutUrl); if (canCopyCheckout(saved)) { browserOpenError = '付款链接已复制，可粘贴到浏览器打开。请只支付这笔原订单。'; renderPurchase(); } }
+    catch { if (canCopyCheckout(saved)) { browserOpenError = '系统未允许复制。请设置默认浏览器后重试打开原收银台。'; renderPurchase(); } }
+  });
+  element('membership-open-checkout').addEventListener('click', async () => {
+    const saved = checkoutMemory, pending = recovery.snapshot(), epoch = paymentEpoch;
+    if (onlineBusy || onlineStatusBusy || !state?.verified || !state.configured || !saved || saved.ownerId !== paymentUserId || state.account?.user?.id !== saved.ownerId || saved.orderId !== pending.orderId
+      || paymentOrderProvider(pending.order) !== 'wechat' || !['waiting', 'retry'].includes(pending.phase)
+      || pending.paymentStatus !== 'PENDING' || pending.wechatQr && Date.parse(pending.wechatQr.expiresAt) > Date.now()) return;
+    onlineBusy = true; renderPurchase();
+    try {
+      await recovery.check();
+      const checked = recovery.snapshot();
+      if (epoch !== paymentEpoch || checkoutMemory !== saved || checked.orderId !== saved.orderId
+        || checked.phase !== 'waiting' || checked.paymentStatus !== 'PENDING' || !state?.verified || !state.configured || state.account?.user?.id !== saved.ownerId) return;
+      await openCheckout(saved.checkoutUrl, saved.orderId, epoch);
+    } catch (error) {
+      if (epoch === paymentEpoch) element('membership-online-status').textContent = error.message;
+    } finally { if (epoch === paymentEpoch) { onlineBusy = false; renderPurchase(); } }
   });
   dialog.addEventListener('change', renderPurchase);
   function returnToAccount(target) {
     returnToAccountDialog = false;
+    clearDisplayedQr();
     dialog.close();
     const parent = document.getElementById('browser-account-dialog');
     if (!isDesktop && parent && !parent.open && !pageInactive) parent.showModal();
@@ -585,20 +683,26 @@ export async function initializeAccountUI() {
         if (epoch !== paymentEpoch) return;
         const checked = recovery.snapshot();
         if (checked.orderId !== pending.orderId || checked.phase !== 'waiting' || checked.paymentStatus !== 'PENDING') return;
+        const accountRevision = recovery.snapshot().accountRevision, qrRevision = qrVisibilityRevision;
         const reply = await bridge.commerceRequest('payment-resume', { orderId: pending.orderId, expectedUserId: paymentUserId });
         if (epoch !== paymentEpoch || recovery.snapshot().orderId !== pending.orderId) return;
         if (!reply.ok) throw new Error(reply.error?.message || '暂时无法打开原订单，请稍后重试。');
         const order = reply.result?.order;
         if (order?.id !== pending.orderId || (order.userId && order.userId !== paymentUserId)
           || !['pending', 'confirmed'].includes(order.status)) throw new Error('原订单返回异常，请重新查询付款状态。');
-        recovery.observe(reply.result);
+        recovery.observe(reply.result, { accountRevision });
+        allowQrAfterCheck(qrRevision);
         const current = recovery.snapshot();
         if (order.status === 'confirmed' || ['PAID', 'CLOSED'].includes(reply.result.paymentStatus || order.paymentStatus)
           || ['confirmed', 'confirming', 'refreshing', 'closed'].includes(current.phase) || current.paymentStatus === 'PAID') {
           await recovery.check(); return;
         }
-        const checkoutUrl = paymentCheckoutUrl(reply.result.checkoutUrl, paymentOrderProvider(order));
-        await openCheckout(checkoutUrl, pending.orderId, epoch);
+        if (paymentOrderProvider(order) === 'wechat') {
+          rememberWechatCheckout(reply.result.checkoutUrl, pending.orderId, accountRevision);
+        } else {
+          const checkoutUrl = paymentCheckoutUrl(reply.result.checkoutUrl, 'alipay');
+          await openCheckout(checkoutUrl, pending.orderId, epoch);
+        }
       } catch (error) {
         if (epoch === paymentEpoch) element('membership-online-status').textContent = error.message;
       } finally { if (epoch === paymentEpoch) { onlineBusy = false; renderPurchase(); } }
@@ -612,25 +716,30 @@ export async function initializeAccountUI() {
     onlineBusy = true; renderPurchase();
     element('membership-online-status').textContent = '正在创建订单，请稍候…';
     try {
+      const accountRevision = recovery.snapshot().accountRevision, qrRevision = qrVisibilityRevision;
       const reply = await bridge.commerceRequest('payment-create', onlineDraft);
       if (epoch !== paymentEpoch) return;
       if (!reply.ok) throw Object.assign(new Error(reply.error?.message || '创建结果未确认，请重试原订单。'), { code: reply.error?.code });
       const order = reply.result.order;
       if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(order?.id || '')) throw new Error('付款订单返回异常，请重试原订单。');
+      const provider = onlineDraft.provider || 'alipay';
+      if ((order.userId && order.userId !== paymentUserId) || paymentOrderProvider(order) !== provider) throw new Error('付款订单与当前账号或渠道不一致，请核实原订单。');
       onlineOrderId = order.id;
       const quotedPlan = getMembershipPlan(onlineDraft.planId);
       onlineQuote = { name: order.planName || onlineCatalog?.plans.find(item => item.id === onlineDraft.planId)?.name || quotedPlan.name,
         amount: Number.isSafeInteger(order.priceCents) ? (order.priceCents / 100).toFixed(2) : onlineDraft.amount, days: quotedPlan.days };
       if (order.status === 'confirmed' || ['PAID', 'CLOSED'].includes(reply.result.paymentStatus || order.paymentStatus)) {
         onlineDraft = null; recovery.track(order.id, { persistent: reply.recovery?.persistent !== false });
-        recovery.observe(reply.result); await recovery.check(); return;
+        recovery.observe(reply.result, { accountRevision }); await recovery.check(); return;
       }
-      const checkoutUrl = paymentCheckoutUrl(reply.result.checkoutUrl, onlineDraft.provider || 'alipay');
+      const checkoutUrl = provider === 'wechat' ? null : paymentCheckoutUrl(reply.result.checkoutUrl, 'alipay');
       onlineDraft = null;
       recovery.track(order.id, { persistent: reply.recovery?.persistent !== false });
-      recovery.observe(reply.result);
+      recovery.observe(reply.result, { accountRevision });
+      allowQrAfterCheck(qrRevision);
       window.dispatchEvent(new CustomEvent('brclio-orders-changed'));
-      await openCheckout(checkoutUrl, order.id, epoch);
+      if (provider === 'wechat') rememberWechatCheckout(reply.result.checkoutUrl, order.id, accountRevision);
+      else await openCheckout(checkoutUrl, order.id, epoch);
     } catch (error) {
       if (epoch !== paymentEpoch) return;
       if (error.code === 'QUOTE_CHANGED') {
@@ -684,6 +793,7 @@ export async function initializeAccountUI() {
   document.getElementById('browser-account-open')?.addEventListener('click', () => void openAccountUI());
   document.getElementById('browser-account-close')?.addEventListener('click', () => browserDialog?.close());
   window.addEventListener('pagehide', event => {
+    clearDisplayedQr();
     // BFCache suspends this document rather than destroying it. Keep the
     // pending-order controller and subscriptions for pageshow's immediate check.
     if (event.persisted) return;
@@ -705,12 +815,14 @@ export async function initializeAccountUI() {
     if (wakeBusy) { wakeAgain = true; return; }
     if (Date.now() - lastWake < 250) return;
     lastWake = Date.now(); wakeBusy = true;
+    const qrRevision = qrVisibilityRevision;
     try {
       if (!state?.verified && (state?.authenticated || state?.status === 'service_unavailable')) {
         const refreshed = await bridge.refreshAccount();
         if (refreshed?.state) render(refreshed.state);
       }
       await recovery.focus();
+      allowQrAfterCheck(qrRevision);
       await processNativePaymentReturn();
     } catch { /* The persisted order remains available for the next focus or retry. */ }
     finally {
@@ -719,8 +831,12 @@ export async function initializeAccountUI() {
     }
   }
   const pausePayment = () => recovery.setForeground?.(false);
-  const wakeVisible = () => { recovery.setForeground?.(!document.hidden); if (!document.hidden) void wakePayment(); };
-  const wakeRestored = event => { if (event.persisted) { lastWake = -Infinity; void wakePayment(); } };
+  const wakeVisible = () => {
+    qrVisibilityRevision++; qrForegroundReady = false; clearDisplayedQr();
+    recovery.setForeground?.(!document.hidden);
+    if (!document.hidden) { lastWake = -Infinity; void wakePayment(); }
+  };
+  const wakeRestored = event => { if (event.persisted) { qrVisibilityRevision++; qrForegroundReady = false; lastWake = -Infinity; void wakePayment(); } };
   const unsubscribeFocus = bridge.onAppFocus?.(() => void wakePayment());
   window.addEventListener('focus', wakePayment);
   window.addEventListener('blur', pausePayment);

@@ -106,7 +106,8 @@ document.addEventListener('focusin', event => auditScroll('focusin', { id: event
 window.addEventListener('wheel', event => {
   const record = { trusted:event.isTrusted, target:event.target.id || event.target.tagName,
     modalCount:document.querySelectorAll('dialog:modal').length, x:event.clientX, y:event.clientY,
-    scrollY, at:Math.round(performance.now()), phase:document.getElementById('video-download-progress')?.dataset.phase };
+    scrollY, at:Math.round(performance.now()), frame:window.fixtureAnimationFrames,
+    phase:document.getElementById('video-download-progress')?.dataset.phase };
   window.fixtureWheelEvents.push(record); auditScroll('wheel', record);
 }, { capture:true, passive:true });
 window.fixtureRelease = stage => {
@@ -253,6 +254,16 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     if (details.level === 'error' && !details.message.includes('ERR_BLOCKED_BY_CLIENT') && !details.message.includes('playback.mp4')) rendererErrors.push(details.message);
   });
   const evaluate = script => win.webContents.executeJavaScript(script, true);
+  const focusForNativeInput = async () => {
+    // sendInputEvent requires the containing BrowserWindow to be focused.
+    // DOM focus in a hidden fixture does not establish that OS precondition.
+    win.show(); win.focus(); win.webContents.focus();
+    const started = Date.now();
+    while (!win.isFocused() || !win.webContents.isFocused()) {
+      assert.ok(Date.now() - started < 5000, 'Native input fixture must gain window and webContents focus');
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+  };
   const assertNoUnexpectedWindows = async (parsePopups = 1) => {
     assert.deepEqual(await evaluate('window.fixtureOpened'), [], 'Video downloads never open raw media or unexpected windows');
     assert.deepEqual(await evaluate('window.fixtureParsePopups'), Array.from({ length: parsePopups }, () => ({
@@ -281,6 +292,41 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
       if (${condition}) resolve(); else if (Date.now() - started > 5000) reject(new Error('Fixture condition timed out: ' + ${JSON.stringify(condition)})); else setTimeout(check, 20);
     }; check();
   })`);
+  const prepareNativeWheel = async () => {
+    assert.ok(win.isFocused() && win.webContents.isFocused(), 'Native wheel setup requires window and webContents focus');
+    // An instant DOM scroll can precede the compositor's new hit-test data.
+    // Submit the layout, then acknowledge a real pointer move on document
+    // background rather than the video's independent native controls surface.
+    await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+    const point = await evaluate(`(() => {
+      const x=16,y=Math.round(innerHeight/2);
+      window.fixtureNativePointer=null;
+      const moved=event=>{
+        if(event.clientX!==x||event.clientY!==y)return;
+        window.fixtureNativePointer={trusted:event.isTrusted,target:event.target.id||event.target.tagName,x:event.clientX,y:event.clientY};
+        window.removeEventListener('mousemove',moved,true);
+      };
+      window.addEventListener('mousemove',moved,{capture:true,passive:true});
+      return {x,y};
+    })()`);
+    win.webContents.sendInputEvent({ type:'mouseMove', x:point.x, y:point.y-1 });
+    win.webContents.sendInputEvent({ type:'mouseMove', ...point });
+    await until('window.fixtureNativePointer!==null');
+    await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+    const input = await evaluate(`(() => {
+      const target=document.elementFromPoint(${point.x},${point.y});
+      return {...${JSON.stringify(point)},modalCount:document.querySelectorAll('dialog:modal').length,
+        hitTarget:target?.id||target?.tagName,hitModal:target?.closest('dialog:modal')?.id||null,
+        pointer:window.fixtureNativePointer,wheelCount:window.fixtureWheelEvents.length,
+        at:Math.round(performance.now()),frame:window.fixtureAnimationFrames};
+    })()`);
+    assert.equal(input.modalCount, 0, 'A lingering account modal must not intercept a native wheel');
+    assert.equal(input.hitModal, null, 'The native wheel hit target is outside every modal');
+    assert.ok(['BODY','HTML'].includes(input.hitTarget), `Native wheel targets noninteractive document background: ${JSON.stringify(input)}`);
+    assert.equal(input.pointer.trusted, true, 'Native wheel setup acknowledges a trusted pointer move');
+    assert.equal(input.pointer.target, input.hitTarget, 'Pointer delivery agrees with the current document hit-test');
+    return input;
+  };
   const click = id => evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
   const closePurchaseAndAccount = async () => {
     await until(`document.getElementById('membership-dialog').open`);
@@ -410,6 +456,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     },{once:true});
     const rect=button.getBoundingClientRect();return {x:Math.round(rect.left+rect.width/2),y:Math.round(rect.top+rect.height/2)};
   })()`);
+  await focusForNativeInput();
   win.webContents.sendInputEvent({ type:'mouseMove', ...nativeClickPoint });
   win.webContents.sendInputEvent({ type:'mouseDown', button:'left', clickCount:1, ...nativeClickPoint });
   win.webContents.sendInputEvent({ type:'mouseUp', button:'left', clickCount:1, ...nativeClickPoint });
@@ -460,8 +507,10 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
     percentages.push(Number.parseFloat(withinResponse.percent));
     if (start === 50) {
       await capture('progress-within-chunk');
+      await focusForNativeInput();
+      const input = await prepareNativeWheel();
       const beforeWheel = await evaluate('scrollY');
-      win.webContents.sendInputEvent({ type: 'mouseWheel', x: 1000, y: 500, deltaX: 0, deltaY: 900, canScroll: true });
+      win.webContents.sendInputEvent({ type: 'mouseWheel', x:input.x, y:input.y, deltaX: 0, deltaY: 900, canScroll: true });
       await until(`Math.abs(scrollY - ${beforeWheel}) > 100`);
       await settleScrolling(1100);
       const scrolled = await progressSnapshot();
@@ -469,7 +518,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
       const userPosition = scrolled.scrollY;
       await settleScrolling(1100);
       assert.equal(await evaluate('scrollY'), userPosition, 'Progress rendering must not pull a user back after deliberate scrolling');
-      progressEvidence.push({ ...scrolled, userWheelRespected: true });
+      progressEvidence.push({ ...scrolled, userWheelRespected: true, input });
       await capture('progress-user-scroll-respected');
       await evaluate(`document.getElementById('video-download-progress').scrollIntoView({ block: 'center', behavior: 'instant' })`);
       await assertProgress('downloading', { transferred: insideChunk });
@@ -568,24 +617,23 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   // A wheel arriving immediately after a new attempt must release its startup
   // scroll guard. Keep the account request paused past the entire guard window
   // so no later progress render or timeout may steal the user's chosen place.
+  await focusForNativeInput();
   await evaluate(`document.getElementById('video-download-progress').scrollIntoView({block:'center',behavior:'instant'});window.fixtureSlow=true;window.fixtureAccountChecks=0`);
   const earlyWheelStart = await evaluate(`document.getElementById('download-original-video-button').click();${progressSnapshotScript}`);
   assert.equal(earlyWheelStart.inViewport, true);
-  const earlyWheelInput = await evaluate(`(()=>{
-    const target=document.elementFromPoint(1000,500);
-    return window.fixtureEarlyWheelInput={modalCount:document.querySelectorAll('dialog:modal').length,
-      hitTarget:target?.id||target?.tagName,hitModal:target?.closest('dialog:modal')?.id||null,wheelCount:window.fixtureWheelEvents.length};
-  })()`);
+  const earlyWheelInput = await prepareNativeWheel();
+  await evaluate(`window.fixtureEarlyWheelInput=${JSON.stringify(earlyWheelInput)}`);
   assert.equal(earlyWheelInput.modalCount, 0, 'A lingering account modal must not intercept the startup wheel');
   assert.ok(earlyWheelInput.hitTarget, 'The startup wheel needs a real renderer hit target');
   assert.equal(earlyWheelInput.hitModal, null, 'The startup wheel hit target is outside every modal');
-  win.webContents.sendInputEvent({ type:'mouseMove', x:1000, y:500 });
-  win.webContents.sendInputEvent({ type:'mouseWheel', x:1000, y:500, deltaX:0, deltaY:900, canScroll:true });
+  win.webContents.sendInputEvent({ type:'mouseWheel', x:earlyWheelInput.x, y:earlyWheelInput.y, deltaX:0, deltaY:900, canScroll:true });
   await paused('account');
   await until(`window.fixtureWheelEvents.length>${earlyWheelInput.wheelCount}`);
   const startupWheel = await evaluate(`window.fixtureWheelEvents[${earlyWheelInput.wheelCount}]`);
   assert.equal(startupWheel.trusted, true, 'Startup scrolling must come from a trusted native wheel');
   assert.equal(startupWheel.modalCount, 0, 'The native wheel reaches the unblocked page');
+  const startupWheelElapsedMs = startupWheel.at - earlyWheelStart.at;
+  assert.ok(startupWheelElapsedMs<1500, `The trusted wheel must arrive during the startup scroll guard: ${JSON.stringify({start:earlyWheelStart.at,wheel:startupWheel.at})}`);
   await until(`Math.abs(scrollY-${earlyWheelStart.scrollY})>100`);
   await settleScrolling(1700);
   const earlyWheelPosition = await progressSnapshot();
@@ -593,7 +641,7 @@ if (new URL(location.href).searchParams.get('fixtureDesktop') === '1') {
   assert.equal(earlyWheelPosition.inViewport, false, 'A real wheel during startup may leave the pending download controls');
   await settleScrolling(200);
   assert.equal(await evaluate('scrollY'), earlyWheelPosition.scrollY, 'Neither queued frames nor guard expiry may undo the startup wheel');
-  progressEvidence.push({...earlyWheelPosition,userWheelDuringStartup:true,input:earlyWheelInput,wheel:startupWheel});
+  progressEvidence.push({...earlyWheelPosition,userWheelDuringStartup:true,input:earlyWheelInput,wheel:startupWheel,startupWheelElapsedMs});
   await capture('progress-startup-user-scroll-respected');
   await evaluate(`window.fixtureSlow=false;window.fixtureRelease('account')`);
   await until(`window.fixtureDownloads.length===4&&!document.getElementById('download-original-video-button').disabled`);

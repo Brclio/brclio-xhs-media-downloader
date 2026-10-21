@@ -14,7 +14,7 @@ function fixture() {
   let state = emptyState(), revision = 1, clock = Date.parse('2026-10-20T14:00:00Z');
   const userId = randomUUID(), otherId = randomUUID(), faults = [], apiCalls = [], remote = new Map();
   for (const id of [userId, otherId]) state.users[id] = { id, membership: { type: 'none', startsAt: null, expiresAt: null } };
-  let createError = false, createOverrides = {}, queryOverrides = {}, minimalCreate = false, beforeCreate = null;
+  let createError = false, createOverrides = {}, queryOverrides = {}, minimalCreate = false, beforeCreate = null, beforeRefresh = null;
   const fetchImpl = async (url, options) => {
     if (!url.includes('/contents/')) return Response.json({ private: true });
     if (options.method === 'GET') return Response.json({ sha: String(revision), encoding: 'base64', content: Buffer.from(JSON.stringify(state)).toString('base64') });
@@ -40,13 +40,13 @@ function fixture() {
       if (createError) throw Error('fixture upstream timeout');
       if (!remote.has(input.merchantOrderId)) {
         const id = randomUUID().replaceAll('-', '');
-        remote.set(input.merchantOrderId, { id, clientId: CONFIG.clientId, merchantOrderId: input.merchantOrderId, sku: input.sku, quantity: input.quantity, amount: { total: input.expectedTotal, currency: 'CNY' }, status: 'PENDING', payment: { channel: 'native' }, checkoutUrl: `${CONFIG.baseUrl}/checkout/${id}#token=fixture-not-a-real-checkout-token` });
+        remote.set(input.merchantOrderId, { id, clientId: CONFIG.clientId, merchantOrderId: input.merchantOrderId, sku: input.sku, quantity: input.quantity, amount: { total: input.expectedTotal, currency: 'CNY' }, status: 'PENDING', expiresAt: new Date(clock + 600_000).toISOString(), payment: { channel: 'native', codeUrl: `weixin://wxpay/bizpayurl?pr=isolated_${id}` }, checkoutUrl: `${CONFIG.baseUrl}/checkout/${id}#token=fixture-not-a-real-checkout-token` });
       }
       const result = { ...structuredClone(remote.get(input.merchantOrderId)), ...createOverrides };
       return minimalCreate ? { id: result.id, status: result.status, checkoutUrl: result.checkoutUrl, payment: result.payment } : result;
     },
     async getOrder(id) { apiCalls.push({ get: id }); return { ...structuredClone([...remote.values()].find(p => p.id === id)), ...queryOverrides }; },
-    async refreshOrder(id) { apiCalls.push({ refresh: id }); return { ...structuredClone([...remote.values()].find(p => p.id === id)), ...queryOverrides }; },
+    async refreshOrder(id) { apiCalls.push({ refresh: id }); const result = { ...structuredClone([...remote.values()].find(p => p.id === id)), ...queryOverrides }; if (beforeRefresh) await beforeRefresh(id); return result; },
   };
   const service = () => createBrclioWechatPayService({ store: store(), now: () => clock, authenticate, hash: digest, config: CONFIG, paymentClient: upstream });
   const call = (action, input = {}, token = userId, client = 'browser') => service().execute({ action, input, token, client });
@@ -68,7 +68,7 @@ function fixture() {
   return { userId, otherId, faults, remote, apiCalls, service, call, legacyCall, createInput, paid, event,
     async read() { return (await store().read()).state; },
     async mutate(fn) { return store().transaction(current => { fn(current); return { value: true }; }); },
-    set createError(value) { createError = value; }, set createOverrides(value) { createOverrides = value; }, set queryOverrides(value) { queryOverrides = value; }, set minimalCreate(value) { minimalCreate = value; }, set beforeCreate(value) { beforeCreate = value; },
+    set createError(value) { createError = value; }, set createOverrides(value) { createOverrides = value; }, set queryOverrides(value) { queryOverrides = value; }, set minimalCreate(value) { minimalCreate = value; }, set beforeCreate(value) { beforeCreate = value; }, set beforeRefresh(value) { beforeRefresh = value; },
     get clock() { return clock; }, advance(ms) { clock += ms; },
   };
 }
@@ -131,6 +131,121 @@ test('WeChat verifies signed full order when center creation returns only checko
   assert.ok(created.checkoutUrl); assert.equal(f.apiCalls.filter(item => item.get).length, 1);
   const broken = fixture(); broken.minimalCreate = true; broken.queryOverrides = { clientId: 'p-other-product' };
   await assert.rejects(broken.call('payment-create', await broken.createInput()), { code: 'PAYMENT_INVALID_ORDER' });
+});
+
+test('WeChat owner-only Native QR accompanies create, resume and status without durable payloads or a second sale', async () => {
+  const f = fixture(), input = await f.createInput();
+  const created = await f.call('payment-create', input), remote = f.remote.get(created.order.id);
+  for (const response of [created, await f.call('payment-resume', { orderId: created.order.id, expectedUserId: f.userId })]) {
+    assert.equal(response.qrCodeUrl, remote.payment.codeUrl);
+    assert.equal(response.qrCodeExpiresAt, remote.expiresAt);
+    assert.ok(response.checkoutUrl);
+  }
+  const creates = f.apiCalls.filter(call => call.create).length;
+  const status = await f.call('payment-status', { orderId: created.order.id, expectedUserId: f.userId });
+  assert.equal(status.qrCodeUrl, remote.payment.codeUrl);
+  assert.equal(status.qrCodeExpiresAt, remote.expiresAt);
+  assert.equal(f.apiCalls.filter(call => call.create).length, creates, 'status reads the original center order without POST creation');
+  assert.equal(f.remote.size, 1);
+  const state = await f.read(), persisted = JSON.stringify(state);
+  assert.equal(Object.keys(state.orders).length, 1);
+  assert.equal(state.users[f.userId].membership.type, 'none');
+  assert.ok(!persisted.includes('weixin:') && !persisted.includes('qrCode') && !persisted.includes('fixture-not-a-real-checkout-token'));
+  assert.ok(!JSON.stringify(status).includes(CONFIG.apiKey) && !JSON.stringify(status).includes(CONFIG.webhookSecret));
+});
+
+test('missing, unsafe and expired Native QR data remains unavailable while preserving the original checkout', async () => {
+  const invalidCodes = [undefined, '', 'https://attacker.test/qr', 'javascript:alert(1)', 'data:text/plain,fixture',
+    'weixin://other/bizpayurl?pr=fixture', 'weixin://wxpay/other?pr=fixture', 'weixin://wxpay/bizpayurl',
+    'weixin://wxpay/bizpayurl?pr=fixture&pr=second', 'weixin://wxpay/bizpayurl?pr=fixture&other=1',
+    'weixin://user@wxpay/bizpayurl?pr=fixture', 'weixin://wxpay:443/bizpayurl?pr=fixture',
+    'weixin://wxpay/bizpayurl?pr=fixture#other', 'weixin://wxpay/bizpayurl?pr=%00',
+    'weixin://wxpay/bizpayurl?pr=has%20space', 'weixin://wxpay/bizpayurl?pr=fixture\n',
+    `weixin://wxpay/bizpayurl?pr=${'a'.repeat(2050)}`];
+  const invalid = invalidCodes.map(codeUrl => ({ payment: { channel: 'native', codeUrl } }));
+  invalid.push({ expiresAt: undefined }, { expiresAt: 'not-a-date' }, { expiresAt: '2099' }, { expiresAt: '2026-10-20T14:10:00' }, { expiresAt: '2026-10-20T14:00:00Z' }, { expiresAt: '2026-10-20T13:59:59Z' });
+  for (const change of invalid) {
+    const f = fixture(); f.createOverrides = change; f.queryOverrides = change;
+    const created = await f.call('payment-create', await f.createInput());
+    const status = await f.call('payment-status', { orderId: created.order.id, expectedUserId: f.userId });
+    for (const result of [created, status]) {
+      assert.equal(result.qrCodeUrl, null); assert.equal(result.qrCodeExpiresAt, null);
+      assert.equal(result.order.status, 'pending');
+    }
+    assert.ok(created.checkoutUrl, 'safe browser checkout remains available');
+    assert.equal((await f.read()).users[f.userId].membership.type, 'none');
+  }
+});
+
+test('Native QR ownership and center snapshot checks happen before data can be returned', async () => {
+  const f = fixture(), { order } = await f.call('payment-create', await f.createInput());
+  const before = f.apiCalls.length;
+  for (const action of ['payment-resume', 'payment-status']) {
+    await assert.rejects(f.call(action, { orderId: order.id, expectedUserId: f.userId }, ''), { code: 'ACCOUNT_REQUIRED' });
+    await assert.rejects(f.call(action, { orderId: order.id, expectedUserId: f.otherId }, f.otherId), { code: 'ORDER_NOT_FOUND' });
+    await assert.rejects(f.call(action, { orderId: order.id, expectedUserId: f.otherId }), { code: 'ACCOUNT_CHANGED' });
+  }
+  assert.equal(f.apiCalls.length, before);
+  for (const change of [{ id: randomUUID().replaceAll('-', '') }, { clientId: 'p-other-product' }, { merchantOrderId: randomUUID() }, { sku: 'monthly' }, { quantity: 2 }, { amount: { total: 301, currency: 'CNY' } }, { amount: { total: 300, currency: 'USD' } }, { payment: { channel: 'h5', codeUrl: 'weixin://wxpay/bizpayurl?pr=isolated_invalid_channel' } }]) {
+    f.queryOverrides = change;
+    await assert.rejects(f.call('payment-status', { orderId: order.id, expectedUserId: f.userId }), error => {
+      assert.equal(error.code, 'PAYMENT_INVALID_ORDER'); assert.ok(!error.message.includes('weixin:')); return true;
+    });
+  }
+  assert.equal((await f.read()).users[f.userId].membership.type, 'none');
+});
+
+test('minimal creation uses the verified full order for Native QR rather than an unchecked projection', async () => {
+  const f = fixture(); f.minimalCreate = true;
+  f.createOverrides = { payment: { channel: 'native', codeUrl: 'weixin://wxpay/bizpayurl?pr=isolated_projection' } };
+  const created = await f.call('payment-create', await f.createInput());
+  assert.equal(created.qrCodeUrl, f.remote.get(created.order.id).payment.codeUrl);
+  assert.notEqual(created.qrCodeUrl, 'weixin://wxpay/bizpayurl?pr=isolated_projection');
+});
+
+test('paid, closed and locally expired orders revoke QR without granting from client-visible data', async () => {
+  for (const outcome of ['query-paid', 'webhook-paid', 'closed', 'expired']) {
+    const f = fixture(), { order } = await f.call('payment-create', await f.createInput());
+    if (outcome === 'query-paid' || outcome === 'webhook-paid') {
+      f.paid(order);
+      if (outcome === 'webhook-paid') await f.service().receivePayment(f.event(order));
+    } else if (outcome === 'closed') f.remote.get(order.id).status = 'CLOSED';
+    else f.advance(600_001);
+    const status = await f.call('payment-status', { orderId: order.id, expectedUserId: f.userId });
+    assert.equal(status.qrCodeUrl, null); assert.equal(status.qrCodeExpiresAt, null);
+    const state = await f.read();
+    if (outcome.endsWith('paid')) {
+      assert.equal(status.paymentStatus, 'PAID'); assert.equal(state.audit.length, 1);
+      const resumed = await f.call('payment-resume', { orderId: order.id, expectedUserId: f.userId });
+      assert.equal(resumed.qrCodeUrl, null); assert.equal(resumed.qrCodeExpiresAt, null); assert.equal(resumed.checkoutUrl, undefined);
+      await f.service().receivePayment(f.event(order)); assert.equal((await f.read()).audit.length, 1);
+    } else assert.equal(state.users[f.userId].membership.type, 'none');
+  }
+});
+
+test('a webhook confirming during a pending QR query wins the final owner snapshot', async () => {
+  const f = fixture(), { order } = await f.call('payment-create', await f.createInput());
+  f.beforeRefresh = async () => f.service().receivePayment(f.event(order, { transactionId: 'wx_callback_during_qr_query' }));
+  const result = await f.call('payment-status', { orderId: order.id, expectedUserId: f.userId });
+  assert.equal(result.paymentStatus, 'PAID'); assert.equal(result.order.status, 'confirmed');
+  assert.equal(result.qrCodeUrl, null); assert.equal(result.qrCodeExpiresAt, null);
+  assert.equal((await f.read()).audit.length, 1);
+});
+
+test('Native QR is withheld on binding or paid-fulfillment persistence failure and retry keeps the original order', async () => {
+  const f = fixture(), input = await f.createInput();
+  f.beforeCreate = async () => f.faults.push('fail');
+  await assert.rejects(f.call('payment-create', input), { code: 'STORAGE_UNAVAILABLE' });
+  assert.equal(Object.values((await f.read()).orders)[0].payment.orderId, null);
+  f.beforeCreate = null;
+  const created = await f.call('payment-create', input);
+  assert.ok(created.qrCodeUrl); assert.equal(f.remote.size, 1);
+  f.paid(created.order); f.faults.push('fail');
+  await assert.rejects(f.call('payment-status', { orderId: created.order.id, expectedUserId: f.userId }), { code: 'STORAGE_UNAVAILABLE' });
+  assert.equal((await f.read()).users[f.userId].membership.type, 'none');
+  const paid = await f.call('payment-status', { orderId: created.order.id, expectedUserId: f.userId });
+  assert.equal(paid.paymentStatus, 'PAID'); assert.equal(paid.qrCodeUrl, null); assert.equal(paid.qrCodeExpiresAt, null);
+  assert.equal((await f.read()).audit.length, 1);
 });
 
 test('signed SUCCESS query and webhook use the same durable fulfillment in either arrival order', async () => {

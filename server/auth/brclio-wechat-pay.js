@@ -89,6 +89,21 @@ export function createBrclioWechatPayService({ store, now = Date.now, authentica
     if (url.origin !== CENTER || url.pathname !== `/checkout/${centerId}` || url.search || url.username || url.password || fragment.size !== 1 || !token || token.length > 4096 || /[\s\x00-\x1f\x7f]/.test(token)) fail('PAYMENT_INVALID_ORDER', '微信收银台地址无效。', 502);
     return url.href;
   }
+  function nativeQr(remote, order) {
+    const unavailable = { qrCodeUrl: null, qrCodeExpiresAt: null };
+    if (!remote || order.status !== 'pending' || order.payment.status !== 'PENDING' || remote.status !== 'PENDING' || order.payment.orderId !== remote.id) return unavailable;
+    const value = remote.payment?.codeUrl, expiresAt = remote.expiresAt;
+    if (remote.payment?.channel !== 'native' || typeof value !== 'string' || value.length > 2048 || /[\s\x00-\x1f\x7f]/u.test(value) || typeof expiresAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(expiresAt) || !validTime(expiresAt)) return unavailable;
+    const expires = Date.parse(expiresAt);
+    if (expires <= now()) return unavailable;
+    let url;
+    try { url = new URL(value); } catch { return unavailable; }
+    const code = url.searchParams.get('pr');
+    if (url.protocol !== 'weixin:' || url.hostname !== 'wxpay' || url.port || url.username || url.password || url.pathname !== '/bizpayurl' || url.hash || url.searchParams.size !== 1 || !code || !/^[A-Za-z0-9_-]{1,1024}$/.test(code)) return unavailable;
+    // This ephemeral owner-only projection is never saved in orders, operation
+    // results or audit entries. It carries no authority to grant membership.
+    return { qrCodeUrl: value, qrCodeExpiresAt: iso(expires) };
+  }
   function paidData(p) {
     return { eventId: `payment.success.${p.id}`, orderId: p.id, clientId: p.clientId, merchantOrderId: p.merchantOrderId, sku: p.sku, quantity: p.quantity, total: p.total, currency: p.currency, transactionId: p.transactionId, paidAt: p.paidAt };
   }
@@ -157,7 +172,7 @@ export function createBrclioWechatPayService({ store, now = Date.now, authentica
     return synchronize(request, order, false);
   }
   async function query(request, order) {
-    if (order.status === 'confirmed' || order.payment.status === 'CLOSED' || !order.payment.orderId) return order;
+    if (order.status === 'confirmed' || order.payment.status === 'CLOSED' || !order.payment.orderId) return { order, remote: null };
     let p = checkedPayment(await configured().getOrder(order.payment.orderId), order);
     if (p.status === 'PENDING') p = checkedPayment(await configured().refreshOrder(order.payment.orderId), order);
     if (p.status === 'PAID') await fulfill(paidData(p), request);
@@ -170,11 +185,11 @@ export function createBrclioWechatPayService({ store, now = Date.now, authentica
     });
     const { state } = await store.read();
     const { user } = identity(state, request);
-    return ownedOrder(state, { ...request, input: { ...request.input, orderId: order.id } }, user);
+    return { order: ownedOrder(state, { ...request, input: { ...request.input, orderId: order.id } }, user), remote: p };
   }
   async function synchronize(request, order, replayed) {
-    order = await query(request, order);
-    if (order.status === 'confirmed' || order.payment.status === 'CLOSED') return { order: brclioWechatOrderView(order), replayed: true };
+    ({ order } = await query(request, order));
+    if (order.status === 'confirmed' || order.payment.status === 'CLOSED') return { order: brclioWechatOrderView(order), ...nativeQr(null, order), replayed: true };
     const p = order.payment;
     const result = await configured().createOrder({ merchantOrderId: order.id, sku: p.sku, quantity: 1, channel: 'native', expectedTotal: p.total, returnUrl: p.returnUrl });
     const created = result?.order || result;
@@ -195,8 +210,9 @@ export function createBrclioWechatPayService({ store, now = Date.now, authentica
     });
     // A create response may bind the identifier, but paid fulfillment requires a
     // separately signed get/refresh query or a verified webhook.
-    const finalOrder = remote.status === 'PAID' ? await query(request, saved) : saved;
-    return { order: brclioWechatOrderView(finalOrder), ...(checkoutUrl && finalOrder.status !== 'confirmed' && finalOrder.payment.status === 'PENDING' ? { checkoutUrl } : {}), replayed };
+    const final = remote.status === 'PAID' ? await query(request, saved) : { order: saved, remote };
+    const finalOrder = final.order;
+    return { order: brclioWechatOrderView(finalOrder), ...nativeQr(final.remote, finalOrder), ...(checkoutUrl && finalOrder.status !== 'confirmed' && finalOrder.payment.status === 'PENDING' ? { checkoutUrl } : {}), replayed };
   }
   async function resume(request) {
     const { state } = await store.read(), { user } = identity(state, request);
@@ -204,9 +220,9 @@ export function createBrclioWechatPayService({ store, now = Date.now, authentica
   }
   async function status(request) {
     const { state } = await store.read(), { user } = identity(state, request);
-    const order = await query(request, ownedOrder(state, request, user));
+    const { order, remote } = await query(request, ownedOrder(state, request, user));
     const view = brclioWechatOrderView(order);
-    return { order: view, paymentStatus: view.paymentStatus };
+    return { order: view, paymentStatus: view.paymentStatus, ...nativeQr(remote, order) };
   }
   async function receivePayment({ rawBody, headers }) {
     configured();

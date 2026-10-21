@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.33",
+  "stage": "local-preflight-before-immutable-source-commit",
+  "verifiedAt": "2026-10-21T01:08:49.481Z",
+  "ok": true,
+  "sourceScope": "Local working tree; exact immutable source is additionally checked by native CI and packaged source comparison.",
+  "local": {
+    "node": {
+      "command": "npm test",
+      "total": 1962,
+      "passed": 1949,
+      "skipped": 13,
+      "failed": 0
+    },
+    "python": {
+      "total": 47,
+      "passed": 47,
+      "failed": 0
+    }
+  },
+  "desktopFixtures": {
+    "payment": {
+      "ok": true,
+      "checks": 53,
+      "checklist": [
+        "confirmed receipt and detail preserve the accepted order price after catalog changes",
+        "delayed old handoff lookup cannot overwrite a newer active purchase",
+        "native open failure preserves the same order and supports retry plus copy",
+        "verified deep return tails old PENDING without reopening checkout",
+        "open success panel immediately renders member status and expiry",
+        "daily monthly yearly and Wechat selection fits desktop and 375px",
+        "cold-start handoff waits for verified initial account state",
+        "late native open failure cannot replace a confirmed success",
+        "delayed pending lookup remains guarded when quote returns first",
+        "lookup failure retains original record and guarded retry",
+        "old-owner pending lookup cannot unlock or query after account switch",
+        "Alipay default with separate Wechat registered catalog",
+        "uncertain Wechat create freezes method and reuses request ID",
+        "pending Wechat order restores and resumes its saved provider without another create",
+        "375px Native guidance remains visible in the client",
+        "online-only purchase with manual QR plans email-copy and report removed",
+        "quote change requires second click",
+        "PAYMENT_UNAVAILABLE create reuses request ID",
+        "payment pause blocks checkout and allows readiness refresh",
+        "removed draft SKU keeps its original plan name",
+        "recovery preserves original request and quoted amount",
+        "disabled catalog never creates an order",
+        "single-order checkout fragment preserved",
+        "return parameters never grant rights",
+        "back-forward cache return immediately checks and preserves automatic recovery without duplicate create or grant",
+        "paid without committed webhook stays pending and automatically polls",
+        "native app focus immediately checks pending order",
+        "confirmed order refreshes account and feature rights before clearing recovery",
+        "fresh account rights reach app listeners and member badge",
+        "renderer restart restores saved pending order without another create or checkout",
+        "unpaid recovery resumes the original order with a fresh checkout token",
+        "restart verifies PENDING before releasing recovery and requires a separate purchase click with a new request ID",
+        "status and checkout failures retain the original order",
+        "PAID restart and PAID resume followed by network failure block both purchase actions",
+        "confirmed recovery after a failed PAID check refreshes rights without another checkout or create",
+        "confirmed or paid retry without checkout URL queries status",
+        "late created or resumed checkout discarded on account switch",
+        "browser online recovery verifies unknown cookie identity before restoring the same pending order and preserves explicit logout",
+        "marketing page uses enabled live catalog and shows payment pause",
+        "375px online layout including unpaid restart control",
+        "Native QR is a local SVG whose actual canvas pixels independently decode to the current server code",
+        "Native QR fits 1280 and 375 pixels with browser guidance requiring another device",
+        "automatic PAID polling removes the QR without browser return or uncommitted membership grants",
+        "duplicate paid returns share the fresh permission refresh and clear the saved order once",
+        "expired QR stays on the original order and refresh never creates another purchase",
+        "closing and reopening the payment dialog preserves the same valid order",
+        "status network errors retain the original order without granting or opening a browser",
+        "real Electron page visibility removes the QR and awaits fresh status before redisplay",
+        "same-owner loss and restoration of verification rejects a late old QR response",
+        "late status and Native create responses never show the previous account code",
+        "browser logout clears QR presentation while retaining the owner recovery reference",
+        "legacy WeChat browser fallback requires an explicit action while Alipay retains its flow",
+        "PAID clears stale fallback errors and copy actions through held or failed permission refresh"
+      ],
+      "visibilityEvidence": [
+        {
+          "stage": "before-hide",
+          "hidden": false,
+          "state": "visible"
+        },
+        {
+          "stage": "native-hidden",
+          "hidden": true,
+          "state": "hidden",
+          "qrEmpty": true
+        },
+        {
+          "stage": "reshown-status-pending",
+          "hidden": false,
+          "state": "visible",
+          "qrEmpty": true
+        }
+      ]
+    },
+    "membership": {
+      "ok": true,
+      "checks": 17,
+      "scheme": "xhs-app://local",
+      "exactQrModuleAllowlist": true
+    },
+    "memberVideo": {
+      "ok": true,
+      "originalAssertionsPreserved": true
+    }
+  },
+  "build": {
+    "pages": true,
+    "workerDryRun": true
+  },
+  "secretScan": {
+    "checkedAt": "2026-10-21T01:10:13.360Z",
+    "sourceFiles": 923,
+    "webFiles": 216,
+    "pagesFiles": 218,
+    "workerBuildFiles": 3,
+    "configuredBusinessSecretValuesChecked": 2,
+    "matches": 0,
+    "credentialsFileMode": "600",
+    "credentialsFileTracked": false,
+    "temporaryManagementTokenUsed": false,
+    "temporaryManagementTokenPersisted": false
+  },
+  "dependencyAudit": {
+    "runtime": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "allDependencies": {
+      "info": 0,
+      "low": 0,
+      "moderate": 9,
+      "high": 4,
+      "critical": 0,
+      "total": 13
+    },
+    "notes": "Runtime yaml patched to 2.8.3; jsqr is test-only. Existing development/build-tool advisories remain; no forced major toolchain changes."
+  },
+  "nativeFixtureNote": {
+    "initialTrustedWheelDefaultScrollNotObserved": true,
+    "rootCauseConfirmed": false,
+    "isolatedControlsPassed": 10,
+    "fixtureChanges": [
+      "explicit OS window and webContents focus",
+      "layout frames and trusted pointer acknowledgement",
+      "plain document hit target",
+      "trusted startup wheel remains inside 1500ms guard"
+    ],
+    "productScrollCodeChanged": false,
+    "allOriginalScrollAssertionsRetained": true
+  },
+  "localTestNote": "One earlier concurrent ASAR snapshot compared account-ui.js while it was being edited; final full suite reran after source freeze and passed.",
+  "boundaries": {
+    "realPayment": false,
+    "productionOrderCreated": false,
+    "productionEntitlementGranted": false,
+    "newStorageResources": false,
+    "managementTokenUsed": false
+  },
+  "vendorFormatting": "Five upstream parameter-line trailing spaces removed; independent QR decoder tests rerun successfully."
+}

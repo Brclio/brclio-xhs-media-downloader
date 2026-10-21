@@ -38,6 +38,31 @@ test('the served desktop app can load every static relative module including the
   assert.ok(loaded.has('xhs-app://local/lib/parse-verification.js'));
 });
 
+test('the account UI loads its local QR renderer and transitive encoder with the unchanged sandbox policy', async () => {
+  const handle = createProtocolHandler({ rootDirectory, authorize: async () => assert.fail('Local QR modules must not request account authorization') });
+  let parent = 'xhs-app://local/account-ui.js';
+  const accountResponse = await handle(new Request(parent));
+  assert.equal(accountResponse.status, 200);
+  let source = await accountResponse.text();
+  const csp = accountResponse.headers.get('content-security-policy');
+  for (const specifier of ['./lib/payment-qr.js', './vendor/qrcodegen.js']) {
+    const imports = [...source.matchAll(/^import\s+[\s\S]*?\bfrom\s+["'](\.[^"']+)["'];/gm)].map(match => match[1]);
+    assert.ok(imports.includes(specifier), `Verify the actual module graph imports ${specifier}`);
+    const url = new URL(specifier, parent);
+    const response = await handle(new Request(url, { referrer: parent }));
+    assert.equal(response.status, 200, url.href);
+    assert.equal(response.headers.get('content-type'), 'text/javascript; charset=utf-8');
+    assert.equal(response.headers.get('content-security-policy'), csp, 'The QR encoder needs no relaxed script/connect/frame policy');
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    const bytes = Buffer.from(await response.arrayBuffer());
+    assert.deepEqual(bytes, await readFile(path.join(rootDirectory, url.pathname)));
+    source = bytes.toString('utf8'); parent = url.href;
+  }
+  for (const name of ['lib/vendor/not-allowed.js', 'lib/xhs.js', 'node_modules/jsqr/dist/jsQR.js']) {
+    assert.equal((await handle(new Request('xhs-app://local/' + name))).status, 404, 'QR allowlisting cannot expose arbitrary modules: ' + name);
+  }
+});
+
 test('desktop protocol retains customer support and removes manual membership payment codes', async () => {
   for (const name of ['wechat-contact']) {
     const response = await handler(new Request(`xhs-app://local/assets/membership/${name}.png`));

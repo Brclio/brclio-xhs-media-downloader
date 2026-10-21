@@ -145,7 +145,7 @@ app.whenReady().then(async () => {
   await evaluate(`document.querySelector('input[name="membership-online-method"][value="wechat"]').click()`);
   await wait(`!document.getElementById('membership-online-method').disabled`);
   assert.equal((await snapshot()).provider, 'wechat');
-  assert.match((await snapshot()).help, /在浏览器显示二维码.*手机微信扫一扫/);
+  assert.match((await snapshot()).help, /在客户端内显示二维码.*手机微信扫一扫/);
   assert.doesNotMatch((await snapshot()).help, /长按|H5|App/);
   assert.equal((await snapshot()).noManual, true);
   assert.deepEqual(await evaluate(`window.fixtureCalls.filter(([action])=>['payment-create','order-create','redeem'].includes(action))`), [], 'Browsing online providers and plans cannot create a purchase or grant rights');

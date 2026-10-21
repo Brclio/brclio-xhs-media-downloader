@@ -18,7 +18,8 @@ export const PUBLIC_FILES = [
   'support.css', 'visit-counter.js', 'visit-counter.css', 'favicon.svg', 'aiyc.svg',
   'desktop-ui.js', 'desktop-ui.css', 'account-ui.js', 'account-ui.css', 'avatar-ui.js', 'commerce-ui.js', 'commerce-ui.css',
   'lib/archive.js', 'lib/clipboard.js', 'lib/image-dimensions.js', 'lib/avatar-client.js', 'lib/account-avatar-transfer.js', 'lib/media-tracks.js', 'lib/membership-plans.js', 'lib/review-nicknames.js', 'lib/browser-account.js', 'lib/payment-recovery.js', 'lib/parse-verification.js',
-  'lib/browser-python.js', 'lib/browser-python-worker.js', 'lib/video-policy.js', 'lib/xhs.js', 'assets', 'admin'
+  'lib/browser-python.js', 'lib/browser-python-worker.js', 'lib/video-policy.js', 'lib/xhs.js',
+  'lib/payment-qr.js', 'lib/vendor/qrcodegen.js', 'assets', 'admin'
 ];
 
 export const PYODIDE_VERSION = '314.0.7';
