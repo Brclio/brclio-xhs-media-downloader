@@ -1,0 +1,38 @@
+{
+  "version": "2.0.33",
+  "sourceCommit": "a7d27331129b0f8a1156b2696458e4a0d7dbf6a4",
+  "workflowRunId": 39525822018,
+  "workflowStatus": "completed",
+  "workflowConclusion": "cancelled",
+  "runAttempt": 1,
+  "published": false,
+  "productionChanged": false,
+  "immutableTagMoved": false,
+  "replacementVersion": "2.0.34",
+  "reason": "The shared final payment-marketing assertion still expected the old wording after the copy update. Native ARM VIP screenshot also reported UnknownVizError without a business assertion; graphics root cause unconfirmed.",
+  "sourceChangesForReplacement": "Update four explicit marketing assertions to the current supported behavior, bump version and rebuild all platforms from a new immutable source.",
+  "observedJobs": {
+    "mac-arm64": "failure",
+    "mac-intel": "cancelled",
+    "windows-x64": "failure",
+    "publish": "cancelled"
+  },
+  "releaseAbsentVerifiedAt": "2026-10-21T01:29:36.316Z",
+  "releaseHttpStatus": 404,
+  "failureSteps": {
+    "mac-arm64": {
+      "step": 32,
+      "error": "UnknownVizError",
+      "rootCauseConfirmed": false
+    },
+    "windows-x64": {
+      "step": 34,
+      "error": "stale shared marketing assertion"
+    },
+    "mac-intel": {
+      "step": 34,
+      "error": "same stale shared marketing assertion",
+      "jobConclusion": "cancelled"
+    }
+  }
+}

@@ -733,7 +733,11 @@ app.whenReady().then(async () => {
   await win.loadURL(`${origin}/membership.html`);
   await wait(`document.querySelector('[data-plan="monthly"] [data-plan-price]').textContent==='19.90'`);
   assert.doesNotMatch(await evaluate(`document.querySelector('main').textContent`), /人工扫码|付款备注|人工付款|邮件发码|24 小时/);
-  assert.match(await evaluate(`document.querySelector('.opening-steps').textContent`), /支付宝或微信.*服务端核实后自动开通/);
+  const openingSteps = await evaluate(`document.querySelector('.opening-steps').textContent`);
+  assert.match(openingSteps, /选择微信[\s\S]*开通窗口内[\s\S]*扫码付款/, 'Marketing directs WeChat payment to the client purchase window');
+  assert.match(openingSteps, /支付宝[\s\S]*安全收银台/, 'Marketing preserves the Alipay secure checkout flow');
+  assert.match(openingSteps, /手机网页[\s\S]*另一台设备[\s\S]*微信付款码/, 'Mobile browser guidance requires another device for the payment code');
+  assert.match(openingSteps, /经服务端确认后[\s\S]*二维码自动收起[\s\S]*刷新会员及功能权限/, 'Marketing promises QR dismissal and refreshed membership only after server confirmation');
   assert.equal(await evaluate(`document.querySelector('[data-plan="daily"] [data-plan-price]').textContent`), '停售');
   assert.equal(await evaluate(`document.querySelector('[data-starting-price]').textContent`), '¥19.90');
   await win.loadURL(`${origin}/membership.html?paused=1`);
