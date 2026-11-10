@@ -1,0 +1,87 @@
+name: Brclio desktop migration
+
+on:
+  push:
+    tags: ['v2.0.37']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish verified builds from main or the matching v2.0.37 tag
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-migration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+            suffix: mac-arm64.dmg
+          - runner: macos-26-intel
+            arch: x64
+            suffix: mac-x64.dmg
+          - runner: windows-2022
+            arch: x64
+            suffix: windows-x64-setup.exe
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Package the migration launcher and the verified official installer
+        run: node scripts/build-migration.mjs ${{ matrix.arch }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Verify the installed legacy app migrates into a running official Brclio
+        run: node scripts/verify-migration-install.mjs "${{ github.workspace }}/dist-desktop/migration/Brclio-XHS-2.0.37-${{ matrix.suffix }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Verify Windows portable migration launches the installed official client
+        if: runner.os == 'Windows'
+        run: node scripts/verify-migration-install.mjs "${{ github.workspace }}/dist-desktop/migration/Brclio-XHS-2.0.37-windows-x64-portable.exe"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: migration-${{ matrix.suffix }}
+          path: |
+            dist-desktop/migration/Brclio-XHS-2.0.37-${{ matrix.suffix }}
+            dist-desktop/migration/Brclio-XHS-2.0.37-windows-x64-portable.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    if: github.event_name == 'push' || inputs.publish
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: migration-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Publish official Brclio downloads and verified legacy migration installers
+        run: node scripts/publish-migration.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MIGRATION_PUBLISH: ${{ inputs.publish }}

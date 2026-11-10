@@ -53,7 +53,8 @@
     "cloudflare:verify": "node scripts/verify-cloudflare.mjs",
     "build:cloudflare": "node deploy/build-pages.mjs",
     "cloudflare:deploy:pages": "node deploy/build-pages.mjs && wrangler pages deploy --cwd cloudflare/pages --project-name brclio-xhs-pages --branch main",
-    "desktop:verify:login-reset": "node scripts/verify-xhs-login-reset.mjs"
+    "desktop:verify:login-reset": "node scripts/verify-xhs-login-reset.mjs",
+    "desktop:build:migration": "node scripts/build-migration.mjs"
   },
   "engines": {
     "node": ">=22"

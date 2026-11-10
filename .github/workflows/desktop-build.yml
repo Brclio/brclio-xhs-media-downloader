@@ -8,7 +8,7 @@ on:
         required: false
         type: string
   push:
-    tags: ['v*', 'desktop-v*']
+    tags: ['v*', 'desktop-v*', '!v2.0.37']
 
 permissions:
   contents: read
@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   build:
+    if: inputs.release_tag != 'v2.0.37' && github.ref != 'refs/tags/v2.0.37'
     name: ${{ matrix.label }}
     strategy:
       fail-fast: false

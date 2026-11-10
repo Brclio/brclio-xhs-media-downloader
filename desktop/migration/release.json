@@ -1,0 +1,21 @@
+{
+  "bridgeVersion": "2.0.37",
+  "version": "0.2.9",
+  "assets": {
+    "darwin-arm64": {
+      "name": "Brclio-0.2.9-mac-arm64.dmg",
+      "size": 144663315,
+      "sha256": "7e409b163a9ba40358242731d13b6d05ea1acae8f7805e1be763739c2bd7f19a"
+    },
+    "darwin-x64": {
+      "name": "Brclio-0.2.9-mac-x64.dmg",
+      "size": 150817607,
+      "sha256": "c3e5f3f9f6a65d330316620807da16ebbe6056128dd7e21912576bb2615978ea"
+    },
+    "win32-x64": {
+      "name": "Brclio-0.2.9-windows-x64.exe",
+      "size": 124620014,
+      "sha256": "d66c4f3fa2bc2fff75cb5c41c0d500342d9bf5bd8cb93835cbbc0523bc5e8a60"
+    }
+  }
+}
