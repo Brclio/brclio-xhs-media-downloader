@@ -11,13 +11,14 @@ const execute = promisify(execFile);
 export async function migrateWindows({ installer, asset, version, arch }) {
   if (process.platform !== 'win32' || arch !== 'x64') throw new Error('迁移安装包仅支持 Windows x64。');
   const script = await readFile(new URL('./brclio-windows.ps1', import.meta.url), 'utf8');
+  const command = Buffer.from(script, 'utf16le').toString('base64');
   const powershell = path.join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   const env = { ...process.env, BRCLIO_LITE_VERSION: version, BRCLIO_LITE_FILE: installer };
   for (const name of Object.keys(env)) {
     if (/^(ELECTRON_RUN_AS_NODE|NODE_OPTIONS|NODE_PATH|PSModulePath|PORTABLE_EXECUTABLE_.*)$/i.test(name)) delete env[name];
   }
   const run = async action => {
-    const { stdout } = await execute(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script], {
+    const { stdout } = await execute(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', command], {
       env: { ...env, BRCLIO_LITE_ACTION: action }, timeout: 900000, windowsHide: true, encoding: 'utf8'
     }).catch(error => {
       throw new Error(error.stderr?.trim() || '无法执行 Brclio 的 Windows 安装程序。', { cause: error });
@@ -26,12 +27,7 @@ export async function migrateWindows({ installer, asset, version, arch }) {
   };
   // Also handle a newer version installed while we were validating the package.
   // The installation script reads the registry again just before launching NSIS.
-  const installed = await run('version');
-  const numeric = new Intl.Collator('en', { numeric: true });
-  if (installed && numeric.compare(installed, version) >= 0) {
-    await run('open');
-    return;
-  }
+  if (await run('open-current') === 'opened') return;
   await verifyInstaller(installer, asset);
   await run('install');
 }

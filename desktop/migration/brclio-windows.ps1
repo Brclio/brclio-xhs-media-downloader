@@ -21,11 +21,25 @@ function Find-Brclio {
 function Open-Brclio($app) {
   if ($null -eq $app) { throw 'Brclio is not installed.' }
   Start-Process -FilePath $app.Path
+  $deadline = [DateTime]::UtcNow.AddSeconds(120)
+  do {
+    $ready = @(Get-Process -Name Brclio -ErrorAction SilentlyContinue | Where-Object {
+      $_.Path -ieq $app.Path -and $_.MainWindowHandle -ne 0
+    })
+    if ($ready.Count -gt 0) { return }
+    Start-Sleep -Milliseconds 300
+  } while ([DateTime]::UtcNow -lt $deadline)
+  throw 'Brclio did not open its main window. Check the installation and try again.'
 }
 $old = Find-Brclio
 switch ($env:BRCLIO_LITE_ACTION) {
-  'version' { if ($null -ne $old) { Write-Output $old.Version }; return }
-  'open' { Open-Brclio $old; return }
+  'open-current' {
+    if ($old -and [version]$old.Version -ge [version]$env:BRCLIO_LITE_VERSION) {
+      Open-Brclio $old
+      Write-Output 'opened'
+    }
+    return
+  }
   'install' {}
   default { throw 'Unknown install operation.' }
 }

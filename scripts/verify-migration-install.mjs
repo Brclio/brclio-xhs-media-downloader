@@ -69,7 +69,7 @@ function start(exe, args) {
 
 async function unpackUpdater(archive, files) {
   await writeFile(path.join(temporary, 'package.json'), '{"type":"module"}');
-  for (const name of files) await writeFile(path.join(temporary, name), asar.extractFile(archive, 'desktop/' + name));
+  for (const name of files) await writeFile(path.join(temporary, name), asar.extractFile(archive, path.join('desktop', name)));
   return import(pathToFileURL(path.join(temporary, files[0])).href);
 }
 
@@ -132,10 +132,10 @@ async function verifyPortable(file) {
 }
 
 async function windows() {
-  const installDir = path.join(temporary, 'Legacy XHS');
+  const installDir = path.join(temporary, 'LegacyXHS');
   const official = "HKCU:\\Software\\c8f079c5-a346-5aee-a72f-5280717e7b26";
   assert.equal(await ps("Test-Path -LiteralPath '" + official + "'"), 'False');
-  await run(originalFile, ['/S', '/currentuser', '/D=' + installDir], {timeout: 240000});
+  await run(originalFile, ['/S', '/currentuser', '/D=' + installDir], {timeout: 240000, windowsVerbatimArguments: true});
   const exe = path.join(installDir, product.build.productName + '.exe');
   const version = () => ps('(Get-Item -LiteralPath $env:BRCLIO_TEST_APP).VersionInfo.ProductVersion', {BRCLIO_TEST_APP: exe});
   assert.equal((await version()).replace(/\.0$/, ''), previous);
@@ -152,6 +152,10 @@ async function windows() {
     const file = path.join(folder, 'Brclio.exe');
     const running = await ps("Get-Process -Name Brclio -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $env:BRCLIO_TEST_APP } | Select-Object -ExpandProperty Id; exit 0", {BRCLIO_TEST_APP: file});
     return running && file;
+  });
+  await waitFor('migration launcher to finish', async () => {
+    const running = await ps("Get-Process | Where-Object { $_.Path -eq $env:BRCLIO_TEST_APP } | Select-Object -ExpandProperty Id; exit 0", {BRCLIO_TEST_APP: exe});
+    return !running;
   });
   assert.equal((await version()).replace(/\.0$/, ''), release.bridgeVersion);
   assert.equal(await ps('(Get-Item -LiteralPath $env:BRCLIO_TEST_APP).VersionInfo.ProductName', {BRCLIO_TEST_APP: officialExe}), 'Brclio');

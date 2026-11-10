@@ -131,6 +131,8 @@
       "desktop/**/*.cjs",
       "desktop/account-config.json",
       "node_modules/yaml/**/*",
+      "!desktop/migration/**",
+      "!desktop/migration-builder.cjs",
       "!desktop/**/*.test.js",
       "!node_modules/nodemailer/**/*"
     ],
