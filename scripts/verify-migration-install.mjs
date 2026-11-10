@@ -126,8 +126,11 @@ async function verifyPortable(file) {
   await ps(processes + ' | Stop-Process -Force; exit 0', env);
   await waitFor('prior application to exit', async () => !(await ps(processes + ' | Select-Object -ExpandProperty Id; exit 0', env)));
   const launcher = start(file, []);
-  launcher.unref();
-  await waitFor('portable launcher to open the installed official Brclio', async () => ps(processes + ' | Select-Object -ExpandProperty Id; exit 0', env));
+  const completed = once(launcher, 'exit');
+  await waitFor('portable launcher to open the installed official Brclio window', async () =>
+    ps(processes + ' | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -ExpandProperty Id; exit 0', env));
+  const [exitCode] = await completed;
+  assert.equal(exitCode, 0, 'Portable migration must finish after the official window opens');
   assert.equal(await ps(marker, env), timestamp);
 }
 

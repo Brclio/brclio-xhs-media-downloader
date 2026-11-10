@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: desktop-migration-${{ github.ref }}
+  group: desktop-migration-v2.0.37
   cancel-in-progress: false
 
 jobs:
